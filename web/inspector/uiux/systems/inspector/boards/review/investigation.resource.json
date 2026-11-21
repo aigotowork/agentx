@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "system": "inspector",
+  "id": "inspector/investigation",
+  "kind": "board",
+  "title": "恢复调查样例",
+  "summary": "同一组件组成的可操作评审画板；本地样例，无业务请求。",
+  "maturity": "experimental",
+  "source": [
+    "./review.scenes.tsx"
+  ],
+  "design": "./investigation.design.md",
+  "useWhen": [
+    "组合比较真实组件、主题和局部交互。"
+  ],
+  "avoidWhen": [
+    "不作为真实主机当前状态或恢复结果。"
+  ],
+  "dependencies": [
+    "inspector/themes"
+  ],
+  "events": [],
+  "states": [],
+  "interactions": [],
+  "scenes": [
+    {
+      "id": "default",
+      "title": "恢复调查样例",
+      "description": "四板组合与原有可操作本地状态。",
+      "kind": "overview"
+    }
+  ],
+  "usage": {
+    "entry": "./review.scenes.tsx",
+    "symbols": [
+      "Investigation"
+    ]
+  }
+}

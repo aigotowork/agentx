@@ -1,0 +1,26 @@
+/* Prototype-local foundation; canonical workbench/spatial styles consume these aliases. */
+:root {
+  --ex-paper: #f8f9fc; --ex-white: #ffffff; --ex-ink: #202938; --ex-muted: #667184; --ex-faint: #929bad;
+  --ex-line: #e4e7ee; --ex-line-strong: #cfd5e2; --ex-accent: #5546c8; --ex-accent-soft: #eeecfc; --ex-accent-hover: #f5f3ff;
+  --ex-good: #23725b; --ex-good-soft: #eaf6f0; --ex-warn: #97601c; --ex-warn-soft: #fff4e2; --ex-danger: #b63e53;
+  --ex-font: "Inter", "Noto Sans SC", system-ui, -apple-system, "Segoe UI", sans-serif; --ex-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --ex-font-small: 12px; --ex-font-body: 13px; --ex-font-medium: 14px; --ex-font-title: 16px; --ex-line-height: 1.5;
+  --ex-zero: 0; --ex-hairline: 1px; --ex-focus: 2px; --ex-s1: 4px; --ex-s2: 8px; --ex-s3: 12px; --ex-s4: 16px; --ex-s5: 20px; --ex-s6: 24px;
+  --ex-radius-small: 6px; --ex-radius: 9px; --ex-radius-large: 12px; --ex-pill: 99px; --ex-control: 34px; --ex-touch: 44px;
+  --ex-header: 56px; --ex-context: 52px; --ex-nav: 228px; --ex-inspector: 354px; --ex-canvas-heading: 48px; --ex-mobile-nav: 324px;
+  --ex-shadow: 0 10px 36px #20293818; --ex-control-shadow: 0 2px 8px #2029380a; --ex-panel-shadow: -8px 0 32px #20293812;
+  --ex-dot: #dfe3ed; --ex-grid: 24px; --ex-node-shadow: 0 3px 7px #27304a0a; --ex-card-stroke: 1.2;
+  --ex-node-title: 17px; --ex-node-body: 14px; --ex-node-small: 12px; --ex-node-section: 11px; --ex-node-selected: 2;
+  --ex-node-row: #f5f5fc; --ex-node-hover: #f1efff; --ex-rule-surface: #f6f8fa;
+  --ex-svg-port-stroke: 2; --ex-svg-line: 1.5; --ex-svg-active: 2.5; --ex-svg-hit: 28; --ex-svg-dash: 5 4;
+  --ex-mark: 28px; --ex-icon: 18px; --ex-rail-width: 64px; --ex-dock: 160px; --ex-overlay-margin: 12px; --ex-narrow-drawer-top: 64px;
+  --ex-tooltip-width: 260px; --ex-tooltip-bottom: 16px; --ex-tooltip-side: 16px; --ex-scroll-thumb: #d3d7e2;
+  --wb-bg: var(--ex-paper); --wb-surface: var(--ex-white); --wb-ink: var(--ex-ink); --wb-muted: var(--ex-muted); --wb-line: var(--ex-line);
+  --wb-accent: var(--ex-accent); --wb-accent-soft: var(--ex-accent-soft); --wb-good: var(--ex-good); --wb-good-soft: var(--ex-good-soft);
+  --wb-warning: var(--ex-warn); --wb-warning-soft: var(--ex-warn-soft); --wb-danger: var(--ex-danger); --wb-font: var(--ex-font); --wb-mono: var(--ex-mono);
+  --wb-text: var(--ex-font-body); --wb-small: var(--ex-font-small); --wb-title: var(--ex-font-title); --wb-radius: var(--ex-radius-small);
+  --wb-control: var(--ex-control); --wb-navigation: var(--ex-nav); --wb-details: var(--ex-inspector); --wb-shadow: var(--ex-shadow);
+  --wb-svg-title: var(--ex-node-title); --wb-svg-text: var(--ex-node-body); --wb-svg-small: var(--ex-node-small);
+  --spatial-surface: var(--ex-paper); --spatial-dot: var(--ex-dot); --spatial-control-line: var(--ex-line); --spatial-control-ink: var(--ex-muted);
+  --spatial-control-size: var(--ex-control); --spatial-control-radius: var(--ex-radius); --spatial-control-offset: var(--ex-s4); --spatial-control-shadow: var(--ex-control-shadow);
+}

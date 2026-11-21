@@ -1,0 +1,49 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": [
+      "ES2023",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [
+      "node",
+      "react",
+      "react-dom"
+    ],
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "checkJs": false,
+    "baseUrl": ".",
+    "paths": {
+      "react-native": [
+        "node_modules/react-native"
+      ]
+    }
+  },
+  "include": [
+    "host/**/*.ts",
+    "host/**/*.tsx",
+    "web/**/*.ts",
+    "web/**/*.tsx",
+    "plugin/client/**/*.ts",
+    "plugin/client/**/*.tsx",
+    "plugin/shared/**/*.ts",
+    "uiux/systems/inspector/inspector.native.ts",
+    "uiux/systems/inspector/inspector.web.ts",
+    "plugin/core/**/*.ts"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "tests",
+    "dist",
+    "node_modules"
+  ]
+}

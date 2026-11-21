@@ -1,0 +1,46 @@
+{
+  "precondition": {
+    "participant": "fixture-participant-a",
+    "session_id": "fixture-session-a",
+    "status": "active",
+    "bootstrap_already_announced": true,
+    "pending_mail": "retain-unacknowledged"
+  },
+  "cases": [
+    {
+      "id": "H02-missing",
+      "payload": {"source": "compact"},
+      "expect_context": false
+    },
+    {
+      "id": "H02-empty",
+      "payload": {"source": "compact", "session_id": ""},
+      "expect_context": false
+    },
+    {
+      "id": "H02-wrong",
+      "payload": {"source": "compact", "session_id": "fixture-session-b"},
+      "expect_context": false
+    },
+    {
+      "id": "H02-stale",
+      "payload": {"source": "compact", "session_id": "fixture-session-retired"},
+      "expect_context": false
+    },
+    {
+      "id": "H01-current",
+      "payload": {"source": "compact", "session_id": "fixture-session-a"},
+      "expect_context": true
+    }
+  ],
+  "invariants": [
+    "participant and native session binding unchanged",
+    "status remains active",
+    "no additional user turn",
+    "pending mail remains unacknowledged",
+    "rejected callback cannot change cwd or transcript position",
+    "rejected callback cannot confirm bootstrap delivery",
+    "accepted callback contains newly edited context despite prior announcement"
+  ],
+  "execution": "pending explicit final candidate handoff; vectors alone are not execution evidence"
+}

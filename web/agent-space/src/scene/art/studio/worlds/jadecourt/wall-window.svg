@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="48" viewBox="0 0 120 48" stroke-linejoin="round" stroke-linecap="round">
+<title>Three dusk lights in the lotus arcade</title>
+<defs>
+<linearGradient id="bronze" x2="1" y2="1"><stop offset="0" stop-color="#ffe2a1"/><stop offset="0.25" stop-color="#cc996e"/><stop offset="0.5" stop-color="#754353"/><stop offset="0.7" stop-color="#512f45"/><stop offset="1" stop-color="#a45e64"/></linearGradient><linearGradient id="glaze" x2="1" y2="1"><stop offset="0" stop-color="#e0ffff"/><stop offset="0.18" stop-color="#a8eee0"/><stop offset="0.45" stop-color="#499d9e"/><stop offset="0.74" stop-color="#215864"/><stop offset="1" stop-color="#16303e"/></linearGradient><linearGradient id="jadeDark" x2="1" y2="1"><stop offset="0" stop-color="#578f86"/><stop offset="0.5" stop-color="#27525a"/><stop offset="1" stop-color="#132e38"/></linearGradient><linearGradient id="lacquer" x2="1" y2="1"><stop offset="0" stop-color="#d38f77"/><stop offset="0.29" stop-color="#a45658"/><stop offset="0.58" stop-color="#593246"/><stop offset="1" stop-color="#30263a"/></linearGradient><linearGradient id="nightGlass" x2="0" y2="1"><stop offset="0" stop-color="#254f66"/><stop offset="0.5" stop-color="#486a75"/><stop offset="1" stop-color="#be9d9e"/></linearGradient>
+
+</defs>
+<path d="M0 44H120V48H0Z" fill="#172536" opacity=".5"/>
+<g transform="translate(4 0)">
+<path d="M0 42V19Q1 10 18 1Q35 10 36 19V42Z" fill="url(#lacquer)" stroke="#192332" stroke-width="1"/>
+<path d="M3 40V21Q3 14 18 5Q32 14 33 21V40Z" fill="url(#nightGlass)" stroke="#251f32" stroke-width="1.25"/>
+<path d="M4 22Q5 17 17 8L17 20 3 34Z" fill="#9ed0cf" opacity=".21"/>
+<path d="M4 36Q13 31 18 33Q23 26 33 31V40H3Z" fill="#203c54" opacity=".83"/>
+<path d="M4 39V22Q5 14 17 6" fill="none" stroke="#dfba8e" stroke-width="0.85"/>
+<path d="M18 7V40M4 27Q9 27 18 20 27 27 32 27" fill="none" stroke="url(#bronze)" stroke-width="1.35"/>
+<path d="M18 15Q22 18 18 22Q14 18 18 15Z" fill="url(#glaze)" stroke="#beac93" stroke-width="0.6"/>
+<path d="M7 32q4-1 6-4m8 9 8-2" fill="none" stroke="#a8d3ce" stroke-width="0.53" opacity=".56"/>
+<ellipse cx="18" cy="29" rx="0.85" ry="0.85" fill="#ceab8b" stroke="#192332" stroke-width="0.38"/>
+<ellipse cx="6" cy="38" rx="0.85" ry="0.85" fill="#f0c897" stroke="#192332" stroke-width="0.38"/>
+<ellipse cx="30" cy="38" rx="0.85" ry="0.85" fill="#a27774" stroke="#192332" stroke-width="0.38"/></g>
+<g transform="translate(42 0)">
+<path d="M0 42V19Q1 10 18 1Q35 10 36 19V42Z" fill="url(#lacquer)" stroke="#192332" stroke-width="1"/>
+<path d="M3 40V21Q3 14 18 5Q32 14 33 21V40Z" fill="url(#nightGlass)" stroke="#251f32" stroke-width="1.25"/>
+<path d="M4 22Q5 17 17 8L17 20 3 34Z" fill="#9ed0cf" opacity=".21"/>
+<path d="M4 36Q13 31 18 33Q23 26 33 31V40H3Z" fill="#203c54" opacity=".83"/>
+<path d="M4 39V22Q5 14 17 6" fill="none" stroke="#dfba8e" stroke-width="0.85"/>
+<path d="M18 7V40M4 27Q9 27 18 20 27 27 32 27" fill="none" stroke="url(#bronze)" stroke-width="1.35"/>
+<path d="M18 15Q22 18 18 22Q14 18 18 15Z" fill="url(#glaze)" stroke="#beac93" stroke-width="0.6"/>
+<path d="M7 32q4-1 6-4m8 9 8-2" fill="none" stroke="#a8d3ce" stroke-width="0.53" opacity=".56"/>
+<ellipse cx="18" cy="29" rx="0.85" ry="0.85" fill="#ceab8b" stroke="#192332" stroke-width="0.38"/>
+<ellipse cx="6" cy="38" rx="0.85" ry="0.85" fill="#f0c897" stroke="#192332" stroke-width="0.38"/>
+<ellipse cx="30" cy="38" rx="0.85" ry="0.85" fill="#a27774" stroke="#192332" stroke-width="0.38"/></g>
+<g transform="translate(80 0)">
+<path d="M0 42V19Q1 10 18 1Q35 10 36 19V42Z" fill="url(#lacquer)" stroke="#192332" stroke-width="1"/>
+<path d="M3 40V21Q3 14 18 5Q32 14 33 21V40Z" fill="url(#nightGlass)" stroke="#251f32" stroke-width="1.25"/>
+<path d="M4 22Q5 17 17 8L17 20 3 34Z" fill="#9ed0cf" opacity=".21"/>
+<path d="M4 36Q13 31 18 33Q23 26 33 31V40H3Z" fill="#203c54" opacity=".83"/>
+<path d="M4 39V22Q5 14 17 6" fill="none" stroke="#dfba8e" stroke-width="0.85"/>
+<path d="M18 7V40M4 27Q9 27 18 20 27 27 32 27" fill="none" stroke="url(#bronze)" stroke-width="1.35"/>
+<path d="M18 15Q22 18 18 22Q14 18 18 15Z" fill="url(#glaze)" stroke="#beac93" stroke-width="0.6"/>
+<path d="M7 32q4-1 6-4m8 9 8-2" fill="none" stroke="#a8d3ce" stroke-width="0.53" opacity=".56"/>
+<ellipse cx="18" cy="29" rx="0.85" ry="0.85" fill="#ceab8b" stroke="#192332" stroke-width="0.38"/>
+<ellipse cx="6" cy="38" rx="0.85" ry="0.85" fill="#f0c897" stroke="#192332" stroke-width="0.38"/>
+<ellipse cx="30" cy="38" rx="0.85" ry="0.85" fill="#a27774" stroke="#192332" stroke-width="0.38"/></g>
+<path d="M1 41H118L120 44 116 47H3L0 45Z" fill="url(#jadeDark)" stroke="#192332" stroke-width="1"/>
+<path d="M2 42.2H118" fill="none" stroke="#acc4ae" stroke-width="1"/>
+<path d="M5 45H114" fill="none" stroke="#76958a" stroke-width="0.6"/>
+</svg>

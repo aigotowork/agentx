@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "system": "inspector",
+  "id": "inspector/display",
+  "kind": "component",
+  "title": "标签与事实展示",
+  "summary": "值、名称、开关、状态点的通用表达，不推断业务结果。",
+  "maturity": "stable",
+  "source": [
+    "./display.native.tsx"
+  ],
+  "design": "./display.design.md",
+  "useWhen": [
+    "值、名称、开关、状态点的通用表达，不推断业务结果。"
+  ],
+  "avoidWhen": [
+    "不要用外观或动画推断业务成功；数据与命令留在领域。"
+  ],
+  "dependencies": [
+    "inspector/themes"
+  ],
+  "events": [
+    {
+      "name": "change",
+      "description": "转发受控值变化"
+    }
+  ],
+  "states": [
+    {
+      "id": "default",
+      "title": "默认",
+      "description": "值、名称、开关、状态点的通用表达，不推断业务结果。",
+      "scene": "default"
+    }
+  ],
+  "interactions": [
+    {
+      "id": "operate",
+      "title": "操作与事件",
+      "trigger": "pointer / Enter / Space，输入使用键盘编辑",
+      "from": "default",
+      "to": "default",
+      "events": [
+        "change"
+      ],
+      "scene": "default",
+      "result": "只更新本地示例并记录事件，不触发业务请求",
+      "interruption": "禁用与 busy 不提交；切换主题不重建；显式重置清空本地状态"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "default",
+      "title": "默认与可操作示例",
+      "description": "值、名称、开关、状态点的通用表达，不推断业务结果。",
+      "kind": "interaction"
+    }
+  ],
+  "usage": {
+    "entry": "../../inspector.native.ts",
+    "symbols": [
+      "KeyValue"
+    ]
+  }
+}

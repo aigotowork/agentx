@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="108" height="60" viewBox="0 0 108 60">
+  <defs>
+    <linearGradient id="cloth" x2="0" y2="1">
+      <stop stop-color="#d48065"/>
+      <stop offset=".63" stop-color="#ac5e57"/>
+      <stop offset="1" stop-color="#85445a"/>
+    </linearGradient>
+    <linearGradient id="framework" x2=".8" y2="1">
+      <stop stop-color="#819fbc"/>
+      <stop offset="1" stop-color="#3b5179"/>
+    </linearGradient>
+  </defs>
+  <path fill="#101b36" opacity=".6" d="M14 39h85l8 13-10 7H11l-10-8z"/>
+  <g stroke="#141c35" stroke-width="1.35" stroke-linejoin="round">
+    <path fill="#263658" d="M10 43h18v10l-4 3H10zm72 0h16v13H85l-3-3z"/>
+    <path fill="url(#framework)" d="M10 13 21 5h68l12 9 5 27-7 10H10L2 42z"/>
+    <path fill="#723c51" d="M16 14 22 9h65l7 5 3 20H11z"/>
+    <path fill="url(#cloth)" d="m20 14 4-3h24l4 4-1 14H16zm39 1 4-4h22l7 4 2 14H58z"/>
+    <path fill="#714253" d="M11 29h85l6 8-8 9H15l-9-9z"/>
+    <path fill="url(#cloth)" d="M17 29h34l2 8-5 6H16l-5-5zm42 0h33l5 8-5 6H62l-5-5z"/>
+    <path fill="#9fb4c8" d="m8 23 12-2 3 5-6 12-8 5-5-5 1-10zm83-1 11 3 3 8-2 8-7 1-6-5-4-10z"/>
+    <path fill="#3d567d" d="M14 45h82l3 4H11z"/>
+  </g>
+  <path d="M23 14h21m19 0h19m-64 18h29m15 0h26" stroke="#ffc190" opacity=".65" fill="none"/>
+  <path fill="#ffb967" d="M8 29h4v3H8zm89 0h4v3h-4z"/>
+  <path d="M18 53h6m62 0h7" stroke="#a6bdcd" fill="none"/>
+</svg>

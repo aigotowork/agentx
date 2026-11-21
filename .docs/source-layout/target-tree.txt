@@ -1,0 +1,243 @@
+└── src/
+    ├── agents/
+    │   ├── binding.rs
+    │   ├── identity.rs
+    │   ├── lifecycle.rs
+    │   ├── mod.rs
+    │   ├── names.rs
+    │   └── records.rs
+    ├── cli/
+    │   ├── commands/
+    │   │   ├── reset/
+    │   │   │   ├── mod.rs
+    │   │   │   ├── operations.rs
+    │   │   │   └── preview.rs
+    │   │   ├── archive.rs
+    │   │   ├── bundle.rs
+    │   │   ├── config.rs
+    │   │   ├── daemon.rs
+    │   │   ├── events.rs
+    │   │   ├── fork.rs
+    │   │   ├── help.rs
+    │   │   ├── hooks.rs
+    │   │   ├── kill.rs
+    │   │   ├── launch.rs
+    │   │   ├── list.rs
+    │   │   ├── listen.rs
+    │   │   ├── mod.rs
+    │   │   ├── relay.rs
+    │   │   ├── resume.rs
+    │   │   ├── run.rs
+    │   │   ├── send.rs
+    │   │   ├── start.rs
+    │   │   ├── status.rs
+    │   │   ├── stop.rs
+    │   │   ├── term.rs
+    │   │   ├── transcript.rs
+    │   │   └── update.rs
+    │   ├── context.rs
+    │   ├── mod.rs
+    │   ├── router.rs
+    │   ├── tips.rs
+    │   └── update.rs
+    ├── db/
+    │   ├── claude_actors.rs
+    │   ├── events.rs
+    │   ├── instances.rs
+    │   ├── kv.rs
+    │   ├── mod.rs
+    │   ├── notify.rs
+    │   ├── reqwatch_policy.rs
+    │   ├── sessions.rs
+    │   └── subscriptions.rs
+    ├── events/
+    │   ├── filters.rs
+    │   └── mod.rs
+    ├── integrations/
+    │   ├── hooks/
+    │   │   ├── claude/
+    │   │   │   ├── actor.rs
+    │   │   │   ├── mod.rs
+    │   │   │   └── native.rs
+    │   │   ├── hermes/
+    │   │   │   ├── bridge.rs
+    │   │   │   └── mod.rs
+    │   │   ├── kimi/
+    │   │   │   ├── config.rs
+    │   │   │   ├── handlers.rs
+    │   │   │   ├── mod.rs
+    │   │   │   └── tests.rs
+    │   │   ├── omp/
+    │   │   │   ├── mod.rs
+    │   │   │   ├── plugin.rs
+    │   │   │   └── tests.rs
+    │   │   ├── antigravity.rs
+    │   │   ├── codex.rs
+    │   │   ├── common.rs
+    │   │   ├── copilot.rs
+    │   │   ├── cursor.rs
+    │   │   ├── gemini.rs
+    │   │   ├── mod.rs
+    │   │   ├── opencode.rs
+    │   │   ├── pi.rs
+    │   │   ├── pi_family.rs
+    │   │   ├── plugin_rpc.rs
+    │   │   ├── qoder.rs
+    │   │   ├── registry.rs
+    │   │   ├── runtime.rs
+    │   │   └── tool_status.rs
+    │   ├── launch_args/
+    │   │   ├── codex.rs
+    │   │   ├── copilot.rs
+    │   │   ├── cursor.rs
+    │   │   ├── hermes.rs
+    │   │   ├── mod.rs
+    │   │   ├── opencode.rs
+    │   │   ├── overrides.rs
+    │   │   ├── qoder.rs
+    │   │   ├── shell.rs
+    │   │   └── validation.rs
+    │   ├── plugins/
+    │   │   ├── claude/
+    │   │   │   ├── .claude-plugin/
+    │   │   │   │   └── plugin.json
+    │   │   │   ├── hooks/
+    │   │   │   │   ├── hooks.json
+    │   │   │   │   └── register.js
+    │   │   │   └── tests/
+    │   │   │       └── register.test.ts
+    │   │   ├── copilot/
+    │   │   │   └── extension.mjs
+    │   │   ├── hermes/
+    │   │   │   ├── __init__.py
+    │   │   │   └── plugin.yaml
+    │   │   ├── omp/
+    │   │   │   └── agentx.ts
+    │   │   ├── opencode/
+    │   │   │   └── agentx.ts
+    │   │   └── pi/
+    │   │       └── agentx.ts
+    │   ├── detection.rs
+    │   ├── mod.rs
+    │   ├── nested_env.rs
+    │   ├── registry.rs
+    │   └── tool.rs
+    ├── messaging/
+    │   ├── delivery/
+    │   │   ├── antigravity.rs
+    │   │   ├── grok.rs
+    │   │   └── mod.rs
+    │   ├── bundles.rs
+    │   ├── mod.rs
+    │   ├── routing.rs
+    │   └── validation.rs
+    ├── relay/
+    │   ├── backfill.rs
+    │   ├── broker.rs
+    │   ├── client.rs
+    │   ├── control.rs
+    │   ├── crypto.rs
+    │   ├── mod.rs
+    │   ├── pull.rs
+    │   ├── push.rs
+    │   ├── replay.rs
+    │   ├── token.rs
+    │   └── worker.rs
+    ├── runtime/
+    │   ├── notify/
+    │   │   ├── mod.rs
+    │   │   ├── server.rs
+    │   │   └── wake.rs
+    │   ├── pty/
+    │   │   ├── conpty.rs
+    │   │   ├── console_input.rs
+    │   │   ├── forward.rs
+    │   │   ├── inject.rs
+    │   │   ├── mod.rs
+    │   │   ├── screen.rs
+    │   │   ├── shared.rs
+    │   │   ├── stdout_queue.rs
+    │   │   ├── terminal.rs
+    │   │   ├── trace.rs
+    │   │   ├── vt_compat.rs
+    │   │   └── win.rs
+    │   ├── terminal/
+    │   │   ├── mod.rs
+    │   │   └── presets.rs
+    │   ├── bootstrap.rs
+    │   ├── context.rs
+    │   ├── env.rs
+    │   ├── launch_status.rs
+    │   ├── launcher.rs
+    │   ├── mod.rs
+    │   ├── process_tracking.rs
+    │   └── shell_env.rs
+    ├── shared/
+    │   ├── ansi.rs
+    │   ├── constants.rs
+    │   ├── errors.rs
+    │   ├── identity.rs
+    │   ├── mod.rs
+    │   ├── platform.rs
+    │   ├── suggest.rs
+    │   └── time.rs
+    ├── sys/
+    │   ├── fs.rs
+    │   ├── io.rs
+    │   ├── mod.rs
+    │   ├── net.rs
+    │   ├── process.rs
+    │   └── signal.rs
+    ├── transcript/
+    │   ├── claude.rs
+    │   ├── codex.rs
+    │   ├── copilot.rs
+    │   ├── cursor.rs
+    │   ├── detail_levels.rs
+    │   ├── gemini.rs
+    │   ├── grok.rs
+    │   ├── hermes.rs
+    │   ├── kimi.rs
+    │   ├── mod.rs
+    │   ├── opencode.rs
+    │   ├── pi.rs
+    │   └── shared.rs
+    ├── tui/
+    │   ├── inline/
+    │   │   ├── eject.rs
+    │   │   └── mod.rs
+    │   ├── input/
+    │   │   ├── compose.rs
+    │   │   └── mod.rs
+    │   ├── render/
+    │   │   ├── agents.rs
+    │   │   ├── launch.rs
+    │   │   ├── messages.rs
+    │   │   ├── mod.rs
+    │   │   └── text.rs
+    │   ├── rpc/
+    │   │   ├── client.rs
+    │   │   └── mod.rs
+    │   ├── actions.rs
+    │   ├── app.rs
+    │   ├── commands.rs
+    │   ├── data.rs
+    │   ├── db.rs
+    │   ├── mod.rs
+    │   ├── model.rs
+    │   ├── state.rs
+    │   ├── status.rs
+    │   ├── theme.rs
+    │   └── usage.rs
+    ├── workflows/
+    │   ├── bundled/
+    │   │   ├── confess.sh
+    │   │   ├── debate.sh
+    │   │   ├── fatcow.sh
+    │   │   └── onidle.sh
+    │   └── mod.rs
+    ├── README.md
+    ├── config.rs
+    ├── log.rs
+    ├── main.rs
+    └── paths.rs

@@ -1,0 +1,36 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: xschema delivery
+type: object
+required: [ schema, description, status, stages ]
+properties:
+  schema: { const: delivery }
+  stages:
+    type: object
+    minProperties: 1
+    propertyNames: { $ref: common.schema.yaml#/$defs/schemaId }
+    additionalProperties: { $ref: "#/$defs/stage" }
+  plan: false
+allOf:
+  - { $ref: common.schema.yaml#/$defs/base }
+additionalProperties: true
+$defs:
+  stage:
+    type: object
+    required: [ description ]
+    properties:
+      description: { $ref: common.schema.yaml#/$defs/text }
+      content: { $ref: common.schema.yaml#/$defs/text }
+      status: { $ref: common.schema.yaml#/$defs/text }
+      tasks: { $ref: common.schema.yaml#/$defs/paths }
+      depends_on:
+        type: array
+        items: { $ref: "#/$defs/stageDependency" }
+        uniqueItems: true
+    additionalProperties: true
+  stageDependency:
+    type: object
+    required: [ stage ]
+    properties:
+      stage: { $ref: common.schema.yaml#/$defs/schemaId }
+      condition: { $ref: common.schema.yaml#/$defs/text }
+    additionalProperties: true

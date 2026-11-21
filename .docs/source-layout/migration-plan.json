@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "scope": "All original src files and their direct build, test and documentation references",
+  "excluded": [
+    "plugin/",
+    "skills/",
+    "unrelated experiments and user changes"
+  ],
+  "execution": "Apply every relocation, rename and reference update before compilation or tests; repair failures directly against the complete result.",
+  "file_map": "file-map.json",
+  "readable_file_map": "file-map.tsv",
+  "target_tree": "target-tree.txt",
+  "responsibilities": "README.md",
+  "summary": {
+    "original_files": 196,
+    "relocated_or_renamed": 126,
+    "same_path": 69,
+    "removed_empty_module": 1
+  },
+  "new_source_files": [
+    "src/agents/mod.rs",
+    "src/cli/mod.rs",
+    "src/events/mod.rs",
+    "src/integrations/mod.rs",
+    "src/messaging/mod.rs",
+    "src/runtime/mod.rs",
+    "src/README.md"
+  ],
+  "preserve": [
+    "Program behavior and algorithms",
+    "CLI commands and option spellings",
+    "Configuration and storage formats",
+    "Runtime resource installation paths",
+    "Host-required plugin filenames and resource bytes",
+    "Existing user edits"
+  ],
+  "apply": [
+    {
+      "action": "Move and rename files",
+      "details": "Use final destinations in file-map.json directly; remove only the mapped empty src/core/mod.rs."
+    },
+    {
+      "action": "Wire Rust modules",
+      "details": "Create owner entries and update declarations, imports, re-exports, visibility, macro paths and Rustdoc references. Do not retain old-path forwarding modules."
+    },
+    {
+      "action": "Update non-Rust consumers",
+      "details": "Update include_str/include_bytes resource paths, test imports, TypeScript roots, Android typecheck staging and source navigation links."
+    }
+  ],
+  "verify_after_complete": [
+    "Check all mapped destinations, obsolete paths, destination uniqueness and SHA-256 preservation of non-Rust assets.",
+    "Run cargo check --all-targets --locked, just ci fmt clippy test, and just ci typecheck against the completed layout.",
+    "Run the relevant Rust integration suites separately if unit failures prevent Cargo from reaching them.",
+    "Use just package to build .bin/agentx and check its version.",
+    "Inspect the diff for unintended behavior changes and confirm root plugin/ and skills/ remain unchanged."
+  ],
+  "failure_handling": "Diagnose failures, directly fix migration-induced issues, then rerun only affected checks. When a failure also reproduces on the original baseline, record it without changing unrelated behavior.",
+  "evidence": "README.md#执行记录"
+}

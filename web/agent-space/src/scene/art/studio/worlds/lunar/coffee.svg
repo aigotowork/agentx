@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="54" height="62" viewBox="0 0 54 62">
+  <defs>
+    <linearGradient id="panel" x2=".5" y2="1">
+      <stop stop-color="#b6d1dd"/>
+      <stop offset=".45" stop-color="#7792af"/>
+      <stop offset="1" stop-color="#4f638b"/>
+    </linearGradient>
+  </defs>
+  <path fill="#101d37" opacity=".57" d="M7 48h35l10 8-6 5H7l-7-4z"/>
+  <g stroke="#111d38" stroke-width="1.25" stroke-linejoin="round">
+    <path fill="#2b3a5c" d="M9 9 16 3h26l9 7v41l-7 6H11L5 51V15z"/>
+    <path fill="url(#panel)" d="M10 9 16 3h22l8 7v38l-6 7H10l-5-5V15z"/>
+    <path fill="#cd7856" d="M11 10h25l5 5v9H9V14z"/>
+    <path fill="#2c3251" d="M12 12h24l3 4v5H11v-5z"/>
+    <path fill="#1b2948" d="M10 27h31v19l-4 4H12l-3-4z"/>
+    <path fill="#3a5776" d="M12 42h27v3l-3 3H13l-1-3z"/>
+    <path fill="#91adbf" d="M20 25h12v5l-3 2h-6l-3-2z"/>
+    <path fill="#f4dcaa" d="M21 35h10v7l-2 3h-6l-2-3z"/>
+    <path d="M30 36h5v3l-2 3h-3" fill="none" stroke="#edb678"/>
+    <path fill="#3c547e" d="M45 17h6v28h-6z"/>
+  </g>
+  <path stroke="#96efd8" stroke-width="1.2" fill="none" d="M14 17h2l2-3 2 5 2-2h6"/>
+  <path fill="#ffbc66" d="M33 16h3v2h-3zm12 5h5v3h-5zm-3 26h2v4h-2z"/>
+  <path d="M18 5h18M11 52h27m9-23v12" stroke="#e1edf1" stroke-opacity=".65" fill="none"/>
+</svg>

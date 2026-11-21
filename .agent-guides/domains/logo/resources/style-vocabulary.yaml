@@ -1,0 +1,169 @@
+# Curated vocabulary adapted from the xsaas Logo method. See ../research/sources.md.
+schema_version: 1
+purpose: Seed vocabulary for reference discovery and candidate description; not a populated image library or quality ranking.
+tag_policy:
+  identity: [facet_id, value_id]
+  multivalue: true
+  coverage: Open and extensible; tag presence does not establish creative or task completeness.
+  distinction: Facets answer different questions; values within or across facets can overlap without becoming synonyms.
+  scope: Subject details such as species and specific cultural periods can use attributed local extensions.
+  subjectivity: Detail density and intended expression are contextual judgments, not measured quality scores.
+  unknown: Omit unsupported tags; retain proposed tags with attribution and confidence in the reference record.
+  extension: Add a scoped project tag before promoting it to the shared vocabulary.
+  compatibility: Preserve IDs; use aliases or an explicit migration for renames.
+facets:
+  identity_form:
+    meaning: What kind of identifying carrier is this, rather than what it depicts or how it is rendered.
+    label: {en: Identity form, zh: 标识形式}
+    values:
+      - {id: symbol, en: Symbol, zh: 图形标, meaning: A standalone abstract or representational identifier}
+      - {id: wordmark, en: Wordmark, zh: 字标, meaning: The brand name designed as an identifier}
+      - {id: monogram, en: Monogram, zh: 字母组合, meaning: Selected letters combined into an identifier}
+      - {id: emblem, en: Emblem, zh: 徽章, meaning: An integrated framed arrangement of symbol and other identifying elements}
+      - {id: mascot, en: Mascot, zh: 吉祥物, meaning: A character acting as an identifying presence}
+      - {id: combination, en: Combination mark, zh: 图文组合, meaning: A symbol and name arranged as a related identifier}
+      - {id: variable-family, en: Variable family, zh: 可变标识家族, meaning: Related identifiers produced through shared invariants and controlled change}
+  subject:
+    meaning: What is depicted or written; the subject alone does not identify style or intended association.
+    label: {en: Subject, zh: 题材}
+    values:
+      - {id: abstract, en: Abstract form, zh: 抽象形态}
+      - {id: letters, en: Letters, zh: 字母文字}
+      - {id: animal, en: Animal, zh: 动物}
+      - {id: invented-creature, en: Invented creature, zh: 虚构生物}
+      - {id: human-gesture, en: Human or gesture, zh: 人物与动作}
+      - {id: botanical, en: Botanical, zh: 植物}
+      - {id: landscape, en: Landscape, zh: 地景}
+      - {id: celestial, en: Celestial, zh: 天体}
+      - {id: architecture, en: Architecture, zh: 建筑空间}
+      - {id: mechanism, en: Mechanism, zh: 机械结构}
+      - {id: tool, en: Tool, zh: 工具}
+      - {id: everyday-object, en: Everyday object, zh: 日常物件}
+      - {id: cultural-motif, en: Cultural motif, zh: 文化母题}
+  semantic_relation:
+    meaning: The organizing metaphor or relationship proposed by the direction; not the literal object or a proven audience interpretation.
+    label: {en: Organizing relationship, zh: 概念组织关系}
+    values:
+      - {id: joining, en: Joining, zh: 连接}
+      - {id: growing, en: Growing, zh: 生长}
+      - {id: revealing, en: Revealing, zh: 显露}
+      - {id: navigating, en: Navigating, zh: 导航}
+      - {id: guarding, en: Guarding, zh: 保护}
+      - {id: transforming, en: Transforming, zh: 转化}
+      - {id: orbiting, en: Orbiting, zh: 运行环绕}
+      - {id: unfolding, en: Unfolding, zh: 展开}
+      - {id: weaving, en: Weaving, zh: 编织协同}
+      - {id: signing, en: Signing, zh: 署名}
+  visual_language:
+    meaning: The visible grammar of contours, strokes, detail and lettering; not the software operation used to create them.
+    label: {en: Visual language, zh: 视觉语言}
+    values:
+      - {id: geometric, en: Geometric, zh: 几何构成}
+      - {id: rounded-geometric, en: Rounded geometric, zh: 圆润几何}
+      - {id: organic, en: Organic, zh: 有机曲线}
+      - {id: sculptural, en: Sculptural, zh: 雕塑感}
+      - {id: gestural, en: Gestural, zh: 手势笔触}
+      - {id: naive, en: Naive drawing, zh: 稚拙手绘}
+      - {id: engraved, en: Engraved drawing, zh: 雕版线描, aliases: [etched-linework]}
+      - {id: woodcut, en: Woodcut, zh: 木刻版画}
+      - {id: calligraphic, en: Calligraphic, zh: 书法笔意}
+      - {id: editorial-type, en: Editorial lettering, zh: 编辑字体}
+      - {id: modular-type, en: Modular lettering, zh: 模块字形}
+      - {id: blackletter, en: Blackletter, zh: 哥特字形}
+      - {id: heritage-print, en: Heritage print, zh: 复古印刷}
+      - {id: heraldic, en: Heraldic, zh: 纹章}
+      - {id: folk, en: Folk or vernacular, zh: 民艺与地方图形}
+      - {id: nouveau, en: Art Nouveau, zh: 新艺术}
+      - {id: deco, en: Art Deco, zh: 装饰艺术}
+      - {id: character-cartoon, en: Character cartoon, zh: 角色卡通}
+      - {id: narrative-illustration, en: Narrative illustration, zh: 叙事插画}
+      - {id: isometric, en: Isometric, zh: 等距空间}
+      - {id: pixel, en: Pixel, zh: 像素}
+      - {id: sports-racing, en: Sports or racing, zh: 运动竞速}
+      - {id: cybernetic, en: Cybernetic, zh: 赛博机械}
+      - {id: psychedelic, en: Psychedelic, zh: 迷幻酸性}
+      - {id: collage, en: Collage, zh: 拼贴}
+      - {id: woven, en: Woven, zh: 编织}
+  composition:
+    meaning: How parts, attention and surrounding space are organized in the actual design.
+    label: {en: Composition, zh: 构图}
+    values:
+      - {id: axial, en: Axial, zh: 轴线对称}
+      - {id: radial, en: Radial, zh: 放射}
+      - {id: asymmetric, en: Asymmetric, zh: 非对称}
+      - {id: interlocked, en: Interlocked, zh: 穿插咬合}
+      - {id: layered, en: Layered, zh: 叠层}
+      - {id: framed, en: Framed, zh: 边框包围}
+      - {id: scene, en: Scene, zh: 场景}
+      - {id: negative-space, en: Negative space, zh: 负空间双读}
+      - {id: continuous, en: Continuous, zh: 连续流动}
+  material:
+    meaning: The represented or intended surface and light behavior; this can differ from a physical production material.
+    label: {en: Material expression, zh: 材质表现}
+    values:
+      - {id: flat-ink, en: Flat ink, zh: 平面油墨}
+      - {id: engraved-metal, en: Engraved metal, zh: 金属刻字}
+      - {id: polished-metal, en: Polished metal, zh: 抛光金属}
+      - {id: brushed-metal, en: Brushed metal, zh: 拉丝金属}
+      - {id: cast-metal, en: Cast metal, zh: 铸造金属}
+      - {id: enamel, en: Enamel, zh: 珐琅}
+      - {id: emboss, en: Embossed, zh: 浮凸}
+      - {id: deboss, en: Debossed, zh: 压凹}
+      - {id: paper, en: Paper, zh: 纸张}
+      - {id: textile, en: Textile, zh: 织物}
+      - {id: glass, en: Glass, zh: 玻璃}
+      - {id: ceramic, en: Ceramic, zh: 陶瓷}
+      - {id: liquid, en: Liquid, zh: 液态}
+      - {id: inflatable, en: Inflatable, zh: 充气}
+      - {id: iridescent, en: Iridescent, zh: 虹彩}
+      - {id: luminous, en: Luminous, zh: 发光}
+  construction:
+    meaning: The actual or proposed making operation; distinguish it from a similar-looking surface effect.
+    label: {en: Construction technique, zh: 构形技法}
+    values:
+      - {id: boolean-shapes, en: Boolean shapes, zh: 图元布尔运算}
+      - {id: arc-system, en: Arc system, zh: 圆弧系统}
+      - {id: bezier, en: Bezier curves, zh: 贝塞尔曲线}
+      - {id: modular-grid, en: Modular grid, zh: 模块网格}
+      - {id: custom-lettering, en: Custom lettering, zh: 定制字形}
+      - {id: hand-drawing, en: Hand drawing, zh: 手绘}
+      - {id: hatching, en: Hatching, zh: 排线}
+      - {id: cut-and-layer, en: Cut and layer, zh: 裁切叠层}
+      - {id: volume-modeling, en: Volume modeling, zh: 体积建模}
+      - {id: material-rendering, en: Material rendering, zh: 材质渲染}
+      - {id: rule-based, en: Rule-based generation, zh: 规则生成}
+  detail_density:
+    meaning: Relative interior/detail complexity at a declared viewing scale; not a universal quality preference.
+    label: {en: Detail density, zh: 细节密度}
+    values:
+      - {id: sparse, en: Sparse, zh: 疏简}
+      - {id: moderate, en: Moderate, zh: 适中}
+      - {id: intricate, en: Intricate, zh: 精密繁复}
+  expression:
+    meaning: An attributed intended or perceived association; do not infer audience agreement from an author tag.
+    label: {en: Intended expression, zh: 预期气质}
+    annotation: These are interpretations or intentions; tag provenance must distinguish author intent from audience observation.
+    values:
+      - {id: precise, en: Precise, zh: 精密}
+      - {id: calm, en: Calm, zh: 平和}
+      - {id: inventive, en: Inventive, zh: 富有创造力}
+      - {id: exuberant, en: Exuberant, zh: 热烈}
+      - {id: resilient, en: Resilient, zh: 坚韧}
+      - {id: artisanal, en: Artisanal, zh: 手作感}
+      - {id: mysterious, en: Mysterious, zh: 神秘}
+      - {id: playful, en: Playful, zh: 玩心}
+      - {id: ceremonial, en: Ceremonial, zh: 仪式感}
+      - {id: warm, en: Warm, zh: 温暖}
+  color_organization:
+    meaning: An observed palette relationship, separate from named colors and sampled color values stored with the source.
+    label: {en: Color organization, zh: 色彩组织}
+    values:
+      - {id: monochrome, en: Monochrome, zh: 单色关系}
+      - {id: duotone, en: Duotone, zh: 双色关系}
+      - {id: limited-palette, en: Limited palette, zh: 限色}
+      - {id: multicolor, en: Multicolor, zh: 多色}
+      - {id: gradient, en: Gradient, zh: 渐变关系}
+      - {id: high-chroma, en: High chroma, zh: 高彩度}
+      - {id: muted, en: Muted palette, zh: 低彩度}
+      - {id: warm-dominant, en: Warm dominant, zh: 暖色主导}
+      - {id: cool-dominant, en: Cool dominant, zh: 冷色主导}

@@ -1,0 +1,10 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: xschema scenario
+type: object
+required: [ schema, tags ]
+properties:
+  schema: { const: scenario }
+  tags: { minItems: 1 }
+allOf:
+  - { $ref: common.schema.yaml#/$defs/base }
+additionalProperties: true

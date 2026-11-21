@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "system": "space",
+  "id": "space/command-surface",
+  "kind": "component",
+  "title": "操作确认框",
+  "summary": "真实 Space 原生对话框组件与本地确认演示",
+  "maturity": "experimental",
+  "source": ["./components/CommandSurface.tsx", "./components/SurfaceHeader.tsx"],
+  "design": "./command.design.md",
+  "useWhen": ["预览操作确认、取消与焦点恢复"],
+  "avoidWhen": ["不能把本地确认视为原生操作"],
+  "dependencies": ["space/controls"],
+  "events": [],
+  "states": [{"id":"folio","title":"工坊信笺","description":"暖纸操作框","scene":"folio"},{"id":"signal","title":"夜班联络台","description":"深色操作框","scene":"signal"}],
+  "interactions": [],
+  "scenes": [{"id":"folio","title":"工坊信笺","description":"确认与返回","kind":"interaction"},{"id":"signal","title":"夜班联络台","description":"确认与返回","kind":"interaction"}],
+  "usage": {"entry":"./space.web.ts","symbols":["CommandSurface"]}
+}

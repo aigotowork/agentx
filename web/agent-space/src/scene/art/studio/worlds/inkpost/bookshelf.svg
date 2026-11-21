@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="56" height="64" viewBox="0 0 56 64">
+<title>Black oak pigeonholes with tied route books</title>
+<defs>
+<linearGradient id="wood" x2="31%" y2="100%"><stop offset="0.000" stop-color="#ab784f"/><stop offset="0.500" stop-color="#714838"/><stop offset="1.000" stop-color="#453039"/></linearGradient><linearGradient id="edge" x2="31%" y2="100%"><stop offset="0.000" stop-color="#ce9d62"/><stop offset="0.500" stop-color="#885a42"/><stop offset="1.000" stop-color="#634035"/></linearGradient><linearGradient id="dark" x2="31%" y2="100%"><stop offset="0.000" stop-color="#644338"/><stop offset="0.500" stop-color="#392935"/><stop offset="1.000" stop-color="#2a222c"/></linearGradient><pattern id="etch" width="4" height="4" patternUnits="userSpaceOnUse"><path d="M-1 1l2-2m-1 4l4-4m-1 5l2-2" stroke="#201923" stroke-width=".6" opacity=".38"/></pattern>
+</defs>
+<g stroke-linecap="round" stroke-linejoin="round" color="#19151e">
+<ellipse cx="28" cy="61" rx="25" ry="2.7" fill="#130f19" opacity=".42"/><ellipse cx="25" cy="61.2" rx="17.2" ry="1.6" fill="#160e14" opacity=".55"/>
+
+<g stroke="currentColor" stroke-width="1.2">
+<path d="m5 5 6-2 33 .4L50 7l1 47-4 7-5 1-1-5-27 1-2 4-6-1Z" fill="url(#wood)"/>
+<path d="m10 10 34-.8 2 45-35 .5Z" fill="url(#dark)"/>
+<path d="m44 8 6-.7 1 48-6 2Z" fill="#523639" stroke-width=".8"/>
+<path d="m5 5 5-3 35.5.1 6 4-2 4-40 1-5-2z" fill="url(#edge)"/>
+</g>
+<path d="m12 16 4-.5 1 12-5 1Z" fill="#91624b"/><path d="m17 14 5-1 .5 15-5 .2Z" fill="#7e4946"/><path d="m23 17 6-.6-.2 12-5.3-.6Z" fill="#8d8a73"/>
+<path d="m31 15 3-1.4 6 13-5 1.7Z" fill="#a67951"/><path d="m35 14 4-1.6 4 13-3 1.1z" fill="#747471"/>
+<path d="m12 28 33-.6.5 4.5-34 .1Zm0 16 33-.6.1 4-33 .3Zm0 9.6 35-.7-.3 4-35 1Z" fill="url(#edge)" stroke="#2b202b" stroke-width=".77"/>
+<path d="m14 35 9-1 3 3-1 5-12 .3Z" fill="#bc976a" stroke="#35262b" stroke-width=".8"/>
+<path d="m13 39 12-.4m-6-5v8m-4-5 5-.4" fill="none" stroke="#755645" stroke-width=".65"/>
+<path d="m28 34 4 .1.1 8-5 .4Zm5-1 5 .4-.1 9-5 .5Z" fill="#6d7e72"/>
+<path d="m39 34 3-.5.8 9-4 .3Z" fill="#a66d54"/>
+<path d="m14 48 9 .1 3 1.8-3 3-10-.1Z" fill="#ad7b5b"/><path d="m29 50 12-.5.8 2.9-13 .6Z" fill="#ceb388"/>
+<path d="m8 10 .5 46m-2-48 38-1m-31 23 29-.6m-26 16 26-.5m-24 10 24-.4" stroke="#d49c69" opacity=".62" stroke-width=".72" fill="none"/>
+<path d="m47 13 3-.3.6 40-3 .4Z" fill="url(#etch)"/>
+</g>
+</svg>

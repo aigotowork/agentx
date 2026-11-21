@@ -1,0 +1,49 @@
+---
+schema: task
+status: completed
+description: Enable actual unrestricted-origin browser HTTP access.
+agents: [{"scope":"/home/long/works/longwork/agentx/.agentx","generation":"a6195a5b-1dd4-4a6d-87d4-1f18f1b664fb","participant":{"canonical_name":"volube","incarnation_bits":4745315203239501497}}]
+---
+
+# Enable actual unrestricted-origin browser HTTP access
+
+Read feature AGENTS.md, Delivery and controller.task.md in this directory, root AGENTS, your role and relevant module guidance. Sole Controller movi receives/integrates your contribution. Lezi does not co-dispatch. User authorizes complete source implementation and isolated acceptance, never installed/live transition. Preserve existing services including :38023, unrelated dirty work, native identity/authority/recovery, app behavior and scene/chat. No origin/allowlist/auth/handshake/proxy gates. Use English records. Assess inherited assumptions professionally before implementation; own design, skeleton, implementation, consumer integration, ordinary repairs and current module documentation as one sustained batch. Maintain current understanding/progress/decisions/issues/evidence here. No delegation. Notify movi of actionable dependencies/blockers/completion, not routine progress. Model must be gpt-6.1-sol with explicit final native max override; verify actual ancestor argv. Shared source is current repository; one execution workspace /tmp/agentx-web-sdk-movi. Integration owner executes Cargo/build/package/browser checks in that workspace after cohesive source handoff; do not run competing installs/builds. Author meaningful cases as needed. No fine-grained dispatch or approval loops.
+
+## Whole contribution
+
+Own shared Rust browser admission/CORS and all three HTTP listener integration, related native cases and current native/API usage documentation. Inspect src/browser, src/management/web.rs, src/collaboration/web, src/observability/web and canonical openapi contracts. User rejects origin control: remove Origin/Sec-Fetch/Host restrictions where they function as browser origin gates; ensure preflight, actual successes/errors, binary uploads/downloads and frame documents work together. Derive proportionate shared policy from actual source; do not weaken exact scope/generation/actor/operator separation, revisions, validation, body limits, retained original intent or passive Observation. Do not introduce replacement auth/allowlist/proxy requirements. Preserve unrelated listener/routing invariants if compatible with open-origin clients. Explicitly assess Host behavior and browser mixed-content/PNA/platform constraints. Own all necessary native changes plus meaningful native regression cases; no SDK/Web production edits. Author checks but hand execution to integration owner to avoid competing Cargo/build lanes. Coordinate contracts directly with Web owner. Maintain model/docs and complete ordinary repairs through acceptance.
+
+## Current state
+
+Owner volube has accepted the complete native contribution. Native identity: generation and exact incarnation in front matter; adopted coder role, profile `codex-gpt-6-1-sol-high`, actual PID 3001014 argv `-m gpt-6.1-sol -c model_reasoning_effort="high" -c model_reasoning_effort="max"` (final override is effective max). No delegation, build, package, installed or live actions.
+
+## Selected model and case design
+
+The three fixed-scope listeners do not use Host or Origin to select native scope/actor. Numeric Host equality therefore acts as an origin/alias gate rather than a native authority invariant. Keep one syntactically valid Host, established local connection metadata, origin-form request targets, closed routes and listener-specific query rules; accept DNS aliases/IPv4/IPv6 regardless of Origin (including absent/null/extension) and Sec-Fetch-Site. Preserve every existing service call, identity, codec, revision, worker/connection/body/time limit and readonly guard.
+
+Shared `browser/admission.rs` owns target/Host syntax and credential-free CORS response decoration plus side-effect-free OPTIONS response. All three listeners consume it, including errors, raw attachments and static documents. Use wildcard origin/headers, GET/POST/OPTIONS, exposed Content-Disposition, and legacy private-network preflight response. No credentials or origin reflection/allowlist. Remove frame denial across the three served UIs; retain each document's existing self-contained CSP for scripts/connect/assets. API clients hosted elsewhere use their own CSP.
+
+Regression scenarios: cross-origin/null/absent Origin + cross-site metadata reaches finite parsing; DNS alias and alternate numeric Host do not redirect scope; malformed/missing/duplicate Host and absolute target remain rejected; preflight returns 204 without native access even in readonly mode; success/errors keep CORS; static pages remain manifest-only and embeddable. Existing cases retain content type/body/query/native-authority/codec coverage. Author cases in native modules, execute only through vuhila's sole lane.
+
+Browser constraints are separate: mixed-content rules, browser Local Network Access permission/legacy PNA checks, extension host_permissions and host-page frame-src/sandbox can still block a request before it reaches HTTP. Server headers cannot grant those platform capabilities. Source/native evidence and final browser integration are linked below.
+
+## Usable native source handoff
+
+The complete native batch is authored in the shared checkout: `src/browser/{admission.rs,mod.rs,AGENTS.md}`, `src/management/{web.rs,AGENTS.md}`, `src/collaboration/{AGENTS.md,web/mod.rs,web/tests.rs}`, `src/observability/web/{AGENTS.md,mod.rs,tests.rs}`. Current policy and platform constraints are canonical in [HTTP projection usage](../../.docs/api-panorama/openapi/README.md#browser-access-policy); Management design, Workbench native usage and Observation browser contract now link it. Preexisting edits to those files remain preserved.
+
+Execution receiver is vuhila in `/tmp/agentx-web-sdk-movi`. Copy these current shared-checkout files over that lane's retained accepted baseline rather than git HEAD (the dirty baseline contains accepted Service/OpenAPI work). Native launch/config/cleanup contracts are unchanged: reuse existing fixture scope/daemon lifecycle; Observation `observe-web --scope PATH --host 127.0.0.1 --port 0`, Workbench normal selected project/scope with optional `--collaboration`, Management fixture `[management]` configuration/descriptor. No new environment variables, dependencies, schemas, generation, assets or migration needed by this native change. This implementer has created no runtime resources.
+
+Authored filters for concentrated execution: `cargo test observability::web::tests`, `cargo test collaboration::web::tests`, `cargo test management::web::label_query_tests`. New/updated cases explicitly replace earlier origin denial expectations while retaining body/media/query/codec/readonly restrictions. Real browser cross-origin/preflight/read/write/binary/errors, iframe and extension checks belong to the integration Task. No Cargo/compiler/test/build execution was performed here; source inspection is not browser acceptance. Continue ordinary native repair here if integration reports a material defect.
+
+Final source inspection also updated native case inventories `src/observability/web/cases.md`, `src/collaboration/cases.md` and the existing `tests/agent_management/acceptance.py` M07 probe: former cross-origin/alias mutation denials now use read-only descriptor checks preserving generation, plus malformed Host rejection. This keeps the maintained runner consistent without triggering a Provider launch to test admission. Include these files in the same batch. `git diff --check` passed for the owned source/docs before these final case-inventory edits; no runtime/compiler execution occurred.
+
+
+## Concentrated native verification
+
+The independent integration owner executed the three assigned filters in `/tmp/agentx-web-sdk-movi/source` with `CARGO_TARGET_DIR=/tmp/agentx-web-sdk-movi/target`: `observability::web::tests` 12/12 passed, `collaboration::web::tests` 5/5 passed and `management::web::label_query_tests` 2/2 passed. These checks cover the shared open-origin admission/CORS/preflight cases plus retained native codec, bounds, readonly and authority cases. No native HTTP defect remains from the assigned filters. The earlier aggregate reset/connection-abort observation has no retained exact test/log and remains unclassified; it is outside the passing filter evidence and does not justify a source repair without a reproducible case. Full-suite unrelated path-classification, migration-count, kill-target and inbox-count failures remain integration-lane limits.
+
+Controller movi accepted the native source, 19 assigned native cases and current documentation boundary in message #50806. Independent integration subsequently completed in message #51596 with no substantive selected-path defect open. See [integration final evidence map and cleanup](integration.task.md#final-disposition-and-cleanup) for actual browser/SDK/CORS, iframe and extension scope, artifact identities and retained limits. This native Task is complete; final Delivery disposition belongs to movi. No owned runtime resources or pending native repairs remain, and no installed/live transition occurred.
+
+## Controller acceptance and binding closure
+
+Controller movi accepts this complete contribution on2026-11-18 following independent final handoff #51592 and the [accepted Delivery](delivery.delivery.md#accepted-local-outcome). No selected defect remains open; owned source/docs and resources are reconciled, assignment is closed. Detailed evidence and platform/source limits stay at [independent acceptance](integration.task.md#final-independent-acceptance-handoff). No further checks, deployment or live transition are requested.

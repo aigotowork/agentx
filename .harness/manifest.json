@@ -1,0 +1,4083 @@
+{
+  "format": 1,
+  "release": {
+    "version": "0.4.3",
+    "sha256": "4ef9277f99a1f4facf59793aa7f6714e90434acc8fc0b44965aaa09da3a9a1f9"
+  },
+  "files": [
+    {
+      "path": ".agent-guides/AGENTS.md",
+      "sha256": "e30aa6f5bbb7807cb6560a1ab522c6bc3f91525f6d59e8b85bbe64ca2e8593bf",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/code-structure.md",
+      "sha256": "eefc2a4e1ecd45a30c4052fed29d49880db2471708309a8053363b7de719760c",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/documentation.md",
+      "sha256": "f24891b60d6db6fb9fcd9ecc431d22edffe4c92fcd3d8c5abf9ae121bd710f9f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/agent-facing-systems/.sketches/design.md",
+      "sha256": "be21526d34f22f136c5f72e10993d16863a36f62cc62aad0610b518bca3f1880",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/agent-facing-systems/AGENTS.md",
+      "sha256": "0afdcc252a1bd6c242ad2be92b18fafed8a9478ddff19da5462c5908b00bf042",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/agent-facing-systems/browser-environments.md",
+      "sha256": "37d79416179b53c5c8e09b4d45cee1cedbe2dd54e3ce0e7c5ea310690070e215",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/agent-facing-systems/contracts.md",
+      "sha256": "540bde846ef7a8942ebd897413823c8bb718b8283d3992411c0287c34d404241",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/agent-facing-systems/discovery.md",
+      "sha256": "8ee21002db8de4eed17c04d016034af3ef7a8bd144840ce92343d7fd4338e1dc",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/agent-facing-systems/maintenance.md",
+      "sha256": "232fe5fc58d35478f02b33565225a31f320dce7ac144489e138621283593edd8",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/agent-facing-systems/model.md",
+      "sha256": "3b08346d607f4b984c71888f27282b8a93abdf0e844f20ae42f940f1d835a3bd",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/agent-facing-systems/templates.md",
+      "sha256": "f01ec86d95834deb6b651c10e42da14c885dfbc041493a6853f188863646dc18",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/agent-facing-systems/workflow.md",
+      "sha256": "496bdda1e7b5cdf2f9eb375540fa9a658f4d869ef870442ef9fb9bd015d3b554",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/.xmeta.yaml",
+      "sha256": "9d34b0210edfd57e7682c043bd4420fcdf2d7e746cd1ff86088d9df67904584f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/AGENTS.md",
+      "sha256": "46debf77402a03090dc8b4d6b4ed8762bcb20e07a1b10c1ffa7cb67d954ead17",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/operations.md",
+      "sha256": "666b4d79f78001abe7b53d35b6b40973bfacefb98e4a244b5328b1d4a34cc357",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/README.md",
+      "sha256": "149385c45fd3132aa19103b35e6d8b957db96f63b65cf2fbd432dcd40bcfea39",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/refs/agent-integrations.md",
+      "sha256": "4bd2d876316b5530c6c870be36f53664ed9c79b830c531c9dae060adfb4a52f8",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/agents-sdk/references/browse-the-web.md",
+      "sha256": "e35b6627eee0bcd0f86e264ad0973aa5c364a5bd3ec14838ad36217faf47c841",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/agents-sdk/references/callable.md",
+      "sha256": "4c116204cd68ff53908c49100a110d5fb773f9a3bc486a2be57afb09a4ead248",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/agents-sdk/references/client-sdk.md",
+      "sha256": "83afccf162137ee06bf84d108962ba840cdb29fc9d483cb6fca928c2b2852eb4",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/agents-sdk/references/codemode.md",
+      "sha256": "35d9639fe1db69400479c34670a71090031608276ebf9bc1c5e7fa32f77d487b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/agents-sdk/references/configuration.md",
+      "sha256": "91842e59fb17eff0d40df1cf16905aca8abd3ad9a939f8d15bfd6c5b84175354",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/agents-sdk/references/durable-execution.md",
+      "sha256": "7cea752aa3423745be812cc97df38b6beeea97900b97b21f171fc3ad1a5e281b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/agents-sdk/references/email.md",
+      "sha256": "0a156971806f83f2f93450d731a57d6cb315cab387e3adeb33ad6ff50fe49ecc",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/agents-sdk/references/human-in-the-loop.md",
+      "sha256": "b132c228b4bc5d4a3c9ca03d1ca6661ddfb6dc4dd93cd96a237b11b60e3d342b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/agents-sdk/references/mcp.md",
+      "sha256": "dae15220a63900bf6f32ed45d115c4f9459bb19ee38513759a9d12968c6ba021",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/agents-sdk/references/observability.md",
+      "sha256": "4563c0b9856b0f2ce9728470473caab565442cb2eb40044434d771805b9aa7f1",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/agents-sdk/references/queue-retries.md",
+      "sha256": "6ad2ae61c9a9c64f8632096f7db7ec01b77fec2b5474fa80a96a5626e01dcd3d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/agents-sdk/references/routing.md",
+      "sha256": "55c9c94b02f827cbd90bc00ca798197b4cdee0e87e0b2fe15b8f77d7725d66a6",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/agents-sdk/references/server-driven-messages.md",
+      "sha256": "32309668c47605813c3f22ae992b267850a95dd3b4ead4a1657ebf1803c2333b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/agents-sdk/references/state-scheduling.md",
+      "sha256": "ab4983e123a4a2e1a2569143dbadb58178ae68c21f04be932148407151b05fad",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/agents-sdk/references/streaming-chat.md",
+      "sha256": "cdd9ac6d8b5233a455d92756be83b369b379cbe395691d75dc60138b22417fda",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/agents-sdk/references/think.md",
+      "sha256": "1c507f9a22414290cf1c45821deb1d83ae3b008098ead751af380559789547e5",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/agents-sdk/references/voice.md",
+      "sha256": "b6254f2afa76a9530c43741bc9ea4dfcc9bcef2c7819dfba026825811943b06a",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/agents-sdk/references/webhooks-push.md",
+      "sha256": "c92e9f4566a71271eb4ffdcc219ed89fefc5294ecda47b43fc8863fb2b3e03f4",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/agents-sdk/references/workflows.md",
+      "sha256": "da59e9c265f91cca1011cbb9d9956f52371ec9a60be7f6201dbac7fb84879b8e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/agents-sdk/SKILL.md",
+      "sha256": "59332861a1dabef069b0cb9a0fb1e34505501f43bec3bd0247a4914b577a0680",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare-email-service/references/cli-and-mcp.md",
+      "sha256": "906aa333331e080a275a4ba3d4c342281b655afcef25a2081d197a396a3da913",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare-email-service/references/deliverability.md",
+      "sha256": "174ff9cafe8e87c98faf2e25b30acb8889cd108caabe55b71c0db2bcb23077a7",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare-email-service/references/rest-api.md",
+      "sha256": "5c1be3bef5e781e83c7beafb982284d68ac2f212e1e5dd241c291ad0c5956fa8",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare-email-service/references/routing.md",
+      "sha256": "db54ef436d72bfa1454a6da95be6a33b29b94266a1e8d1bffe86ffe0e007565c",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare-email-service/references/sending.md",
+      "sha256": "997a657ec72a1033a10eb9aabdfc5344569f6aec5668644fc2a20fc852559a77",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare-email-service/SKILL.md",
+      "sha256": "5b4c4317a51dbb65afb4bd599d73ffe542d471ed9dc09c61d033f3a5a689ef40",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare-one-migrations/SKILL.md",
+      "sha256": "be0c7d370c4061f3a8e51a812c4570fb181880eab87f15a96cd369fe657450b8",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare-one/SKILL.md",
+      "sha256": "86e48146f0984904051742cd524ea687e07ac87bf3c3a4a399e254bd2985bf0c",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/ai-gateway/configuration.md",
+      "sha256": "536a476cdbe25de19b3608b315833a63cabd6002171a2c8e22f9bfe71435ad19",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/ai-gateway/dynamic-routing.md",
+      "sha256": "fc20a95d4a88a4211c6d5d0daa59e4ad52eee14d27038e3b78f7e28f4a348285",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/ai-gateway/features.md",
+      "sha256": "0ed86a0d73761425b6191896ff92b5f698d1be147e1651e08d2e3a09ed8f199f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/ai-gateway/README.md",
+      "sha256": "cb3fea6f3f595bce283e0501276777e0fb0744569cf8503da7d5138b1a3bd679",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/ai-gateway/sdk-integration.md",
+      "sha256": "abff86d63fdd50a26f8bf702db9533fcbc11500d10fe8261f2661fd6a780fd93",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/ai-gateway/troubleshooting.md",
+      "sha256": "67494a2dcd806e65da1486807e0339e7e691dfa5bb6f6dc2f0a35d9cdeacc36f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/ai-search/api.md",
+      "sha256": "6e854266f653273c92ed15b2d35ab87eba48694938e0bfb11ddca995836bf28a",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/ai-search/configuration.md",
+      "sha256": "7c12497a72dac9cc6cd01066fcfd46424882d9cc52d499e067a8d019a273efac",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/ai-search/gotchas.md",
+      "sha256": "4072fd2eeca3dcd346d29e0c8d911e0f5a91081c5acb3c69219a941e7ba1c306",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/ai-search/patterns.md",
+      "sha256": "588ca72415984e430b8cce3360dd6232b8827861c15338d455bfecc074158102",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/ai-search/README.md",
+      "sha256": "364c0e15ae3f13065f2bf65c3d653ae68f7e5be973583434a4eca10d171c3966",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/analytics-engine/api.md",
+      "sha256": "647f4d5a50690af27e6ea5117623795fb9c4e1c348c39c07ce7f73ac9b7c222e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/analytics-engine/configuration.md",
+      "sha256": "86112c2385fe4e44b4825f9962cfe3429e6681de9f051a50a1c70514f1b85131",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/analytics-engine/gotchas.md",
+      "sha256": "08d11a06bc1cc955bdf4ade8d1a523b0e78157434d559169c4bc2d36f886667b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/analytics-engine/patterns.md",
+      "sha256": "d294a7ee3ce2d58fbb8413eb6e58faf7af8f699cecc7480b955ceb31e87204b2",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/analytics-engine/README.md",
+      "sha256": "d60bb6b6bb29c836886637ee584485ba9145ca1b326ee8ea55d86a4f62bb2c6f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/api-shield/api.md",
+      "sha256": "2ac3f5be499c1047575dddae5fe10fd9ab93e153eec3bd3fae3e2add82275aaa",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/api-shield/configuration.md",
+      "sha256": "79acd0a84bdeca4f45ef92d3772e9f403d15266210205700a7fccc313a084418",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/api-shield/gotchas.md",
+      "sha256": "6941ecb164f0cd23432029e319cdfd7c999365eca6aa1a1df76b52bb59d565dd",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/api-shield/patterns.md",
+      "sha256": "66f0e9bc0d7440d76368f3863b8009cfe80de3a61e91c76727a249e2eb192574",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/api-shield/README.md",
+      "sha256": "a032c7160b70c9a200e982bc457acd746760c2960e25b7554dfb315da98f71dc",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/api/api.md",
+      "sha256": "847c33ce18c1a4ff210ce5db75db0694113fe5367bdba983b0e6f0d7dd2742b1",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/api/configuration.md",
+      "sha256": "aeb5b23e32ef6408b4abbb263ed1837fc6d07e17b7f480856f8ca4083844c8c7",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/api/gotchas.md",
+      "sha256": "b721d8e28866f376ca8ac91d8f7f9fa35726f6378f83796baed13687f6eca6e2",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/api/patterns.md",
+      "sha256": "7ea6b294371bc04ffbf0a1fdc71a2e138f3303bfcdd85b91b1e29d0d53f80bc2",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/api/README.md",
+      "sha256": "749188cb7756cda8025be2cebbcdfef015142313ffacae721196f9ecb9a16396",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/argo-smart-routing/api.md",
+      "sha256": "8c3266518ed0f9f98aefd6702eaf7400c40b0de0f49cc4daa7ff6f763f7e7ede",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/argo-smart-routing/configuration.md",
+      "sha256": "9cc0c9f4ce01828e0153baded0393f0569e9aceff2601c16aad71e12e2fa8a39",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/argo-smart-routing/gotchas.md",
+      "sha256": "fc890c1e98c117ac8b6eb5ef39a62059732d9df2642700a8ad9fd2c877107fc7",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/argo-smart-routing/patterns.md",
+      "sha256": "8f0e0d9abdc17971afc802c23a04bf8780365031e5c4241cf084b0ad97c3707e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/argo-smart-routing/README.md",
+      "sha256": "405ab3a8878c32c95e12fb1c769f6cf79a597def8898b5e291d347a04c3e9052",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/artifacts/api.md",
+      "sha256": "5a6fd7bcacbbaf2c2ea83a5a899480a667f504a15cb973256260d1b476bef3e9",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/artifacts/configuration.md",
+      "sha256": "04648f76ad4d32a2265bbc6696c37229db2f67ed1ced99be6783ee61000c2d14",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/artifacts/README.md",
+      "sha256": "af5823411495c376f8626a4979b15b213aadb40ec014dd35bdf9638e0a928b4e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/bindings/api.md",
+      "sha256": "b21906b1d7552be7676166a173eb5f1d9ea3b8bd8815ccd84aee482b722b5bbb",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/bindings/configuration.md",
+      "sha256": "1db3a8a1d71dd6dedad497fb7d1f97cced0615f1d1d7de22dec13597b797a4b6",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/bindings/gotchas.md",
+      "sha256": "f38bcdbfc58d812c2580779c1bbca8c6d5f49fab96a1b6630772595e7097219d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/bindings/patterns.md",
+      "sha256": "df3e73101159471ba282b6c6dfe8f8d11b5d776e67e8af2610098f992def5ebb",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/bindings/README.md",
+      "sha256": "e8e5cf958c6b29eef73c54d58c7e21f4548147a372908d645b480473e5fa4393",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/bot-management/api.md",
+      "sha256": "a00ceaea1f51f7536829b2f93323d0df5c8f6b7742bfbcf9fcbd489eb910c4e9",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/bot-management/configuration.md",
+      "sha256": "361f709d6561c916b6082afa689ad3e69aa05f2cb4f9ed7bcbdfa62605b95c47",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/bot-management/gotchas.md",
+      "sha256": "d26a1b2dee0b92e6e2f4046067e0ba3f9e14f0b548b1d06537232d265e4cbb56",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/bot-management/patterns.md",
+      "sha256": "daeb6aa87d2c1fe00e7d3ba3ebcb5e782725a6a3e22edde56c03527d1eb1ba63",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/bot-management/README.md",
+      "sha256": "648b34470dfd132985d372f54c817683c4b3a078bd732d851ef9d950d9106036",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/browser-rendering/api.md",
+      "sha256": "a37dbb25695480792fb91abfe46648512f2635b6d0e74fd76478b66233db1a18",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/browser-rendering/configuration.md",
+      "sha256": "64d9afeb057f874c025faf7611e33617a7e08f9cf589780fd42751c7bebae6e7",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/browser-rendering/gotchas.md",
+      "sha256": "64a88e509478dc88fd27d87e64abd9f91f1bfb25fe142c3c51d9954f1a0c24cd",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/browser-rendering/patterns.md",
+      "sha256": "e76a43637737592479d9c3af75dabbc469f015c962cb4a8201258d2fe27ffffa",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/browser-rendering/README.md",
+      "sha256": "9f02f2fedbbda127bba359e43cd07cdc52583164ef813b2ea93a1d476acec09b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/c3/api.md",
+      "sha256": "cdcd1cc8c9d981f68871097806489f83fd2d4b5a72346057dd8e8dd336627fae",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/c3/configuration.md",
+      "sha256": "01e7f90dfbfce4d20a86a41b3ca882dab74d0b540ea07952da2f4ff1c6b6626c",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/c3/gotchas.md",
+      "sha256": "4acfbc2572326cd0be2bdd76bc7c7fb629a68dabb7c98b3fc6bed234d13e72b0",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/c3/patterns.md",
+      "sha256": "5a48a578008dfb60716d2ac417984ae91d9b81ab48aa331b53d33a800ea8c0c8",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/c3/README.md",
+      "sha256": "75075930de3e0e9b07d7f1bb2b75b1ded57654fafdc0cd7756ed451f9c1b4c5d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/cache-reserve/api.md",
+      "sha256": "21b1448498e35b32fea54786ffa8dec6fff4ff597a3acfa10904ff459082207f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/cache-reserve/configuration.md",
+      "sha256": "7a033bcbe69e1617d6df25d202c8ecf58fe40a1a06b91c7b71d9ac1964886869",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/cache-reserve/gotchas.md",
+      "sha256": "3642800cd57f39fa3841021057a0ab6fb8bbcd8270b45b4acf33d6f1345e0f92",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/cache-reserve/patterns.md",
+      "sha256": "94b4739cfaa9aa8d805b5d820c5cfe2259ee9a108a574bf5fff8837655647dcb",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/cache-reserve/README.md",
+      "sha256": "ddf6bde13d1479612dedd66b8ca551452d2007fa99e7bef1931a131ee56785f0",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/containers/api.md",
+      "sha256": "ba5f38ad83869f8d52ef6cab512c2f1c7a8c5fdda8751fe4795cec0f6a53b6b2",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/containers/configuration.md",
+      "sha256": "a8e0c8e8dcc34b337e2c1f9ac63df9a65f99f7ae38a6b403a5990b535f0122bc",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/containers/gotchas.md",
+      "sha256": "f8443ab7a09c347f266f3eba1863a28c639a78c3ec0ced48ea899d9bdbc1869d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/containers/patterns.md",
+      "sha256": "0304d545b988d9497ed525e4969da93cc5a1e56cd40c7f9a119d9a46fcc91b66",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/containers/README.md",
+      "sha256": "6ff33e2009901397704b0d1dab15da43004297a4674d4e5efaaa4f03fb0dc314",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/cron-triggers/api.md",
+      "sha256": "64f725e531d3faaf11629815e0b23c61b2565e02da10a641a7bc9af032ba36dc",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/cron-triggers/configuration.md",
+      "sha256": "9323cf720d03c096ff797f4b008a2dfaac23b1c6fb942a1d5f32b7b51a5d0a22",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/cron-triggers/gotchas.md",
+      "sha256": "f7a9beba9bd292d275e648b0fa0eaffe292ecd99819960abb2db0a865b2b7918",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/cron-triggers/patterns.md",
+      "sha256": "a611fa0a8dff1bb381d001a8999f0cc6b53626a699702be44139aa8ecdcb9ef6",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/cron-triggers/README.md",
+      "sha256": "7a1ef9f2f2312631427e997913eb00e8c0ee42c8d1fd1e8baf29c75e2841023f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/d1/api.md",
+      "sha256": "43c482967d4ee83b7491a15214a480e4714be86f5d299c1f1b861cae97044c47",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/d1/configuration.md",
+      "sha256": "cf9cdd7dbd6c84f693ef1c449135b461b98e0d5ae70f08e1e1750813b67afebe",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/d1/gotchas.md",
+      "sha256": "a74c5c114d23880102cdc40c49ef5ecb6fc4f4c72c3ccf455906d19fd1de462b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/d1/patterns.md",
+      "sha256": "5372d2108d96007ea94239ae6c5459941b427f9c634f5252e40a0dbb4b94513f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/d1/README.md",
+      "sha256": "99610db575425e06316f6a3f08c71d608338f2fe976ee9b08ae54e3cd60a2f7d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/ddos/api.md",
+      "sha256": "eba158f9cca3ce70a07e5050a5586e3c1acd60f69e22069d9d02c8c91ad60cf5",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/ddos/configuration.md",
+      "sha256": "0d0fae2b22edba2d40fddbbcec3f0c63651a25a0115e708edfc8b4e4c584c925",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/ddos/gotchas.md",
+      "sha256": "320f6d383fe22756ae19e3a79fb1c1a5d147d74a493b73eed6dd6644fb9fd1a0",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/ddos/patterns.md",
+      "sha256": "546d722c64d8b1c14bc0a924b38eec24bcd3e639c25bbf424bb8cf73933ac306",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/ddos/README.md",
+      "sha256": "63018c3c2d25ce26a0f1b80dd60bd2d3c5193a26bf96979ef624030ab766c4a8",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/do-storage/api.md",
+      "sha256": "4bb0280e586966349e6193887fa3f941136e6cc05c3f1de248dab6af922ea0d4",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/do-storage/configuration.md",
+      "sha256": "a40bc86d56df8428be18f4014c3f3883835e170fd53d38df014be9acbbe9feb5",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/do-storage/gotchas.md",
+      "sha256": "d0c3ef1630b02778aa99c39c8fbd538a3872b250df7e6d5bca5b5a4e79d7c4ae",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/do-storage/patterns.md",
+      "sha256": "96a90c38908844707b3e26dac334ce657d55eecbc3dc727ee57c85912f470877",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/do-storage/README.md",
+      "sha256": "76a9a33bfbc6308779d4aa911d4a9e3d72ecfb32048c780c3a3cdd34a40166fa",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/do-storage/testing.md",
+      "sha256": "32ffdf6ad179ebd1120a0da8a9f47837a13229b41fefe5c4a8a03a2ee4bedaf2",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/email-routing/api.md",
+      "sha256": "29f38a8eca7d75a1801f139b182e201859803aa49f0da466e22cf75093e5bcc2",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/email-routing/configuration.md",
+      "sha256": "d67cde78022a6ef52e783dcb1ffa7ad6594cbbe6d9b480f7b78cf3f3cfdab00c",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/email-routing/gotchas.md",
+      "sha256": "e7518dcb66d577447fc7a828347008f6149271a51b08f4c8655b4a9cb6ce588d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/email-routing/patterns.md",
+      "sha256": "9547736b70b3280f38012d46b7882555a44cedc228b4cd1101162f45ae309a09",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/email-routing/README.md",
+      "sha256": "c0bb58b37a3376d05a8e2a22467846b4f1fb1d89580c06e9bf160a4c60b5db3d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/email-workers/api.md",
+      "sha256": "e2621f769855f88b0c87b1fa8088d9cf8f730980142fef03c651700deb709f45",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/email-workers/configuration.md",
+      "sha256": "ca7bc22fb0fdabc8e6a6c92ed64c6556958eb9d22635298a9762982a0f28681a",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/email-workers/gotchas.md",
+      "sha256": "6f5250cf171c95c15a8327a29a622722ffae35430b55dcd4e4805bffb654a982",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/email-workers/patterns.md",
+      "sha256": "b87b6ea5a3c52f6d76b889a317614c824514bf738fc318296f2b72ed8f507014",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/email-workers/README.md",
+      "sha256": "06ab21e8630b667950dcccf1bd097b8105ab6ec80ec4aa43bd5396b64d63b017",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/flagship/api.md",
+      "sha256": "c7b8eb86ed852a3f37709f000988aeb89860c24aedee58527379e475f0996894",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/flagship/configuration.md",
+      "sha256": "a067854b48b4f6cbbb7fac4ca886ef6a14ddd1fc108650ec2f096ca730d55c02",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/flagship/gotchas.md",
+      "sha256": "5daaa2c1895e625b06f9dd413f7548603aa0159fb4781145b0cdbcb0a6f07c44",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/flagship/patterns.md",
+      "sha256": "e89e1f39fadfb9aad0c01fd6ac84b8c8f36716e88f26df1fd79c53aaf2eee8e7",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/flagship/README.md",
+      "sha256": "bd012f29ec5e4a0b8c45c2524cb198334379907b0bfd09150ab3712fb4d34998",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/graphql-api/api.md",
+      "sha256": "0c0250cdf31adfbf2c7f96bf3ec257c32d14709160a8552b3238a861b3540de5",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/graphql-api/configuration.md",
+      "sha256": "765e696dfd11bfa87d231c011b10fb2c10a2e33d704d7c6d04f1f125585c5b92",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/graphql-api/gotchas.md",
+      "sha256": "59dbb9a541db17cdac52665fd6883d2eb660ec6fea4b45cc87c291d2e2b4a50f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/graphql-api/patterns.md",
+      "sha256": "902d188040a60c5d130790222442158ff12879232357ee34ab410e0d7b9b5e76",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/graphql-api/README.md",
+      "sha256": "324df669a01caceff7f0dbdb25e3b35dcaa40a5c20700605628c4bcb66b0d093",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/hyperdrive/api.md",
+      "sha256": "041f2d99246449dbe12660a67a998248f3c4bc1c9c7e154d1a66a8d00d1c1931",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/hyperdrive/configuration.md",
+      "sha256": "5331c92ac557fd03f0662a5eadd6767ed3322ac4ded19efdf65dca9f83cbeb1e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/hyperdrive/gotchas.md",
+      "sha256": "d22336a37367fb7ca647b482c146339312d0fec1f677308326f8f215b3b97654",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/hyperdrive/patterns.md",
+      "sha256": "b650cd76dae4885891e7b658a1063029292a8c31fac5417a9a38c9f7ef28bc05",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/hyperdrive/README.md",
+      "sha256": "afb1eb6287bfcfc8a97b52b09ac8fd9d0829fadd14dd6115484dae6bb3a0dadb",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/images/api.md",
+      "sha256": "e912302424458db3686be42d56e205c824a3fc9a33feb67832968863df0987c4",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/images/configuration.md",
+      "sha256": "a1d1a00f948cd04318f4f54ac14257d790c0f9bec69159cf8b5a3a68c9e5a11d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/images/gotchas.md",
+      "sha256": "2493ba91d4e04d5d69a415b6b3f0d71bd552f694a8f3c2b4d205490b045cd82d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/images/patterns.md",
+      "sha256": "06d06f0794c9d73343111c5028f2cd5ef69f4949164e21c357ea30805bbbd372",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/images/README.md",
+      "sha256": "d53622e2cb9dcc2c2ffadf57a030ea17a6f4d89e910f987d82b05c364be137cf",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/kv/api.md",
+      "sha256": "6efcf95ad700940da232c68091fca87267e88235652064056b3a19cd8dc434f4",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/kv/configuration.md",
+      "sha256": "c523bddf0bc25477df0719cb1a0184612b63295e9dedcfc8905c94a66fd396fe",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/kv/gotchas.md",
+      "sha256": "64a46ff3f96848218f8a4f05ed8b838a1ddb9ac65f9ad0bd09f1f0592e163d11",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/kv/patterns.md",
+      "sha256": "614634507be4ec2e44466e34c5e1d703cd47c9f6fbca7a0941c15731f640ce58",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/kv/README.md",
+      "sha256": "92da2cc18853196a1d4b70e46608d8636bf67f6d95784391c28b0c90b2562151",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/miniflare/api.md",
+      "sha256": "a71a38048879738732403c455db7bda6233c7bd8dab4e42356a9e497a17cad1e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/miniflare/configuration.md",
+      "sha256": "91a3407176ea62566fd63c25f30c8db805e2a53ae9092f574663d3e0ca3dbaac",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/miniflare/gotchas.md",
+      "sha256": "ca6b02589e1392f907f155871b3c89d215872153dbe71df38fd4f81c254f9a8b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/miniflare/patterns.md",
+      "sha256": "952225ad1774feda0344d080f633df68b8ea2c3228dcba60a9864fa7d0d694b5",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/miniflare/README.md",
+      "sha256": "76a74634a7acb37e1ac261b8fd5cec76f2a1b22d24579bc8d1b32e27d68f285e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/network-interconnect/api.md",
+      "sha256": "a4785017781a4b469b1c3e5c94f520a50b89412092b65963dee44bcb6e00b868",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/network-interconnect/configuration.md",
+      "sha256": "3edfa1d1642a0aed71121156acd7e4f76258b027b8f3758cbca68ab0ea5a1956",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/network-interconnect/gotchas.md",
+      "sha256": "e94f01476facd20cfef32de991a66c72adba32a4a63e646b9f3845af5d9ad8df",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/network-interconnect/patterns.md",
+      "sha256": "8405ce0cc66798eb8b264c7034f381a4b0aa8bc1ddace8b2e902fcba3bfd4f86",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/network-interconnect/README.md",
+      "sha256": "bc01923dae656639f772e66a2ae8e22445723af747bdc3011ba6105e09e88c1d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/observability/api.md",
+      "sha256": "a7c1d3c0d321071eb6ec91e2c9b61c94c56612243dacd0526223223960d48674",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/observability/configuration.md",
+      "sha256": "8a4ee7bc53cfdb260468c10e9f4752e72e1e246e2009b6a4e14d70708f06f555",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/observability/gotchas.md",
+      "sha256": "9e91288dbab5908d1e6da5d1520c3b345df1763cc2f949479719ba6f4626b221",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/observability/patterns.md",
+      "sha256": "c8b043fb7c99ac83685a656fd069aafd839861609cfe56ed73fe1be96ce53f72",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/observability/README.md",
+      "sha256": "0df1c7b9091849a5393554d4794282c9f51a2b388acf083bfb5b80d709b5d7f1",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/pages-functions/api.md",
+      "sha256": "cc7f88291745e5426d409f62d3acf8c05aa0a3449fcb80789da91000ff9fbc78",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/pages-functions/configuration.md",
+      "sha256": "8e5eb8713ce303883d7ed94c057cb5e4a92f168226602ca867501f5701f07b6e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/pages-functions/gotchas.md",
+      "sha256": "6d216a2ca9975e6fe1caca9aaab24f38be3f38f2354fb63dfd5fa2f7e2740435",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/pages-functions/patterns.md",
+      "sha256": "bab690285720caddd0960369e459457b32b09d0c13088f428fd184ae9d35c0d0",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/pages-functions/README.md",
+      "sha256": "57d3ef8fb786927aa342da4e8dafa7824a501a6c607d97f28c9de51b68233e49",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/pages/api.md",
+      "sha256": "496475d44c5eaf80277bfd191d9768ec5d31c8fcc22de84376a35a34e4fcbd6c",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/pages/configuration.md",
+      "sha256": "7302804ed200e4b074e0788087ad668eaffa20c884904dfca227555b7904191a",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/pages/gotchas.md",
+      "sha256": "cf1b53cc1aed8cf49e619630927e773d4f41bbea1fbe88ffa3891d452544603b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/pages/patterns.md",
+      "sha256": "b2aeb4f1cbfeaab713b78f25b65dac6818893be3d29f6d551980b338682f3d3d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/pages/README.md",
+      "sha256": "53f7abd51014eb8873a1782f8adde99a72e9a382784b268aad695a02ca17a998",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/pipelines/api.md",
+      "sha256": "6dfced39253c563560c990fe062e3de2de9254cbde159771f488842ca2882597",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/pipelines/configuration.md",
+      "sha256": "c10e1eb1066da113b54c33e4b06034c7e359912a344ede6ed7752ab29768bd52",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/pipelines/gotchas.md",
+      "sha256": "b0d85c6a6519bac88f9d08d5fd9449515c2ca6750cb220ffc1c2e1394e87e2f3",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/pipelines/patterns.md",
+      "sha256": "2790aa7ad664b4ba467d39f8fe8952b663876b56ba4d229bb7d4b15251823f4c",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/pipelines/README.md",
+      "sha256": "121f663e8fa0ffab1ed1f50f0fb65aa49cebae0ecd7d868e19b8baef2fcc5af3",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/pulumi/api.md",
+      "sha256": "5e6459dbe3bcd802965fbc8467c54744671d5a9b3c600fececb2db314295797d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/pulumi/configuration.md",
+      "sha256": "5c102d4eb4d16a1647b451af42599d6123f6f4f31e4390edd698ba6ad8154eb6",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/pulumi/gotchas.md",
+      "sha256": "f05c3e92c94f3fe24aab6072aa2a10a050a1df9d2ef56059d568150f6e6bb0a4",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/pulumi/patterns.md",
+      "sha256": "975cd37cd6735d790624d042982a683f05f96dd6509f9da8ada7e78f8e645f2e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/pulumi/README.md",
+      "sha256": "1dabea92532ca86a7ca8ea24e677e5761f9a56e5354f785702246889ebd05589",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/queues/api.md",
+      "sha256": "a3dd922e81c7013e5b10b7c17f31b570cb78926405ba1080786ebf9502d739a2",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/queues/configuration.md",
+      "sha256": "49cdf0be4128639031a5b3efa4ce3dfb0f86b66e5f76584c9a43992d0b363c96",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/queues/gotchas.md",
+      "sha256": "d56c92fe1951f4d7b33f2c2282bb88f71d1f6a88d3f0fa5fb5369b8f9ffcc087",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/queues/patterns.md",
+      "sha256": "ab2af2ee61433c38673b3b3b2d36c515897302a8beea5675213ca884de934ab7",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/queues/README.md",
+      "sha256": "2251eec1cca8429bc1ca37ced7d70e760759925844390080e72ded2f27b01ebc",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/r2-data-catalog/api.md",
+      "sha256": "9b8734bf0c8012d5b254e51f86335c845999504031c46cdd2ce7eeaf8babf1f3",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/r2-data-catalog/configuration.md",
+      "sha256": "1d383eeb822fd48b6dd904b54f20f04e38bf7abc843befa0ca060b5b6b78d8d6",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/r2-data-catalog/gotchas.md",
+      "sha256": "de888ca8498bad47edc6d2483bae16d465e3b71932d3ed242c75370700363ccb",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/r2-data-catalog/patterns.md",
+      "sha256": "05b07c195e7224dfe09abb7162e48572eb26c3e564c07cb0cd6c0c03d45a4382",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/r2-data-catalog/README.md",
+      "sha256": "41f463bca2b6817f2246da749ab048d877246867106314edaf27a6e8a6235181",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/r2-sql/api.md",
+      "sha256": "4d5601b6c29df2a54eb68786e69aa2f1bc0d86409515394ea46edb762bb32d66",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/r2-sql/configuration.md",
+      "sha256": "742a0b853a519bbc02085c4c71b22dc5a82516a0a6fefd2e0696b371e04cb052",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/r2-sql/gotchas.md",
+      "sha256": "0776a81ba0ffeb1b0fba4067f23efc5cf9d1437f675ce0b113f57c301203b6ed",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/r2-sql/patterns.md",
+      "sha256": "55141805996052be7b8dbfeaae1472808c1085ca364cf92fcbccfb5015393a35",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/r2-sql/README.md",
+      "sha256": "8dded8c81c71d90e8167069759b2ff7d9924047bed361907498187be9808af8e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/r2/api.md",
+      "sha256": "f9e07f175b1b6d08327772ea2384c617c0b2603ee6a0f5e1353e786201fcf4cb",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/r2/configuration.md",
+      "sha256": "8e0b074c17a71f11d7bac2fa2aeebeeeb0ff8ed8cc6112d158154e793033725b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/r2/gotchas.md",
+      "sha256": "a144850505e3339fa1f753dc2ca61741e601bc07989ed1ac8c3cf3d2fdf1c952",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/r2/patterns.md",
+      "sha256": "5f5a350fbae5e682e287af4e7e427e9bb08466227c82372ea386cc324cdd9117",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/r2/README.md",
+      "sha256": "536ce14e055029dcacc4376082bea1e9c07c62e476a025b17c6f68c52fa504af",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/realtime-sfu/api.md",
+      "sha256": "7c6c3d15d77976a87abcba5a8358c29c81e7dbeb15713cf5ccf71374e6017bfb",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/realtime-sfu/configuration.md",
+      "sha256": "6cee79842fdf8fc68b75951a8fa015cbd9276c7babe6e8753f654d3b112c3fb1",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/realtime-sfu/gotchas.md",
+      "sha256": "9717fbbf38ea4a8adc51631fd093eefacd6d6c7c30a961e54a5d404fa206b259",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/realtime-sfu/patterns.md",
+      "sha256": "51a2b40afd609346a367dcf8a626e905dfe895b3309fcb53432290c3da93cf0e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/realtime-sfu/README.md",
+      "sha256": "f2eea72b7d9d98c3ca2625c999404ec806ce07f68bb1bdd9b709d3030b1c7a32",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/realtimekit/api.md",
+      "sha256": "37020e6102c6f4f080f430f3de20c83532930e59cdcaaee52752d1fe62190152",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/realtimekit/configuration.md",
+      "sha256": "4d4ccf99fa72d8923df1eb3910eade99021cb77c5d9b4aa95310a01aeade0aaf",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/realtimekit/gotchas.md",
+      "sha256": "83cecda63bad4c55c4b375f0b83fd90bcdc9a15a257fc95809ab08fa4c102618",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/realtimekit/patterns.md",
+      "sha256": "2e02421351f5a7ad19887c38ccae65f14c8118956c6763c029072847036ebcd8",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/realtimekit/README.md",
+      "sha256": "4824b4edf9bc7dd15d745fd91f70aa94e7451595e568fdb62ac201444caa40e5",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/secrets-store/api.md",
+      "sha256": "f8a4952b5c12349867e9484cf2d276cf6a1a2567ff48c5cb79d87f5ed775245c",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/secrets-store/configuration.md",
+      "sha256": "e5968928dc294eb8d54972fb3cd2324f97dfd455c673b1d720b53ccdd01ce574",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/secrets-store/gotchas.md",
+      "sha256": "cfdcc275fb51c16f40363c80b40e350025cc37fbeb7890029ef7d236492cb7eb",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/secrets-store/patterns.md",
+      "sha256": "03b4c940c3626d2c3283072ab477f31b01fefd4178b101fec8a537709870cc4a",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/secrets-store/README.md",
+      "sha256": "37b530418430ec8320f30b99b117bb703c5c9e4f0c8e48fd10dd46968645896b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/smart-placement/api.md",
+      "sha256": "d3d8b440a7e362799d7b02dfc3ce348d7bbe51a760f4c6945f2d93bd82785774",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/smart-placement/configuration.md",
+      "sha256": "7d29937845c26f42ec568f4a98262bdbfe2e983c45e94c7c6376dda0ea67e856",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/smart-placement/gotchas.md",
+      "sha256": "8e56c052e6b513b9ab565f0eaf0e7f84bca236dfc30bb77ec6715b70821a5b92",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/smart-placement/patterns.md",
+      "sha256": "693558fe87218c6ee1adca94ca3362eb9cce923e369559f7ff87dca1b9bc5047",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/smart-placement/README.md",
+      "sha256": "e2e2b2c205c0208933d3cde12f46156daadf01d0f068f42da15ace79e73af10d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/snippets/api.md",
+      "sha256": "e76a59c5005ad537ea4ad83fab71365995717fb51938797a4dc29af324285755",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/snippets/configuration.md",
+      "sha256": "836c6765b1ca807f46f1a13ca0d8f383fc6f6c4f8fc857a366156cde96ff74ef",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/snippets/gotchas.md",
+      "sha256": "301c7167f03075505498f1f6b5fe1c72a393065a8228f42c435fde9f1b694150",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/snippets/patterns.md",
+      "sha256": "2b06454df89a837e16ae554769ad055e8de90d2c6bc19a81b4aeee0fc423029d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/snippets/README.md",
+      "sha256": "4f66291949e5fb2a66e49a98b392c2d18057ff36ba74906feae3aeef94f9701f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/spectrum/api.md",
+      "sha256": "bef098862434f4c8e253d718d3437091813e45c3bfaa5004e8e86d6ceb83beb2",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/spectrum/configuration.md",
+      "sha256": "2079f33dfe2ef2ed715927c95c2ba5389f5f426745597aef94e5885da5eec403",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/spectrum/gotchas.md",
+      "sha256": "cb07bb56c6c5e2b2f88380772cbaa25143d7f32cce69c8f5bbbb1e77d4fdd216",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/spectrum/patterns.md",
+      "sha256": "087e7d9a1a1a308eb13614332df217137296501cf57082077f05bb3a1f2bf7b0",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/spectrum/README.md",
+      "sha256": "6dfd516d6e54696accbe6bb499f4e70686061abd0afa192897b32d7fd0c3f32e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/static-assets/api.md",
+      "sha256": "0e78bb20b92ec7feb060917e639cf38cc6c52f032e7c48c8db660d43fc352aaf",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/static-assets/configuration.md",
+      "sha256": "4521ba2f28addab6b8719095b5d8136229d33e1bcbd815c1a3cbb744d745ec60",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/static-assets/gotchas.md",
+      "sha256": "5f4518480190b1879168d8e727599276600adc6d91aa8ef6ce52e46dce10e89e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/static-assets/patterns.md",
+      "sha256": "cf6e0595f1f2a46ee38e735083d9793559cb3c7ef741a3b043611e33d97c20ff",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/static-assets/README.md",
+      "sha256": "c703792e94cf051f34422b4078a96b1c84727ee8a1e338389cd38acaee034225",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/stream/api-live.md",
+      "sha256": "60eca854561ade7ecc6cc72a417dcf00a2589709903ac2d0220c8d6e56847ffc",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/stream/api.md",
+      "sha256": "4185d65547220fbe307deee174d2a19f310950f224b1f7d8e6ad9f8c5090f988",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/stream/configuration.md",
+      "sha256": "a0468ef4597cd08514e23aaa08cb78ff85a868cabdeff755b4d6ca2c9560a449",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/stream/gotchas.md",
+      "sha256": "5d9b23cead86822d4d2566dc6aaefcb37216343ff6b4da12083cfc55c341bd10",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/stream/patterns.md",
+      "sha256": "426645ab09e95c4ed0ea482be6ad6fba9a9dd28e00b2b5c53a89db9b2fee1566",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/stream/README.md",
+      "sha256": "eddbd7ff3f6bd475f1cb65c31fa4726237b19a2f3923bf06e59853ba50860145",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/tail-workers/api.md",
+      "sha256": "acbe5f818044b7c1128290f7f7cd26c2d4d18f0b1bf192ba0632a601a6755d17",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/tail-workers/configuration.md",
+      "sha256": "57c8f038846520b18cde76b0627425d59a75b167a207a12f5e6dfa4c8777f546",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/tail-workers/gotchas.md",
+      "sha256": "a70c0e99d6f3f3076799830bf95a9900bd8ef2d314baa743be4d625065663524",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/tail-workers/patterns.md",
+      "sha256": "bd672b44773674399cc2a90f9d522290a22d8717eb2652eae832dc2d44bae7c1",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/tail-workers/README.md",
+      "sha256": "c6d560b0c39741220c01aa1c6381ed290f36e395133ef9cc3bbf12a05a6f4775",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/terraform/api.md",
+      "sha256": "5dc812c078d06454d801b0e126d50c48031c1a7b0ffef7ebf77a97cf7b41e768",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/terraform/configuration.md",
+      "sha256": "4d12cad256eaf2b021c1c19e7be29ef79e2d76183e387eefce2d4eb50b8d483e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/terraform/gotchas.md",
+      "sha256": "ede039589518cceb96d40c12b7e22aaf0fbb1a5ec4d806af57940dfcaf9da672",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/terraform/patterns.md",
+      "sha256": "1c5d35e79bdfbb2bfce92b095dbdb4fb08923b651a8f8e40e6e70e2956e6ffef",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/terraform/README.md",
+      "sha256": "3311a16ec2b13cde94e0e75315b5901f1d977cc542ed1f39c2d52a1f4b980968",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/tunnel/api.md",
+      "sha256": "c11e9b0ef0ec933e013fa96926b97d1721fcdc6257b42bf2d906b546857f3554",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/tunnel/configuration.md",
+      "sha256": "81fcdb823006c07b5beb902b98f22f07c7bfa2ba9925db708d933a2ae65fec12",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/tunnel/gotchas.md",
+      "sha256": "750c9b7342ed4d63f65eec22db36f20abbf07151ea9311050e02669a7cac3ebe",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/tunnel/networking.md",
+      "sha256": "b40967dd12d0138a1192bd8acc7c4f3e9ecfc6784d003731ed2d861dda09d485",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/tunnel/patterns.md",
+      "sha256": "df5dbdc3882c18db22e66239040d8e11754c00f60c1656ac2c813eac8c1dc6ca",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/tunnel/README.md",
+      "sha256": "25289bcb62a66c85a9acb0f8454f947d224620455c7ba449258c6b3c18183dee",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/turn/api.md",
+      "sha256": "912ec9aa734843078db5ceb9c6732f3aa62778aa7ffb836b9798b46152f377ff",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/turn/configuration.md",
+      "sha256": "8df0cf402a41dd2a8205b9fc94f868df48273ef9e85cf1ad690732ac1e2469b7",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/turn/gotchas.md",
+      "sha256": "7135e3e6e0351bf85fcfd5a914fd499979e7e15540d155810be5bc710e5841d7",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/turn/patterns.md",
+      "sha256": "de0a2e64a0fe6456028cbd0cd8f29195cc8d4da0e8935746357587d5937aa636",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/turn/README.md",
+      "sha256": "9b1e36931f40b1faf3c8f24f89acb12c4f4223de0afc83e6b8de636f4730d542",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/vectorize/api.md",
+      "sha256": "c82aba90cb7af4129c70fef68a2d4f83c7ef84a7a46bdda0e9d98fe60764bf9d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/vectorize/configuration.md",
+      "sha256": "5bf234fb96cb9aecfdd082f471287a45b30b6bc052a85cad2d771a0566a12dd8",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/vectorize/gotchas.md",
+      "sha256": "b051870e2601371935dd4f9245d472916e365185bbf8c8121e190f3379485ea9",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/vectorize/patterns.md",
+      "sha256": "eac487cf093d93814d65d6fd163dba48d29fcbb0982b3b240ecf96da95af02f4",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/vectorize/README.md",
+      "sha256": "204b50c1d66b069ecadae19199e2a0c7949a839d338a2d4cd8ccb6a0df37c278",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/waf/api.md",
+      "sha256": "a608cf645fe8d88c782eacf1ce26d120e7c6d1069f8b01c6ea6879e5865d5ed7",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/waf/configuration.md",
+      "sha256": "c38904de3e5831a41d706c0f9b8e632ddfce0090888224b3daa972242f74f15b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/waf/gotchas.md",
+      "sha256": "8cd4038bb2b4e2f4973b1a19fd4dcdb304155189ec92c6e1ff82f229c1e2beaa",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/waf/patterns.md",
+      "sha256": "031b4a06067264839a61035eeb00432600c310a7587868645095fe29dcc1ac85",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/waf/README.md",
+      "sha256": "d4cc1b4c5594e44d0c6b423837286e8c742c0947615208d97a01e97b3d77be7e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/web-analytics/configuration.md",
+      "sha256": "82a7c2312b3d8d9852d14547ef7771616f0da3cdecaa146afbf6272b77976017",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/web-analytics/gotchas.md",
+      "sha256": "e81a0ac61dce03a4890b9950ba06662c16e4b9ddb4eecdff204221501cd8d6d5",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/web-analytics/integration.md",
+      "sha256": "a0dbfd1a658252e25d7ffa86180c691c6976265526b36ab14ce9e4b469d95cba",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/web-analytics/patterns.md",
+      "sha256": "6ccd1e334d260b968731f5f613ad28882bc199b72883e3254a52ded8d859f5a8",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/web-analytics/README.md",
+      "sha256": "f284cbfd425e0d2c53f79c79187287d7c0c74e6d84259294f2ca5b996834857c",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workerd/api.md",
+      "sha256": "7a6652e76e27424b0ce0d7393e1a04595460290d44e5ca937e3b0090a3b61166",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workerd/configuration.md",
+      "sha256": "656371e6aa55e315ea02e4304228f5c1151023f68af8058ad60984b90e00a9ad",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workerd/gotchas.md",
+      "sha256": "ed3107537e54d440445408131b89db5f81f869902bade11cda7978f31234f74a",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workerd/patterns.md",
+      "sha256": "dc293c43c732adf6e3edfeaf72510904c7e8d097ca26c8b168748dd3d57e4408",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workerd/README.md",
+      "sha256": "5a1dcd4ee54c2f277ebb4292bb64827dd9e8540194ad9c91e081f103c9a6fe24",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workers-ai/api.md",
+      "sha256": "b759f6f918d3b02033966bd2792a1ba980a0e2563026c5448a8cbea3ad196947",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workers-ai/configuration.md",
+      "sha256": "f1717c8bcebc7e3b7481e1c2075e6583e7cd337c5c9570f3397dba0a69291d70",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workers-ai/gotchas.md",
+      "sha256": "3e94a1a70385e5c070df714db310bca45fad2a367fc461d86af592149aa691d4",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workers-ai/patterns.md",
+      "sha256": "24d70114d9969c9392298f23bef4d5f246e142f015c7fac2d744e77c6b45f7a7",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workers-ai/README.md",
+      "sha256": "42cc2c7f730f9b89239df00d34fcefebb042911b3649de0e48b5ea7dd9281688",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workers-for-platforms/api.md",
+      "sha256": "6bc581bf87e21dd9764b88e7658b8cce841491943bd67b0ab8c37e1fcb2b9835",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workers-for-platforms/configuration.md",
+      "sha256": "21e9034f5b014589e05e98eb5fa368e1c4fe4f287215c4b8f38ce12b95fd588a",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workers-for-platforms/gotchas.md",
+      "sha256": "98904178ec81e30e0503ae512cedf76e0d8bdcc517009984b474a6008243e18f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workers-for-platforms/patterns.md",
+      "sha256": "08ea9e56309bf663fca61a9bb6e5115d23758fcde7112d482944ac510ae43643",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workers-for-platforms/README.md",
+      "sha256": "3bc494123a6f795643a22d1c0d10b9fd8243e47a19182fb5f0cedd1e399e9eee",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workers-playground/api.md",
+      "sha256": "10ca3f561c09227408451ead3809331429e5deb29d3eb2af48ce984dae8959fd",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workers-playground/configuration.md",
+      "sha256": "ce0183c32a0df67ae263f8fbbe459b0dfb6247adff5e869c0b1b4d06ae1f6300",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workers-playground/gotchas.md",
+      "sha256": "478b65b6a1827a2c95789dfe6038c16837a7dd463b6b943c630afea63a7454bd",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workers-playground/patterns.md",
+      "sha256": "c95d27741ecccbad12386ff4fa9dae6c8ff21438bf83f3edfd177ec156a8da69",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workers-playground/README.md",
+      "sha256": "88428c57b687c3c6ca23ce95559d0217dcc218a806172ddd70d0c86db0ed5231",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workers-vpc/api.md",
+      "sha256": "60bae66d5674a5e54a0077168adfbc5c44a9c87050149381b119941bb4c45f41",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workers-vpc/configuration.md",
+      "sha256": "0a3f90caf7b17158687c6f4ce5a6e2f292c19255eb2bf766d7eec96de926104b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workers-vpc/gotchas.md",
+      "sha256": "70e2d004800e75ccdbbdcc37623b97d9f5b4592183aae1421e21bad19e111d80",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workers-vpc/patterns.md",
+      "sha256": "87dc009bc45b057408dfbeaace374ff169295bba7d9d4d40fa973945848c9ecc",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workers-vpc/README.md",
+      "sha256": "02e92507af633e16389ca1e8eb0e54a4ae75c5dbe0eb4c59978b2bda73607c3d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workflows/api.md",
+      "sha256": "d1e2c1aadc4459d585e12a9cfaf745c8a421addf970674edbe7451676ec2f2d7",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workflows/configuration.md",
+      "sha256": "4133e66d5cd3952f92a92a751755625de4b999eb37d23a18641056006ba94171",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workflows/gotchas.md",
+      "sha256": "e1f6b1677b204a0503e40391b7b03a3cb2aa5bac39f6d4995a48f9d2d2d14672",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workflows/patterns.md",
+      "sha256": "a9c26ca3c395fae9dca4f69b9f4d5e23c088c1d0c3f82e6d730c90f9b10cd719",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/workflows/README.md",
+      "sha256": "e9c34138ef8941ebab9ef04ed423d552746703c74bdd2475963234527981f9c3",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/zaraz/api.md",
+      "sha256": "6b28a3e1525d46aad707b1bf4edd2739df9f48ae880f71a705448270b42f8b9e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/zaraz/configuration.md",
+      "sha256": "6f3666ac64d1b36b4a708b3dea9d3b1d9679b34c58a00e3ca8e254edd602418a",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/zaraz/gotchas.md",
+      "sha256": "30378f48fde6e866780466228a3e698005a9ce23a24188c8ed520195b03eac3e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/zaraz/IMPLEMENTATION_SUMMARY.md",
+      "sha256": "eba1671fc4ba17fae19d1ff2d1b312d5042b5821e7a4dbc2f6367a4fa8bd5506",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/zaraz/patterns.md",
+      "sha256": "2ea1d00fe81b1e881c00090fd18c96d8c78ebb41fcc55f540b68150320d90d17",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/references/zaraz/README.md",
+      "sha256": "929bee8e3efffad15b1a2ee2e20ff87b5d89cc724b4f450f07f6ef15caf4b2f9",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/cloudflare/SKILL.md",
+      "sha256": "4db2993fc6bc248f29485e11b7ba3b135a4b1ccf68c561864c5b749944875ab8",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/durable-objects/references/rules.md",
+      "sha256": "a656c41eb3bfa57b9b836de880e4fdf79368f1db4e0b63b2fc7a7c75d05ae651",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/durable-objects/references/testing.md",
+      "sha256": "9859a9fa5bba915290ab671c1a9af7c067e52d126a8b18e2a869557b369e184c",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/durable-objects/references/workers.md",
+      "sha256": "3149c3ee371b5dbf3a84dac7d5bb42c4c6553762480741f6d2808e4ca20fd932",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/durable-objects/SKILL.md",
+      "sha256": "2f9d7b37273eef195173e0f97ab6a8f3745fc66492a722102984fe6165ae3126",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/LICENSE",
+      "sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/nextjs-on-cloudflare/SKILL.md",
+      "sha256": "c50143ab00aeb8ab388b32f0e9c84b7b3e9cad1b5b39d364e1e4573d68ec8d32",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/sandbox-migrate-to-next/SKILL.md",
+      "sha256": "10ceb97d57656e03a91b78e5bd65782f5a781aa5fe23f228459ee8abf12c41a1",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/sandbox-next/references/api-quick-ref.md",
+      "sha256": "b015d714492a66ead24109de4c9b614d8950e7ab03b14596474e6d3db25f87ce",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/sandbox-next/references/examples.md",
+      "sha256": "08d1e6776e16931dec2bb637b82a425679ff217081ac1d50182ab94de40f4fc6",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/sandbox-next/SKILL.md",
+      "sha256": "43041846f203c4ef3d2b04b2892539b449b5e298f20ed8ef3f619e556044642e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/sandbox-stable/SKILL.md",
+      "sha256": "4083e3bd6d1345a19c42037930750a84ef92af2a440dbac939efd9c2c9a41b3f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/turnstile-spin/README.md",
+      "sha256": "e5c50413b3db0fc2e1bf5ae0147b093f36ed9a66567c5e39f6bd93b2c972f440",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/turnstile-spin/references/astro.md",
+      "sha256": "6e2faeba9bf9ad24c062c6a723dc37c74644e5843dd7a06164999240e83d7a96",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/turnstile-spin/references/hugo.md",
+      "sha256": "5bc91dca7264de9bcb163d4c8e21a20d64afcad7becdd69926f9c7a09d1bb05c",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/turnstile-spin/references/nextjs-app.md",
+      "sha256": "a8e10a569937efd076c3f32f37b48a8083c8c52918c9aa309b770d35d5a03273",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/turnstile-spin/references/nextjs-pages.md",
+      "sha256": "f6fa729155fa682f6c77b157cbb75492caf172f7451bcc889bc417441a3f02a5",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/turnstile-spin/references/sveltekit.md",
+      "sha256": "da8dbe10014a0a94d25c51e80010ffd4fb5f0719caa7226c42b9dacb3ae8933a",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/turnstile-spin/references/vanilla-html.md",
+      "sha256": "bb01ca94b0e942c0e329c2fcaf50d0c5ff846f1ae166aa6d654d4c962d48fa9d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/turnstile-spin/scripts/auth-probe.sh",
+      "sha256": "a54d7ab1f6e6ac98a6aeb45498d7bb3568d173669d2d3a7c6a08b56ed2c20182",
+      "mode": 493,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/turnstile-spin/scripts/persist-skill.sh",
+      "sha256": "4fea0bcda9fded16dd63f77dad196474d3c15c1fe93ac4718b50517fa834330c",
+      "mode": 493,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/turnstile-spin/scripts/validate.sh",
+      "sha256": "45af59068104650ac8b247cf2059d985fa17960d9c2f3d867287fc296771de81",
+      "mode": 493,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/turnstile-spin/scripts/widget-create.sh",
+      "sha256": "ebc3ef13ef99f4f6f93400ce66ffc3848c1913aac0cb0876470c6378cf1d9fed",
+      "mode": 493,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/turnstile-spin/SKILL.md",
+      "sha256": "7d48437fa6bf484ece9aa2bf675e6a4bdbecf186ccb165dd838095fe5b0c3d5b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/turnstile-spin/tests/validation.md",
+      "sha256": "e92fedb23a709b104877733365162bddb2d2be7c8a25c1dec9483bbedddae46f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/web-perf/SKILL.md",
+      "sha256": "79c531e95ca4d96a7de920c28c127c2c09ec55cd452a92222267d2954580be23",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/workers-best-practices/references/configuration.md",
+      "sha256": "a9ae6018d514324159aabd25004e7f80b69df694c850bce97f7b68e30a72a73e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/workers-best-practices/references/platform-apis.md",
+      "sha256": "85b9d24b2870767f9875fb148dbeb153ef61f89030bc55043c279fe584501240",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/workers-best-practices/references/runtime-patterns.md",
+      "sha256": "152cb5456359755ebaf0ff5343e60daed8e8fdc056453c430a1e9120e37da870",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/workers-best-practices/SKILL.md",
+      "sha256": "8406eabf6375a3e79c77b951d00f3996f4c703c1a852579c38b171188bd19f1f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/skills/wrangler/SKILL.md",
+      "sha256": "40a6802d3bf62c6cab203278eeb0b4d547b2e6f6bf281155aba5fc22b8aaee98",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/cloudflare/sources.json",
+      "sha256": "ffc71623872aba8ad433c995f4784a216355368d2351363bcb075b4a638679b4",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/data-query/AGENTS.md",
+      "sha256": "204ef3fec1cef5f4f922c3760ab0b0d268e2d3b14fff25c73edae806eb81a1e7",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/data-query/model-work.md",
+      "sha256": "e944219f7147dbc0391eecb4e945cc74bd5ac94fcd6e1320f98851023bc49a65",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/data-query/observation.md",
+      "sha256": "8ab46f5a8eca21ba2cbc89e32b1a00307124e1e7e65d278d4e9cfbb77c717864",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/data-query/sql-analysis.md",
+      "sha256": "6dab788cbcf59bbc738da2468b7ecb061107b9fac6934b5a5bacfedf191d8193",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/design-management/AGENTS.md",
+      "sha256": "b9e66394a71f919d6f1e276c8cb79a567d40485c7b15f525518b2a8817dba921",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/design-management/feature-example.md",
+      "sha256": "a9bebed419b3c3fba9529b4c080ce21137234f8ee4fab54353f802c9f1568da4",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/design-management/README.md",
+      "sha256": "b341851174f234d15e8b176ffc6e3d71fd39a4aa4342d983f4c400355b01d4a0",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/design-management/views.md",
+      "sha256": "56a128564c1bf57641084af38dc11b462123a198120b28511a3135a3a83adcd0",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/design-management/workflow.md",
+      "sha256": "55e2bdfe474037427a5ce70cd2eaf95906cc4bc2fec3ab568c3d714a1214a7b4",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/harness-authoring/AGENTS.md",
+      "sha256": "406dae639aacc6c773b9eacb9cc266f06e2fd4a32dc0f4d047a6a34ee5efc984",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/harness-authoring/scenarios/adaptation.md",
+      "sha256": "9d01a68d36bb6ba80dfe94a6f587abe0f29700baa16d5d67f7a9f9cf2adbe8d6",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/harness-authoring/scenarios/authoring.md",
+      "sha256": "779b79fee7e63934b5368aa8f240f85e996f61efc6703610797570d74255582e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/harness-authoring/scenarios/composition.md",
+      "sha256": "f29e429af15aa84e252a3841db1e18292d9295bf286b84560d3506d8d45d5c72",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/harness-authoring/scenarios/scenario-design.md",
+      "sha256": "eb953230b8aebb4acf32cdec435da3e638136c8f58d756165ea2c385f350e095",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/harness-authoring/scenarios/validation.md",
+      "sha256": "b14b0e07acb965460c4643f0a4816634e781476e7a1145940f7e24a3c4d56f99",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/harness-authoring/writing.md",
+      "sha256": "948b67cc70d24f69b67b3f2b0a5626351e3437b35e60384fe50ff1df373e4936",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/interaction-modeling/AGENTS.md",
+      "sha256": "8238b835d05c8530fa44b90dbc2a761cec6210abe476a3ae78eccafd555140d8",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/interaction-modeling/checks-and-evidence.md",
+      "sha256": "538210a32490dbc835526b982d8c68d059f2a4b2f9f76f390eef047bd3da245a",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/interaction-modeling/examples/scoped-update.md",
+      "sha256": "ff2e6a08af87401c601f09724d080731d95bbd2ac87a5f599d353f08ff2e5065",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/interaction-modeling/guided-demos.md",
+      "sha256": "6320ff2d61d4339df57df8beb8b91f8d6178af2289f206157af2697653d7f214",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/interaction-modeling/method.md",
+      "sha256": "b38e3b49be68818600c7d54f7bd028ef6589831d91a3a6b535b0dd68ac8348d8",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/interaction-modeling/sources-and-coverage.md",
+      "sha256": "db4afbfa64532070a78cc6085740144a28c918497eddfc7b59db7d49563e270b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/logo/AGENTS.md",
+      "sha256": "ae12add79c94128a16a346e30827c9a319b3678801d7290b84d9f462b415d59e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/logo/collaboration/conversation.md",
+      "sha256": "4554ec24eb5645cf45ab87066d124438b6a356978eefd45be13211d40663b18e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/logo/collaboration/presentation.md",
+      "sha256": "1ef58d4fc531bc75917a4e487f1202f9dc6b79e277274147fe777b1b189b1edd",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/logo/collaboration/records.md",
+      "sha256": "cff0237855a126db9359fa5a68057bcf6b62a6b7787b4ce4905c6a8b00fe099f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/logo/collaboration/workbench.md",
+      "sha256": "4a10500a058d09aec808b3afc3e9e4aaaa6b90340a829cd43c288f84d203be2c",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/logo/collaboration/worked-round.md",
+      "sha256": "80dd6ec6075183e671f4d2f033b14c777c7f7b43a2691e386ef42c59a5355e6f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/logo/craft/construction.md",
+      "sha256": "062903f1171bcdbb7cba4ba49d76e8737b9477f8885e464b92576001723571be",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/logo/craft/style-atlas.md",
+      "sha256": "506bb8addf0aa119de4e4815fa503d819e24b1f25c7ce76e3149cba4fffeff90",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/logo/evaluation.md",
+      "sha256": "116b7d26db5b8692ccf3fab239b20bb1205c3d8e17bdb6c90ed253d24c683f09",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/logo/foundations.md",
+      "sha256": "33c3273d40fbbfdc8e526deee8add38a6bfe420a0921182afa1cde0012d3e918",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/logo/research/inspiration.md",
+      "sha256": "22b49f0395031cecec78f3015de64e22737ca8422a10124175c399b35f701435",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/logo/research/sources.md",
+      "sha256": "6ff9e820a4ae411e27e4881c9e709f84514edb3d2c30128fde60df3212b785d7",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/logo/resources/feedback-vocabulary.yaml",
+      "sha256": "4dd42edab9966329f7fa28c5c9e80b9ec29b326dc12e63b8a340b9a70bea9765",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/logo/resources/style-vocabulary.yaml",
+      "sha256": "0210b79154dd3067dbcf42cf864455de4d8fb970ba85097645203e87f36221a0",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/logo/tooling.md",
+      "sha256": "b33aadd81266181d75a39e3d6884c220405c10e2d6f0915a5f4fae2ea42e0a4e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/logo/workflow.md",
+      "sha256": "207d4e32454610123ece5a3769c6086a211a1c7982daeb2f51ef674ad24ba8a0",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/management-product-design/AGENTS.md",
+      "sha256": "593ec85306a6fd500dda14041fb8e8e06f7945bc43e9913526a08e4c48cbef69",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/management-product-design/page-design.md",
+      "sha256": "6dadc605a31adce781f0fcadf270501740086107c2243751b5ad1dbe02109bcc",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/management-product-design/README.md",
+      "sha256": "864df2295c48a2b1318b34b1df1f15c1da0310ed3b5121055f6f587ff1e663c9",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/management-product-design/references.md",
+      "sha256": "fce5287b7b5d35ae459f5f36dae179758a68460ae5d206abc70e7f436386a1d7",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/management-product-design/worked-example.md",
+      "sha256": "8ddd9dbbee58531e8c72c6c3ba78e2aead2cf37803bfdefdf345bb5ef1d76a25",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/management-product-design/workflow.md",
+      "sha256": "d133009393e25d8f836a51b6ffa4bf82d6a99f1520f7da0915302c806e7d6183",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/modeling/adaptation.md",
+      "sha256": "5aa23f26fe7c3ecba46fde3fc1a963d90fd09a57e21b729ee1fec260b87af89e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/modeling/AGENTS.md",
+      "sha256": "50a41f965abd2d754cc3d6cea6727d7ca6d3c700ad78af875e0f3ee24207cfc9",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/modeling/basis-and-results.md",
+      "sha256": "fd1e4342cf9fab514ad4cb4a9d6335bdca1bd65ddc5f483c8ad4f0e354338fc5",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/modeling/contract-tools.md",
+      "sha256": "93787c5efde9ed8360db5c04e490c6778c44980bd9542a32148f67513c32d276",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/product-design/AGENTS.md",
+      "sha256": "afda2a2ecb3607f90ecbabf43b44117f0306c07c3386dc84a8afdb7946dbf40a",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/product-design/discovery.md",
+      "sha256": "cceeb4b1f980480f7559de9c6d16703a27a34712c8bde4301c4b61b6ed81f2db",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/product-design/evaluation.md",
+      "sha256": "02a9ec587da61fef4879c38a7137f2e9577b8252fd89de154f4e089655baed0f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/product-design/prototyping.md",
+      "sha256": "7aedebacbcfde64cb6547998f457b8213aab3638e5a88512b1491f4b33fc9f40",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/product-design/quality-and-delivery.md",
+      "sha256": "4bbb0bad17b2606ff15e503a339bdb95f234ffc14fd0061d4c02c7711ad002f2",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/product-design/requirements.md",
+      "sha256": "5fd071d08477424ce7705be0e245a58f6ccd8981c76a328c4b2dccf3b47d046d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/product-design/scenarios/tool-experience-review.md",
+      "sha256": "8ded902e76622e81db3b34a3f5806fe8147b43bfa76b40fb24ee74874e7a3ec3",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/product-design/scenarios/tool-experience/review-template.md",
+      "sha256": "c782ee647fb6c56597144611a3e5479b6050cb82c85a34304e5033cca3277d94",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/product-design/scenarios/tool-experience/worked-review.md",
+      "sha256": "9582fbfc3d5db7bef60c44e63de3db436f5cf67ca6c1da3149e482542c28b137",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/product-experience/AGENTS.md",
+      "sha256": "5841d4fe8586d2e03d2093f67254d0687ebeb29586594d9ba0d8f687d5202c8c",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/product-experience/data-model.md",
+      "sha256": "289bdfa636b226c1beee4b1a0c501dd02a6956ada21c7a934e372b78bb390372",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/product-experience/examples/task-search/flow.json",
+      "sha256": "1b09506f32b8ac67cd84e126a3a8ee5690b4ae79788dc4304b8a638138bff6fb",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/product-experience/examples/task-search/playwright.config.mjs",
+      "sha256": "86c128b11703e6c9372fcb12e3e1894cad73d433667e2576736bdbe7c3495596",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/product-experience/examples/task-search/README.md",
+      "sha256": "053548e5642e90075cb4c062d3a719c1d745653aa30e7acdf114786d3d5e8d10",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/product-experience/examples/task-search/report.md",
+      "sha256": "7843b78c2ebb797c82052d7087108c7c88b2fcf11696aa7706940f5b0e3974ef",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/product-experience/examples/task-search/search.spec.mjs",
+      "sha256": "bc0ed726e84a8348aa0673d82eb59895241ce33201f5f27eaec9c0d4701fe74a",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/product-experience/examples/task-search/source.md",
+      "sha256": "b1b4e63b9dd2b6948ffc1fe75e7bd70b7128eeab10c6468b4fc18465fdcaa09a",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/product-experience/execution-and-reporting.md",
+      "sha256": "2c5b0a9a66dbd36e7c8d955b92895bbf32d131a8f7337fdfbbee609158751ea9",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/product-experience/models-and-workflows.md",
+      "sha256": "4599d504310505b61605d92561b9bbb38c4582e893a366dfb9de4e3051d85c8a",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/role-methods/AGENTS.md",
+      "sha256": "5d67a2e421815af913de37f86fc4dc1da27b2103a7d37dfb7b375eb91d8c7bd8",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/role-methods/workspace-template.md",
+      "sha256": "951a5b0e6960068e0bcfaffde359d333bd9613c8760e0716040d33405d1e7e9e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/stripe/AGENTS.md",
+      "sha256": "9adc760cbaf3cabbb14ea27216b9c8f7116e6a98b117fbe9b490d641e115a671",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/technical-blog/AGENTS.md",
+      "sha256": "7a07e180410cc15ad5b34fbb13ecfe0b0746a9a68b708a91a1eb45e5a55a2235",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/technical-blog/examples/contended-resource.md",
+      "sha256": "0685156ca11fbfc9b387f8688db5eb1693dc9da1311ae707578f8a90fca7bb51",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/technical-blog/planning/article-brief.md",
+      "sha256": "83880647522038d5c3609b88003ff130d1ff5f9465d41604fe065dc733a39023",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/technical-blog/planning/editorial-method.md",
+      "sha256": "ca0375c28f12918da6912a16ad984c1b548d3d519a44679b5771f71d18ba7c8c",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/technical-blog/planning/expression-design.md",
+      "sha256": "f18acaa9a78650f04c203b0f01b142e583cc3bde18820a3114411a17ed54f18f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/technical-blog/planning/research-and-evidence.md",
+      "sha256": "23f2e3473aa83aaa28be995f656089f3d0f63d040416fd8b48ab4fb061073cdb",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/technical-blog/production/executable-explanations.md",
+      "sha256": "cb1120caeb9bb86d79b5ea09764a0bc741daf46ca6ba696a9c5b134d873a1e12",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/technical-blog/production/interactive-experiments.md",
+      "sha256": "e7389ca0ab92a0680fac4525b25d527b4b52b0dd79ec344181332b105281a51a",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/technical-blog/production/materials-and-composition.md",
+      "sha256": "bc6fe3754c1aeea3e0dedd02c510429d9beb9b621d9fa7975f0d41930d8b5333",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/technical-blog/production/visual-explanations.md",
+      "sha256": "f789b8a4929308351db8007c2408f0600c083e940ace83a44b33368e9c03ec36",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/technical-blog/publication/renderer-and-release.md",
+      "sha256": "6e9116fddfd80f2517d9284016ac02f0a386590fa41fae4877bbec7dcf29d741",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/technical-blog/publication/writing-and-review.md",
+      "sha256": "4904f79c22c898d6e6af6b5a3e53bac802beaa92e4dda343be5587fe9810fd34",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/technical-blog/README.md",
+      "sha256": "f02e8236321690dff29f49d2354eb6347bdf669d17b780fd09ee260666ebec72",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/technical-blog/refs/method-basis.md",
+      "sha256": "7a5a56cd47d6fa604123c59d8a5db9d6fe2f67016b0dcd66f3dcd16d6009ca6f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/tui/AGENTS.md",
+      "sha256": "243eeb21c97ecf7ce9f851baa5891de2a05455c6e5ca3ace58e1287ab16c83aa",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/tui/black-box-testing.md",
+      "sha256": "f3c0896fdd5462969bc2f6dc08cb55a9ea34a414a06b7cdc1518efb79da0b00d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/tui/interaction.md",
+      "sha256": "55ba5cdfdf98a35bab88b199bbc392fbe3842e4730d2bafb799483abe5e778c0",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/tui/tools.md",
+      "sha256": "f06de4f41c2f540dbfddcc197569db186a4bf2f0284ecd96a73c321c794116b5",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/tui/workspace-design.md",
+      "sha256": "2fe5b55c8ebe24290783c396b8f293931945dd93f44bbe14df59937a5da96291",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/vscode/acceptance.md",
+      "sha256": "6317ae984d89504c810d6ef41f6fb407a7ceaa182be583f77dc0d3974023cfff",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/vscode/AGENTS.md",
+      "sha256": "e9afcca8f725d516e29d56b6676508cbc571867dc4d0c0b1b32c475a1e15b913",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/vscode/scenarios.md",
+      "sha256": "48ac6e12aaa6199ccf94f879cc968b5ac9f4df856a215d5e6660dd0a85290961",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/vscode/tools.md",
+      "sha256": "06cca7e3c4f650fb7679c9a55ff4cd07fecc09c84f9f612f4f193c997a54c58b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/webdevelopment/AGENTS.md",
+      "sha256": "3a87b09ce2e003f7d5a2132053c83ff124f5547a5f14e501d3b3aafffb89d81a",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/webdevelopment/assets.md",
+      "sha256": "0d9502e73ee3ad5d0b913d8d832cf6c16de5624992a6130de0a3a18c3851112e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/webdevelopment/component-design.md",
+      "sha256": "7b9ab28e2220f2b97b9007cf2cbe508558e46d64525f61f17b14cda8573f0b97",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/webdevelopment/content-and-assets.md",
+      "sha256": "456f729bad2f759e73f10b83f5bbe0150a28070ab057db9ccf43c815e2a897ec",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/webdevelopment/continuous-preview.md",
+      "sha256": "09f9c16cd1ccd89b8b8656b3f85974c49f7bb223e7c5046544ffc739b18fff92",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/webdevelopment/design-system-stewardship.md",
+      "sha256": "45de157d577ef0b6bd62c13744a3a81d4c3dd476cd80330fa80dc4f6404e63fe",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/webdevelopment/design-system.md",
+      "sha256": "4471683436dff16132cc6aa931bcec823de3ef5009da0688bae9a84ae3e9492a",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/webdevelopment/design-system.storybook.md",
+      "sha256": "ae24918f409ec6082c0e9a0b28ab26d8aceb294f1284fb704c4d9f46804601b6",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/webdevelopment/experience-design.md",
+      "sha256": "32b009d42f0dec0d0bc780ea636495d568d662a5615dd643f645f88ccb1a90e0",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/webdevelopment/implementation.md",
+      "sha256": "bd06c8f6d2beb18770f51583f9dcc6263eb09d766304630af6753d65fab6e256",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/webdevelopment/interaction-and-state.md",
+      "sha256": "58030a5ec00ade685febb6d5446885a9d07359c02900dc79c328fc6f56ca1e80",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/webdevelopment/interaction-visual-craft.md",
+      "sha256": "c27ab8580d4d9470d20933fc49468e687343640f41c55916d48e02092958559d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/webdevelopment/interface-structure.md",
+      "sha256": "e5bec3ff91cf4f378a8bcdc76b8f78a5ec5594d4ff551f96229dba2447a3aa6f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/webdevelopment/motion.md",
+      "sha256": "1dfba2e566384bceb12db4b73431a42681176637cab17327e37085726c470429",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/webdevelopment/navigation-and-recovery.md",
+      "sha256": "b62d1ead57d03eeab941cfd4dc0069a390ec92f255b6f610cf30723a389dfbd5",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/webdevelopment/observation.md",
+      "sha256": "6f7f374f1375b1b91480d4a963cd1d76a738cd462fb644ef057c6a9cba6c3ff5",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/webdevelopment/registry.md",
+      "sha256": "bf8af142ce61a58f4ffdffd29196c1099cfcfbd452d18ad34b8515fb78531262",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/webdevelopment/review.md",
+      "sha256": "136ae4fa265b9cce2b0e81c4148ea21a28402ccc9fdf21daa60e614b939b3f31",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/webdevelopment/tool-interfaces.md",
+      "sha256": "05b9fa2c309766138b83c43a0711f05b8ab63523fea8cb7fa4546705a1e2e7d5",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/domains/webdevelopment/workflow.md",
+      "sha256": "2ae5c69cbfc77b3e58f28a3558cdb599093740d525866742116d1cfae873b38b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/guidance-authoring.md",
+      "sha256": "a6126518863d8d6b308ee6a04f8f8e5361edb36e333a205a7fefa99f767adef4",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/principles.md",
+      "sha256": "9945b2c955221386893ad368f2a43ce1c0446d0a1f49badd0033139ead72fdbc",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/README.md",
+      "sha256": "714d6d913545dafe0ad009c9e52323b981936820a111e9b202c86a68a84b1f46",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/refs/xschema/common-schema.md",
+      "sha256": "8d7697c41e2bd37b520caeebba7371661a6b8aa87e933d8b9bc7037b3ff0bd64",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/refs/xschema/controller-schema.md",
+      "sha256": "ffbf48aef4654be03fde52e4680ec624fc8da6f88c669e97c9aa7cdf7624bf73",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/refs/xschema/entities/common.schema.yaml",
+      "sha256": "fe9d1698c65c2bbf2171c53468876b4dec873571ba2be9f6405135cc7ff4515c",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/refs/xschema/entities/controller.schema.yaml",
+      "sha256": "2b5679149814477f1a20a699af83f09571c20223120c1ab2ee6e2a8a08306f2b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/refs/xschema/entities/delivery.schema.yaml",
+      "sha256": "86ca15febd6c74eb398bd0e9a9a00b50d58e2b5f112751141155af192170e2a9",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/refs/xschema/entities/document.schema.yaml",
+      "sha256": "1ba7f72fc8acdaa76b8bc9520edf4fb7e15175146a398919e98cfaba75d17b10",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/refs/xschema/entities/example.schema.yaml",
+      "sha256": "7d9197c1af3f9e845d4d60c504fa3fdb97e7ee5b91c996eea4924119929c6f0a",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/refs/xschema/entities/module.schema.yaml",
+      "sha256": "8e266abc08c559127736142201ab03f5f9200b64a68bd0780c0970c73c6d8ba9",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/refs/xschema/entities/package.schema.yaml",
+      "sha256": "24df19e38e73abb39b49ab46d628e1dcae3167e74fe7294814aede39ddda0bd5",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/refs/xschema/entities/proposal.schema.yaml",
+      "sha256": "732d857a1d129f21c94883e6bd042252052bc60b50cda0db34586e86c3dd4efc",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/refs/xschema/entities/roadmap.schema.yaml",
+      "sha256": "108bbc439f500d47b316a119e4a0edd6ec3c423901d67e7eb25d3c5ab9af2156",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/refs/xschema/entities/role.schema.yaml",
+      "sha256": "6188f838db96ffbb1a1707e9542b9a872f8a998f12ba2ffd164a517dac86b1d7",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/refs/xschema/entities/scenario.schema.yaml",
+      "sha256": "b9be44b8747682f06aa315e50eb00445d085ca8cf78a738aec86971a857089fa",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/refs/xschema/entities/skill.schema.yaml",
+      "sha256": "dab6534b90deab57844b9b19e60710fcb01e78430f1d925a2d1c438788cfed8e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/refs/xschema/entities/task-meta.schema.yaml",
+      "sha256": "530b12e9c471b48d2ea209d05b6682074ed41cd906e32849afd396cc9b4affa8",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/refs/xschema/entities/task.schema.yaml",
+      "sha256": "23faf382c43604d67335acd9153fe92304f7629f8dd16d9ff8e7d04e894361fc",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/refs/xschema/entity.schema.yaml",
+      "sha256": "0b76ce4618aef37b76c8da429b054a2fdebc406f0190d69091cd19bacb557be5",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/refs/xschema/protocol.schema.yaml",
+      "sha256": "0845a244b52b8f8ee2aaf15ba7f206080aaa27eba35b010c24ba8e313a4a754c",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/refs/xschema/schema-contract.md",
+      "sha256": "f0568b7f81f82f65731c58b4ee9844253a4f24b5a6db203cfeb687a4c646c722",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/refs/xschema/sources.json",
+      "sha256": "e3cd25cd8ba372d9a5b18855d5c04e0c031de77982ba252665014895c8229221",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/roles/coder.md",
+      "sha256": "02e64fe2f5717ffa08d7005bc363997e61aa4cce6c775926aab8eb1e3bc3c675",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/roles/controller.md",
+      "sha256": "311c3210abc36a1c67c0c25ffc95d4dde6bdd26b055c1924afe856ce3ed2bda7",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/roles/debugger.md",
+      "sha256": "41dd77debfefab376d3f672a97ab330547115bd2c91cd9dd4720b33541a516a3",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/roles/design-system.md",
+      "sha256": "ff7ff3fb593592c32e1994de371848b5ef079650751a9a9024c82c739c5acb25",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/roles/domain-contracts.md",
+      "sha256": "c261ca3c43289dca7b092d05b375805626cfa61c82a981a9a132830a9670afa2",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/roles/implementation.md",
+      "sha256": "b9fc6a02cd59b9b404b120d72fdcdb11ffa22d71879b2576b1e9d696b6c8b037",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/roles/product-experience.md",
+      "sha256": "e0908571ed8873e245ac91806071d355d5d242609d84166bcb332c9897afb787",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/roles/prototyper.md",
+      "sha256": "f41fac9bcc0385eb421691eca3e6f09745ac160dde22df81581c35671740d511",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/roles/role-method-steward.md",
+      "sha256": "e40fac9a890b8165426a06492685df1857c5074b183abb7983653e51c311b296",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/api-contracts-and-sdks.md",
+      "sha256": "e75686523dd4b05368158f0d60810aa08845e75908d0e51a65a6b973fba7d832",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/architecture-quality-review.md",
+      "sha256": "0b02e50a2a758da2914acfa88b31b587414f82e48098979541f6ac9892a51a2b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/collaboration-effectiveness.md",
+      "sha256": "307eff1b1dfd25f141f2cb5b0e971e97bbe04c90c4d539a09dc217bc666c6b20",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/collaborative-modeling.md",
+      "sha256": "964911b678a0bda6c9ebcdfd1f0511f1d9398007a0ee8469d5ff6e6e0025e434",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/command-line-design.md",
+      "sha256": "ae398e5ae33f73a281ba560db67ac1fe7fdf15bcf734a42b8c603478fa9a1942",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/communication.md",
+      "sha256": "09d3828183fb005be6147a098a8ba35deace1ba769f08344e3733567637a8527",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/contract-modeling.md",
+      "sha256": "14c14d09be7ea9f61e0c3aeab5d88159a53ccdc0fd60655254f1b7853dbad74f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/contract-modeling/caller-flows.md",
+      "sha256": "99123219d3aac16ebc0fba70ede7124e5822a8c93e3adbb8bdf70adc18008479",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/contract-modeling/examples.md",
+      "sha256": "a13be60809a691e61cd753f662e7315a5f75b5b76e421953ac20224720eddf73",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/contract-modeling/model-and-contracts.md",
+      "sha256": "3e8a9d99e3e75ffde1a4bd23aafb07d19a75a298f1a522e85c13943699734fa4",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/data-state-modeling.md",
+      "sha256": "29dc8d1b3aa9583c25b844e961c1f16c79b7287f2203195f4f3e67e3b6f01568",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/engineering-design.md",
+      "sha256": "b0389d8c51f644bb8552626c1491b29c1d9eaf1d1f536661f2296a0863a0e7a4",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/examples/design-discussion/index.html",
+      "sha256": "f2d6fa295fe6ebe49ce3b47316e1096055547c5a079c4ee8c6be67ed4ca993e4",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/examples/design-discussion/README.md",
+      "sha256": "b081e1b865d47a362d84f4b79f410ed71cd50476a38089b458933d28642ebc49",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/feature-planning.md",
+      "sha256": "78426ba90a70432b4587b237827c0b17d437e3b0a3d123a5ce2b5d25272b4bae",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/feature-scenarios.md",
+      "sha256": "b684a37acb5ee1211ad07eead26fa14c53c42d32a0c0ad990a5b2b95d8e1cf81",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/interactive-design-communication.md",
+      "sha256": "f1fd8a1f99cd2fa1360ec977f9020126490c06b55944bb5f49976182dcc856d4",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/interface-design.md",
+      "sha256": "82676395dbe4244a5d502f474b6cb52627a501cb6d4d159f4c6f0bab1151e272",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/mock-provisioning.md",
+      "sha256": "33df88961e615b47ab2c93afef416b5faaad9e9b0b7d38ea871036b22de8a292",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/observable-feedback.md",
+      "sha256": "6ec25b3ddbc2be6bdef45e7409275826d10c0edea4c0dc8570831c12255c491b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/product-design.md",
+      "sha256": "d6aa9c09c78069808834b105ec9e9edf29d574a90616b57bf68bb91027f6e558",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/professional-agents.md",
+      "sha256": "bf3a60f1d4bcd524b7228de7d9d8ccc6d8ee9a1cf8e03e3960ed6b7b762e07e3",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/project-context.md",
+      "sha256": "ce9a31e6a51ffb095b8385185c77264dd5a6843b0e92119939662ca629c70aff",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/README.md",
+      "sha256": "f695143aa7fe019af9dd2bed1291af0b9fc6ef3545a4d6f5c87d611e06bce6d4",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/release-and-recovery.md",
+      "sha256": "e026e439e5db70d07fdfdf0a0ea9966a73bbf263597c803e0661c8f2cf18c63b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/rust-module-migration.md",
+      "sha256": "653788ea27d2e083d708eb26a8affff062215a2b36a87b3da961811e0eb8f3ac",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/skill-research.md",
+      "sha256": "1cdba3f826da008ab7174ed95a4fe17e3be03b3714ec1dc9b78af5b7350cd33b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/systematic-troubleshooting.md",
+      "sha256": "910730945ad25d138eebfc5fe779873e213bbe723999c97b69940bd0a041e832",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/task-handoff.md",
+      "sha256": "edef71236b31832a5f9f0b361406b99d9ecb3a7ff9e489df0314680e8b6e3dff",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/task-records.md",
+      "sha256": "1707477e3f5daa1956819c3679679bab2dc05d40ab1af274868e2067fa50e3d7",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/scenarios/workflow-management.md",
+      "sha256": "b9f24cca1efd1529edba65d59ba83c6e5826ea2ef0e62cf585c26efd32ddc915",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/ArsenalSC-OFL.txt",
+      "sha256": "8ddd61b18ba2c0d0dbe4a691cf5f1a0673f473d02fa0546e67ee88c006aeff6e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/ArsenalSC-Regular.ttf",
+      "sha256": "65e6f89df58f68fd905b3add34a79dd6106aa3b3044df0dad9676fff53d504b9",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/BigShoulders-Bold.ttf",
+      "sha256": "b43bcd198b9fdf717dd42aa61a34dba32e01aceaeae659d689afd0ca52c37ea2",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/BigShoulders-OFL.txt",
+      "sha256": "fbc746aabf0eb1847dfd92e2efc4596d79fa897d60b8e64062a22f585508fb3f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/BigShoulders-Regular.ttf",
+      "sha256": "18a879fc71978a4447150705caf880a9da3860083c259fd29e6dc03057b6842a",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/Boldonse-OFL.txt",
+      "sha256": "45cc82ab4032273c0924025ffcf8f0665a68e1a5955e3f7247e5daf1deeb1326",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/Boldonse-Regular.ttf",
+      "sha256": "cc2e540604565c0f90a7d8d46194a2f42fc9c45512cd2e39bf03b50eb68c35a4",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/BricolageGrotesque-Bold.ttf",
+      "sha256": "a737b146fe0d77ffe8a86e3cd16700dd431d3b1e420d4fd80e142cd68a1cb50d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/BricolageGrotesque-OFL.txt",
+      "sha256": "0e4f4eb8534bc66a76aca13dd19c1f9731b2008866b29ccff182b764649df9b4",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/BricolageGrotesque-Regular.ttf",
+      "sha256": "972a6d098c9867ae131d0ea99e221e63976b11a19d4b931c2c7ace525674e4f6",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/CrimsonPro-Bold.ttf",
+      "sha256": "48f191e38355c8db100eb3ce157c20f9302a3b9a37b44a660f77ecfce3986609",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/CrimsonPro-Italic.ttf",
+      "sha256": "52318db3526b644e6efa60be0b3ca5a50e40fbe8bd026c261e0aa206f0772267",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/CrimsonPro-OFL.txt",
+      "sha256": "35680d14547b6748b6f362a052a46d22764ce5eccf96e18b74f567bb2ee58114",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/CrimsonPro-Regular.ttf",
+      "sha256": "48fad08cb1917a7b2f2c6fe5135d6c07743a6663cf7631ec4481108aaf081422",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/DMMono-OFL.txt",
+      "sha256": "bfe7842fcb88323e2981e24710c25202677385a8c75fb6a87217b275a0247ae3",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/DMMono-Regular.ttf",
+      "sha256": "f98ada968dc3b6b2c08d3f5caaf266977df0bfe0929372b93df5a06cf2ace450",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/EricaOne-OFL.txt",
+      "sha256": "e0de629968b52255548d5fafcf30b24ff9edae0eda362380755a75816404d0fa",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/EricaOne-Regular.ttf",
+      "sha256": "db1d89e80e33a8a01beaaac7a85df582857d24a43f1e181461aa7ff5d701476a",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/GeistMono-Bold.ttf",
+      "sha256": "75c0828d5c1ee44b9ef9f4df577bf41595ec362e2ea3f1e558590c9e92c7949d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/GeistMono-OFL.txt",
+      "sha256": "6a873c900f584109b13ae0aaf81d6e3cf0a68751a216b03f7b6c68d547057bb4",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/GeistMono-Regular.ttf",
+      "sha256": "a55c1b51cda4afeab9e471e7947b85a20f7c8831d7e6b1470c1b7fbdc0f0f15e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/Gloock-OFL.txt",
+      "sha256": "c0a3f3125ac491ef3d1f09f401be4834c646562f647e44f2bcbc49f0466c656d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/Gloock-Regular.ttf",
+      "sha256": "e86b4ce66dbd3f1f83eee8db99ec96e0da1128c3f53df0e9b3b7472025dfe960",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/IBMPlexMono-Bold.ttf",
+      "sha256": "dbd2a2fb024579438d6400a84e57579bfd2dbe67c306c8fd9fde92a61e4f2eea",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/IBMPlexMono-OFL.txt",
+      "sha256": "5294ce778857e1eb02e830b6ab06435537d38f43055327e73d03a2d4d57d5123",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/IBMPlexMono-Regular.ttf",
+      "sha256": "ab08018ccd276b79fb2c636bb95b9c543598f9d50505fe92506fcb4dae7810cd",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/IBMPlexSerif-Bold.ttf",
+      "sha256": "b8d294e9b5c5a0940f167c3ced0f7ef2e3f57082ca3ff096ef30e86e26c1c159",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/IBMPlexSerif-BoldItalic.ttf",
+      "sha256": "da64b75f4284f53e7b5c71fa190a35b8bf3494fe19f1804c81c3a53340bca570",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/IBMPlexSerif-Italic.ttf",
+      "sha256": "b11f1048745e715a55c9d837b3f10226ca3d78867b7db7251ddad8f98dcf0f38",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/IBMPlexSerif-Regular.ttf",
+      "sha256": "77cd233a2af8dc6b1022faea3bb3b01f3c75af68bcf530cb6aeb15982ff3dbb7",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/InstrumentSans-Bold.ttf",
+      "sha256": "444f85bf1c4b0e1ce1ca624f6be54bcd832207714ccaf4ea99ee531341683bdf",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/InstrumentSans-BoldItalic.ttf",
+      "sha256": "3762f6cef95d6039489ad5ba5787d4c30f17a1ad01e9ac3c816ed69692722a68",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/InstrumentSans-Italic.ttf",
+      "sha256": "78e85858e371b2cb4e18f617c10f0f937c0e12a0887ffee98555b24ed305b3a7",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/InstrumentSans-OFL.txt",
+      "sha256": "bf4dc6d13a8cccd4807133c77a1ee9619a16b92cb23322258725ab6731c2f6e5",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/InstrumentSans-Regular.ttf",
+      "sha256": "a22cb26e48fd79bcb01bf2fc92d36785474dce36d9c544ab0a8868c2657c4a87",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/InstrumentSerif-Italic.ttf",
+      "sha256": "9c86e4d5a47b50224a2463a9eca8535835257c8e85c470c2c6b454b1af6f046e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/InstrumentSerif-Regular.ttf",
+      "sha256": "56ac3be03ac3ba283196b3e77850ab2ffcf56cfb6fd3212c5620109a972f8c99",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/Italiana-OFL.txt",
+      "sha256": "8373b11312ace78c4cec2e8f9f6aa9f2330601107dac7bcf899c6f2dbd40c5a5",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/Italiana-Regular.ttf",
+      "sha256": "15c4dd6ab8cf4a29ba8826f65edcbe2f6c266c557d34d081f25072dfd5605fd2",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/JetBrainsMono-Bold.ttf",
+      "sha256": "a2349098b9e45419e7bf0e2958d6c4937a049dded37387b08be725be4c7615f3",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/JetBrainsMono-OFL.txt",
+      "sha256": "a76abf002c49097d146e86740a3105a5d00450b1592e820a1109a8c5680cd697",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/JetBrainsMono-Regular.ttf",
+      "sha256": "b6b1ff4ddefe36d7f2a6174e1d001cab374e594519ee9049af028d577b64c5f5",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/Jura-Light.ttf",
+      "sha256": "c891a381df056b2c4dfe85841e911bf45da0890fa21a7b2692cbe5ea1f505e1e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/Jura-Medium.ttf",
+      "sha256": "c72965cb732a92872643819fd1734128238583cc36b116313859137a51d3368a",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/Jura-OFL.txt",
+      "sha256": "eaf9bdb675f6d87e5feb88199ab3ea581d3bd2082f426e384fa9c394576d7260",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/LibreBaskerville-OFL.txt",
+      "sha256": "55959eef5b0c3b2e3c1c7631b8ff0f9447d75de20f29cfa7db5bcfb026763343",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/LibreBaskerville-Regular.ttf",
+      "sha256": "2101302538d9e88adb679031c04623e4578b5745e89566284fd2c508d79acae0",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/Lora-Bold.ttf",
+      "sha256": "7d74015e950c2fb66519c7295b8155621d22200ae2ca2a4c6b43ce3c490cac87",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/Lora-BoldItalic.ttf",
+      "sha256": "152f87e71f5ddb60d5c57ecd9132807c947e65c42977193c9164e7c5a6690081",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/Lora-Italic.ttf",
+      "sha256": "be627e595184e8afe521f08da0607eee613f1997d423bc8dadc5798995581377",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/Lora-OFL.txt",
+      "sha256": "62e37a82d3f1ef2a70712885fa8b3144b65fd144d8e748d6196b690a354d792c",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/Lora-Regular.ttf",
+      "sha256": "7ed00e7c9cdf16ab7e2fd2361fe45d4f0b61263cd60aae398b27b7ee08108827",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/NationalPark-Bold.ttf",
+      "sha256": "69ac4c301c4a7233c6e602d12a92c54d7967b575f4449951c45ce773f7acff53",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/NationalPark-OFL.txt",
+      "sha256": "81c6c71d83b5b45d7344f96df12bb4a2477a5b092a9144757ee1d0f50f855175",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/NationalPark-Regular.ttf",
+      "sha256": "a477338b7e18308d476650dfe31235ef86a883572665e56ffb5fb80f82009b58",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/NothingYouCouldDo-OFL.txt",
+      "sha256": "7c2a6970584ddad04919816163746f83b378078015899b18468b40f05e9ce128",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/NothingYouCouldDo-Regular.ttf",
+      "sha256": "d866f985896d3280f4fce72db7e17302c24a0c1fdb0699b6b5ed3af14f944d57",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/Outfit-Bold.ttf",
+      "sha256": "6654b93d21301ec61887d3cedd6c11d9df1b1dfb63f9cf45ac7995f6e2235ab1",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/Outfit-OFL.txt",
+      "sha256": "1945b62cd76da9a3051a1660dde72afaa64ffc2666d30e7a78356d651653ba2f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/Outfit-Regular.ttf",
+      "sha256": "f24945365147c9e783e91d8649959b59be6b00c9ee4ecd2f6b33afbb2dd871fe",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/PixelifySans-Medium.ttf",
+      "sha256": "38397504f71c122b03d234ea6f55118e3d5bdbddffd82bedddbd7755d3b3be82",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/PixelifySans-OFL.txt",
+      "sha256": "7f54d1d9f1ae1ba9f2722f978145f90324fea34ca3c2304b3a29cfa96ac6037e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/PoiretOne-OFL.txt",
+      "sha256": "2eaf541f7eb8b512e4c757a5212060abf5b6edfef230e9d7640bf736b315c33a",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/PoiretOne-Regular.ttf",
+      "sha256": "9cf265b139648b36b6c0afdfeb0bf27f7e66db9a16094bc40f644d8da05bc318",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/RedHatMono-Bold.ttf",
+      "sha256": "7ef48353f4be5ddb90f000f6fad48f2b62b3e8c27d9818d8d45ff46c201065e0",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/RedHatMono-OFL.txt",
+      "sha256": "435fbfb7e66988b2a06686a4cb966faec733f35d8fe100a1601573c27f3e0bb8",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/RedHatMono-Regular.ttf",
+      "sha256": "452fe826871b37539f5212b20c87cf30f82f58dd2741f1c96edd1dcbdc0db6b4",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/Silkscreen-OFL.txt",
+      "sha256": "6b849745119bbe85ec01fd080c9cd50234da9f52ac6e48b55d1a424a0c4d7ca9",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/Silkscreen-Regular.ttf",
+      "sha256": "49567408600809e25147e9225ac4f37f410e2df45a750696c45027531fb65f1b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/SmoochSans-Medium.ttf",
+      "sha256": "dd76e6e77cce82f827a8654cd906e9ce58f3aaf78adda63c4a7f655b8ecb41f0",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/SmoochSans-OFL.txt",
+      "sha256": "74c9c4eb88e891483e1b7bc54780b452cbf4f4df66d4e71881d7569aa2130749",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/Tektur-Medium.ttf",
+      "sha256": "52bbe8c9b057b3d2da4eeace31a524b1ea26a1375ae34319cf6900ccc57a4c82",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/Tektur-OFL.txt",
+      "sha256": "3f1466cb5438f31782eeb6e895f3a655bc4d090e24263e331f555357d1cb734e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/Tektur-Regular.ttf",
+      "sha256": "162e1b36c4718c5b051b36c971ad7e50d341944f35618f480422ebbe72988f98",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/WorkSans-Bold.ttf",
+      "sha256": "240d125fc9f8561363dc1ea3f513501253bd70942f41468f48f0b0cafb0c82e2",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/WorkSans-BoldItalic.ttf",
+      "sha256": "a5b2cad813df0aaa7d16621f2e93b5117c25e9bc788bc9a3ad218e9d6348ce34",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/WorkSans-Italic.ttf",
+      "sha256": "6b7f7002e0b0c8b261fe878658ef5551e3e59d9f6b609b04efb90dde1e2c1ada",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/WorkSans-OFL.txt",
+      "sha256": "ace8c22a3326318b54e67c3691857929634205533f454a70ef5a3473ddb2e2ba",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/WorkSans-Regular.ttf",
+      "sha256": "e67985a843df0d3cdee51a3d0f329eb1774a344ad9ff0c9ab923751f1577e2a4",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/YoungSerif-OFL.txt",
+      "sha256": "cdcb8039606b40a027a6d24586ec62d5fe29c701343d82a048c829cb28a3dd28",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/canvas-fonts/YoungSerif-Regular.ttf",
+      "sha256": "f8dc08f77abad753a00670af70756a8ace938e5c3f0b770f4f4c2071c4bd8fc6",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/LICENSE.txt",
+      "sha256": "bc6b3af2f331cbc7fb0da1344efb2cbe5877a31498b4d70dbc7000f3405a1362",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/README.md",
+      "sha256": "f60e473e3fe607057ef8ad0c2698a45aa4788e9c1131b1f9aa135a378527b535",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/canvas-design/SKILL.md",
+      "sha256": "a1f288079624402f30682753c1d43920b6664785698d21d3e7aa197450a6448b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/codebase-memory/LICENSE",
+      "sha256": "1f58f9911dc5e3bcb96de28bb28e7b6bb7eb323952d29569c5d7214a152146bb",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/codebase-memory/native-interfaces.md",
+      "sha256": "5a50c6594a9c1f6871e1a91a6422ccd9a0152492a16d903c312caeba3199e3f9",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/codebase-memory/README.md",
+      "sha256": "584c4fb0ba3f3ddcbec96de91e133b587b0a100e53433622c42c086f163b0743",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/codebase-memory/references/upstream-skill.md",
+      "sha256": "8199b92faf89ab7b33bd5f2d7d1f8e967b53741cb357735219c049218a09c1b1",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/codebase-memory/SKILL.md",
+      "sha256": "7e76dbe9327de25e979ec8886e6878a28d8f273108170124a52bc1904c6d7b14",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/data-query/SKILL.md",
+      "sha256": "9e12c0c67fca0b54a176d416634aef18cf026e45122ba5f8ac618bfccbc4f6cc",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/hcom/SKILL.md",
+      "sha256": "2402400f3f3adec25652f2be93add4b08c39fa8a285546bbdbdbb78de60ca348",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/image-production/assets/fitness-brief.json",
+      "sha256": "4e636f480e79d4c2ade679ab4fcd70632319d191b327ad1e380953ab37cedf96",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/image-production/catalog/asset-styles.json",
+      "sha256": "0bbf173fd0241343137a7b71f16339311f24e070a335b460e132c948056b8555",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/image-production/catalog/formats.json",
+      "sha256": "2af547e68b0730ec252a62e5f4696f67c5dc70c6a4f9410e585949f8c570f88e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/image-production/catalog/styles.json",
+      "sha256": "f66e6adc27d51b1990cc041cf1ec14f03476664ac80b084263c5fdc657f1bd73",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/image-production/references/contract.md",
+      "sha256": "e0975b3ee44eb0ca7cbf67b8118ef17cd3567798ba46140f299154550f1e40b3",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/image-production/references/origin.json",
+      "sha256": "c4f66d3dce45076cdb462f858ab18100586ae9174a997c3136ae2081449d244e",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/image-production/references/tool.md",
+      "sha256": "972394e06052f8ea926877db0d6dfbb24626b3042927773c1056304192c8d86c",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/image-production/scripts/design_batch.py",
+      "sha256": "e6237298d846ce20bb7f3b9d70191be2f743bd1a0456afcb9b987b86f4009bb8",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/image-production/SKILL.md",
+      "sha256": "147cbf2d7712b46acefcea7ab91e917a6b2413466eafd46eed0e96cba5d4f041",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/minimalist/SKILL.md",
+      "sha256": "908bd3cadd56fb4ee478f5d1aee8bbc52c9fdfcf598591c1f5863ccfdab96b54",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/model-adaptation/SKILL.md",
+      "sha256": "30bdcb5233ba4076d9fb0252bdeba0b531c14b9c459ab41781a6635923c629b1",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/model-analysis/SKILL.md",
+      "sha256": "1151920aef68f61f830317caf0d8396aa8d731f090f06605135329530838cdf8",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/NOTICE.md",
+      "sha256": "522882ea340ed107f0d735862246005f16fd29c38bb1d783c4dfb96a8bf017f2",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/observable-evidence/SKILL.md",
+      "sha256": "c8854b67f84b4bf1f67de8871a9a713186bfa8319a1bb00c24f2a223a30c57b0",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/release/SKILL.md",
+      "sha256": "5972c8fa1cdba933fb78d2777175fa21f69209cb8669416aa45bd65d0f1e6521",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/shadcn/agents/openai.yml",
+      "sha256": "35db91b1eef58b2abe01da9b88577de5a44e233b740cd93d692ddeeadd2afe4d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/shadcn/assets/shadcn-small.png",
+      "sha256": "0ecc62d682727f68fc4937eed19960c706714fa084d44f63028d611ae02bf3d7",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/shadcn/assets/shadcn.png",
+      "sha256": "7d60ad6fec4d89a0d44ba5a3c9283d2fea0047af5467f9227040e20d927d39b7",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/shadcn/cli.md",
+      "sha256": "a381e35bf36fe7bb851952c13707e01e82434fd7a4a4e53f6df26c6370838904",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/shadcn/customization.md",
+      "sha256": "84c1d47168c4b8adb5840e4af30a4e373ae3377c1110478c8974f398dd63f5ba",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/shadcn/evals/evals.json",
+      "sha256": "58aca2760b0cc5265bb575f76cd8eed344b88544314b8cb2cd53e0b8007dc936",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/shadcn/LICENSE.md",
+      "sha256": "1564074e13439397221ffd522e2e504d56561994a23d371aa5e3ad43e4f5423f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/shadcn/mcp.md",
+      "sha256": "8d696b4e45b7d0e337367248513bd9acebe8f3bcfd7b748c775e5a337c8f38c8",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/shadcn/registry.md",
+      "sha256": "42bb34356ad093c22885bcac81a7fbf6d060954dd7f9594311d3c23a57ed808f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/shadcn/rules/base-vs-radix.md",
+      "sha256": "2b2deb47d004285220c1fc6b38bb2edc2d0ccbcdafd031b0b189d5d8ed0d1ba8",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/shadcn/rules/chat.md",
+      "sha256": "de29c12524a27578a59ecf8c95ea939278c1a3572a3706bfc99f6f92cb770b7b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/shadcn/rules/composition.md",
+      "sha256": "f282df828d83a91132a846ddb62eea149a7c7c94822e9ca88cfddf85af01aa41",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/shadcn/rules/forms.md",
+      "sha256": "29593e14381e34626f8e0e9c15c59f3394b92a0623af6a6ec94585400123853c",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/shadcn/rules/icons.md",
+      "sha256": "d4a58266648872d9ee07d0c2368843a1cb88b8253b7f528dd7bda9d68b6c2535",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/shadcn/rules/styling.md",
+      "sha256": "47bd2c3b6216b96af0ab169063a83dfef7f80c58536cf69445a6f4d22753326c",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/shadcn/SKILL.md",
+      "sha256": "75ea3161c191e262548cd37196e516d14e3674f5e09f669cfd92c7f87e37cc0c",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/skill-research/SKILL.md",
+      "sha256": "11ee3daee695aa8c080fed96bb1f8096a4ce25d34c76181d704cf2f6e1fff465",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/stripe/LICENSE",
+      "sha256": "04460ff88cf26c5801e062b9b2847bfebd3f08c1432f97dc0124edfbbb6d671b",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/stripe/README.md",
+      "sha256": "0268edcaa279ae06f7a06c2fd163e94e1e8eb674a9528adc2ed0061ccc81f27f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/stripe/sources.json",
+      "sha256": "69d04a7bcf7beaec958f586e9a2f067db94fe22ccf4605ef0c1b03837198aa49",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/stripe/stripe-best-practices/references/billing.md",
+      "sha256": "85cf38ea5ca0b43da54d96a2b285abb467679f8e103595b524b801ebc00b7c5d",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/stripe/stripe-best-practices/references/connect.md",
+      "sha256": "5da76cb728ab738f52b0838d5e5d4143a3aa91d73d842f69153e2a1f0ca9471f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/stripe/stripe-best-practices/references/payments.md",
+      "sha256": "f7edac576b72da7b5c11a4d532240bd11dab1f4c8dfe1d4040d16d5a6ec0fee0",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/stripe/stripe-best-practices/references/security.md",
+      "sha256": "9d2b1f3a6e72d5907e0418291523c61aa27bb7ad2db3a7b94fe4f356519651d7",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/stripe/stripe-best-practices/references/tax.md",
+      "sha256": "a0699c4f70892d09eab427636343f569b29aed1036e3d1292348fa28e0e3cf3c",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/stripe/stripe-best-practices/references/treasury.md",
+      "sha256": "ccd38ef29a654b2c59bde4d56e5537af6a89f10a7297ed0b87c3b9e9f2bb8ffa",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/stripe/stripe-best-practices/SKILL.md",
+      "sha256": "2a85f02dbed48bb1e1863b80836151028512aa72f079467647a48833107acacc",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/stripe/stripe-docs/SKILL.md",
+      "sha256": "af38e784edcdb2f1b273825705c749c1fb3a2614a25875d0705abde02eaa603f",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/stripe/upgrade-stripe/SKILL.md",
+      "sha256": "2204ecc7f1778264fa86e61a3af5903af369aa0a3c52fa18a7c504601b041a97",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/tsxctx/SKILL.md",
+      "sha256": "2f8bde5cdc53fb8150a3dc05849b915d67e01a5a5af8b229a7dcf160835643b9",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/workload-modeling/references/model.md",
+      "sha256": "63aa44d9bab96eab7a8f0adffd75255b31920ac28de217465819afa5ce3c68e6",
+      "mode": 420,
+      "ownership": "managed"
+    },
+    {
+      "path": ".agent-guides/skills/workload-modeling/SKILL.md",
+      "sha256": "8d93d5e2f02177dd85420423f1ffc1d99595f60328c86aecc9b8a64ee6e3d1fb",
+      "mode": 420,
+      "ownership": "managed"
+    }
+  ]
+}

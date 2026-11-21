@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "system": "space",
+  "id": "space/whole-space",
+  "kind": "board",
+  "title": "Space 完整工作面",
+  "summary": "Space 完整工作面 · 与真实 Space 共享实现",
+  "maturity": "experimental",
+  "source": [
+    "./space.scenes.tsx"
+  ],
+  "design": "./space.design.md",
+  "useWhen": [
+    "操作和检查实际 Space Space 完整工作面"
+  ],
+  "avoidWhen": [
+    "不要把本地演示结果当作原生操作或最终验收"
+  ],
+  "dependencies": [
+    "space/layout",
+    "space/conversation-block",
+    "space/scene-anchors",
+    "space/scene-controls"
+  ],
+  "events": [],
+  "states": [
+    {
+      "id": "default",
+      "title": "完整组合",
+      "description": "完整组合；真实组件，本地演示",
+      "scene": "default"
+    },
+    {
+      "id": "lunar",
+      "title": "月面站",
+      "description": "可操作的办公室、角色和会话",
+      "scene": "lunar"
+    },
+    {
+      "id": "terrarium",
+      "title": "苔庭",
+      "description": "可操作的办公室、角色和会话",
+      "scene": "terrarium"
+    },
+    {
+      "id": "newsprint",
+      "title": "漫画社",
+      "description": "可操作的办公室、角色和会话",
+      "scene": "newsprint"
+    },
+    {
+      "id": "inkpost",
+      "title": "烛影邮局",
+      "description": "场景灯、人物和会话",
+      "scene": "inkpost"
+    },
+    {
+      "id": "windward",
+      "title": "风屿驿站",
+      "description": "场景灯、人物和会话",
+      "scene": "windward"
+    },
+    {
+      "id": "jadecourt",
+      "title": "流光庭院",
+      "description": "场景灯、人物和会话",
+      "scene": "jadecourt"
+    },
+    {
+      "id": "citrus",
+      "title": "柚风小筑",
+      "description": "场景灯、人物和会话",
+      "scene": "citrus"
+    },
+    {
+      "id": "reverie",
+      "title": "星绒梦室",
+      "description": "场景灯、人物和会话",
+      "scene": "reverie"
+    },
+    {
+      "id": "wash",
+      "title": "雨后水彩",
+      "description": "场景灯、人物和会话",
+      "scene": "wash"
+    },
+    {
+      "id": "collage",
+      "title": "彩纸事务所",
+      "description": "场景灯、人物和会话",
+      "scene": "collage"
+    }
+  ],
+  "interactions": [],
+  "scenes": [
+    {
+      "id": "default",
+      "title": "完整组合",
+      "description": "完整组合；真实组件，本地演示",
+      "kind": "overview",
+      "controls": [
+        {
+          "id": "narrow",
+          "label": "窄容器",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "id": "short",
+          "label": "短容器",
+          "type": "boolean",
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "lunar",
+      "title": "月面站",
+      "description": "可操作的办公室、角色和会话",
+      "kind": "overview"
+    },
+    {
+      "id": "terrarium",
+      "title": "苔庭",
+      "description": "可操作的办公室、角色和会话",
+      "kind": "overview"
+    },
+    {
+      "id": "newsprint",
+      "title": "漫画社",
+      "description": "可操作的办公室、角色和会话",
+      "kind": "overview"
+    },
+    {
+      "id": "inkpost",
+      "title": "烛影邮局",
+      "description": "场景灯、人物和会话",
+      "kind": "overview"
+    },
+    {
+      "id": "windward",
+      "title": "风屿驿站",
+      "description": "场景灯、人物和会话",
+      "kind": "overview"
+    },
+    {
+      "id": "jadecourt",
+      "title": "流光庭院",
+      "description": "场景灯、人物和会话",
+      "kind": "overview"
+    },
+    {
+      "id": "citrus",
+      "title": "柚风小筑",
+      "description": "场景灯、人物和会话",
+      "kind": "overview"
+    },
+    {
+      "id": "reverie",
+      "title": "星绒梦室",
+      "description": "场景灯、人物和会话",
+      "kind": "overview"
+    },
+    {
+      "id": "wash",
+      "title": "雨后水彩",
+      "description": "场景灯、人物和会话",
+      "kind": "overview"
+    },
+    {
+      "id": "collage",
+      "title": "彩纸事务所",
+      "description": "场景灯、人物和会话",
+      "kind": "overview"
+    }
+  ],
+  "usage": {
+    "entry": "./space.scenes.tsx",
+    "symbols": [
+      "SpaceComposition"
+    ]
+  }
+}

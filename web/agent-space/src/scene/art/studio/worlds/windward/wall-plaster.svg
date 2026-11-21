@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="64" viewBox="0 0 160 64">
+  <title>Limewash, blue dado, and weathered sill</title>
+  <defs>
+<linearGradient id="lime" x2="0" y2="1"><stop offset="0.000" stop-color="#f6eacd"/><stop offset="0.500" stop-color="#ead9b9"/><stop offset="1.000" stop-color="#cfb797"/></linearGradient>
+<linearGradient id="blue" x2="0" y2="1"><stop offset="0.000" stop-color="#a1bbb0"/><stop offset="0.500" stop-color="#6f988e"/><stop offset="1.000" stop-color="#547a74"/></linearGradient>
+<linearGradient id="sill" x2="0" y2="1"><stop offset="0.000" stop-color="#c19871"/><stop offset="0.500" stop-color="#d5ab7f"/><stop offset="1.000" stop-color="#7b634f"/></linearGradient>
+<linearGradient id="shade" x2="0" y2="1"><stop stop-color="#47595a" stop-opacity=".29"/><stop offset=".6" stop-color="#545d58" stop-opacity=".085"/><stop offset="1" stop-color="#545d58" stop-opacity="0"/></linearGradient>
+  </defs>
+<path d="M0 0H160V48H0Z" fill="url(#lime)"/>
+<path d="M0 5H160M0 8H160" stroke="#7d7770" stroke-opacity=".29"/>
+<path d="M0 6H160M0 10H160" stroke="#fff2cf" stroke-opacity=".54"/>
+<path d="M0 14H16L22 12H37L45 12.5H65L58 14H37L30 16H0ZM116 11h27l5 2h12v2h-31l-8 2h-24l5-2zM59 24h17l19-4 15 1-12 2-6 3-25 1-14 2H42z" fill="#fff6dc" opacity=".52"/>
+<path d="M0 28h19l7-2 20 2-14 2-5 2H0zm90 4h15l11-4 26 1 5-2h13v3h-12l-7 2-21-1-11 4H82z" fill="#a99376" opacity=".16"/>
+<path d="M0 34H160V44H0Z" fill="url(#blue)"/>
+<path d="M0 34h160M0 37h160" stroke="#f9e3b1" stroke-opacity=".55" stroke-width=".8"/>
+<path d="M13 37v6m31-6v6m39-6v6m37-6v6m25-6v6" stroke="#284c50" stroke-opacity=".54"/>
+<path d="M15 38v3m31-3v3m39-3v3m37-3v3m25-3v3" stroke="#c8dcc0" stroke-opacity=".42" stroke-width=".8"/>
+<path d="M0 43H160v6H0Z" fill="url(#sill)"/>
+<path d="M0 44h160M5 46h22m6 0h9m13 0h22m25 0h23m10 0h18" stroke="#fce3b0" stroke-opacity=".69" stroke-width=".7"/>
+<path d="M0 49H160v15H0Z" fill="url(#shade)"/>
+</svg>

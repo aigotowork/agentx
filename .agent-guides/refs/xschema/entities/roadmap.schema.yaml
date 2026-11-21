@@ -1,0 +1,24 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: xschema roadmap
+type: object
+required: [ schema, description, status, items ]
+properties:
+  schema: { const: roadmap }
+  items:
+    type: object
+    minProperties: 1
+    propertyNames: { $ref: common.schema.yaml#/$defs/schemaId }
+    additionalProperties: { $ref: "#/$defs/item" }
+allOf:
+  - { $ref: common.schema.yaml#/$defs/base }
+additionalProperties: true
+$defs:
+  item:
+    type: object
+    required: [ description ]
+    properties:
+      description: { $ref: common.schema.yaml#/$defs/text }
+      status: { $ref: common.schema.yaml#/$defs/text }
+      horizon: { $ref: common.schema.yaml#/$defs/text }
+      proposals: { $ref: common.schema.yaml#/$defs/paths }
+    additionalProperties: true

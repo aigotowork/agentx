@@ -1,0 +1,10 @@
+schema: package
+description: Unified caller environment loading plan, ownership and independent evidence.
+artifacts:
+  - {kind: guidance, path: ./AGENTS.md, description: Current delivery context and resource boundaries.}
+  - {kind: delivery, path: ./delivery.md, description: Selected environment loading outcome and acceptance.}
+  - {kind: controller, path: ./controller.md, description: Native and independent execution bindings and handoffs.}
+  - {kind: document, path: ./evidence.md, description: Canonical fixed-input attempts, artifact, support and cleanup evidence.}
+  - {kind: document, path: ./native-release.json, description: Exact coherent native source, case and dependency handoff.}
+  - {kind: task, path: ./tasks/native.md, description: Cohesive bootstrap, configuration and launch implementation.}
+  - {kind: task, path: ./tasks/acceptance.md, description: Independent local behavior, package and cleanup evidence.}

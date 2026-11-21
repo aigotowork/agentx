@@ -1,0 +1,24 @@
+# Finite independent launch relation acceptance
+
+Owner: `launch-relations-check-lagoza`. [Task](../../.controller/agent-launch-relations/tasks/acceptance.task.md), [Delivery](../../.controller/agent-launch-relations/delivery.delivery.md), [published native model](../../.controller/agent-launch-relations/design.md#source-grounded-implementation-model-pivula-2026-11-15) own requirements. Native [Rust contracts](../../src/management/contract.rs) and generated [TypeScript](../../web/management/api/native.ts) own wire shapes. Authored cases below are preparation, not executed evidence.
+
+| Case | Starting state and action | Expected result / failure invariant | Evidence |
+| --- | --- | --- | --- |
+| R01 | Frozen candidate/hash; private dynamic loopback daemon; external A launch | Actual reservation and generated hooks; A origin external, no invented upstream; embedded Space assets served by candidate | Manifest, native receipts, HTTP |
+| R02 | Actual A Provider subprocess launches B,C; B launches D in another office | A direct children B,C; B upstream A and child D; D upstream B; no A→D edge | CLI receipts, exact HTTP refs |
+| R03 | Same creation subject, downstream limit 1 and cursor; invalid limits/cursor | Finite disjoint pages cover B,C exactly; invalid input rejected, unrelated cursor cannot cross subject | HTTP pages/errors |
+| R04 | Browse A→B→D then D→B→A repeatedly, enter per-Agent drafts | Exact conversation and actual office selected each step, drafts survive return; zero lifecycle/send POSTs | Browser trace, exact GETs, checkpoints |
+| R05 | Stop B, then unrelated launch reuses its name | A still targets B's original stopped conversation; D upstream stays original B; new B never substituted; status fresh | Stop receipt, HTTP, browser history |
+| R06 | Resume stopped B as external operator; fork D initiated by A | Resume inherits B creation/upstream/children; creation edge not reparented; fork creator A independently of D source | CLI/API receipts, HTTP |
+| R07 | Stop upstream A and downstream D; remove retained target only using supported native cleanup | Retained exact targets expose stopped status; removed history explicitly unavailable, never successor fallback | Native lifecycle receipts, HTTP |
+| R08 | Unknown/legacy source or failed startup admission supported by fixture | Unknown differs from external; failed startup does not fabricate readiness or creator; no historical name guessing | Supported native-path facts; limits explicit |
+| R09 | Restart only private daemon, same scope/generation | Edges and aliases retained; fresh status from exact current/stopped projection | Before/after HTTP and process manifest |
+| R10 | Reset private generation; old-generation/ref query | Old references rejected, new scope does not inherit edges; late browser old reads cannot restore old target | Native reset, HTTP, browser |
+| R11 | Same full Space in 390px viewport and iframe; failed relation GET then recovery | Relation actions/composer reachable, selected exact subject/draft retained; visible error and retry, no stale actionable relation or implicit POST | DOM/ARIA, geometry, bitmap, traffic |
+| R12 | Finish or fail | Exact owned processes terminated; immutable candidate unchanged; no protected service touched | Cleanup manifest |
+
+R07 retention removal and R08 legacy/failure need genuine supported admission/cleanup seams; missing seams remain explicit gaps rather than managed-DB fixtures. Native owner deterministic tests may supplement those gaps, never replace R01–R06/R09 composed execution.
+
+Execution waits for pivula's integrated artifact path/hash. Reuse `tests/office_management/office_fixture.py` and `tests/agent_management/provider.py`; private staged Provider command control preserves its real process/environment binding. Pin candidate SHA-256 before starting anything. No ambient AgentX environment is inherited by fixture commands. Browser state means explicit native refs, observed GETs and draft values; no React private state claim. Every meaningful browser checkpoint retains semantic layout, state/geometry and actual pixels through `browser_checkpoint.mjs`; captures are sequential, not atomic. Paid Provider/platform compatibility is outside substitute evidence.
+
+Entry after handoff: `python3 tests/agent_launch_relations/acceptance.py --candidate /absolute/frozen-artifact --sha256 EXPECTED --evidence /absolute/new-run-directory`. `--api-only` explicitly excludes browser evidence. Normal execution prepares the real launch tree, HTTP boundaries, repeated browser journey, stopped exact history browser, resume/fork and stopped upstream/downstream projections, then private restart/reset. Existing installed Playwright/Chrome paths can be selected with `AGENTX_PLAYWRIGHT_PACKAGE` / `AGENTX_BROWSER_EXECUTABLE`; no dependency install occurs. Process cleanup and unchanged artifact hash are retained even on failure.

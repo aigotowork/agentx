@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agent Labels · 设计讨论</title>
+<style>
+:root{--bg:#f5f6f8;--surface:#fff;--ink:#202837;--muted:#647084;--border:#dde2e9;--accent:#3254be;--soft:#eef2ff;--good:#20764e;--danger:#ad3434;--radius:10px;--space:16px;--small:12px;--body:14px;--large:25px;--max:1140px;--side:320px;--gap:8px;--row:44px;--line:1.55;--rule:1px;--pill:4px;--zero:0;--weight:600}
+*{box-sizing:border-box}body{margin:var(--zero);background:var(--bg);color:var(--ink);font:var(--body)/var(--line) system-ui,sans-serif}.workspace{max-width:var(--max);margin:auto;padding:var(--space)}.topbar,.controls,.filter-form,.row-title,.actions{display:flex;align-items:center;gap:var(--gap);flex-wrap:wrap}.topbar{justify-content:space-between;margin-bottom:var(--space)}h1{font-size:var(--large);margin:var(--zero)}h2,h3,p{margin:var(--zero)}h2,h3{font-size:var(--body)}a{color:var(--accent)}.badge,.label{padding:var(--pill) var(--gap);border-radius:var(--pill);background:var(--soft);color:var(--accent);font-size:var(--small)}.layout{display:grid;grid-template-columns:minmax(var(--zero),1fr) var(--side);gap:var(--space)}.panel{background:var(--surface);border:var(--rule) solid var(--border);border-radius:var(--radius);padding:var(--space)}.controls{margin-bottom:var(--space)}button,input,select{font:inherit;min-height:var(--row);border:var(--rule) solid var(--border);border-radius:var(--pill);padding:var(--gap);background:var(--surface);color:var(--ink)}button{cursor:pointer}button:hover,button:focus-visible{border-color:var(--accent)}.primary{background:var(--accent);color:var(--surface)}.filter-form{flex:1}.filter-input{min-width:var(--zero);flex:1}.filter-list,.labels{display:flex;gap:var(--gap);flex-wrap:wrap}.filter-list{margin-bottom:var(--space)}.filter-chip{min-height:var(--zero);color:var(--accent);background:var(--soft)}.agent{padding:var(--gap);border:var(--rule) solid var(--border);border-radius:var(--pill);margin-top:var(--gap);cursor:pointer}.agent[aria-pressed="true"]{border-color:var(--accent);background:var(--soft)}.row-title{justify-content:space-between;margin-bottom:var(--gap)}.group-title{color:var(--muted);margin-top:var(--space)}.muted{color:var(--muted)}.error{color:var(--danger)}.count{font-weight:var(--weight);color:var(--accent)}.aside{display:flex;flex-direction:column;gap:var(--space)}pre{overflow:auto;font-size:var(--small);margin:var(--gap) var(--zero);white-space:pre-wrap;overflow-wrap:anywhere}summary{cursor:pointer}.selection{margin-top:var(--space)}.example{min-height:var(--zero);padding:var(--pill) var(--gap);font-size:var(--small)}.empty{padding:var(--space);color:var(--muted)}.status{font-size:var(--small);color:var(--good)}.section-head{display:flex;justify-content:space-between;align-items:center;gap:var(--gap)}.note{font-size:var(--small)}.footer{margin-top:var(--space);display:flex;gap:var(--space);flex-wrap:wrap}
+@media(max-width:760px){.layout{grid-template-columns:minmax(var(--zero),1fr)}.workspace{padding:var(--gap)}.panel{padding:var(--gap)}.topbar h1{font-size:var(--large)}.aside{gap:var(--gap)}}
+</style>
+<main class="workspace">
+  <header class="topbar"><div><h1>Agent Labels</h1><span class="muted">多个键值 · 一个 key 一个值</span></div><span class="badge">单值方案 · 合成数据演示</span></header>
+  <div class="layout">
+    <section class="panel" aria-label="过滤与分组">
+      <div class="controls"><form id="filter-form" class="filter-form"><input id="filter" class="filter-input" aria-label="Label 过滤条件" placeholder="project=atlas"><button class="primary">添加条件</button></form><button id="reset" type="button">重置</button></div>
+      <div class="actions"><button class="example" data-filter="project=atlas">project=atlas</button><button class="example" data-filter="review/state=approved">review/state=approved</button><button class="example" data-filter="!review/state">!review/state</button><button class="example" data-filter="project!=atlas">project!=atlas</button></div>
+      <p id="error" class="error" role="alert"></p><div id="filters" class="filter-list"></div>
+      <div class="section-head"><span><strong id="count" class="count"></strong> 个 Agent <span class="muted">· 条件之间 AND</span></span><label>分组 <select id="group"><option value="">不分组</option><option value="project">project</option><option value="review/state">review/state</option></select></label></div>
+      <div id="results"></div>
+    </section>
+    <aside class="aside">
+      <section class="panel"><h2 id="subject">Label 数据</h2><pre id="record"></pre><label for="state">review/state</label><select id="state"><option value="">移除这个 key</option><option value="pending">pending</option><option value="approved">approved</option><option value="blocked">blocked</option></select><button id="update" class="primary" type="button">模拟更新</button><p id="update-result" class="muted note" aria-live="polite"></p></section>
+      <section class="panel"><h2>过滤解释</h2><pre id="explanation"></pre><details><summary>查看语义约定</summary><p class="note">key=value 精确相等；key!=value 包含缺失 key；key 检查存在；!key 检查缺失。多条条件取交集。要“存在且不等”，同时添加 key 和 key!=value。</p></details></section>
+      <section class="panel"><h2>业务与运行状态</h2><p class="note"><code>review/state=approved</code> 由业务解释。运行中的 <code>active</code>、<code>listening</code> 等仍来自 AgentX 原生状态字段。</p><details><summary>为什么先不做 tags？</summary><p class="note">首版全部使用字符串。多个 label 已可表达多个分类维度；多值集合、默认 label 和隐式解析暂不加入。逗号只是值的一部分。</p></details><details id="storage"><summary>数据库与索引</summary><p class="note">关系表存储：每个 label 一行；集合头另存 revision。</p><pre>(owner, key) 主键：读取 / 局部更新
+(key, value, owner) 索引：精确筛选
+(creation, name, incarnation)：实例反查</pre><p class="note">列表按游标取页、批量装载 labels；精确总数按需计算。负向条件仍需检查所选范围。完整设计文档保留 10 万 Agent、97.5 万 labels 的独立 SQLite 实验；当前页面仍是本地模拟。</p></details></section>
+    </aside>
+  </div>
+  <footer class="footer"><a href="../../.docs/agent-classification.md">完整设计文档</a><span class="muted note">仅在当前页面模拟；刷新重置。尚未接入 AgentX。</span></footer>
+</main>
+<script type="module">
+// Illustrative projection of the owning classification design; no native API or persistence.
+const baseline = [
+ {name:'luna',status:'active',labels:{project:'atlas',feature:'search','review/state':'pending'}},
+ {name:'nova',status:'listening',labels:{project:'atlas',feature:'billing','review/state':'approved'}},
+ {name:'mira',status:'active',labels:{project:'comet',feature:'search','review/state':'approved'}},
+ {name:'sora',status:'blocked',labels:{project:'comet','review/state':'blocked'}},
+ {name:'tavi',status:'listening',labels:{project:'atlas'}},
+ {name:'niko',status:'inactive',labels:{}}
+];
+const keyPattern = /^(?:[a-z0-9](?:[a-z0-9._-]{0,61}[a-z0-9])?\/)?[a-z0-9](?:[a-z0-9._-]{0,61}[a-z0-9])?$/;
+let agents = structuredClone(baseline), filters = [], selected = 'luna';
+const el = id => document.getElementById(id);
+const has = (labels,key) => Object.hasOwn(labels,key);
+function parseFilter(text) {
+ let key, value, op;
+ const neq = text.indexOf('!='), eq = text.indexOf('=');
+ if (neq >= 0 && eq === neq + 1) { key=text.slice(0,neq); value=text.slice(neq+2); op='neq'; }
+ else if (eq >= 0) { key=text.slice(0,eq); value=text.slice(eq+1); op='eq'; }
+ else if (text.startsWith('!')) { key=text.slice(1); op='absent'; }
+ else {key=text; op='exists';}
+ if(!keyPattern.test(key)) throw Error('key 使用小写字母、数字、点、横线或下划线，可加 namespace/ 前缀。');
+ if(value !== undefined && (!value || value.trim()!==value || /[\u0000-\u001f\u007f-\u009f]/u.test(value) || new TextEncoder().encode(value).length>256)) throw Error('value 必须是 1–256 字节的非空字符串，不能含控制字符或首尾空白。');
+ return {text,key,value,op};
+}
+function matches(agent,f) {
+ const present=has(agent.labels,f.key), actual=agent.labels[f.key];
+ return f.op==='eq' ? present&&actual===f.value : f.op==='neq' ? !present||actual!==f.value : f.op==='exists' ? present : !present;
+}
+function addFilter(text) {
+ try { const f=parseFilter(text); if(!filters.some(x=>x.text===text))filters.push(f); el('filter').value='';el('error').textContent=''; render(); }
+ catch(e){el('error').textContent=e.message;}
+}
+function make(tag,text,className) {const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(className)node.className=className;return node;}
+function renderFilters(){
+ el('filters').replaceChildren(...filters.map((f,index)=>{const b=make('button',f.text+' ×','filter-chip');b.type='button';b.setAttribute('aria-label','移除 '+f.text);b.onclick=()=>{filters.splice(index,1);render();};return b;}));
+ el('explanation').textContent=filters.length ? filters.map(f=>f.text).join('\nAND ') : '当前没有过滤条件';
+}
+function renderAgents(){
+ const visible=agents.filter(a=>filters.every(f=>matches(a,f))), group=el('group').value, groups=new Map();
+ for(const a of visible){const name=group?(a.labels[group]??'（未标注）'):'';if(!groups.has(name))groups.set(name,[]);groups.get(name).push(a);}
+ el('count').textContent=visible.length;
+ const nodes=[];
+ for(const [name,items] of groups){
+  if(group)nodes.push(make('h3',name+' · '+items.length,'group-title'));
+  for(const a of items){const row=make('div',undefined,'agent');row.tabIndex=0;row.setAttribute('role','button');row.setAttribute('aria-pressed',a.name===selected);row.dataset.agent=a.name;
+   const title=make('div',undefined,'row-title');title.append(make('strong',a.name),make('span',a.status,'status'));
+   const labels=make('div',undefined,'labels');const entries=Object.entries(a.labels).sort(([x],[y])=>x<y?-1:x>y?1:0);
+   for(const [k,v] of entries)labels.append(make('span',k+'='+v,'label'));if(!entries.length)labels.append(make('span','无 labels','muted'));
+   row.append(title,labels);const select=()=>{selected=a.name;el('update-result').textContent='';render();};row.onclick=select;row.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select();}};nodes.push(row);
+  }
+ }
+ el('results').replaceChildren(...(nodes.length?nodes:[make('p','没有匹配的 Agent','empty')]));
+}
+function renderSelection(){const a=agents.find(x=>x.name===selected);el('subject').textContent=a.name+' · labels';el('record').textContent=JSON.stringify(a.labels,null,2);el('state').value=a.labels['review/state']??'';}
+function render(){renderFilters();renderAgents();renderSelection();}
+el('filter-form').onsubmit=e=>{e.preventDefault();addFilter(el('filter').value);};
+document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>addFilter(b.dataset.filter));
+el('group').onchange=render;
+el('update').onclick=()=>{const a=agents.find(x=>x.name===selected),value=el('state').value;if(value)a.labels['review/state']=value;else delete a.labels['review/state'];render();el('update-result').textContent='仅更新 '+a.name+' 的业务 label；运行状态仍为 '+a.status+'。';};
+el('reset').onclick=()=>{agents=structuredClone(baseline);filters=[];selected='luna';el('group').value='';el('filter').value='';el('error').textContent='';el('update-result').textContent='';render();};
+render();
+</script>
+</html>

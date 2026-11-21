@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="48" viewBox="0 0 120 48">
+  <defs>
+    <linearGradient id="daylight" x2="0" y2="1">
+      <stop stop-color="#70aa96"/><stop offset=".82" stop-color="#e7dba0"/>
+    </linearGradient>
+    <clipPath id="glass-edge"><path d="M6 39V23Q17 3 60 3t54 20v16Z"/></clipPath>
+  </defs>
+  <path fill="#173932" d="M1 42V23Q13 0 60 0t59 23v19Z"/>
+  <g clip-path="url(#glass-edge)">
+    <path fill="url(#daylight)" d="M6 0h108v40H6z"/>
+    <circle cx="83" cy="15" r="11" fill="#ffe5a0"/>
+    <path fill="#a4ba7c" d="M0 37V28q18-10 44-1T81 29q16-8 43-1v11Z"/>
+    <path fill="#699465" d="M0 34q18-8 34 0 17-10 36 0 15-9 27-1 16-9 24-6v14H0Z"/>
+    <path fill="#426e53" d="M13 40Q3 25 10 20q9 2 12 20Zm11 0q-2-16 9-23 5 12-1 23Zm63 0q-4-13-11-15 0 10 6 15Zm7 0q-2-12 4-20 6 6 3 20Zm7 0q2-17 12-19 3 12-5 19Z"/>
+    <path fill="#f9e9b8" opacity=".3" d="M17 0h12L12 39H5Zm41 0h22L60 39H46Zm45 0h7L91 39h-7Z"/>
+  </g>
+  <path fill="none" stroke="#2b5e4c" stroke-width="2.4" d="M60 3v37M29 9v31M91 9v31M5 25h110"/>
+  <path fill="none" stroke="#e8c98d" stroke-width="1.1" d="M6 39V23Q17 3 60 3t54 20v16"/>
+  <path fill="#966a41" d="M0 39h120v4H0z"/>
+  <path fill="#e3b878" d="M0 39h120v1.2H0z"/>
+  <path fill="#1f3a31" opacity=".6" d="M3 43h114v3H3z"/>
+</svg>

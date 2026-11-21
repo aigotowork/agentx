@@ -1,0 +1,12 @@
+{
+  "package": "@dancingai/inspection-page",
+  "version": "0.1.0",
+  "entry": "@dancingai/inspection-page/browser/global",
+  "bytes": 2868091,
+  "sha256": "50fd3581144928c495d0544a53244b395280bf1a6794fd0d02aa14f86107771c",
+  "upstream": {
+    "bytes": 19054542,
+    "sha256": "6bb561cc25e17ca72376a087df49b2820609113c2bcf9612f0d7771db5ed64cd"
+  },
+  "update": "Build the matching Page package, then run scripts/vendor-dancingai.mjs with its checkout. The import removes only the final inline source map; runtime code and legal notices are retained."
+}

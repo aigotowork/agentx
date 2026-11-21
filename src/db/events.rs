@@ -1,0 +1,676 @@
+//! Event append/read methods and message delivery queries.
+
+use anyhow::Result;
+use rusqlite::params;
+
+use super::{AgentxDb, chrono_now_iso, subscriptions};
+
+/// Message from the events table
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct Message {
+    pub from: String,
+    pub text: String,
+    pub intent: Option<String>,
+    pub thread: Option<String>,
+    pub event_id: Option<i64>,
+    pub timestamp: Option<String>,
+    pub delivered_to: Option<Vec<String>>,
+    pub bundle_id: Option<String>,
+    /// `<origin_id>:<SHORT>` for relay-imported messages, None for local ones.
+    pub relay_ref: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub requested_directory: Option<String>,
+}
+
+impl Message {
+    /// The id a reader passes to `agentx send --reply-to`: the origin reference
+    /// for relayed messages (the local id means nothing on the sender's
+    /// device), the local event id otherwise.
+    pub fn reply_id(&self) -> Option<String> {
+        self.relay_ref.clone().or_else(|| self.event_id.map(|id| id.to_string()))
+    }
+}
+
+impl AgentxDb {
+    /// Check if a message event should be delivered to the given receiver.
+    ///
+    /// Skips own messages. Checks scope: "broadcast" delivers to all,
+    /// "mentions" requires the receiver's exact name in the mentions array.
+    /// Relay import rewrites mentions into the local namespace, so `luna:ABCD`
+    /// never matches a local `luna`.
+    pub(super) fn should_deliver_to(json: &serde_json::Value, receiver: &str) -> bool {
+        let from = json.get("from").and_then(|v| v.as_str()).unwrap_or("");
+        if from == receiver {
+            return false;
+        }
+        let scope = json.get("scope").and_then(|s| s.as_str()).unwrap_or("broadcast");
+        match scope {
+            "broadcast" => true,
+            "mentions" => json.get("mentions").and_then(|m| m.as_array()).is_some_and(|arr| arr.iter().any(|v| v.as_str() == Some(receiver))),
+            _ => false,
+        }
+    }
+
+    /// Returns true iff there is at least one unread message that names this
+    /// instance directly (`scope='mentions'` and the recipient is in the
+    /// `mentions` array). Broadcasts are ignored.
+    ///
+    /// Used to gate dormant subagent activation: a SubagentStart-allocated
+    /// row is in the broadcast recipient set, but we don't want a passing
+    /// broadcast to wake a subagent nobody actually addressed.
+    pub fn has_direct_unread(&self, name: &str) -> bool {
+        let last_event_id = match self.get_instance_status(name) {
+            Ok(Some(status)) => status.last_event_id,
+            _ => return false,
+        };
+        let mut stmt = match self.conn.prepare_cached(
+            "SELECT data FROM events
+             WHERE id > ? AND type = 'message'
+             ORDER BY id",
+        ) {
+            Ok(s) => s,
+            Err(_) => return false,
+        };
+        let rows = match stmt.query_map(params![last_event_id], |row| row.get::<_, String>(0)) {
+            Ok(r) => r,
+            Err(_) => return false,
+        };
+        for data in rows.flatten() {
+            let Ok(json) = serde_json::from_str::<serde_json::Value>(&data) else {
+                continue;
+            };
+            let scope = json.get("scope").and_then(|s| s.as_str()).unwrap_or("broadcast");
+            if scope != "mentions" {
+                continue;
+            }
+            if Self::should_deliver_to(&json, name) {
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Get unread messages for an instance; read failures log and yield none.
+    pub fn get_unread_messages(&self, name: &str) -> Vec<Message> {
+        self.try_get_unread_messages(name).unwrap_or_else(|e| {
+            crate::log::log_error("db", "get_unread_messages", &format!("{e}"));
+            vec![]
+        })
+    }
+
+    /// Get unread messages for an instance
+    ///
+    /// Returns messages where:
+    /// - event.id > instance.last_event_id
+    /// - event.type = 'message'
+    /// - instance is in scope (broadcast or direct)
+    ///
+    /// A missing instance row has no recipient and so no unread messages; it is
+    /// not treated as cursor 0, which would surface the whole broadcast backlog.
+    pub fn try_get_unread_messages(&self, name: &str) -> Result<Vec<Message>> {
+        self.unread_messages_up_to(name, usize::MAX)
+    }
+
+    pub(crate) fn unread_messages_up_to(&self, name: &str, limit: usize) -> Result<Vec<Message>> {
+        let Some(status) = self.get_instance_status(name)? else {
+            return Ok(vec![]);
+        };
+        self.unread_messages_after(name, status.last_event_id, limit)
+    }
+
+    /// The caller already resolved this recipient and cursor in its transaction.
+    pub(crate) fn unread_messages_after(&self, name: &str, last_event_id: i64, limit: usize) -> Result<Vec<Message>> {
+        if limit == 0 {
+            return Ok(Vec::new());
+        }
+        if limit != usize::MAX && !name.is_empty() && self.mailbox_routes_cover(last_event_id) {
+            match self.read_unread_window(name, last_event_id, limit, true) {
+                Ok(messages) => return Ok(messages),
+                Err(_) => {
+                    self.hook_mailbox_routes.set(false);
+                    crate::log::log_warn("db", "hook_mailbox.index_unavailable", "Using event journal for Hook mailbox reads");
+                }
+            }
+        }
+        self.read_unread_window(name, last_event_id, limit, false)
+    }
+
+    fn read_unread_window(&self, name: &str, last_event_id: i64, limit: usize, indexed: bool) -> Result<Vec<Message>> {
+        const LEGACY: &str = "SELECT id,timestamp,data FROM events WHERE id>?1 AND type='message' ORDER BY id";
+        const INDEXED: &str = "WITH eligible AS (
+            SELECT event_id FROM hook_mailbox_routes WHERE recipient=?2 AND event_id>?1 AND sender<>?2
+            UNION ALL
+            SELECT event_id FROM hook_mailbox_routes WHERE recipient='' AND event_id>?1 AND sender<>?2
+            ORDER BY event_id LIMIT ?3
+        ) SELECT e.id,e.timestamp,e.data FROM eligible JOIN events e ON e.id=eligible.event_id ORDER BY e.id";
+        let mut stmt = self.conn.prepare_cached(if indexed { INDEXED } else { LEGACY })?;
+        let max = i64::try_from(limit).unwrap_or(i64::MAX);
+        let query: &[&dyn rusqlite::ToSql] = if indexed { &[&last_event_id, &name, &max] } else { &[&last_event_id] };
+        let rows = stmt.query_map(query, |row| {
+            let id: i64 = row.get(0)?;
+            let timestamp: String = row.get(1)?;
+            let data: String = row.get(2)?;
+            Ok((id, timestamp, data))
+        })?;
+
+        let mut messages = Vec::new();
+        for row in rows {
+            let (id, timestamp, data) = row?;
+            // Parse JSON data
+            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&data) {
+                if !Self::should_deliver_to(&json, name) {
+                    anyhow::ensure!(!indexed, "stored Hook mailbox route disagrees with event");
+                    continue;
+                }
+
+                let from = json.get("from").and_then(|v| v.as_str()).unwrap_or("unknown").to_string();
+
+                let text = json.get("text").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                let intent = json.get("intent").and_then(|v| v.as_str()).map(String::from);
+                let thread = json.get("thread").and_then(|v| v.as_str()).map(String::from);
+                let delivered_to = json.get("delivered_to").and_then(|v| v.as_array()).map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect());
+                let bundle_id = json.get("bundle_id").and_then(|v| v.as_str()).map(String::from);
+                let relay_ref = json.get("_relay").and_then(|relay| {
+                    let id = relay.get("id")?.as_i64()?;
+                    let short = relay.get("short")?.as_str().filter(|s| !s.is_empty())?;
+                    Some(format!("{id}:{short}"))
+                });
+
+                let requested_directory = json.get("requested_directory").and_then(|value| value.as_str()).map(str::to_owned);
+                messages.push(Message { from, text, intent, thread, event_id: Some(id), timestamp: Some(timestamp.clone()), delivered_to, bundle_id, relay_ref, requested_directory });
+                if messages.len() == limit {
+                    break;
+                }
+            } else {
+                anyhow::ensure!(!indexed, "stored Hook mailbox route points to invalid JSON");
+            }
+        }
+
+        Ok(messages)
+    }
+
+    /// Build the shared envelope every launch-lifecycle life event uses
+    /// (`{action, by, status, context, [reason], [detail], [batch_id]}`) and
+    /// write it to the events table. Returns `(launcher, batch_id)` so the
+    /// caller can decide whether to push a follow-up notification.
+    fn emit_launch_lifecycle_event(&self, name: &str, action: &str, status: &str, context: &str, reason: Option<&str>, detail: Option<&str>) -> Result<(String, Option<String>)> {
+        let launcher = std::env::var("AGENTX_LAUNCHED_BY").unwrap_or_else(|_| "unknown".to_string());
+        let batch_id = std::env::var("AGENTX_LAUNCH_BATCH_ID").ok();
+
+        let mut event_data = serde_json::json!({
+            "action": action,
+            "by": &launcher,
+            "status": status,
+            "context": context,
+        });
+        if let Some(reason) = reason.filter(|s| !s.is_empty()) {
+            event_data["reason"] = serde_json::Value::String(reason.to_string());
+        }
+        if let Some(detail) = detail.filter(|s| !s.is_empty()) {
+            event_data["detail"] = serde_json::Value::String(detail.to_string());
+        }
+        if let Some(ref bid) = batch_id {
+            event_data["batch_id"] = serde_json::Value::String(bid.clone());
+        }
+
+        self.log_event_with_ts("life", name, &event_data, None)?;
+        Ok((launcher, batch_id))
+    }
+
+    /// Emit "ready" life event and check for batch completion notification.
+    ///
+    /// Called on first status update (when status_context was "new").
+    #[cfg(test)]
+    pub(crate) fn emit_ready_event(&self, name: &str, status: &str, context: &str) -> Result<()> {
+        let (launcher, batch_id) = self.emit_launch_lifecycle_event(name, "ready", status, context, None, None)?;
+        if launcher != "unknown"
+            && let Some(ref bid) = batch_id
+        {
+            self.check_batch_completion(&launcher, bid)?;
+        }
+        Ok(())
+    }
+
+    pub(crate) fn emit_launch_failed_event(&self, name: &str, status: &str, context: &str, reason: &str, detail: &str) -> Result<()> {
+        let (launcher, batch_id) = self.emit_launch_lifecycle_event(name, "launch_failed", status, context, Some(reason), Some(detail))?;
+        if launcher != "unknown"
+            && let Some(ref bid) = batch_id
+        {
+            let notify_detail = if detail.is_empty() { reason } else { detail };
+            self.notify_batch_failure(&launcher, bid, name, notify_detail)?;
+        }
+        Ok(())
+    }
+
+    /// Check if all instances in a launch batch are ready; send notification if so.
+    pub fn check_batch_completion(&self, launcher: &str, batch_id: &str) -> Result<()> {
+        // Find the launch event for this batch
+        let launch_data: Option<String> = self
+            .conn
+            .query_row(
+                "SELECT data FROM events
+             WHERE type = 'life' AND instance = ?
+               AND json_extract(data, '$.action') = 'batch_launched'
+               AND json_extract(data, '$.batch_id') = ?
+             LIMIT 1",
+                params![launcher, batch_id],
+                |row| row.get(0),
+            )
+            .ok();
+
+        let Some(data_str) = launch_data else {
+            return Ok(());
+        };
+        let data: serde_json::Value = serde_json::from_str(&data_str)?;
+        let expected = data.get("launched").and_then(|v| v.as_u64()).unwrap_or(0);
+        if expected == 0 {
+            return Ok(());
+        }
+
+        // Count ready events with matching batch_id
+        let ready_count: i64 = self.conn.query_row(
+            "SELECT COUNT(*) FROM events
+             WHERE type = 'life'
+               AND json_extract(data, '$.action') = 'ready'
+               AND json_extract(data, '$.batch_id') = ?",
+            params![batch_id],
+            |row| row.get(0),
+        )?;
+
+        if (ready_count as u64) < expected {
+            return Ok(());
+        }
+
+        // Check idempotency — don't send duplicate notification
+        let already_sent: bool = self.conn.query_row(
+            "SELECT COUNT(*) FROM events
+             WHERE type = 'message'
+               AND instance = 'sys_[agentx-launcher]'
+               AND json_extract(data, '$.text') LIKE ?
+             LIMIT 1",
+            params![format!("%batch: {}%", batch_id)],
+            |row| Ok(row.get::<_, i64>(0)? > 0),
+        )?;
+
+        if already_sent {
+            return Ok(());
+        }
+
+        // Get instance names from this batch
+        let mut stmt = self.conn.prepare_cached(
+            "SELECT DISTINCT instance FROM events
+             WHERE type = 'life'
+               AND json_extract(data, '$.action') = 'ready'
+               AND json_extract(data, '$.batch_id') = ?",
+        )?;
+        let names: Vec<String> = stmt.query_map(params![batch_id], |row| row.get(0))?.filter_map(|r| r.ok()).collect();
+
+        let instances_list = names.join(", ");
+        let text = format!("@{} All {} instances ready: {} (batch: {})", launcher, expected, instances_list, batch_id);
+
+        // Insert system message
+        let msg_data = serde_json::json!({
+            "from": "[agentx-launcher]",
+            "text": text,
+            "scope": "mentions",
+            "mentions": [launcher],
+            "sender_kind": "system",
+        });
+        self.log_event_with_ts("message", "sys_[agentx-launcher]", &msg_data, None)?;
+
+        Ok(())
+    }
+
+    /// Send a launcher-targeted notification for a failed launch instance.
+    ///
+    /// Used for early PTY startup failures so the launcher gets an active signal
+    /// instead of having to poll `events launch`.
+    pub fn notify_batch_failure(&self, launcher: &str, batch_id: &str, instance_name: &str, detail: &str) -> Result<()> {
+        let text = format!("@{} Launch failed: {}: {} (batch: {})", launcher, instance_name, detail, batch_id);
+
+        let already_sent: bool = self.conn.query_row(
+            "SELECT COUNT(*) FROM events
+             WHERE type = 'message'
+               AND instance = 'sys_[agentx-launcher]'
+               AND json_extract(data, '$.text') = ?
+             LIMIT 1",
+            params![text],
+            |row| Ok(row.get::<_, i64>(0)? > 0),
+        )?;
+
+        if already_sent {
+            return Ok(());
+        }
+
+        let msg_data = serde_json::json!({
+            "from": "[agentx-launcher]",
+            "text": text,
+            "scope": "mentions",
+            "mentions": [launcher],
+            "sender_kind": "system",
+        });
+        self.log_event_with_ts("message", "sys_[agentx-launcher]", &msg_data, None)?;
+
+        Ok(())
+    }
+
+    /// Log a life event (started/stopped) to the events table
+    pub fn log_life_event(&self, instance: &str, action: &str, by: &str, reason: &str, snapshot: Option<serde_json::Value>) -> Result<()> {
+        let data = match snapshot {
+            Some(s) => serde_json::json!({
+                "action": action,
+                "by": by,
+                "reason": reason,
+                "snapshot": s
+            }),
+            None => serde_json::json!({
+                "action": action,
+                "by": by,
+                "reason": reason
+            }),
+        };
+
+        self.log_event_with_ts("life", instance, &data, None)?;
+
+        Ok(())
+    }
+
+    /// Insert event and return its ID. Calls subscription check inline.
+    pub fn log_event(&self, event_type: &str, instance: &str, data: &serde_json::Value) -> Result<i64> {
+        self.log_event_with_ts(event_type, instance, data, None)
+    }
+
+    /// Insert event with optional timestamp. Returns event ID.
+    pub fn log_event_with_ts(&self, event_type: &str, instance: &str, data: &serde_json::Value, timestamp: Option<&str>) -> Result<i64> {
+        let event_id = self.insert_event_row(event_type, instance, data, timestamp)?;
+        self.after_event_logged(event_id, event_type, instance, data);
+        Ok(event_id)
+    }
+
+    /// Insert the event row only. Callers inside a write scope must run
+    /// [`Self::after_event_logged`] once their transaction commits.
+    pub(crate) fn insert_event_row(&self, event_type: &str, instance: &str, data: &serde_json::Value, timestamp: Option<&str>) -> Result<i64> {
+        let ts = match timestamp {
+            Some(t) => t.to_string(),
+            None => chrono_now_iso(),
+        };
+        let data_str = serde_json::to_string(data)?;
+
+        self.conn.execute("INSERT INTO events (timestamp, type, instance, data) VALUES (?, ?, ?, ?)", params![ts, event_type, instance, data_str])?;
+        let id = self.conn.last_insert_rowid();
+        if event_type == "life" {
+            self.retain_creation_stop(instance, id, data)?;
+        }
+        if let Some(active) = crate::service::context::active_observation() {
+            use crate::observability::events::{DomainCommitFact, DomainEventKind, DurableEventRef};
+            let kind = match event_type {
+                "message" => DomainEventKind::Message,
+                "status" => DomainEventKind::Status,
+                "life" => DomainEventKind::Life,
+                _ => DomainEventKind::Other,
+            };
+            self.observe_domain(DomainCommitFact::EventAppended { event: DurableEventRef { scope: active.epoch.daemon.scope, database_generation: active.epoch.database_generation, event: crate::messaging::inbox::EventId(id) }, kind });
+        }
+        Ok(id)
+    }
+
+    /// Side effects of a logged event: launch-waiter wakes and subscriptions.
+    pub(crate) fn after_event_logged(&self, event_id: i64, event_type: &str, instance: &str, data: &serde_json::Value) {
+        if self.defer_event(event_id, event_type, instance, data) {
+            return;
+        }
+        self.publish_committed_event(event_id, event_type, instance, data, true);
+    }
+
+    pub(super) fn publish_committed_event(&self, event_id: i64, event_type: &str, instance: &str, data: &serde_json::Value, wake_observers: bool) {
+        if wake_observers {
+            crate::events::observer_store::wake(self);
+        }
+        // Wake launch confirmations only for changes they can observe. The
+        // usual autocommit INSERT is visible before the listener re-queries.
+        // Writes inside an outer transaction remain covered by fallback polling.
+        let action = data.get("action").and_then(serde_json::Value::as_str);
+        let context = data.get("context").and_then(serde_json::Value::as_str);
+        if (event_type == "life" && matches!(action, Some("ready" | "launch_failed" | "launch_blocked" | "launch_blocked_cleared" | "stopped"))) || (event_type == "status" && context == Some("launch_failed")) {
+            crate::runtime::notify::wake::wake_launch_waiters(self, data.get("batch_id").and_then(serde_json::Value::as_str));
+        }
+
+        // Check event subscriptions inline.
+        subscriptions::process_logged_event(self, event_id, event_type, instance, data);
+    }
+
+    /// Project lifecycle metadata and embedded participant snapshots to current fields.
+    pub(crate) fn project_event_data(event_type: &str, data: &mut serde_json::Value, retired_fields: &[String]) {
+        if event_type != "life" {
+            return;
+        }
+        if let Some(object) = data.as_object_mut() {
+            for field in retired_fields {
+                object.remove(field);
+            }
+            if let Some(snapshot) = object.get_mut("snapshot").and_then(serde_json::Value::as_object_mut) {
+                Self::project_instance_snapshot(snapshot);
+            }
+        }
+    }
+
+    /// Get events since a given ID with optional filters.
+    pub fn get_events_since(&self, last_event_id: i64, event_type: Option<&str>, instance: Option<&str>) -> Result<Vec<serde_json::Value>> {
+        let retired_fields = super::obsolete_instance_columns(&self.conn)?;
+        let mut query = "SELECT id, timestamp, type, instance, data FROM events WHERE id > ?".to_string();
+        let mut param_values: Vec<Box<dyn rusqlite::types::ToSql>> = vec![Box::new(last_event_id)];
+
+        if let Some(et) = event_type {
+            query.push_str(" AND type = ?");
+            param_values.push(Box::new(et.to_string()));
+        }
+        if let Some(inst) = instance {
+            query.push_str(" AND instance = ?");
+            param_values.push(Box::new(inst.to_string()));
+        }
+        query.push_str(" ORDER BY id");
+
+        let params_refs: Vec<&dyn rusqlite::types::ToSql> = param_values.iter().map(|p| p.as_ref()).collect();
+        let mut stmt = self.conn.prepare(&query)?;
+        let rows = stmt
+            .query_map(params_refs.as_slice(), |row| {
+                let id: i64 = row.get(0)?;
+                let timestamp: String = row.get(1)?;
+                let etype: String = row.get(2)?;
+                let inst: String = row.get(3)?;
+                let data_str: String = row.get(4)?;
+                Ok((id, timestamp, etype, inst, data_str))
+            })?
+            .filter_map(|r| r.ok())
+            .map(|(id, timestamp, etype, inst, data_str)| {
+                let mut data: serde_json::Value = serde_json::from_str(&data_str).unwrap_or(serde_json::Value::Null);
+                Self::project_event_data(&etype, &mut data, &retired_fields);
+                serde_json::json!({
+                    "id": id,
+                    "timestamp": timestamp,
+                    "type": etype,
+                    "instance": inst,
+                    "data": data,
+                })
+            })
+            .collect();
+        Ok(rows)
+    }
+
+    /// Get current maximum event ID, or 0 if no events.
+    pub fn get_last_event_id(&self) -> i64 {
+        self.conn.query_row("SELECT MAX(id) FROM events", [], |row| row.get::<_, Option<i64>>(0)).unwrap_or(None).unwrap_or(0)
+    }
+
+    /// Log a bare status event (test fixture for status-driven subscriptions).
+    #[cfg(test)]
+    pub fn log_status_event(&self, instance: &str, status: &str, context: &str, detail: Option<&str>, timestamp: Option<&str>) -> Result<()> {
+        // Build data JSON
+        let data = match detail {
+            Some(d) => serde_json::json!({
+                "status": status,
+                "context": context,
+                "detail": d
+            }),
+            None => serde_json::json!({
+                "status": status,
+                "context": context
+            }),
+        };
+
+        self.log_event_with_ts("status", instance, &data, timestamp)?;
+
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::tests::{cleanup_test_db, setup_full_test_db};
+
+    #[test]
+    fn test_log_event_returns_id() {
+        let (db, db_path) = setup_full_test_db();
+
+        let data = serde_json::json!({"status": "active", "context": "test"});
+        let id1 = db.log_event("status", "luna", &data).unwrap();
+        let id2 = db.log_event("status", "luna", &data).unwrap();
+
+        assert!(id1 > 0);
+        assert_eq!(id2, id1 + 1);
+
+        cleanup_test_db(db_path);
+    }
+
+    // Regression: a missing recipient must yield no unread messages, not the whole
+    // backlog (broadcasts match every recipient when the cursor falls back to 0).
+    #[test]
+    fn test_get_unread_messages_empty_for_missing_instance() {
+        let (db, db_path) = setup_full_test_db();
+
+        db.log_event("message", "kera", &serde_json::json!({"from": "kera", "scope": "broadcast", "text": "ack"})).unwrap();
+
+        assert!(db.get_unread_messages("ghost").is_empty(), "missing instance must have no unread, not the full backlog");
+
+        cleanup_test_db(db_path);
+    }
+
+    #[test]
+    fn test_get_events_since() {
+        let (db, db_path) = setup_full_test_db();
+
+        let data1 = serde_json::json!({"status": "active"});
+        let data2 = serde_json::json!({"action": "ready"});
+        let id1 = db.log_event("status", "luna", &data1).unwrap();
+        let _id2 = db.log_event("life", "nova", &data2).unwrap();
+
+        // Get all events
+        let all = db.get_events_since(0, None, None).unwrap();
+        assert_eq!(all.len(), 2);
+
+        // Get events since first
+        let since = db.get_events_since(id1, None, None).unwrap();
+        assert_eq!(since.len(), 1);
+
+        // Filter by type
+        let status_only = db.get_events_since(0, Some("status"), None).unwrap();
+        assert_eq!(status_only.len(), 1);
+
+        // Filter by instance
+        let nova_only = db.get_events_since(0, None, Some("nova")).unwrap();
+        assert_eq!(nova_only.len(), 1);
+
+        cleanup_test_db(db_path);
+    }
+
+    #[test]
+    fn test_get_last_event_id() {
+        let (db, db_path) = setup_full_test_db();
+
+        assert_eq!(db.get_last_event_id(), 0);
+
+        let data = serde_json::json!({"status": "active"});
+        let id = db.log_event("status", "luna", &data).unwrap();
+        assert_eq!(db.get_last_event_id(), id);
+
+        cleanup_test_db(db_path);
+    }
+
+    #[test]
+    fn test_notify_batch_failure_is_targeted_and_deduplicated() {
+        let (db, db_path) = setup_full_test_db();
+
+        db.conn.execute("INSERT INTO instances (name, created_at) VALUES ('leku', 1000.0)", []).unwrap();
+
+        db.notify_batch_failure("leku", "batch-1", "para", "boom").unwrap();
+        db.notify_batch_failure("leku", "batch-1", "para", "boom").unwrap();
+
+        let count: i64 = db
+            .conn
+            .query_row(
+                "SELECT COUNT(*) FROM events
+                 WHERE type = 'message'
+                   AND instance = 'sys_[agentx-launcher]'
+                   AND json_extract(data, '$.text') = '@leku Launch failed: para: boom (batch: batch-1)'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(count, 1);
+
+        cleanup_test_db(db_path);
+    }
+
+    /// Regression: a broadcast must NOT count as direct unread for a dormant
+    /// subagent, otherwise SubagentStop wakes every dormant subagent on every
+    /// broadcast and the "no message in → no keep-alive" gate is broken.
+    #[test]
+    fn test_has_direct_unread_ignores_broadcasts() {
+        let (db, db_path) = setup_full_test_db();
+        db.conn
+            .execute(
+                "INSERT INTO instances (name, created_at, last_event_id) \
+                 VALUES ('luna_reviewer_1', 1000.0, 0)",
+                [],
+            )
+            .unwrap();
+
+        // Broadcast to everyone — must be ignored.
+        db.log_event("message", "sender", &serde_json::json!({"scope": "broadcast", "from": "sender", "text": "hi all"})).unwrap();
+        assert!(!db.has_direct_unread("luna_reviewer_1"));
+
+        // Direct mention of a different subagent — also ignored.
+        db.log_event(
+            "message",
+            "sender",
+            &serde_json::json!({
+                "scope": "mentions",
+                "mentions": ["other"],
+                "from": "sender",
+                "text": "hey other",
+            }),
+        )
+        .unwrap();
+        assert!(!db.has_direct_unread("luna_reviewer_1"));
+
+        // Direct mention of this subagent — must trigger.
+        db.log_event(
+            "message",
+            "sender",
+            &serde_json::json!({
+                "scope": "mentions",
+                "mentions": ["luna_reviewer_1"],
+                "from": "sender",
+                "text": "hey you",
+            }),
+        )
+        .unwrap();
+        assert!(db.has_direct_unread("luna_reviewer_1"));
+        db.conn.execute("DELETE FROM instances WHERE name = 'luna_reviewer_1'", []).unwrap();
+        assert!(!db.has_direct_unread("luna_reviewer_1"));
+        db.conn.execute_batch("DROP TABLE instances").unwrap();
+        assert!(!db.has_direct_unread("luna_reviewer_1"));
+
+        cleanup_test_db(db_path);
+    }
+}

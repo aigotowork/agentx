@@ -1,0 +1,223 @@
+/* The layout owns the overlay itself; these rules keep its scene/roster neighbors accessible. */
+.agent-space .scene-directory-window[data-canvas-workspace] {
+  z-index: var(--space-layer-menu);
+}
+
+.agent-space .space-chat-roster-trigger {
+  display: none;
+}
+
+@container space-content (max-width: 759px) {
+  .agent-space .space-chat-layout[data-window-workspace] {
+    position: relative;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .agent-space .space-chat-layout[data-window-workspace][data-reading="true"] {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .agent-space .space-chat-layout[data-window-workspace][data-reading="true"] .space-chat-reader {
+    grid-row: 2;
+  }
+
+  .agent-space .space-chat-layout[data-window-workspace][data-reading="true"] .space-chat-roster-trigger {
+    display: block;
+    grid-row: 1;
+    justify-self: end;
+    margin-inline-end: var(--space-2);
+    min-height: var(--space-8);
+    font-size: var(--text-xs);
+    padding-inline: var(--space-2);
+    border-color: transparent;
+    background: transparent;
+  }
+
+  .agent-space .space-chat-layout[data-window-workspace][data-reading="true"][data-roster-open] .space-chat-roster {
+    position: absolute;
+    z-index: var(--space-layer-menu);
+    inset: var(--space-8) var(--space-0) var(--space-0);
+    display: block;
+    box-shadow: var(--space-popup-shadow);
+  }
+
+  .agent-space .space-chat-layout[data-window-workspace][data-reading="false"][data-has-windows] .space-chat-reader {
+    display: block;
+  }
+}
+
+@container space-shell (min-width: 960px) {
+  .agent-space[data-window-workspace] .space-overview {
+    display: grid;
+    align-items: center;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-1) var(--space-3);
+    padding-block: var(--space-1);
+  }
+
+  .agent-space[data-window-workspace] .space-overview > :not(.overview-fields, .office-local-controls) {
+    grid-column: 1 / -1;
+  }
+}
+
+.space-resource-window {
+  --resource-window-width: 56rem;
+  --resource-window-height: 35rem;
+  inline-size: min(var(--resource-window-width), calc(100% - var(--space-4)));
+  block-size: min(var(--resource-window-height), calc(100% - var(--space-4)));
+  max-inline-size: none;
+  max-block-size: none;
+  box-sizing: border-box;
+  padding: 0;
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--office-paper);
+  color: var(--ink);
+  box-shadow: var(--space-popup-shadow);
+}
+
+.space-resource-window[open] {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.space-resource-window::backdrop {
+  background: var(--space-modal-scrim, rgb(47 39 30 / 24%));
+}
+
+.space-resource-window-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  border-bottom: var(--border) solid var(--line);
+  padding-inline: var(--space-3);
+}
+
+.space-resource-window-heading h2 {
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+.space-resource-window-heading button {
+  min-inline-size: var(--touch);
+  min-block-size: var(--touch);
+  border-color: transparent;
+  background: transparent;
+  font-size: var(--text-lg);
+}
+
+.space-resource-window-body { min-height: 0; overflow: auto; }
+
+.agent-space .workspace-display-menu {
+  position: relative;
+  flex: none;
+}
+
+.agent-space .workspace-display-menu > summary {
+  display: grid;
+  place-items: center;
+  min-inline-size: var(--touch);
+  min-block-size: var(--touch);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  list-style: none;
+}
+
+.workspace-display-menu > summary::-webkit-details-marker { display: none; }
+
+.workspace-display-menu > summary > svg {
+  inline-size: var(--space-4);
+  block-size: var(--space-4);
+}
+
+.agent-space .workspace-display-menu[open] > summary {
+  background: var(--surface-selected);
+}
+
+.agent-space .workspace-display-menu > div {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-1));
+  inset-inline-end: 0;
+  display: grid;
+  gap: var(--space-1);
+  min-inline-size: max-content;
+  padding: var(--space-2);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--office-paper);
+  box-shadow: var(--space-popup-shadow);
+}
+
+.agent-space .workspace-filter-trigger { display: none; }
+.agent-space .live-receipt-refresh { display: none; }
+
+@container space-shell (max-width: 359px) {
+  .agent-space[data-window-reading] .live-toolbar-refresh { display: none; }
+  .agent-space[data-window-reading] .live-receipt-refresh { display: block; }
+}
+
+@container space-shell (max-width: 759px) {
+  .agent-space[data-window-reading] .office-brand { display: none; }
+  .agent-space[data-window-reading] .space-new-agent-suffix,
+  .agent-space[data-window-reading] .live-receipt-context,
+  .agent-space[data-window-reading] .live-status > .live-error { display: none; }
+  .agent-space[data-window-reading] .live-receipts summary[data-issue] { color: var(--danger); }
+
+  .agent-space[data-window-reading] .workspace-filter-trigger {
+    display: inline-flex;
+    padding-inline: var(--space-2);
+    font-size: var(--text-xs);
+    background: transparent;
+    border-color: transparent;
+  }
+
+  .agent-space[data-window-reading]:not([data-window-filters]) .space-overview > :is(.overview-fields, .office-local-controls) {
+    display: none;
+  }
+
+  .agent-space[data-window-reading]:not([data-window-filters]) .space-overview:not(:has(> :not(.overview-fields, .office-local-controls))) {
+    display: none;
+  }
+}
+
+.agent-space[data-window-workspace] > .office-stage { grid-row: 3; }
+
+.agent-space .space-window-region[data-overlay="true"][data-focused="true"] .space-window-pane:only-child {
+  --window-focused-width: 53rem;
+  inline-size: min(100%, var(--window-focused-width));
+}
+
+.space-resource-window[data-compact] {
+  --resource-window-width: 28rem;
+  block-size: auto;
+}
+
+/* Keep short reading panes usable; the same header action reveals the office filters. */
+@media (max-height: 560px) {
+  .agent-space[data-window-reading] .workspace-filter-trigger {
+    display: inline-flex;
+    padding-inline: var(--space-2);
+    border-color: transparent;
+    background: transparent;
+    font-size: var(--text-xs);
+  }
+  .agent-space[data-window-reading]:not([data-window-filters]) .space-overview:not(:has(> .context-error)) { display: none; }
+  .agent-space[data-window-reading] .space-window-region { --window-camera-room: calc(var(--touch) + var(--space-2)); }
+  @container space-content (min-width: 67rem) {
+    /* At this width the complete camera toolbar fits beside the deck in the existing scene lane. */
+    .agent-space[data-window-reading] .space-window-region { --window-camera-room: var(--office-zero); }
+  }
+  @container space-content (max-width: 759px) {
+    .agent-space[data-window-reading] .space-window-region { --window-camera-room: var(--office-zero); }
+    .agent-space[data-window-reading] .space-window-shelf { max-inline-size: calc(var(--full) - var(--touch) - var(--space-2)); }
+    .agent-space[data-window-reading] .office-camera-controls {
+      inset-block: var(--space-2) auto;
+      inset-inline-start: var(--space-2);
+      width: var(--touch);
+      padding: var(--space-0);
+    }
+    .agent-space[data-window-reading] .office-camera-controls button:not([aria-expanded]) { display: none; }
+    .agent-space[data-window-reading] .office-camera-controls button[aria-expanded] { width: var(--full); padding-inline: var(--space-0); }
+  }
+}

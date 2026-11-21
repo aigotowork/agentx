@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="deck" x2="0" y2="1">
+      <stop stop-color="#36446b"/>
+      <stop offset=".1" stop-color="#303b60"/>
+      <stop offset=".68" stop-color="#293455"/>
+      <stop offset=".98" stop-color="#263154"/>
+      <stop offset="1" stop-color="#38466a"/>
+    </linearGradient>
+    <pattern id="sheet" width="64" height="32" patternUnits="userSpaceOnUse">
+      <path fill="url(#deck)" d="M0 0h64v32H0z"/>
+      <path stroke="#1c2848" d="M0 .5h64M.5 0v32" fill="none"/>
+      <path stroke="#7790b2" stroke-opacity=".22" d="M2 2.5h60M2.5 4v25" fill="none"/>
+      <path stroke="#111d3b" stroke-opacity=".28" d="M5 28.5h15m3 0h3m32-25h2m-2 25h2" fill="none"/>
+      <path fill="#96acc9" opacity=".19" d="M5 5h2v1H5zm52 20h2v1h-2z"/>
+    </pattern>
+  </defs>
+  <path fill="url(#sheet)" d="M0 0h128v128H0z"/>
+  <path fill="#8ca6ca" opacity=".065" d="M30 7h26v1H30zm52 10h35v1H82zM12 42h13v1H12zm80 15h13v1H92zM29 79h8v1h-8zm45 10h31v1H74zm-56 21h19v1H18z"/>
+</svg>

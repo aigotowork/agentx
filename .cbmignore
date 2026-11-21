@@ -1,0 +1,14 @@
+# Index maintained source, not runtime state or copied build/test evidence.
+/.artifacts/
+/.tmp/
+/.agentx/
+/.codex/
+/.bin/
+/tools/rust-module-migration/
+node_modules/
+target/
+dist/
+/.daemon/
+/.controller/**/verification/
+/.controller/**/artifacts/
+/.controller/**/evidence/

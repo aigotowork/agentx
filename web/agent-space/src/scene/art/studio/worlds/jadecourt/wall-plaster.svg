@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="64" viewBox="0 0 160 64" stroke-linejoin="round" stroke-linecap="round">
+<title>Carved slate wainscot and metal frieze</title>
+<defs>
+<linearGradient id="apron" x2="0" y2="1"><stop offset="0" stop-color="#102635" stop-opacity=".75"/><stop offset="1" stop-color="#0f2936" stop-opacity="0"/></linearGradient><linearGradient id="jadeDark" x2="1" y2="1"><stop offset="0" stop-color="#578f86"/><stop offset="0.5" stop-color="#27525a"/><stop offset="1" stop-color="#132e38"/></linearGradient><linearGradient id="wall" x2="0" y2="1"><stop offset="0" stop-color="#294653"/><stop offset="0.5" stop-color="#365965"/><stop offset="1" stop-color="#233a49"/></linearGradient>
+
+</defs>
+<rect x="0" y="0" width="160" height="48" fill="url(#wall)"/>
+<rect x="0" y="0" width="160" height="4" fill="#172936"/>
+<rect x="0" y="4" width="160" height="1" fill="#779494"/>
+<rect x="0" y="6" width="160" height="1" fill="#203845"/>
+<rect x="0" y="47" width="160" height="17" fill="url(#apron)"/>
+<rect x="-2" y="7" width="4" height="32" fill="#284250"/>
+<path d="M-1 7v32" fill="none" stroke="#56717a" stroke-width="0.7"/>
+<path d="M-18 38V20Q0 6 18 20V38Z" fill="#112c3a" opacity=".22"/>
+<path d="M-16 37V22Q0 10 16 22V37" fill="none" stroke="#87a2a0" stroke-width="0.6" opacity=".30"/>
+<rect x="38" y="7" width="4" height="32" fill="#284250"/>
+<path d="M39 7v32" fill="none" stroke="#56717a" stroke-width="0.7"/>
+<path d="M22 38V20Q40 6 58 20V38Z" fill="#112c3a" opacity=".22"/>
+<path d="M24 37V22Q40 10 56 22V37" fill="none" stroke="#87a2a0" stroke-width="0.6" opacity=".30"/>
+<rect x="78" y="7" width="4" height="32" fill="#284250"/>
+<path d="M79 7v32" fill="none" stroke="#56717a" stroke-width="0.7"/>
+<path d="M62 38V20Q80 6 98 20V38Z" fill="#112c3a" opacity=".22"/>
+<path d="M64 37V22Q80 10 96 22V37" fill="none" stroke="#87a2a0" stroke-width="0.6" opacity=".30"/>
+<rect x="118" y="7" width="4" height="32" fill="#284250"/>
+<path d="M119 7v32" fill="none" stroke="#56717a" stroke-width="0.7"/>
+<path d="M102 38V20Q120 6 138 20V38Z" fill="#112c3a" opacity=".22"/>
+<path d="M104 37V22Q120 10 136 22V37" fill="none" stroke="#87a2a0" stroke-width="0.6" opacity=".30"/>
+<rect x="158" y="7" width="4" height="32" fill="#284250"/>
+<path d="M159 7v32" fill="none" stroke="#56717a" stroke-width="0.7"/>
+<path d="M142 38V20Q160 6 178 20V38Z" fill="#112c3a" opacity=".22"/>
+<path d="M144 37V22Q160 10 176 22V37" fill="none" stroke="#87a2a0" stroke-width="0.6" opacity=".30"/>
+<path d="M0 37H160V46H0Z" fill="url(#jadeDark)"/>
+<path d="M0 38.5H160M0 45.5H160" fill="none" stroke="#81a69d" stroke-width="0.8" opacity=".67"/>
+<path d="M0 41H160" fill="none" stroke="#1b303e" stroke-width="1.25"/>
+<path d="M10 40.5l4 2-4 2-4-2Z" fill="#537478"/>
+<ellipse cx="10" cy="42.5" rx="0.65" ry="0.65" fill="#b99581" stroke="#192332" stroke-width="0.38"/>
+<path d="M30 40.5l4 2-4 2-4-2Z" fill="#537478"/>
+<ellipse cx="30" cy="42.5" rx="0.65" ry="0.65" fill="#b99581" stroke="#192332" stroke-width="0.38"/>
+<path d="M50 40.5l4 2-4 2-4-2Z" fill="#537478"/>
+<ellipse cx="50" cy="42.5" rx="0.65" ry="0.65" fill="#b99581" stroke="#192332" stroke-width="0.38"/>
+<path d="M70 40.5l4 2-4 2-4-2Z" fill="#537478"/>
+<ellipse cx="70" cy="42.5" rx="0.65" ry="0.65" fill="#b99581" stroke="#192332" stroke-width="0.38"/>
+<path d="M90 40.5l4 2-4 2-4-2Z" fill="#537478"/>
+<ellipse cx="90" cy="42.5" rx="0.65" ry="0.65" fill="#b99581" stroke="#192332" stroke-width="0.38"/>
+<path d="M110 40.5l4 2-4 2-4-2Z" fill="#537478"/>
+<ellipse cx="110" cy="42.5" rx="0.65" ry="0.65" fill="#b99581" stroke="#192332" stroke-width="0.38"/>
+<path d="M130 40.5l4 2-4 2-4-2Z" fill="#537478"/>
+<ellipse cx="130" cy="42.5" rx="0.65" ry="0.65" fill="#b99581" stroke="#192332" stroke-width="0.38"/>
+<path d="M150 40.5l4 2-4 2-4-2Z" fill="#537478"/>
+<ellipse cx="150" cy="42.5" rx="0.65" ry="0.65" fill="#b99581" stroke="#192332" stroke-width="0.38"/>
+</svg>

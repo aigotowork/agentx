@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Space dialogue trim proof</title>
+<style>
+  :root { color-scheme: light; font: 14px/1.4 system-ui, sans-serif; background: #d8d1c0; color: #263b33; }
+  body { margin: 0; padding: 32px; }
+  main { display: grid; gap: 28px; max-width: 920px; margin: auto; }
+  section { overflow: hidden; border-radius: 14px; box-shadow: 0 18px 42px #2a211b28; }
+  h2 { margin: 0; padding: 18px 22px 10px; font-size: 18px; }
+  .folio { background: #fcf6e7; border: 1px solid #b3a184; }
+  .folio .heading { display: flex; align-items: center; gap: 14px; padding: 12px 22px; background: #ece2cb; border-block-end: 1px solid #d5c7a8; }
+  .folio .heading img { width: 36px; height: 36px; }
+  .folio .records { margin: 0 22px; padding: 20px 0 26px; background: #fcf6e7; }
+  .folio .record { padding: 12px 0 18px; border-block-end: 1px solid #d5c7a8; font-family: Georgia, serif; }
+  .folio .record + .record { margin-top: 14px; }
+  .folio .composer { padding: 16px 22px 24px; background: #ece2cb; }
+  .folio .composer-box { height: 48px; border: 2px solid #874b33; outline: 1px solid #b3a184; background: #fcf6e7; border-radius: 8px; }
+  .signal { background: #162432; color: #ecf4fb; border: 1px solid #507085; }
+  .signal h2 { color: #a0e5d4; }
+  .signal .heading { display: flex; align-items: center; gap: 14px; padding: 12px 18px; background: #101d2b; border-block: 1px solid #39536a; }
+  .signal .heading img { width: 18px; height: 18px; }
+  .signal .records { margin: 0 18px; padding: 18px 0 22px; }
+  .signal .record { padding: 14px; border: 1px solid #39536a; border-radius: 8px; background: #1b2c3e; }
+  .signal .record + .record { margin-top: 10px; }
+  .signal .composer { padding: 14px 18px 20px; background: #101d2b; }
+  .signal .composer-box { height: 46px; border: 1px solid #507085; outline: 2px solid #83e2cb; outline-offset: 2px; background: #162432; border-radius: 6px; }
+  .label { display: flex; align-items: center; justify-content: space-between; margin: 0 0 12px; color: #5e6556; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+  .signal .label { color: #b2c5d8; }
+</style>
+<main>
+  <section class="folio" aria-label="Folio decorative trim proof">
+    <h2>Folio · bound paper</h2>
+    <div class="heading"><img src="folio-seal.svg" alt=""><strong>Correspondence reader</strong><span>two records · draft below</span></div>
+    <div class="records"><p class="label"><span>history</span><span>R-14</span></p><div class="record">A ruled sheet keeps the message line quiet while the rust seal gives the header a physical point of arrival.</div><div class="record">The page edge repeats lightly into the rail. The corner is reserved for a clear sheet boundary.</div></div>
+    <div role="presentation" style="height:12px;background:url('folio-page-edge.svg') repeat-x left top"></div><div class="composer"><div class="composer-box"></div></div>
+  </section>
+  <section class="signal" aria-label="Signal decorative trim proof">
+    <h2>Signal · inset instrument</h2>
+    <div class="heading"><img src="signal-indicator.svg" alt=""><strong>Conversation channel</strong><span>panel seam and slot</span></div>
+    <div class="records"><p class="label"><span>record feed</span><span>2 items</span></p><div class="record">The inset card rhythm keeps the transcript dense while the blue-grey frame carries the surface.</div><div class="record">One teal slot marks the trim's origin. It does not report a participant state.</div></div>
+    <div role="presentation" style="height:12px;background:url('signal-panel-edge.svg') no-repeat left top"></div><div class="composer"><div class="composer-box"></div></div>
+  </section>
+</main>
+</html>

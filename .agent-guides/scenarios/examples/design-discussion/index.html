@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>提交与恢复 · 可交互的设计沟通示例</title>
+<style>
+:root{font:16px/1.6 system-ui,sans-serif;color:#273344;background:#f4f6fa;--accent:#4d59bd;--line:#dbe1eb;--muted:#647084;--surface:white;--selected:#edf0ff}*{box-sizing:border-box}body{margin:0}main{max-width:1120px;margin:auto;padding:32px 24px}header{margin-bottom:24px}h1{font-size:clamp(24px,4vw,34px);letter-spacing:-.04em;margin:8px 0}h2{font-size:18px;margin:0 0 16px}p{margin:8px 0}.eyebrow,small{color:var(--muted);font-size:13px}.badge{display:inline-block;padding:2px 9px;border-radius:20px;background:#e8ebfb;color:var(--accent);font-size:12px}.workspace{display:grid;grid-template-columns:1.25fr 1fr;gap:18px}.panel{padding:22px;border:1px solid var(--line);border-radius:16px;background:var(--surface);min-width:0}.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}button,select{font:inherit;border:1px solid var(--line);border-radius:8px;padding:8px 12px;background:white;color:inherit;cursor:pointer}button.primary{background:var(--accent);color:white;border-color:var(--accent)}button:disabled{opacity:.45;cursor:default}button:focus-visible,select:focus-visible,svg [role=button]:focus-visible{outline:3px solid #9dacf4;outline-offset:3px}.diagram{width:100%;height:auto;display:block;margin:18px 0}.diagram text{font-size:14px;fill:#273344}.node rect{fill:#f7f8fc;stroke:#cbd3e1;stroke-width:1.5}.node[aria-pressed=true] rect{fill:#edf0ff;stroke:var(--accent);stroke-width:2}.node{cursor:pointer}.edge{fill:none;stroke:#9ca8bc;stroke-width:2;marker-end:url(#arrow)}.edge-label{font-size:12px!important;fill:#647084!important}.fact{min-height:110px;border-top:1px solid var(--line);padding-top:12px}.state-line{display:flex;justify-content:space-between;gap:12px;margin:20px 0 10px;align-items:center}#state{color:var(--accent);font-weight:650}ol{padding:0;list-style:none;counter-reset:step;margin:16px 0}li{position:relative;border-left:2px solid var(--line);padding:8px 0 12px 22px;color:var(--muted);min-height:48px}li::before{content:'';position:absolute;left:-6px;top:15px;width:10px;height:10px;border-radius:50%;background:#ccd4e1}li[data-active=true]{color:#273344;font-weight:600}li[data-active=true]::before{background:var(--accent)}li[data-active=true]{animation:arrive .4s ease-out}#effect{font-size:14px;background:var(--selected);border-radius:10px;padding:12px;min-height:76px}footer{margin:22px 0;font-size:13px;color:var(--muted)}a{color:var(--accent)}@keyframes arrive{from{transform:translateX(6px);background:#edf0ff}to{transform:translateX(0);background:transparent}}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}@media(max-width:760px){main{padding:20px 14px}.workspace{grid-template-columns:1fr}.panel{padding:18px}h1{font-size:26px}}
+</style>
+</head>
+<body>
+<main>
+<header><span class="badge">概念模拟 · 设计讨论示例 v1</span><h1>请求没收到结果，还能再提交吗？</h1><p>选择返回情形，逐步观察提交、服务效果与结果核对，再点击对象查看它承担的责任。</p></header>
+<div class="workspace">
+<section class="panel" aria-labelledby="flow-title"><h2 id="flow-title">场景：一次提交与原请求恢复</h2>
+<div class="controls"><label for="outcome">返回情形</label><select id="outcome"><option value="saved">明确保存成功</option><option value="failed">明确拒绝 · 未保存</option><option value="unknown">响应丢失 · 实际已保存</option></select></div>
+<div class="state-line"><span>当前状态 <output id="state">待提交</output></span><small>派发次数 <output id="dispatches">0</output></small></div>
+<ol id="timeline" aria-label="请求过程"></ol>
+<div id="effect" role="status" aria-live="polite"></div>
+<div class="controls" style="margin-top:18px"><button id="step" class="primary">提交一次</button><button id="retry">再次提交</button><button id="reset">重置场景</button></div>
+</section>
+<section class="panel" aria-labelledby="model-title"><h2 id="model-title">领域关系与责任</h2>
+<svg class="diagram" viewBox="0 0 440 265" role="group" aria-label="提交请求关联结果记录，结果记录指向反馈实体；点击对象查看责任">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10" fill="#9ca8bc"/></marker></defs>
+<path class="edge" d="M140 65H292"/><text class="edge-label" x="170" y="49">requestId 核对</text>
+<path class="edge" d="M355 98V180H292"/><text class="edge-label" x="316" y="143">saved 时指向</text>
+<g class="node" id="request-node" role="button" tabindex="0" aria-label="提交请求" aria-pressed="true" data-object="request"><rect x="10" y="32" width="130" height="66" rx="12"/><text x="75" y="60" text-anchor="middle">提交请求</text><text class="edge-label" x="75" y="80" text-anchor="middle">Submission</text></g>
+<g class="node" role="button" tabindex="0" aria-label="结果记录" aria-pressed="false" data-object="receipt"><rect x="292" y="32" width="138" height="66" rx="12"/><text x="361" y="60" text-anchor="middle">结果记录</text><text class="edge-label" x="361" y="80" text-anchor="middle">Receipt</text></g>
+<g class="node" role="button" tabindex="0" aria-label="反馈实体" aria-pressed="false" data-object="feedback"><rect x="147" y="148" width="145" height="66" rx="12"/><text x="219" y="176" text-anchor="middle">反馈实体</text><text class="edge-label" x="219" y="196" text-anchor="middle">Feedback</text></g>
+<text class="edge-label" x="12" y="249">响应未知描述调用者的认知，不等于服务未保存。</text>
+</svg>
+<div class="fact" id="object-detail" aria-live="polite"></div>
+</section>
+</div>
+<footer>本页模拟一个简化协议，不调用生产服务。模型依据与更新方式见 <a href="./README.md">示例说明</a>。修改模型与页面后，请手动刷新查看新版；页面没有自动刷新或 HMR。</footer>
+</main>
+<script>
+const model={
+ objects:{
+  request:{name:'提交请求',responsibility:'保存稳定的 requestId 与冻结输入。结果未知时查询原请求，避免把同一意图重新派发。'},
+  receipt:{name:'结果记录',responsibility:'按原 requestId 返回已知结果，并区分尚未核对、明确失败与确认保存。重发和查询是不同操作。'},
+  feedback:{name:'反馈实体',responsibility:'保存实际业务内容并拥有后续处理生命周期。客户端没有收到响应，不会使已经保存的实体消失。'}
+ },
+ scenarios:{
+  saved:[['待提交','准备一个请求；尚未产生服务效果。'],['请求已派发','冻结输入并派发一次，派发次数为 1。'],['保存已确认','服务保存反馈并返回结果记录。业务实体已存在。']],
+  failed:[['待提交','准备一个请求；尚未产生服务效果。'],['请求已派发','冻结输入并派发一次，派发次数为 1。'],['拒绝已确认','服务明确拒绝且未保存。可以修正输入，再以新请求发起。']],
+  unknown:[['待提交','准备一个请求；尚未产生服务效果。'],['请求已派发','冻结输入并派发一次，派发次数为 1。'],['结果未知','服务已保存，但调用者没有收到响应。禁止盲目重发；可核对原 requestId。'],['原结果已核对','查询原 requestId 的结果记录，确认保存。派发次数仍为 1。']]
+ }
+};
+const $=id=>document.getElementById(id);let phase=0,dispatches=0;
+function render(){
+ const outcome=$('outcome').value,steps=model.scenarios[outcome],current=steps[phase];
+ $('state').textContent=current[0];$('dispatches').textContent=dispatches;
+ $('effect').textContent=current[1];
+ $('timeline').replaceChildren(...steps.map(([label],index)=>{const row=document.createElement('li');row.textContent=label;row.dataset.active=String(index===phase);if(index===phase)row.setAttribute('aria-current','step');return row;}));
+ $('step').disabled=phase>=steps.length-1;
+ $('step').textContent=phase===0?'提交一次':outcome==='unknown'&&phase===2?'核对原请求':'接收结果';
+ $('retry').disabled=!(outcome==='failed'&&phase===2);
+}
+function reset(){phase=0;dispatches=0;render()}
+function selectObject(key){const item=model.objects[key];$('object-detail').replaceChildren();const heading=document.createElement('strong');heading.textContent=item.name;const text=document.createElement('p');text.textContent=item.responsibility;$('object-detail').append(heading,text);document.querySelectorAll('[data-object]').forEach(node=>node.setAttribute('aria-pressed',String(node.dataset.object===key)))}
+$('step').onclick=()=>{if(phase===0)dispatches++;phase++;render()};$('reset').onclick=reset;$('outcome').onchange=reset;
+$('retry').onclick=()=>{phase=1;dispatches++;render();$('effect').textContent='已修正输入，以新的请求身份再次派发。此处模拟新请求，区别于未知结果时的盲目重发。'};
+document.querySelectorAll('[data-object]').forEach(node=>{node.onclick=()=>selectObject(node.dataset.object);node.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();selectObject(node.dataset.object)}}});
+selectObject('request');render();
+</script>
+</body>
+</html>

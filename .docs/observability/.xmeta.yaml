@@ -1,0 +1,27 @@
+schema: package
+description: AgentX observability contracts, source navigation and evidence routes.
+artifacts:
+  - {kind: guidance, path: ./AGENTS.md, description: Ownership and design maintenance entry.}
+  - {kind: model, path: ./README.md, description: Current observation capability entry and source-of-truth routes.}
+  - {kind: design, path: ./model.md, description: Context map and identity/state authority boundaries.}
+  - {kind: contract, path: ./contracts.md, description: Shared typed references and domain offering catalog.}
+  - {kind: design, path: ./engineering.md, description: Planned native homes and engineering/context maintenance.}
+  - {kind: contract, path: ./runtime.md, description: Runtime/client facts and bounded passive native inspection.}
+  - {kind: plan, path: ./telemetry-coverage.md, description: Cross-process telemetry coverage and hot-path optimization.}
+  - {kind: evidence, path: ./codex-hook-latency.md, description: Static callback path and branch-specific workload accounting.}
+  - {kind: contract, path: ./configuration.md, description: Captured/resolved configuration and safe provenance/comparison.}
+  - {kind: contract, path: ./events.md, description: Volatile streams and exact correlation/order/gap/retention boundaries.}
+  - {kind: scenario, path: ./scenarios.md, description: Canonical complete diagnosis cases and domain-contract consumption.}
+  - {kind: evidence, path: ./acceptance.md, description: Independent design walkthrough findings and bounded check/support limits.}
+  - {kind: design, path: ./consumer-boundary.md, description: Passive CLI consumption and future local browser adapter prerequisites.}
+  - {kind: plan, path: ./implementation-plan.md, description: Dependency-correct implementation responsibilities and release gates.}
+  - {kind: guidance, path: ./cli.md, description: Released observe CLI grammar and usage; executable support follows native evidence.}
+  - {kind: contract, path: ./browser-api.md, description: Actual finite browser API, authentication, asset bundle and precision contract.}
+  - {kind: guidance, path: ../../src/observability/web/AGENTS.md, description: Native local adapter ownership and maintenance.}
+  - {kind: guidance, path: ../../web/observability/api/AGENTS.md, description: Native-derived browser bindings and client lifecycle maintenance.}
+  - {kind: scenario, path: ../../src/observability/web/cases.md, description: Authored adapter security and lifetime scenarios; execution remains independent.}
+  - {kind: evidence, path: ../../.controller/observability/implementation-evidence/consumer.md, description: Adapter and browser preparation, exact inputs and executable outcomes.}
+  - {kind: guidance, path: ../../src/cli/commands/observe/AGENTS.md, description: Native diagnostic consumer structure and maintenance.}
+  - {kind: scenario, path: ../../src/cli/commands/observe/cases.md, description: Authored actual-process observation and isolation scenarios.}
+  - {kind: evidence, path: ../../.controller/observability/implementation-evidence/native.md, description: Native candidate checks and product results with exact evidence limits.}
+  - {kind: delivery, path: ../../.controller/observability/implementation.md, description: Accepted implementation Delivery and completed original Tasks.}

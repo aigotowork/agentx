@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "system": "inspector",
+  "id": "inspector/motion",
+  "kind": "motion",
+  "title": "动效与声音偏好",
+  "summary": "动效只是反馈；声音显式开启，减少动态与事实边界优先。",
+  "maturity": "stable",
+  "source": [
+    "./feedback.web.tsx"
+  ],
+  "design": "./motion.design.md",
+  "useWhen": [
+    "动效只是反馈；声音显式开启，减少动态与事实边界优先。"
+  ],
+  "avoidWhen": [
+    "不要将样例结果解释为业务事实或权限。"
+  ],
+  "dependencies": [
+    "inspector/themes"
+  ],
+  "events": [],
+  "states": [],
+  "interactions": [],
+  "scenes": [
+    {
+      "id": "default",
+      "title": "真实资源预览",
+      "description": "动效只是反馈；声音显式开启，减少动态与事实边界优先。",
+      "kind": "overview"
+    }
+  ],
+  "usage": {
+    "entry": "../inspector.web.ts",
+    "symbols": [
+      "FeedbackControls"
+    ]
+  }
+}

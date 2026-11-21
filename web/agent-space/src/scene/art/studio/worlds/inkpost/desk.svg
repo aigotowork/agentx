@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="86" height="68" viewBox="0 0 86 68">
+<title>Scribe's bowed oak writing desk</title>
+<defs>
+<linearGradient id="wood" x2="31%" y2="100%"><stop offset="0.000" stop-color="#ab784f"/><stop offset="0.500" stop-color="#714838"/><stop offset="1.000" stop-color="#453039"/></linearGradient><linearGradient id="edge" x2="31%" y2="100%"><stop offset="0.000" stop-color="#ce9d62"/><stop offset="0.500" stop-color="#885a42"/><stop offset="1.000" stop-color="#634035"/></linearGradient><linearGradient id="dark" x2="31%" y2="100%"><stop offset="0.000" stop-color="#644338"/><stop offset="0.500" stop-color="#392935"/><stop offset="1.000" stop-color="#2a222c"/></linearGradient><linearGradient id="brass" x2="31%" y2="100%"><stop offset="0.000" stop-color="#ebc180"/><stop offset="0.500" stop-color="#b47a4c"/><stop offset="1.000" stop-color="#5e4346"/></linearGradient><linearGradient id="stock" x2="31%" y2="100%"><stop offset="0.000" stop-color="#fff1be"/><stop offset="0.500" stop-color="#dcc18b"/><stop offset="1.000" stop-color="#a87b57"/></linearGradient><pattern id="etch" width="4" height="4" patternUnits="userSpaceOnUse"><path d="M-1 1l2-2m-1 4l4-4m-1 5l2-2" stroke="#201923" stroke-width=".6" opacity=".38"/></pattern>
+</defs>
+<g stroke-linecap="round" stroke-linejoin="round" color="#19151e">
+<ellipse cx="43" cy="65" rx="38" ry="2.8" fill="#130f19" opacity=".42"/><ellipse cx="40" cy="65.2" rx="26.2" ry="1.7" fill="#160e14" opacity=".55"/>
+
+<g stroke="currentColor" stroke-width="1.22">
+<path d="M14 41l10 .4-2 17-4 7-7 1 4-6Zm53-1 7-1 2 22 3 4-8 1-4-6Z" fill="url(#dark)"/>
+<path d="m26 44 39-2 2 8-38 2-2 11-4 .4Z" fill="#352630"/>
+<path d="m12 34 65-1-2 12-7 3-11-1-9 2-33-1-4-5Z" fill="url(#wood)"/>
+<path d="m35 38 26-.7-2 8-24 .3Z" fill="#50333a" stroke-width=".75"/>
+<path d="m4 33 8-8 7-1 51-1 12 7-2 5-12 5-38 .3-24-2Z" fill="url(#edge)"/>
+<path d="m4 33 25 2 40-1 13-4-2 5-13 4-39 1-22-2Z" fill="url(#wood)"/>
+</g>
+<path d="M8 33l18 1m10 0 30-1 12-3m-63 13 14 1m33-.4 8-.9m-52 9-.6 7m54-8 .4 7" stroke="#e2af74" stroke-width=".76" fill="none" opacity=".62"/>
+<path d="M20 29l9 .3m25 1 9-.1M17 46l14 .6m32-1.1 7-.9" fill="none" stroke="#35252e" stroke-width=".58"/>
+<path d="M26 40h5v6h-5zm37 0h8v5h-8zm7 12 4-.3.8 8-4 .4z" fill="url(#etch)"/>
+<path d="M42 41q6 .5 11-.4l-1.6 2.2-7.4 .2Z" fill="url(#brass)" stroke="#382629" stroke-width=".7"/>
+<path d="m26 24 13-2 14 2 5 5-19 3-14-2-3-4Z" fill="#563b39" stroke="#462d32" stroke-width=".8"/>
+<path d="m25 23 13-2 13 3 4 5-15 1-4-1-11 .2-2-3Z" fill="url(#stock)" stroke="#705042" stroke-width=".75"/>
+<path d="m36 22 1.3 7m-11-4 7-.8m-6 2.5 6-.5m7-1.5 7 1.1m-6 1 7 .7" stroke="#76554a" fill="none" stroke-width=".53"/>
+<path d="m61 25 1-7 6-1 3 6-2 3Z" fill="#33484c" stroke="#2a212b" stroke-width=".86"/>
+<path d="m61 19 2-2h4l2 2-3 1z" fill="#d5ab74"/><path d="m66 18 4-11 3-3 1 .1-.6 4-5 5Z" fill="#efc98d" stroke="#372833" stroke-width=".72"/>
+<path d="m66 18 5-9" stroke="#86594d" stroke-width=".52"/>
+<path d="m11 28 4-2 5 .2-.9 3-5 1.4Z" fill="#b8a581" stroke="#5c403e" stroke-width=".65"/>
+</g>
+</svg>

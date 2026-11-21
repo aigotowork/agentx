@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="48" viewBox="0 0 120 48">
+<title>Twin lancet window in blackened oak</title>
+<defs>
+<linearGradient id="night" x2="5%" y2="100%"><stop offset="0.000" stop-color="#38374d"/><stop offset="0.500" stop-color="#666173"/><stop offset="1.000" stop-color="#d49a79"/></linearGradient><linearGradient id="sill" x2="31%" y2="100%"><stop offset="0.000" stop-color="#ab7b58"/><stop offset="1.000" stop-color="#4b3033"/></linearGradient>
+</defs>
+<g stroke-linecap="round" stroke-linejoin="round" color="#19151e">
+<path d="M25 41 27 20C30 12 42 8 53 3l7-2 9 3c11 5 21 11 25 18l1 19 6 3-1 3H18l-1-3Z" fill="#201928" stroke="#201823" stroke-width="2.2"/>
+<path d="M28 41V22Q34 11 60 3q23 7 31 19l1 19Z" fill="#463440" stroke="#876350" stroke-width=".85"/>
+<path d="M33 40l1-17q8-9 24-15v32Zm29 0 .5-32Q78 14 85 23l2 17Z" fill="url(#night)" stroke="#1b1929" stroke-width="1.55"/>
+<path d="M35 25q8-4 15-3l6-3m9 4 7-3 8 1m-45 7 16-.7m13 .7 19-1" stroke="#d5a287" stroke-width=".55" opacity=".6" fill="none"/>
+<path d="m35 36 9-5 7 4 7-2v6H34Zm28 0 8-4 4 2 8-5 3 10H63Z" fill="#393a4a"/>
+<path d="M34 39l9-2 8 1 7-1m5 1 8-1 7 1 8-2" stroke="#d08d6f" opacity=".53" stroke-width=".72" fill="none"/>
+<path d="M46 14v26m27-26 1 26M33 27l24-.5m6 0 22 .5" stroke="#271f2d" stroke-width="1.35"/>
+<path d="M46.9 17v8m0 3.8v9m27.5-19 .4 8M29 23q9-12 29-18m5 1q14 5 20 11" fill="none" stroke="#f6af74" stroke-opacity=".49" stroke-width=".6"/>
+<path d="m17 43 20-2 52 1 13 1-3 4-80-1z" fill="url(#sill)" stroke="#231b26" stroke-width="1.2"/>
+<path d="m23 43 46 .4m9 .1 17 .2" stroke="#c1885a" stroke-opacity=".72" stroke-width=".7"/>
+<path d="M21 12q-4 8-5 13m3-7-5 9m88-9 6 12m-4-9 6 12" stroke="#392a34" opacity=".45" stroke-width=".8"/>
+</g>
+</svg>

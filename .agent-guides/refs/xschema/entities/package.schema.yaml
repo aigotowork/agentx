@@ -1,0 +1,28 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: xschema package
+type: object
+required: [ schema ]
+properties:
+  schema: { enum: [ package, module ] }
+  artifacts:
+    type: array
+    items: { $ref: "#/$defs/artifact" }
+    uniqueItems: true
+allOf:
+  - { $ref: common.schema.yaml#/$defs/base }
+additionalProperties: true
+$defs:
+  artifact:
+    type: object
+    required: [ kind, description, path ]
+    properties:
+      kind: { $ref: common.schema.yaml#/$defs/text }
+      description: { $ref: common.schema.yaml#/$defs/text }
+      path:
+        allOf:
+          - { $ref: common.schema.yaml#/$defs/reference }
+          - not: { pattern: "[<>*]" }
+      path_template: false
+      placeholder: false
+      guidance: { $ref: common.schema.yaml#/$defs/reference }
+    additionalProperties: true

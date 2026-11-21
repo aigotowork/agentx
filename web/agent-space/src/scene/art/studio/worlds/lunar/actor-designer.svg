@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="72" viewBox="0 0 64 72">
+  <defs>
+    <linearGradient id="porcelain" x2=".34" y2="1">
+      <stop stop-color="#f4f9e9"/>
+      <stop offset=".56" stop-color="#bed7dc"/>
+      <stop offset="1" stop-color="#618ab2"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="32" cy="68" rx="22" ry="3.2" fill="#0d1730" opacity=".55"/>
+  <g stroke="#101a33" stroke-width="1.45" stroke-linejoin="round">
+    <path fill="#3e5978" d="m25 46 7 2-1 8-5 10-6-1 3-11zm11 1 7-1 2 18-6 2-2-4z"/>
+    <path fill="url(#porcelain)" d="m22 62 7 1-1 5-13 1-1-3zm17 1 6-2 6 5-1 3H37z"/>
+    <path fill="#2a4267" d="m24 29 19 1 5 8-6 11-7 4-10-3-6-8z"/>
+    <path fill="url(#porcelain)" d="m24 32 19-1 5 6-9 11-5 2-8-4-6-7z"/>
+    <path fill="#79a88c" d="m27 40 12-2-4 7-6-1z" stroke="none"/>
+    <path fill="#34516c" d="m22 32-5 5-4 10 3 5 3-2 4-10zm23 0 6 2 5 7v5l-3 4-5-2v-5l-6-5z"/>
+    <path fill="#6ce0bd" d="m9 41 10 1 3 3-3 8-10 1-3-3z"/>
+    <path fill="#143653" d="M11 44h6l1 5-7 2-1-2z" stroke="none"/>
+    <path fill="#f0e9b9" d="m28 8 9 2 10-7 6 1-5 8-9 3z"/>
+    <path fill="#6f9dba" d="m47 3 7-2 5 3-3 7-8 4-3-5z"/>
+    <path fill="url(#porcelain)" d="m45 2 8-1 5 2-2 4-6 5-6 1-3-4z"/>
+    <path fill="#abc6c9" stroke="none" d="m46 4 6-2 3 1-3 4-7 3z"/>
+    <path fill="#284467" d="m17 13 18-4 15 9-2 10-8 8-16-1-11-7-1-7z"/>
+    <path fill="url(#porcelain)" d="m17 12 17-4 14 8 1 8-8 8-17 1-12-6-2-7z"/>
+    <path fill="#122541" d="m17 17 16-4 12 7-4 7-15 3-11-5z"/>
+  </g>
+  <path fill="#c3ffab" d="M19 21l9-3v4l-8 3zm14-4 8 4-2 3-6-2z"/>
+  <path d="M22 14l10-2m3 17 6-2M53 41l-2-3" fill="none" stroke="#eef7df" stroke-linecap="round" stroke-width="1"/>
+  <path d="m11 46 2-.5-1 3 4-1m14-11 5-1m-5 2 3 1 4-2" fill="none" stroke="#9ffcd7" stroke-linecap="round" stroke-width=".9"/>
+</svg>

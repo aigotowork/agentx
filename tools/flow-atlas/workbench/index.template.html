@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; base-uri 'none'; form-action 'none'">
+<title>Flow Atlas · 领域设计</title>
+<style>__WORKBENCH_STYLES__</style>
+<body>
+<div class="workbench" id="workbench" data-testid="workbench">
+  <header class="workspace-header">
+    <button id="navigation-toggle" class="icon-button" aria-label="浏览模型资源" aria-expanded="false" aria-controls="navigation" title="浏览模型资源" data-testid="navigation-toggle">☰</button>
+    <h1 id="model-title">领域设计</h1>
+    <label class="view-choice"><span class="visually-hidden">设计视图</span><select id="view-select" aria-label="设计视图" data-testid="view-select"><option value="objects">对象与关系</option><option value="process">流程</option><option value="dataflow">数据流</option><option value="state">状态</option><option value="sequence">时序</option></select></label>
+    <button id="diagnostics-toggle" class="compact-button" data-testid="diagnostics-toggle" title="设计诊断与检查范围">检查 <span id="diagnostic-count"></span></button>
+  </header>
+  <div class="context-bar">
+    <label>用例 <select id="process-select" aria-label="选择用例" data-testid="process-select"></select></label>
+    <label>场景 <select id="scenario-select" aria-label="选择场景" data-testid="scenario-select"></select></label>
+    <button id="compare-toggle" class="icon-button" aria-label="比较场景和预期" title="比较场景和预期" data-testid="compare-toggle">⇄</button>
+    <details class="context-help"><summary aria-label="作者源与能力范围" title="作者源与能力范围">ⓘ</summary><div>TS 定义拥有语义；此页查看导出检查点。布局 JSON 只保存位置。参数只读，播放为示意。</div></details>
+  </div>
+  <main class="workspace-main">
+    <aside class="resource-navigation" id="navigation" aria-label="模型资源" data-testid="resource-navigation">
+      <div class="navigation-search"><input id="resource-search" type="search" aria-label="搜索模型资源" placeholder="搜索对象、方法、规则…" data-testid="resource-search"><button id="navigation-close" class="icon-button" aria-label="关闭资源" title="关闭资源">×</button></div>
+      <div id="resource-list" class="resource-list"></div>
+    </aside>
+    <section class="canvas-section" aria-label="领域设计画布">
+      <div class="canvas-heading"><span id="canvas-title"></span><span id="checkpoint-label" class="muted" data-testid="checkpoint-label"></span><button id="layout-toggle" class="icon-button" aria-label="布局操作" title="布局操作" data-testid="layout-toggle">⌘</button></div>
+      <div id="canvas" class="canvas" data-testid="workbench-canvas"></div>
+      <div id="canvas-controls"></div>
+      <div id="layout-panel" class="layout-panel" hidden data-testid="layout-panel"></div>
+      <div id="route-status" class="route-status" hidden data-testid="route-status"></div>
+    </section>
+    <aside id="details" class="subject-details" aria-labelledby="details-title" hidden data-testid="subject-details">
+      <div class="details-heading"><h2 id="details-title">详情</h2><button id="details-close" class="icon-button" aria-label="关闭详情" title="关闭详情" data-testid="details-close">×</button></div>
+      <div id="details-body" class="details-body"></div>
+    </aside>
+  </main>
+  <footer id="player" class="scenario-player" hidden data-testid="scenario-player">
+    <div class="player-controls"><button id="player-previous" class="icon-button" aria-label="上一步" title="上一步" data-testid="player-previous">|‹</button><button id="player-play" class="icon-button" aria-label="播放" title="播放" data-testid="player-play">▶</button><button id="player-next" class="icon-button" aria-label="下一步" title="下一步" data-testid="player-next">›|</button><button id="player-replay" class="icon-button" aria-label="重新播放" title="重新播放" data-testid="player-replay">↺</button><label class="speed-choice"><span class="visually-hidden">播放速度</span><select id="player-speed" aria-label="播放速度" data-testid="player-speed"><option value="0.25">0.25×</option><option value="0.5" selected>0.5×</option><option value="1">1×</option><option value="2">2×</option></select></label></div>
+    <div class="player-progress"><input id="player-position" type="range" min="0" max="0" value="0" aria-label="检查点" data-testid="player-position"><div class="player-caption"><span id="player-phase" data-testid="player-phase"></span><button id="player-call" class="text-button" data-testid="player-call"></button></div></div>
+    <button id="player-expectations" class="compact-button" data-testid="player-expectations">预期</button>
+  </footer>
+  <div id="notice" class="notice" role="status" aria-live="polite" data-testid="workbench-notice"></div>
+</div>
+<script id="workbench-model" type="application/json">__WORKBENCH_MODEL__</script>
+<script>__WORKBENCH_SCRIPT__</script>
+</body>
+</html>

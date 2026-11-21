@@ -1,0 +1,344 @@
+# Curated vocabulary adapted from the xsaas Logo method. See ../research/sources.md.
+schema_version: 1
+purpose: Seed choices for collaborative feedback; not a classifier, quality score or implemented interface.
+selection_policy:
+  separate: [reaction, description, retention, requested-change]
+  target: A reference trait, direction, asset version or presentation region must be identifiable, or remain explicitly unresolved.
+  state: Proposed suggestions are not submitted user feedback; preserve selected, rejected and unselected states separately.
+  interpretation: Keep the actual statement and chosen label separate from the agent's professional hypothesis.
+  disclosure: Show phase-relevant groups first; allow search, more choices, mixed selections and free text.
+  compatibility: Stable option IDs; revise wording without silently changing the meaning of historical selections.
+  mapping: A suggested operation is a proposal conditional on the target and brief, not an automatic edit command.
+  context: A user may retain a feature in one use and change it in another; preserve scope and version.
+  existing_tags: Reuse descriptive facet IDs from style-vocabulary.yaml instead of redefining style, subject or material lists here.
+  localization: Bilingual seed labels support method exploration; a future product UI must use its owning locale catalogs.
+reactions:
+  - {id: interested, label_zh: 值得继续, label_en: Develop further, meaning: Select for further exploration; not final acceptance}
+  - {id: not-for-brand, label_zh: 不适合这个品牌, label_en: Not for this brand, meaning: Reject fit in this context; not a universal quality judgment}
+  - {id: uncertain, label_zh: 还拿不准, label_en: Uncertain, meaning: Keep open and identify the useful comparison}
+  - {id: compare, label_zh: 想对比看看, label_en: Compare further, meaning: Ask for a discriminating comparison rather than a ranking}
+retention_scopes:
+  - {id: concept-only, label_zh: 保留概念，重做表达, label_en: Keep concept; redraw expression}
+  - {id: subject-only, label_zh: 保留题材，换种画法, label_en: Keep subject; change visual language}
+  - {id: form-only, label_zh: 保留轮廓，调整细节, label_en: Keep contour; refine detail}
+  - {id: material-only, label_zh: 只喜欢这个材质, label_en: Like this material only}
+  - {id: palette-only, label_zh: 只喜欢这组颜色, label_en: Like this palette only}
+  - {id: type-only, label_zh: 保留字形，调整图形, label_en: Keep lettering; revise symbol}
+  - {id: expression-only, label_zh: 保留神态，调整造型, label_en: Keep expression; revise form}
+  - {id: composition-only, label_zh: 保留构图，换掉元素, label_en: Keep composition; change elements}
+  - {id: whole-direction, label_zh: 保留整体方向，继续精修, label_en: Keep direction; refine craft}
+  - {id: reopen, label_zh: 重新探索，不保留旧方案, label_en: Reopen exploration}
+phase_ids: [brief, references, exploration, selection, refinement, expression, application, delivery]
+groups:
+  concept:
+    label_zh: 概念与品牌联想
+    label_en: Concept and brand association
+    phases: [brief, references, exploration, selection]
+    options:
+      - id: clearer-idea
+        label_zh: 概念更明确
+        label_en: Clearer concept
+        description_zh: 让一个主要意象或关系成为焦点，减少含义竞争。
+        property: concept-focus
+        proposed_operation: Select a dominant proposition and remove or subordinate competing ideas.
+      - id: less-literal
+        label_zh: 表达更含蓄
+        label_en: Less literal
+        description_zh: 保留联想，减少直接画出产品功能的做法。
+        property: abstraction
+        proposed_operation: Abstract the relationship while preserving an observable recognition cue.
+      - id: more-recognizable-subject
+        label_zh: 题材更好辨认
+        label_en: Clearer subject
+        description_zh: 让人先认出动物、物件或字母，再发现次要含义。
+        property: subject-reading
+        proposed_operation: Reinforce the decisive anatomical, object or letter features.
+      - id: stronger-own-character
+        label_zh: 品牌个性更强
+        label_en: More ownable character
+        description_zh: 改变组织结构或独特特征，减少通用模板感。
+        property: distinctiveness-hypothesis
+        proposed_operation: Compare category similarities and develop a specific formal relationship.
+        ambiguity: This expresses a design aim; it does not establish exclusive rights or legal availability.
+      - id: closer-brand-fit
+        label_zh: 更贴合品牌
+        label_en: Closer brand fit
+        description_zh: 让设计更接近已经确认的品牌性格和使用情境。
+        property: brief-fit
+        proposed_operation: Return to the specified association and context before changing form.
+      - id: stronger-story
+        label_zh: 叙事更鲜明
+        label_en: Stronger narrative
+        description_zh: 通过一个清楚的动作或场景关系增加故事感。
+        property: narrative-gesture
+        proposed_operation: Compress the story around one decisive interaction.
+  form:
+    label_zh: 形态与轮廓
+    label_en: Form and contour
+    phases: [exploration, selection, refinement]
+    options:
+      - id: lighter-weight
+        label_zh: 视觉更轻盈
+        label_en: Lighter visual weight
+        description_zh: 减少厚重感，并给内部留白更多空间。
+        property: optical-weight
+        proposed_operation: Adjust stroke or mass and counters in the target region.
+      - id: stronger-mass
+        label_zh: 形体更有分量
+        label_en: Stronger mass
+        description_zh: 增加主体的稳定感，避免轮廓显得单薄。
+        property: optical-weight
+        proposed_operation: Increase selected mass while preserving the recognition cue.
+      - id: softer-contour
+        label_zh: 轮廓更柔和
+        label_en: Softer contour
+        description_zh: 放缓尖锐转折，让曲线衔接更温和。
+        property: contour-tension
+        proposed_operation: Adjust curvature and selected corners without indiscriminately rounding anatomy.
+      - id: crisper-contour
+        label_zh: 轮廓更利落
+        label_en: Crisper contour
+        description_zh: 明确边缘和转折，减少含糊的弯折或鼓包。
+        property: contour-definition
+        proposed_operation: Clarify transitions and intentional corners.
+      - id: more-fluid
+        label_zh: 曲线更流畅
+        label_en: More fluid curves
+        description_zh: 让曲率和方向自然过渡，减少接头处的突兀。
+        property: curve-continuity
+        proposed_operation: Refine neighboring handles or arc relationships where continuity is intended.
+      - id: more-gesture
+        label_zh: 动势更鲜明
+        label_en: Stronger gesture
+        description_zh: 用姿态、斜向或节奏，让主体有行动感。
+        property: gesture
+        proposed_operation: Explore controlled changes to pose, axis or contour rhythm.
+      - id: more-balanced
+        label_zh: 重心更稳
+        label_en: More balanced
+        description_zh: 调整视觉重量，让主体不显得偏倒或悬浮。
+        property: optical-balance
+        proposed_operation: Compare visible mass and surrounding space before repositioning.
+      - id: more-breathing-room
+        label_zh: 留白更舒展
+        label_en: More breathing room
+        description_zh: 拉开挤压的孔洞、间隙或图文关系。
+        property: negative-space
+        proposed_operation: Adjust the relevant counter, gap or spacing; retain other proportions where useful.
+      - id: more-compact
+        label_zh: 结构更紧凑
+        label_en: More compact structure
+        description_zh: 收拢松散部件，让它们形成一个清楚的整体。
+        property: grouping
+        proposed_operation: Tighten relationships without collapsing meaningful gaps.
+  detail:
+    label_zh: 细节与图形语言
+    label_en: Detail and visual language
+    phases: [references, exploration, refinement, expression]
+    options:
+      - id: simplify-detail
+        label_zh: 简化内部细节
+        label_en: Simplify interior detail
+        description_zh: 保留识别特征，减少无助于主体的线条和小元素。
+        property: detail-hierarchy
+        proposed_operation: Remove or group subordinate detail at the intended viewing scale.
+      - id: enrich-detail
+        label_zh: 增加工艺细节
+        label_en: Richer crafted detail
+        description_zh: 用有规律的纹理、排线或装饰增加层次。
+        property: crafted-detail
+        proposed_operation: Add detail tied to anatomy, material or the governing visual language.
+      - id: clearer-hierarchy
+        label_zh: 主次更清楚
+        label_en: Clearer hierarchy
+        description_zh: 让主体先被看见，装饰和说明退到第二层。
+        property: hierarchy
+        proposed_operation: Reallocate weight, scale, contrast and density to the focal subject.
+      - id: more-handmade
+        label_zh: 手作感更强
+        label_en: More handmade character
+        description_zh: 增加有意的笔触变化，减少完全一致的机械感。
+        property: contour-regularity
+        proposed_operation: Introduce coherent tool-driven irregularity rather than random noise.
+      - id: more-geometric
+        label_zh: 几何秩序更强
+        label_en: Stronger geometric order
+        description_zh: 统一部分弧线、角度或模块关系，让结构更一致。
+        property: formal-grammar
+        proposed_operation: Choose a relevant radius, angle or module system and optically correct it.
+      - id: richer-ornament
+        label_zh: 装饰性更强
+        label_en: Richer ornament
+        description_zh: 用边框、纹样或花饰强化气质，同时保留主次。
+        property: ornament
+        proposed_operation: Develop a coherent ornamental grammar linked to the subject and type.
+      - id: less-generic-effects
+        label_zh: 效果更克制
+        label_en: More restrained effects
+        description_zh: 减少无关的发光、阴影或渐变，让设计本身更明确。
+        property: effect-hierarchy
+        proposed_operation: Remove incidental effects while preserving intentionally material-led expression.
+  typography:
+    label_zh: 字形与图文关系
+    label_en: Typography and lockup
+    phases: [exploration, refinement, application, delivery]
+    options:
+      - id: more-custom-lettering
+        label_zh: 字形更有专属性
+        label_en: More custom lettering
+        description_zh: 在真实名称的关键字母关系中加入独特结构。
+        property: letter-structure
+        proposed_operation: Develop distinctive pairs, joins or terminals while checking intended reading.
+      - id: better-word-rhythm
+        label_zh: 字距节奏更自然
+        label_en: Better word rhythm
+        description_zh: 调整字母之间的视觉间隙，避免忽松忽紧。
+        property: kerning-rhythm
+        proposed_operation: Refine pairwise spacing and assess the complete word.
+      - id: more-readable-name
+        label_zh: 名称更好读
+        label_en: More readable name
+        description_zh: 保留字形个性，同时减少容易认错的字母关系。
+        property: name-reading
+        proposed_operation: Clarify the ambiguous skeleton, counter or ligature.
+      - id: stronger-lockup
+        label_zh: 图文更协调
+        label_en: More coherent lockup
+        description_zh: 让图形与名称在重量、比例和距离上更匹配。
+        property: symbol-type-relationship
+        proposed_operation: Refine optical weight, size and spacing between actual sources.
+      - id: less-formal-type
+        label_zh: 字体更亲切
+        label_en: Less formal lettering
+        description_zh: 减少过于严肃的字形语气，保留必要的清晰度。
+        property: type-expression
+        proposed_operation: Test actual letter structure and stroke behavior rather than selecting by font label alone.
+      - id: more-editorial-type
+        label_zh: 字形更精致克制
+        label_en: More considered lettering
+        description_zh: 用更细致的比例、笔画和间距建立字标气质。
+        property: type-craft
+        proposed_operation: Develop the real wordmark before adding prestige-associated effects.
+  character:
+    label_zh: 动物、角色与情绪
+    label_en: Animals, characters and expression
+    phases: [references, exploration, selection, refinement]
+    options:
+      - id: clearer-anatomy
+        label_zh: 物种特征更准确
+        label_en: Clearer anatomy
+        description_zh: 保留耳、口鼻、身体或姿态中真正有辨识度的特征。
+        property: anatomy
+        proposed_operation: Return to subject references and adjust the decisive masses and proportions.
+      - id: less-childish
+        label_zh: 气质更成熟
+        label_en: More mature character
+        description_zh: 调整比例和神态，减少幼态感，而非简单去掉可爱。
+        property: character-age-expression
+        proposed_operation: Test head-body ratio, facial emphasis and typography with the subject retained.
+      - id: more-approachable
+        label_zh: 神态更亲和
+        label_en: More approachable expression
+        description_zh: 通过姿态和面部关系减少距离感或攻击性。
+        property: character-expression
+        proposed_operation: Change gesture, gaze or feature relationships in a controlled comparison.
+      - id: more-resourceful
+        label_zh: 神态更机敏
+        label_en: More resourceful expression
+        description_zh: 让角色表现观察、行动或解决问题的状态。
+        property: character-action
+        proposed_operation: Explore an alert gesture or meaningful interaction, not only a new prop.
+      - id: fewer-props
+        label_zh: 减少道具干扰
+        label_en: Fewer distracting props
+        description_zh: 保留最有用的一个动作或物件，让角色成为焦点。
+        property: character-hierarchy
+        proposed_operation: Remove or subordinate props that compete with the identifying gesture.
+  color_material:
+    label_zh: 色彩与材质
+    label_en: Color and material
+    phases: [references, exploration, refinement, expression, application]
+    options:
+      - id: warmer-palette
+        label_zh: 配色更温暖
+        label_en: Warmer palette
+        description_zh: 调整色相与色彩关系，减少当前的冷感。
+        property: palette-temperature
+        proposed_operation: Compare palettes on the same asset before attributing the mood only to color.
+      - id: quieter-palette
+        label_zh: 配色更沉静
+        label_en: Quieter palette
+        description_zh: 降低刺激和竞争，让色彩关系更平和。
+        property: palette-intensity
+        proposed_operation: Adjust chroma, contrast and color distribution with the intended context retained.
+      - id: bolder-palette
+        label_zh: 色彩更大胆
+        label_en: Bolder color
+        description_zh: 增加鲜明对比或特色颜色，让表达更突出。
+        property: palette-intensity
+        proposed_operation: Explore deliberate contrast and focal color rather than increasing every saturation.
+      - id: more-tactile
+        label_zh: 触感更可信
+        label_en: More tactile material
+        description_zh: 让表面纹理、边缘和光线更像同一种真实材质。
+        property: material-coherence
+        proposed_operation: Align roughness, grain, relief and lighting with the selected medium.
+      - id: less-plastic-metal
+        label_zh: 金属感更真实
+        label_en: More convincing metal
+        description_zh: 调整反射、粗糙度与倒角，减少塑料般的光泽。
+        property: metal-behavior
+        proposed_operation: Revisit environment reflections and material response; do not only add a brighter gradient.
+      - id: finer-engraving
+        label_zh: 刻线更有章法
+        label_en: More disciplined engraving
+        description_zh: 让排线顺着形体走，并通过疏密表现层次。
+        property: hatching-structure
+        proposed_operation: Refine line direction and density against the intended scale and process.
+      - id: flatter-expression
+        label_zh: 改看平面表达
+        label_en: Explore flat expression
+        description_zh: 暂时去掉体积与材质，单独比较图形结构。
+        property: rendering-role
+        proposed_operation: Produce an explicit flat study without claiming the material-led brief has changed.
+      - id: richer-volume
+        label_zh: 空间层次更强
+        label_en: Stronger volume
+        description_zh: 通过切面、遮挡和光线让形体更有深度。
+        property: spatial-depth
+        proposed_operation: Develop coherent planes and lighting or use a suitable dimensional medium.
+  application:
+    label_zh: 使用场景与识别
+    label_en: Application and recognition
+    phases: [refinement, expression, application, delivery]
+    options:
+      - id: clearer-small-use
+        label_zh: 小尺寸更清楚
+        label_en: Clearer small-size use
+        description_zh: 为小图标调整细节和间隙，同时保留主要识别特征。
+        property: compact-variant
+        proposed_operation: Derive and test a real compact asset for the specified display size.
+      - id: stronger-dark-use
+        label_zh: 深色背景更醒目
+        label_en: Clearer on dark surfaces
+        description_zh: 调整对应版本，让主体在实际深色场景中保持可见。
+        property: background-adaptation
+        proposed_operation: Develop an explicit reversed or adapted asset and check its actual use.
+      - id: clearer-single-ink
+        label_zh: 单色结构更完整
+        label_en: Better single-ink structure
+        description_zh: 让重要层次通过轮廓和留白成立，而非只依赖颜色。
+        property: single-ink-variant
+        proposed_operation: Create a real single-ink adaptation when the intended application requires it.
+      - id: more-relevant-context
+        label_zh: 放到实际场景看
+        label_en: Compare in actual context
+        description_zh: 用网站、包装或徽章等真实用途判断比例和气质。
+        property: presentation-context
+        proposed_operation: Compose the actual target asset version in a relevant scene.
+      - id: retain-rich-primary
+        label_zh: 主标保留丰富细节
+        label_en: Retain rich primary identity
+        description_zh: 大尺寸主标继续丰富表达，小尺寸另做适配。
+        property: identity-family
+        proposed_operation: Preserve the primary asset and derive only the compact version actually needed.

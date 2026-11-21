@@ -1,0 +1,3 @@
+/** Finite timeline shapes consumed by the preserved content/digest algorithms. */
+export type ToolCallDetail = {type:'shell';exitCode?:number|null}|{type:'edit';filePath?:string;unifiedDiff?:string;oldString?:string;newString?:string}|{type:'write';filePath?:string;content?:string}|{type:'search';toolName?:string}|{type:'read'|'plan'|'fetch'|'sub_agent'|'unknown'};
+export type AgentTimelineItem = {type:'user_message'|'assistant_message';text:string;messageId?:string}|{type:'tool_call';callId?:string;name:string;status?:string;detail:ToolCallDetail}|{type:'error';message:string}|{type:'notification';level?:string;message?:string}|{type:'compaction';status?:string}|{type:'reasoning'|'todo';text?:string};

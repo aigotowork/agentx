@@ -1,0 +1,170 @@
+:root[data-experience="inspector"] {
+  --ds-tool-pad-height: 180px;
+  --ds-tool-cell: 12px;
+  --ds-tool-piece: 6px;
+  --ds-tool-picture: 64px;
+  --ds-tool-gutter: 4px;
+  --ds-tool-fall: 420ms;
+  --ds-tool-lift: 12px;
+  --ds-tool-focus-gap: 3px;
+  .ds-tool-playground {
+    display: grid;
+    gap: var(--host-gap);
+  }
+  .ds-tool-pad {
+    min-height: var(--ds-tool-pad-height);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--host-gap);
+    overflow: hidden;
+    background-color: var(--host-surface1);
+    background-image: var(--ds-background-grid, none);
+    background-size: var(--ds-texture-size, 16px) var(--ds-texture-size, 16px);
+    border: var(--inspector-shape-outline, 2px) solid var(--host-border);
+  }
+  .ds-tool-pad:focus-visible {
+    outline: 2px solid var(--host-accent);
+    outline-offset: var(--ds-tool-focus-gap);
+  }
+  .ds-material {
+    display: grid;
+    grid-template-columns: repeat(6, var(--ds-tool-cell));
+    gap: var(--ds-tool-gutter);
+  }
+  .ds-material-cell {
+    width: var(--ds-tool-cell);
+    height: var(--ds-tool-cell);
+    background: var(--host-accent);
+    box-shadow: inset -2px -2px 0 var(--host-foregroundMuted);
+  }
+  .ds-material-cell:nth-child(3n) {
+    background: var(--host-statusWarning);
+  }
+  .ds-material-cell:nth-child(3n + 1) {
+    background: var(--host-statusSuccess);
+  }
+  .ds-material-cell[data-removed="true"] {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .ds-tool-hint,
+  .ds-tool-footer {
+    color: var(--host-foregroundMuted);
+    font-size: var(--host-small);
+  }
+  .ds-tool-hint {
+    pointer-events: none;
+  }
+  .ds-tool-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--host-gap);
+  }
+  .ds-tool-impact {
+    position: absolute;
+    left: var(--impact-x);
+    top: var(--impact-y);
+    width: var(--ds-tool-gutter);
+    height: var(--ds-tool-gutter);
+    pointer-events: none;
+    animation: ds-impact-life var(--ds-tool-fall) linear both;
+  }
+  .ds-striking-tool {
+    position: absolute;
+    width: var(--ds-tool-picture);
+    height: var(--ds-tool-picture);
+    left: -8px;
+    top: -34px;
+    image-rendering: pixelated;
+    transform-origin: 82% 86%;
+    animation: ds-hammer-down var(--inspector-motion-strike, 200ms)
+      steps(3, end) both;
+  }
+  .ds-tool-debris {
+    position: absolute;
+    width: var(--ds-tool-piece);
+    height: var(--ds-tool-piece);
+    background: var(--host-accent);
+    box-shadow: 2px 2px 0 var(--host-foregroundMuted);
+    --scatter-x: -60px;
+    --scatter-y: 28px;
+    animation: ds-tool-debris var(--inspector-motion-debris, 360ms)
+      steps(4, end) 60ms both;
+  }
+  .ds-tool-debris:nth-of-type(2) {
+    --scatter-x: 58px;
+    --scatter-y: 20px;
+    background: var(--host-statusWarning);
+  }
+  .ds-tool-debris:nth-of-type(3) {
+    --scatter-x: -24px;
+    --scatter-y: 44px;
+    background: var(--host-statusSuccess);
+  }
+  .ds-tool-debris:nth-of-type(4) {
+    --scatter-x: 32px;
+    --scatter-y: 40px;
+    background: var(--host-statusWarning);
+  }
+  .ds-tool-debris:nth-of-type(5) {
+    --scatter-x: 68px;
+    --scatter-y: 8px;
+  }
+  &[data-motion="reduced"] .ds-tool-impact {
+    display: none;
+  }
+}
+@keyframes ds-hammer-down {
+  0% {
+    opacity: 1;
+    transform: translateY(-12px) rotate(18deg);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(2px) rotate(-8deg);
+  }
+  80% {
+    opacity: 1;
+    transform: translateY(-2px) rotate(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-2px) rotate(0);
+  }
+}
+@keyframes ds-tool-debris {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  10% {
+    opacity: 1;
+    transform: translate(0, -4px);
+  }
+  45% {
+    opacity: 1;
+    transform: translate(calc(var(--scatter-x) * 0.6), -30px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--scatter-x), var(--scatter-y));
+  }
+}
+@keyframes ds-impact-life {
+  0%,
+  99% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ds-tool-impact {
+    display: none !important;
+  }
+}

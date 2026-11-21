@@ -1,0 +1,6 @@
+{
+  "name": "agentx",
+  "version": "1.0.0",
+  "author": { "name": "agentx" },
+  "description": "Wake Claude for queued agentx messages without changing the input draft"
+}

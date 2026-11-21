@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="62" viewBox="0 0 64 62">
+  <title>Signal lantern with an enamel housing and brass shutter</title>
+  <defs>
+<linearGradient id="wood" x2=".9" y2="1"><stop offset="0.000" stop-color="#c28a55"/><stop offset="0.500" stop-color="#a77048"/><stop offset="1.000" stop-color="#6d493b"/></linearGradient><linearGradient id="brass" x2=".9" y2="1"><stop offset="0.000" stop-color="#fff0b1"/><stop offset="0.500" stop-color="#d29e4f"/><stop offset="1.000" stop-color="#825331"/></linearGradient><linearGradient id="teal" x2=".9" y2="1"><stop offset="0.000" stop-color="#91b5a2"/><stop offset="0.500" stop-color="#56847b"/><stop offset="1.000" stop-color="#30595c"/></linearGradient><linearGradient id="stone" x2=".9" y2="1"><stop offset="0.000" stop-color="#a8a391"/><stop offset="0.500" stop-color="#82867b"/><stop offset="1.000" stop-color="#596b64"/></linearGradient><linearGradient id="lens" x2=".9" y2="1"><stop offset="0.000" stop-color="#d7c88d"/><stop offset="0.500" stop-color="#edd593"/><stop offset="1.000" stop-color="#ba8d58"/></linearGradient>
+  </defs>
+<ellipse cx="34" cy="58.7" rx="27" ry="3.3" fill="#213c40" opacity=".18"/><ellipse cx="31" cy="58.0" rx="21.3" ry="1.9" fill="#283737" opacity=".14"/>
+<!-- Windward signal stand, ballasted with oak and brass -->
+<path d="M10 55 17 50h28l10 5-1 4H11z" fill="#404b4b" stroke="#3b4647"/>
+<path d="m12 54 7-4h25l8 4-6 3H16z" fill="url(#stone)"/>
+<path d="M17 56h29m-29-3 6-.8m20 1.5 5 .5" stroke="#e7d4a0" stroke-opacity=".74" stroke-width=".72"/>
+<path d="M27 35h10l1 17-7 2-5-1z" fill="url(#wood)" stroke="#594739" stroke-width=".85"/>
+<path d="M28 39l2 1-.7 10-2 .4m8-10 1 10" fill="none" stroke="#e4ab70" stroke-width=".75"/>
+<path d="M16 38h32l-2 3-12 2-16-2z" fill="url(#brass)" stroke="#634e3b" stroke-width=".7"/>
+<!-- Openwork roof and swept vane -->
+<path d="M31 6V2m0 .8q4.8 2.5 10 .4l-1.7 2.5 2.7 1.8q-5.9 2-11-.8" fill="#c58559" stroke="#71533d" stroke-width=".9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M13 18 20 14l4-6h14l4 6 8 4-3 2H15z" fill="url(#teal)" stroke="#364c4d" stroke-width="1.1"/>
+<path d="M16 17l7-3 3-5h10m-8 1.7-2 4-5 2" fill="none" stroke="#b4c8a2" stroke-width=".82" stroke-linecap="round"/>
+<path d="M17 19h30l-3 18H21z" fill="#3e5d59" stroke="#354b4b" stroke-width=".95"/>
+<path d="M20 21h24l-2.2 14H22z" fill="url(#lens)" stroke="#ab8151" stroke-width="1.1"/>
+<path d="M25 21l.8 14.4m12.6-14.4-1.1 14.4" stroke="#5a694e" stroke-width="1.15"/>
+<path d="M23 23.5l1 7m3.9-8.3 1 2.1m-1.8 7.4 2.6-6.7m10.5-3.8-.6 7" fill="none" stroke="#fff1bc" stroke-opacity=".8" stroke-width=".82" stroke-linecap="round"/>
+<path d="M29 32h6l-2.8-7.2z" fill="#ffffd1"/>
+<path d="m32 30 .8 1.7h-1.4z" fill="#f1ac51"/>
+<path d="M20 35h24l2.7 3H17z" fill="url(#brass)" stroke="#675940" stroke-width=".75"/>
+<path d="M18 19h28m-25 17h22" stroke="#eed39a" stroke-width=".76"/>
+<!-- Shutter handle -->
+<path d="M38 44l8-7 4 2-7 7-4 .9z" fill="#d9a85c" stroke="#674f3c" stroke-width=".78"/>
+<circle cx="47.6" cy="38.5" r="1.65" fill="#f2cf78" stroke="#685341" stroke-width=".68"/>
+</svg>

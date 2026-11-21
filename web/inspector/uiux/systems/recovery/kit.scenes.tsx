@@ -1,0 +1,5 @@
+/** @aiPurpose Render the original recovery Button, Tabs and Badge in an isolated CSS preview. */
+import {useState} from 'react';import type {SceneProps} from '../../framework/framework.public';import {Button,Tabs,Badge} from './recovery.web';import {RecoveryPreview} from './recovery.preview';
+/** @aiPurpose Provide scenes presentation behavior.
+ * @aiUsage Use within the Inspector host and its themed resource boundary. */
+export const scenes={default:({emit}:SceneProps)=>{const [count,setCount]=useState(0),[tab,setTab]=useState('all');return <RecoveryPreview><div className="preview-stack"><div className="preview-row"><Button variant="primary" icon="run" onClick={()=>{setCount(count+1);emit('press',{count:count+1});}}>本地操作</Button><Button disabled>已禁用</Button><Button busy>处理中</Button><output>{count}</output></div><Tabs label="经典资源筛选" items={[{id:'all',label:'全部'},{id:'unknown',label:'未知'}]} value={tab} onChange={value=>{setTab(value);emit('change',{tab:value});}}/><div className="preview-row"><Badge tone="info">本地样例</Badge><Badge tone="unknown" icon="unknown">效果未知</Badge></div></div></RecoveryPreview>;}};

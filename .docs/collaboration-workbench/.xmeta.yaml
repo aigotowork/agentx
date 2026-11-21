@@ -1,0 +1,12 @@
+schema: package
+description: Collaboration workbench scenarios, current native/frontend contracts and independently accepted local support.
+artifacts:
+  - {kind: design, path: ./README.md, description: Current versus target boundaries and design ownership entry.}
+  - {kind: design, path: ./experience.md, description: Scenario and interaction model from assignment through acceptance.}
+  - {kind: design, path: ./capabilities.md, description: Native reuse and minimal domain/browser/build responsibility decisions.}
+  - {kind: design, path: ./interface-details.md, description: Resource actions and return paths, component contracts, state vocabulary and responsive layout detail.}
+  - {kind: design, path: ./frontend.md, description: Actual frontend component and state ownership with tooling and dual-app embedding seams; execution evidence remains separate.}
+  - {kind: design, path: ./native.md, description: Current native usage and report grammar with bounds, actor semantics and independently exercised support.}
+  - {kind: design, path: ./browser-api.md, description: Closed workbench browser consumption and native-derived contracts.}
+  - {kind: design, path: ./visuals, description: Editable SVG states and their shared authoring tool.}
+

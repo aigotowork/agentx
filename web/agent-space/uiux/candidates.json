@@ -1,0 +1,194 @@
+{
+  "version": 1,
+  "groups": [
+    {
+      "id": "illustrated-style-library",
+      "title": "插画风格目录",
+      "kind": "page",
+      "candidates": [
+        {
+          "id": "citrus",
+          "title": "柚风小筑",
+          "source": {
+            "kind": "story",
+            "resource": "space/whole-space",
+            "scene": "citrus"
+          },
+          "width": 1120,
+          "height": 760
+        },
+        {
+          "id": "reverie",
+          "title": "星绒梦室",
+          "source": {
+            "kind": "story",
+            "resource": "space/whole-space",
+            "scene": "reverie"
+          },
+          "width": 1120,
+          "height": 760
+        },
+        {
+          "id": "wash",
+          "title": "雨后水彩",
+          "source": {
+            "kind": "story",
+            "resource": "space/whole-space",
+            "scene": "wash"
+          },
+          "width": 1120,
+          "height": 760
+        },
+        {
+          "id": "collage",
+          "title": "彩纸事务所",
+          "source": {
+            "kind": "story",
+            "resource": "space/whole-space",
+            "scene": "collage"
+          },
+          "width": 1120,
+          "height": 760
+        }
+      ]
+    },
+    {
+      "id": "illustrated-office",
+      "title": "游戏美术办公室",
+      "kind": "page",
+      "candidates": [
+        {
+          "id": "inkpost",
+          "title": "烛影邮局",
+          "source": {
+            "kind": "story",
+            "resource": "space/whole-space",
+            "scene": "inkpost"
+          },
+          "width": 1120,
+          "height": 760
+        },
+        {
+          "id": "windward",
+          "title": "风屿驿站",
+          "source": {
+            "kind": "story",
+            "resource": "space/whole-space",
+            "scene": "windward"
+          },
+          "width": 1120,
+          "height": 760
+        },
+        {
+          "id": "jadecourt",
+          "title": "流光庭院",
+          "source": {
+            "kind": "story",
+            "resource": "space/whole-space",
+            "scene": "jadecourt"
+          },
+          "width": 1120,
+          "height": 760
+        }
+      ]
+    },
+    {
+      "id": "space-worlds",
+      "title": "办公室世界",
+      "kind": "page",
+      "candidates": [
+        {
+          "id": "lunar",
+          "title": "月面站",
+          "source": {
+            "kind": "story",
+            "resource": "space/whole-space",
+            "scene": "lunar"
+          },
+          "width": 1120,
+          "height": 760
+        },
+        {
+          "id": "terrarium",
+          "title": "苔庭",
+          "source": {
+            "kind": "story",
+            "resource": "space/whole-space",
+            "scene": "terrarium"
+          },
+          "width": 1120,
+          "height": 760
+        },
+        {
+          "id": "newsprint",
+          "title": "漫画社",
+          "source": {
+            "kind": "story",
+            "resource": "space/whole-space",
+            "scene": "newsprint"
+          },
+          "width": 1120,
+          "height": 760
+        }
+      ]
+    },
+    {
+      "id": "conversation-reader",
+      "title": "会话阅读器",
+      "kind": "block",
+      "candidates": [
+        {
+          "id": "folio",
+          "title": "工坊信笺",
+          "source": {
+            "kind": "story",
+            "resource": "space/conversation-block",
+            "scene": "folio"
+          },
+          "width": 640,
+          "height": 680
+        },
+        {
+          "id": "signal",
+          "title": "夜班联络台",
+          "source": {
+            "kind": "story",
+            "resource": "space/conversation-block",
+            "scene": "signal"
+          },
+          "width": 516,
+          "height": 680
+        }
+      ]
+    },
+    {
+      "id": "command-dialog",
+      "title": "操作确认框",
+      "kind": "component",
+      "candidates": [
+        {
+          "id": "folio",
+          "title": "工坊信笺",
+          "source": {
+            "kind": "story",
+            "resource": "space/command-surface",
+            "scene": "folio"
+          },
+          "width": 540,
+          "height": 420
+        },
+        {
+          "id": "signal",
+          "title": "夜班联络台",
+          "source": {
+            "kind": "story",
+            "resource": "space/command-surface",
+            "scene": "signal"
+          },
+          "width": 500,
+          "height": 420
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "system": "space",
+  "id": "space/conversation-composer",
+  "kind": "component",
+  "title": "对话 Composer",
+  "summary": "对话 Composer · 与真实 Space 共享实现",
+  "maturity": "experimental",
+  "source": [
+    "./components/ConversationComposer.tsx",
+    "./components/Attachments.tsx"
+  ],
+  "design": "./composer.design.md",
+  "useWhen": [
+    "操作和检查实际 Space 对话 Composer"
+  ],
+  "avoidWhen": [
+    "不要把本地演示结果当作原生操作或最终验收"
+  ],
+  "dependencies": [
+    "space/controls"
+  ],
+  "events": [
+    {
+      "name": "submit",
+      "description": "用户接受的本地 submit 意图"
+    }
+  ],
+  "states": [
+    {
+      "id": "default",
+      "title": "成功回执",
+      "description": "成功回执；真实组件，本地演示",
+      "scene": "default"
+    },
+    {
+      "id": "failure",
+      "title": "失败保留",
+      "description": "失败保留；真实组件，本地演示",
+      "scene": "failure"
+    },
+    {
+      "id": "unknown",
+      "title": "未知结果保留",
+      "description": "未知结果保留；真实组件，本地演示",
+      "scene": "unknown"
+    },
+    {
+      "id": "pending",
+      "title": "处理中保留",
+      "description": "处理中保留；真实组件，本地演示",
+      "scene": "pending"
+    }
+  ],
+  "interactions": [],
+  "scenes": [
+    {
+      "id": "default",
+      "title": "成功回执",
+      "description": "成功回执；真实组件，本地演示",
+      "kind": "interaction"
+    },
+    {
+      "id": "failure",
+      "title": "失败保留",
+      "description": "失败保留；真实组件，本地演示",
+      "kind": "interaction"
+    },
+    {
+      "id": "unknown",
+      "title": "未知结果保留",
+      "description": "未知结果保留；真实组件，本地演示",
+      "kind": "interaction"
+    },
+    {
+      "id": "pending",
+      "title": "处理中保留",
+      "description": "处理中保留；真实组件，本地演示",
+      "kind": "interaction"
+    }
+  ],
+  "usage": {
+    "entry": "./space.web.ts",
+    "symbols": [
+      "ConversationComposer",
+      "Attachments"
+    ]
+  }
+}

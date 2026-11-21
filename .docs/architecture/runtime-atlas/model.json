@@ -1,0 +1,5894 @@
+{
+  "schemaVersion": 1,
+  "title": "AgentX 运行全景图",
+  "scope": "源码行为模型 · 非实时监控 · Linux 共享 Codex 验证限0.167.0",
+  "sources": [
+    {
+      "id": "daemon",
+      "label": "守护进程发现、单实例与退出",
+      "path": "src/daemon/lifecycle.rs",
+      "basis": "source"
+    },
+    {
+      "id": "server",
+      "label": "AgentX 请求处理与数据所有权",
+      "path": "src/daemon/server.rs",
+      "basis": "source"
+    },
+    {
+      "id": "client",
+      "label": "原生 Client 与 IPC",
+      "path": "src/service/client.rs",
+      "basis": "source"
+    },
+    {
+      "id": "launch",
+      "label": "启动方式选择与后台 runner",
+      "path": "src/runtime/launcher.rs",
+      "basis": "source"
+    },
+    {
+      "id": "terminal",
+      "label": "终端预设与脱离前台",
+      "path": "src/runtime/terminal/mod.rs",
+      "basis": "source"
+    },
+    {
+      "id": "presets",
+      "label": "iTerm / tmux 等启动预设",
+      "path": "src/runtime/terminal/presets.rs",
+      "basis": "source"
+    },
+    {
+      "id": "pty",
+      "label": "PTY 子进程、信号与输入输出",
+      "path": "src/runtime/pty/mod.rs",
+      "basis": "source"
+    },
+    {
+      "id": "delivery",
+      "label": "PTY 投递与心跳",
+      "path": "src/messaging/delivery/host.rs",
+      "basis": "source"
+    },
+    {
+      "id": "delivery-store",
+      "label": "投递状态、退出报告与事务",
+      "path": "src/messaging/delivery_store.rs",
+      "basis": "source"
+    },
+    {
+      "id": "hooks",
+      "label": "Codex 原生 hook 状态上报",
+      "path": "src/integrations/hooks/codex/client.rs",
+      "basis": "source"
+    },
+    {
+      "id": "bridge",
+      "label": "桥的线程状态、续报和关闭",
+      "path": "src/integrations/codex/bridge/session.rs",
+      "basis": "source"
+    },
+    {
+      "id": "stdio",
+      "label": "客户端管道、事件循环与信号",
+      "path": "src/integrations/codex/bridge/stdio.rs",
+      "basis": "source"
+    },
+    {
+      "id": "driver",
+      "label": "真实消息输入与原生回执",
+      "path": "src/integrations/codex/bridge/driver.rs",
+      "basis": "source"
+    },
+    {
+      "id": "managed",
+      "label": "共享 Codex 服务获取",
+      "path": "src/integrations/codex/service/managed.rs",
+      "basis": "source"
+    },
+    {
+      "id": "native-host",
+      "label": "原生宿主注册、续报与断开",
+      "path": "src/runtime/hosts_store.rs",
+      "basis": "source"
+    },
+    {
+      "id": "process-host",
+      "label": "PTY 宿主与子进程身份",
+      "path": "src/runtime/process_host.rs",
+      "basis": "source"
+    },
+    {
+      "id": "cleanup",
+      "label": "进程代次核对与失联清理",
+      "path": "src/agents/cleanup_store.rs",
+      "basis": "source"
+    },
+    {
+      "id": "status",
+      "label": "持久状态、心跳与过期投影",
+      "path": "src/agents/lifecycle.rs",
+      "basis": "source"
+    },
+    {
+      "id": "resume",
+      "label": "恢复原生会话的启动准备",
+      "path": "src/runtime/resume_client.rs",
+      "basis": "source"
+    },
+    {
+      "id": "attachments",
+      "label": "线程身份、附件与接管条件",
+      "path": "src/agents/attachments_store.rs",
+      "basis": "source"
+    },
+    {
+      "id": "messages",
+      "label": "消息持久化与通知",
+      "path": "src/messaging/service_store.rs",
+      "basis": "source"
+    },
+    {
+      "id": "inbox",
+      "label": "消息批次、独占 claim 与确认",
+      "path": "src/messaging/inbox_store.rs",
+      "basis": "source"
+    },
+    {
+      "id": "web",
+      "label": "Web 工作台的独立 HTTP 进程",
+      "path": "src/collaboration/web/mod.rs",
+      "basis": "source"
+    },
+    {
+      "id": "web-api",
+      "label": "有限 Web 读写 API",
+      "path": "src/collaboration/web/api.rs",
+      "basis": "source"
+    },
+    {
+      "id": "native-evidence",
+      "label": "Linux Codex0.167.0 共享接入实测范围",
+      "path": ".docs/codex-activation/acceptance.md",
+      "basis": "verified"
+    },
+    {
+      "id": "workbench-evidence",
+      "label": "双 Agent 工作台与嵌入产物实测",
+      "path": ".controller/collaboration-workbench/evidence/acceptance.md",
+      "basis": "verified"
+    },
+    {
+      "id": "startup-evidence",
+      "label": "冷启动与旧构建恢复实测",
+      "path": ".controller/domain-daemon/startup-evidence.md",
+      "basis": "verified"
+    },
+    {
+      "id": "module-daemon-agents",
+      "label": "agents / lifecycle 源码",
+      "path": "src/agents/service_store.rs",
+      "basis": "source"
+    },
+    {
+      "id": "module-daemon-work",
+      "label": "collaboration 源码",
+      "path": "src/collaboration/store.rs",
+      "basis": "source"
+    },
+    {
+      "id": "module-db-module",
+      "label": "daemon-owned storage 源码",
+      "path": "src/db/mod.rs",
+      "basis": "source"
+    },
+    {
+      "id": "module-sender-module",
+      "label": "send client 源码",
+      "path": "src/cli/commands/send.rs",
+      "basis": "source"
+    },
+    {
+      "id": "module-browser-page",
+      "label": "React / Blocks / Page 源码",
+      "path": "web/workbench/workbench.tsx",
+      "basis": "source"
+    },
+    {
+      "id": "message-contract",
+      "label": "消息提交与批次方法契约",
+      "path": "src/messaging/service.rs",
+      "basis": "source"
+    },
+    {
+      "id": "inbox-contract",
+      "label": "输入记录、独占领取与交付证据",
+      "path": "src/messaging/inbox.rs",
+      "basis": "source"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "terminal",
+      "label": "终端 / Shell",
+      "kind": "process-group",
+      "owner": "用户终端环境",
+      "executable": "iTerm / Terminal / SSH + fish / bash / zsh",
+      "lifetime": "终端应用与 Shell 是不同进程；这里合并为启动环境，不等于 Agent 生命周期",
+      "capabilities": [
+        "显示终端输出",
+        "接收键盘输入",
+        "关闭时可能触发 HUP",
+        "终端应用、Shell 各自运行；本框表示进程组"
+      ],
+      "modules": [],
+      "sourceIds": [
+        "terminal",
+        "presets"
+      ]
+    },
+    {
+      "id": "launcher",
+      "label": "AgentX 启动命令",
+      "kind": "process",
+      "owner": "调用方",
+      "executable": "agentx launch --tool codex / agentx r",
+      "lifetime": "准备、启动或等待子进程；不是全局执行守护者",
+      "capabilities": [
+        "选择 scope / cwd / Provider",
+        "获取缺失 daemon",
+        "保留启动与恢复意图"
+      ],
+      "modules": [
+        {
+          "id": "launcher-module",
+          "label": "launcher",
+          "path": "src/runtime/launcher.rs",
+          "description": "选择普通 PTY、headless 或 app-server 桥"
+        },
+        {
+          "id": "resume-module",
+          "label": "resume_client",
+          "path": "src/runtime/resume_client.rs",
+          "description": "恢复已记录 Provider session；不等于接回旧 OS 进程"
+        },
+        {
+          "id": "terminal-launch",
+          "label": "terminal presets",
+          "path": "src/runtime/terminal/presets.rs",
+          "description": "AgentX 调用方选择终端或 tmux 启动命令；不是 tmux 内部模块"
+        }
+      ],
+      "sourceIds": [
+        "launch",
+        "resume",
+        "presets"
+      ]
+    },
+    {
+      "id": "tmux",
+      "label": "tmux server",
+      "kind": "process",
+      "owner": "tmux",
+      "executable": "tmux server",
+      "lifetime": "独立于附着客户端；pane/session 仍有自己的退出行为",
+      "capabilities": [
+        "保留终端会话",
+        "detach / attach",
+        "托管 pane 的 PTY"
+      ],
+      "modules": [],
+      "sourceIds": [
+        "presets"
+      ]
+    },
+    {
+      "id": "pty",
+      "label": "AgentX PTY 宿主",
+      "kind": "process",
+      "owner": "AgentX 调用方宿主",
+      "executable": "agentx pty <tool>",
+      "lifetime": "前台模式跟随终端；headless 模式在独立会话运行",
+      "capabilities": [
+        "持有 PTY 与子进程",
+        "观察屏幕与审批门",
+        "投递消息、心跳和退出报告"
+      ],
+      "modules": [
+        {
+          "id": "pty-module",
+          "label": "PTY / I/O",
+          "path": "src/runtime/pty/mod.rs",
+          "description": "终端字节、信号、窗口尺寸、子进程等待"
+        },
+        {
+          "id": "pty-delivery",
+          "label": "delivery host",
+          "path": "src/messaging/delivery/host.rs",
+          "description": "保持投递循环、门控、心跳与结束报告"
+        },
+        {
+          "id": "pty-process",
+          "label": "ProcessHost",
+          "path": "src/runtime/process_host.rs",
+          "description": "注册精确子进程 PID 和代次"
+        }
+      ],
+      "sourceIds": [
+        "pty",
+        "delivery",
+        "process-host"
+      ]
+    },
+    {
+      "id": "provider",
+      "label": "Provider CLI",
+      "kind": "process",
+      "owner": "Codex / Claude 等原生工具",
+      "executable": "codex / claude / …",
+      "lifetime": "由原生工具、宿主和启动方式共同决定",
+      "capabilities": [
+        "模型轮次与工具执行",
+        "原生对话历史",
+        "调用配置好的 hooks"
+      ],
+      "modules": [],
+      "sourceIds": [
+        "hooks",
+        "launch"
+      ]
+    },
+    {
+      "id": "hooks",
+      "label": "Hook 命令",
+      "kind": "process",
+      "owner": "由 Provider 按事件调用",
+      "executable": "agentx codex-*",
+      "lifetime": "每次 hook 的短命进程；不是常驻轮询服务",
+      "capabilities": [
+        "识别线程与参与者",
+        "上报 active / listening / 工具活动",
+        "在允许的媒介交付消息"
+      ],
+      "modules": [
+        {
+          "id": "hooks-module",
+          "label": "Codex hook adapter",
+          "path": "src/integrations/hooks/codex/client.rs",
+          "description": "Stop 表示一轮结束并更新 listening，不等于进程退出"
+        }
+      ],
+      "sourceIds": [
+        "hooks"
+      ]
+    },
+    {
+      "id": "client",
+      "label": "App Server 客户端",
+      "kind": "process",
+      "owner": "Paseo 或其他原生协议客户端",
+      "executable": "客户端会话进程",
+      "lifetime": "由外层产品持有原生连接；关浏览器/界面不一定关闭该连接",
+      "capabilities": [
+        "提交 thread / turn 请求",
+        "显示原生事件",
+        "转发审批与取消",
+        "本节点指真正持有 stdio 的客户端，不等同于它的浏览器标签页"
+      ],
+      "modules": [],
+      "sourceIds": [
+        "stdio",
+        "native-evidence"
+      ]
+    },
+    {
+      "id": "bridge",
+      "label": "AgentX 协议桥",
+      "kind": "process",
+      "owner": "AgentX 调用方宿主",
+      "executable": "agentx launch --tool codex --stdio --go -- app-server",
+      "lifetime": "一条客户端连接；退出不持有共享后端停止权",
+      "capabilities": [
+        "原生协议双向转发",
+        "线程身份与附件绑定",
+        "自动投递、输入确认、5 秒续报"
+      ],
+      "modules": [
+        {
+          "id": "bridge-io",
+          "label": "stdio / WebSocket",
+          "path": "src/integrations/codex/bridge/stdio.rs",
+          "description": "连接外层管道和共享后端；处理 EOF 和信号"
+        },
+        {
+          "id": "bridge-session",
+          "label": "root / session",
+          "path": "src/integrations/codex/bridge/session.rs",
+          "description": "观察线程状态、注册续报并只释放本连接"
+        },
+        {
+          "id": "bridge-driver",
+          "label": "mail driver",
+          "path": "src/integrations/codex/bridge/driver.rs",
+          "description": "实际消息 start/steer 与精确输入记录确认"
+        },
+        {
+          "id": "codex-service",
+          "label": "managed service 接入",
+          "path": "src/integrations/codex/service/managed.rs",
+          "description": "桥进程获取/复用并连接共享原生服务；此 AgentX 代码不在 Codex 后端内运行"
+        }
+      ],
+      "sourceIds": [
+        "stdio",
+        "bridge",
+        "driver",
+        "managed"
+      ]
+    },
+    {
+      "id": "codex",
+      "label": "Codex 原生后端",
+      "kind": "process",
+      "owner": "官方 Codex",
+      "executable": "codex app-server daemon",
+      "lifetime": "共享原生 daemon；独立于某个桥连接",
+      "capabilities": [
+        "承载多个原生线程",
+        "执行模型和工具",
+        "输出原生协议事件"
+      ],
+      "modules": [],
+      "sourceIds": [
+        "managed",
+        "native-evidence"
+      ]
+    },
+    {
+      "id": "thread",
+      "label": "原生 thread / turn",
+      "kind": "logical",
+      "owner": "Codex",
+      "executable": "非独立 OS 进程",
+      "lifetime": "对话身份与当前轮次；不等于客户端连接",
+      "capabilities": [
+        "原生对话历史",
+        "idle / active / waiting",
+        "resume 同一 thread"
+      ],
+      "modules": [],
+      "sourceIds": [
+        "bridge",
+        "native-evidence"
+      ],
+      "stateFacts": [
+        "turn"
+      ]
+    },
+    {
+      "id": "daemon",
+      "label": "AgentX daemon",
+      "kind": "process",
+      "owner": "AgentX scope",
+      "executable": "agentx daemon serve --scope …",
+      "lifetime": "每个规范数据目录一个；独立于普通 CLI 与 Web 页面",
+      "capabilities": [
+        "唯一管理 SQLite 的应用进程",
+        "参与者、附件、消息与协作事务",
+        "校验宿主与进程代次，保存状态/事件"
+      ],
+      "modules": [
+        {
+          "id": "daemon-transport",
+          "label": "IPC / dispatch",
+          "path": "src/daemon/server.rs",
+          "description": "有界认证连接与应用请求；不是 Codex 原生字节代理"
+        },
+        {
+          "id": "daemon-agents",
+          "label": "agents / lifecycle",
+          "path": "src/agents/service_store.rs",
+          "description": "身份、附件、状态与清理"
+        },
+        {
+          "id": "daemon-inbox",
+          "label": "messaging / inbox",
+          "path": "src/messaging/inbox_store.rs",
+          "description": "持久消息、独占批次与回执"
+        },
+        {
+          "id": "daemon-hosts",
+          "label": "runtime host service",
+          "path": "src/runtime/hosts_store.rs",
+          "description": "宿主注册、心跳、断开与端点事实"
+        },
+        {
+          "id": "daemon-work",
+          "label": "collaboration",
+          "path": "src/collaboration/store.rs",
+          "description": "任务分工、结果、检查和接受"
+        },
+        {
+          "id": "db-module",
+          "label": "daemon-owned storage",
+          "path": "src/db/mod.rs",
+          "description": "daemon 进程打开和维护 AgentX SQLite；数据库文件本身不执行模块"
+        }
+      ],
+      "sourceIds": [
+        "server",
+        "native-host",
+        "inbox",
+        "status",
+        "module-daemon-agents",
+        "module-daemon-work",
+        "module-db-module"
+      ],
+      "stateFacts": [
+        "inbox"
+      ]
+    },
+    {
+      "id": "store",
+      "label": "AgentX SQLite",
+      "kind": "store",
+      "owner": "AgentX daemon",
+      "executable": "磁盘数据，不是进程",
+      "lifetime": "数据 scope 保留；不是执行引擎",
+      "capabilities": [
+        "参与者与会话绑定",
+        "消息 / claim / cursor",
+        "事件和工作协作记录"
+      ],
+      "modules": [],
+      "sourceIds": [
+        "server",
+        "inbox"
+      ]
+    },
+    {
+      "id": "history",
+      "label": "Provider 会话存储",
+      "kind": "store",
+      "owner": "原生 Provider",
+      "executable": "CODEX_HOME 等原生目录",
+      "lifetime": "历史可保留，不证明旧进程仍在执行",
+      "capabilities": [
+        "保存原生对话",
+        "为 resume 提供依据"
+      ],
+      "modules": [],
+      "sourceIds": [
+        "resume",
+        "managed"
+      ]
+    },
+    {
+      "id": "sender",
+      "label": "另一个 Agent / CLI",
+      "kind": "process",
+      "owner": "独立调用方",
+      "executable": "agentx send …",
+      "lifetime": "独立于目标 Agent 的运行宿主",
+      "capabilities": [
+        "发送业务消息",
+        "查询或订阅已保存事件"
+      ],
+      "modules": [
+        {
+          "id": "sender-module",
+          "label": "send client",
+          "path": "src/cli/commands/send.rs",
+          "description": "CLI 解析消息并经 typed client 提交；持久化策略位于 daemon 内"
+        }
+      ],
+      "sourceIds": [
+        "messages",
+        "module-sender-module"
+      ]
+    },
+    {
+      "id": "browser",
+      "label": "工作台浏览器",
+      "kind": "process",
+      "owner": "用户浏览器",
+      "executable": "浏览器标签页",
+      "lifetime": "关闭标签页不等于停止 Agent",
+      "capabilities": [
+        "浏览资源",
+        "提交有限协作操作",
+        "显示最近读取的状态"
+      ],
+      "modules": [
+        {
+          "id": "browser-page",
+          "label": "React / Blocks / Page",
+          "path": "web/workbench/workbench.tsx",
+          "description": "HTTP 消费者；不是 Provider 的执行宿主"
+        }
+      ],
+      "sourceIds": [
+        "web",
+        "workbench-evidence",
+        "module-browser-page"
+      ]
+    },
+    {
+      "id": "web",
+      "label": "工作台 HTTP 宿主",
+      "kind": "process",
+      "owner": "AgentX 调用方",
+      "executable": "agentx workbench",
+      "lifetime": "独立监听进程；不随浏览器标签页退出",
+      "capabilities": [
+        "提供内嵌页面",
+        "固定 scope / project / 协作模式",
+        "把有限 API 转为 AgentX IPC"
+      ],
+      "modules": [
+        {
+          "id": "web-router",
+          "label": "HTTP adapter",
+          "path": "src/collaboration/web/mod.rs",
+          "description": "启动获取 daemon；处理 HTTP 时连接既有 daemon"
+        },
+        {
+          "id": "web-api-module",
+          "label": "bounded API",
+          "path": "src/collaboration/web/api.rs",
+          "description": "没有通用 shell / process supervisor API"
+        }
+      ],
+      "sourceIds": [
+        "web",
+        "web-api"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "terminal-launch",
+      "to": "launcher",
+      "label": "命令 / 环境",
+      "transport": "本地命令执行",
+      "purpose": "shell 解释命令，捕获本次调用环境和工作目录",
+      "sourceIds": [
+        "launch"
+      ],
+      "from": "terminal"
+    },
+    {
+      "id": "launch-pty",
+      "to": "pty",
+      "label": "创建宿主",
+      "transport": "OS spawn / shell runner",
+      "purpose": "普通前台或独立 headless 会话",
+      "sourceIds": [
+        "launch",
+        "terminal"
+      ],
+      "from": "launcher"
+    },
+    {
+      "id": "terminal-pty",
+      "to": "pty",
+      "label": "键盘 / 画面",
+      "transport": "终端标准流",
+      "purpose": "前台终端字节；终端断开不是业务消息",
+      "sourceIds": [
+        "pty"
+      ],
+      "from": "terminal"
+    },
+    {
+      "id": "terminal-tmux",
+      "to": "tmux",
+      "label": "attach / detach",
+      "transport": "tmux 客户端协议",
+      "purpose": "客户端退出时保留 server 和 pane",
+      "sourceIds": [
+        "presets"
+      ],
+      "from": "terminal"
+    },
+    {
+      "id": "tmux-pty",
+      "to": "pty",
+      "label": "pane 终端",
+      "transport": "tmux PTY",
+      "purpose": "宿主的终端由 tmux server 保持",
+      "sourceIds": [
+        "presets",
+        "pty"
+      ],
+      "from": "tmux"
+    },
+    {
+      "id": "pty-provider",
+      "to": "provider",
+      "label": "输入 / 输出 / 信号",
+      "transport": "PTY 与子进程",
+      "purpose": "宿主管理真实子进程与屏幕；不打开受管 SQLite",
+      "sourceIds": [
+        "pty"
+      ],
+      "from": "pty"
+    },
+    {
+      "id": "provider-hooks",
+      "to": "hooks",
+      "label": "原生 hook 事件",
+      "transport": "短命命令调用",
+      "purpose": "UserPromptSubmit / PreToolUse / Stop 等",
+      "sourceIds": [
+        "hooks"
+      ],
+      "from": "provider"
+    },
+    {
+      "id": "hook-ipc",
+      "to": "daemon",
+      "label": "状态 / hook 输出确认",
+      "transport": "AgentX 原生 IPC",
+      "purpose": "解析精确参与者，保存状态、工具活动和确认",
+      "sourceIds": [
+        "hooks",
+        "client"
+      ],
+      "from": "hooks"
+    },
+    {
+      "id": "host-ipc",
+      "to": "daemon",
+      "label": "注册 / 心跳 / Finish",
+      "transport": "AgentX 原生 IPC",
+      "purpose": "保留参与者、子进程代次与宿主事实",
+      "sourceIds": [
+        "process-host",
+        "delivery-store"
+      ],
+      "from": "pty"
+    },
+    {
+      "id": "launch-ipc",
+      "to": "daemon",
+      "label": "获取 / 启动预留 / resume",
+      "transport": "AgentX 原生 IPC",
+      "purpose": "冷启动、身份预留与恢复意图；不直接读数据库",
+      "sourceIds": [
+        "launch",
+        "resume",
+        "daemon"
+      ],
+      "from": "launcher"
+    },
+    {
+      "id": "database",
+      "to": "store",
+      "label": "事务 / 事件 / 回执",
+      "transport": "daemon 内 SQLite 适配",
+      "purpose": "唯一管理数据库的应用进程",
+      "sourceIds": [
+        "server",
+        "inbox"
+      ],
+      "from": "daemon"
+    },
+    {
+      "id": "cli-history",
+      "to": "history",
+      "label": "原生对话历史",
+      "transport": "Provider 文件 / 存储",
+      "purpose": "由 Provider 保留历史，不是 AgentX 执行状态证明",
+      "sourceIds": [
+        "resume"
+      ],
+      "from": "provider"
+    },
+    {
+      "id": "sender-ipc",
+      "to": "daemon",
+      "label": "业务消息入库",
+      "transport": "AgentX 原生 IPC",
+      "purpose": "先保存消息，再产生唤醒提示；不代表交付完成",
+      "sourceIds": [
+        "messages"
+      ],
+      "from": "sender"
+    },
+    {
+      "id": "wake-pty",
+      "to": "pty",
+      "label": "待收提示",
+      "transport": "本地通知端点",
+      "purpose": "提示投递循环读取队列；通知本身不是消息回执",
+      "sourceIds": [
+        "delivery",
+        "messages"
+      ],
+      "from": "daemon"
+    },
+    {
+      "id": "client-bridge",
+      "to": "bridge",
+      "label": "请求 / 事件 / 审批",
+      "transport": "stdio 原生 JSON 帧",
+      "purpose": "外层原生协议连接；关闭只结束本桥",
+      "sourceIds": [
+        "stdio"
+      ],
+      "from": "client"
+    },
+    {
+      "id": "bridge-native",
+      "to": "codex",
+      "label": "原生请求 / 事件",
+      "transport": "Unix WebSocket",
+      "purpose": "每桥独立连接，同一兼容后端；不是每桥一个 Codex 后端",
+      "sourceIds": [
+        "managed",
+        "stdio"
+      ],
+      "from": "bridge"
+    },
+    {
+      "id": "native-thread",
+      "to": "thread",
+      "label": "线程 / 轮次执行",
+      "transport": "Codex 内部对象",
+      "purpose": "thread 不是单独 OS 进程",
+      "sourceIds": [
+        "bridge",
+        "native-evidence"
+      ],
+      "from": "codex"
+    },
+    {
+      "id": "native-history",
+      "to": "history",
+      "label": "原生会话历史",
+      "transport": "Provider 存储",
+      "purpose": "会话可恢复不证明旧执行进程未变",
+      "sourceIds": [
+        "managed",
+        "resume"
+      ],
+      "from": "codex"
+    },
+    {
+      "id": "native-hooks",
+      "to": "hooks",
+      "label": "线程 hook",
+      "transport": "原生命令调用",
+      "purpose": "共享后端按线程身份调用 hook，不能用进程默认收件人",
+      "sourceIds": [
+        "hooks"
+      ],
+      "from": "codex"
+    },
+    {
+      "id": "bridge-ipc",
+      "to": "daemon",
+      "label": "绑定 / claim / 续报",
+      "transport": "AgentX 原生 IPC",
+      "purpose": "桥使用原生服务；daemon 不转发 Codex 字节",
+      "sourceIds": [
+        "bridge",
+        "native-host",
+        "inbox"
+      ],
+      "from": "bridge"
+    },
+    {
+      "id": "wake-bridge",
+      "to": "bridge",
+      "label": "待收提示",
+      "transport": "本地通知端点",
+      "purpose": "驱动读取待收消息；连接退出后驱动也停止",
+      "sourceIds": [
+        "messages",
+        "stdio"
+      ],
+      "from": "daemon"
+    },
+    {
+      "id": "browser-http",
+      "to": "web",
+      "label": "页面 / 有限操作",
+      "transport": "同源 HTTP",
+      "purpose": "浏览器只是读写客户端，不持有 Agent 执行进程",
+      "sourceIds": [
+        "web",
+        "web-api"
+      ],
+      "from": "browser"
+    },
+    {
+      "id": "web-ipc",
+      "to": "daemon",
+      "label": "协作读写",
+      "transport": "AgentX 原生 IPC",
+      "purpose": "固定 scope/project，有限 operator 方法",
+      "sourceIds": [
+        "web",
+        "web-api"
+      ],
+      "from": "web"
+    }
+  ],
+  "modes": [
+    {
+      "id": "foreground",
+      "label": "前台 PTY",
+      "command": "agentx launch --tool codex",
+      "summary": "可见终端与运行宿主相连",
+      "nodeIds": [
+        "terminal",
+        "launcher",
+        "pty",
+        "provider",
+        "hooks",
+        "daemon",
+        "store",
+        "history",
+        "sender"
+      ],
+      "edgeIds": [
+        "terminal-launch",
+        "launch-pty",
+        "terminal-pty",
+        "pty-provider",
+        "provider-hooks",
+        "hook-ipc",
+        "host-ipc",
+        "launch-ipc",
+        "database",
+        "cli-history",
+        "sender-ipc",
+        "wake-pty"
+      ],
+      "initial": {
+        "nodes": {
+          "terminal": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "launcher": {
+            "label": "启动已完成",
+            "tone": "neutral"
+          },
+          "pty": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "provider": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "hooks": {
+            "label": "按事件启动",
+            "tone": "neutral"
+          },
+          "daemon": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "store": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "history": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "sender": {
+            "label": "运行中",
+            "tone": "running"
+          }
+        },
+        "facts": {
+          "connection": "已连接",
+          "host": "宿主存活",
+          "provider": "原生进程存活",
+          "turn": "空闲",
+          "inbox": "无待收消息"
+        }
+      },
+      "layout": {
+        "width": 1044,
+        "height": 404,
+        "nodes": {
+          "terminal": {
+            "x": 16,
+            "y": 42
+          },
+          "launcher": {
+            "x": 286,
+            "y": 42
+          },
+          "pty": {
+            "x": 556,
+            "y": 42
+          },
+          "provider": {
+            "x": 826,
+            "y": 42
+          },
+          "hooks": {
+            "x": 826,
+            "y": 222
+          },
+          "daemon": {
+            "x": 556,
+            "y": 198
+          },
+          "store": {
+            "x": 826,
+            "y": 342
+          },
+          "history": {
+            "x": 286,
+            "y": 310
+          },
+          "sender": {
+            "x": 16,
+            "y": 310
+          }
+        },
+        "routes": {
+          "terminal-pty": {
+            "start": "bottom",
+            "end": "left",
+            "endRatio": 0.77,
+            "via": [
+              [
+                117,
+                184
+              ],
+              [
+                538,
+                184
+              ],
+              [
+                538,
+                136
+              ]
+            ],
+            "label": [
+              342,
+              184
+            ]
+          },
+          "hook-ipc": {
+            "start": "left",
+            "end": "top",
+            "endRatio": 0.83,
+            "via": [
+              [
+                786,
+                270
+              ],
+              [
+                786,
+                178
+              ],
+              [
+                724,
+                178
+              ]
+            ],
+            "label": [
+              788,
+              178
+            ]
+          },
+          "host-ipc": {
+            "start": "bottom",
+            "end": "top",
+            "via": [],
+            "label": [
+              644,
+              181
+            ]
+          },
+          "launch-ipc": {
+            "start": "bottom",
+            "end": "left",
+            "endRatio": 0.28,
+            "via": [
+              [
+                387,
+                218
+              ],
+              [
+                536,
+                218
+              ],
+              [
+                536,
+                251
+              ]
+            ],
+            "label": [
+              440,
+              218
+            ]
+          },
+          "database": {
+            "start": "right",
+            "startRatio": 0.84,
+            "end": "top",
+            "via": [
+              [
+                782,
+                358
+              ],
+              [
+                782,
+                324
+              ],
+              [
+                927,
+                324
+              ]
+            ],
+            "label": [
+              918,
+              324
+            ]
+          },
+          "cli-history": {
+            "start": "left",
+            "end": "top",
+            "via": [
+              [
+                806,
+                68
+              ],
+              [
+                806,
+                170
+              ],
+              [
+                270,
+                170
+              ],
+              [
+                270,
+                274
+              ],
+              [
+                387,
+                274
+              ]
+            ],
+            "label": [
+              370,
+              274
+            ]
+          },
+          "sender-ipc": {
+            "start": "right",
+            "end": "left",
+            "endRatio": 0.69,
+            "via": [
+              [
+                252,
+                350
+              ],
+              [
+                252,
+                290
+              ],
+              [
+                536,
+                290
+              ],
+              [
+                536,
+                329
+              ]
+            ],
+            "label": [
+              388,
+              290
+            ]
+          },
+          "wake-pty": {
+            "start": "left",
+            "startRatio": 0.42,
+            "end": "left",
+            "endRatio": 0.55,
+            "via": [
+              [
+                500,
+                278
+              ],
+              [
+                500,
+                246
+              ],
+              [
+                427,
+                246
+              ],
+              [
+                427,
+                202
+              ],
+              [
+                538,
+                202
+              ],
+              [
+                538,
+                110
+              ]
+            ],
+            "label": [
+              438,
+              246
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "headless",
+      "label": "Headless 后台",
+      "command": "agentx launch --tool codex --headless",
+      "summary": "没有可见窗口，仍保留后台 PTY 宿主",
+      "nodeIds": [
+        "terminal",
+        "launcher",
+        "pty",
+        "provider",
+        "hooks",
+        "daemon",
+        "store",
+        "history",
+        "sender"
+      ],
+      "edgeIds": [
+        "terminal-launch",
+        "launch-pty",
+        "pty-provider",
+        "provider-hooks",
+        "hook-ipc",
+        "host-ipc",
+        "launch-ipc",
+        "database",
+        "cli-history",
+        "sender-ipc",
+        "wake-pty"
+      ],
+      "initial": {
+        "nodes": {
+          "terminal": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "launcher": {
+            "label": "启动已完成",
+            "tone": "neutral"
+          },
+          "pty": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "provider": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "hooks": {
+            "label": "按事件启动",
+            "tone": "neutral"
+          },
+          "daemon": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "store": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "history": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "sender": {
+            "label": "运行中",
+            "tone": "running"
+          }
+        },
+        "facts": {
+          "connection": "无前台依赖",
+          "host": "独立会话中的 PTY",
+          "provider": "原生 CLI 存活",
+          "turn": "空闲",
+          "inbox": "无待收消息"
+        }
+      },
+      "layout": {
+        "width": 1044,
+        "height": 404,
+        "nodes": {
+          "terminal": {
+            "x": 16,
+            "y": 42
+          },
+          "launcher": {
+            "x": 286,
+            "y": 42
+          },
+          "pty": {
+            "x": 556,
+            "y": 42
+          },
+          "provider": {
+            "x": 826,
+            "y": 42
+          },
+          "hooks": {
+            "x": 826,
+            "y": 222
+          },
+          "daemon": {
+            "x": 556,
+            "y": 198
+          },
+          "store": {
+            "x": 826,
+            "y": 342
+          },
+          "history": {
+            "x": 286,
+            "y": 310
+          },
+          "sender": {
+            "x": 16,
+            "y": 310
+          }
+        },
+        "routes": {
+          "hook-ipc": {
+            "start": "left",
+            "end": "top",
+            "endRatio": 0.83,
+            "via": [
+              [
+                786,
+                270
+              ],
+              [
+                786,
+                178
+              ],
+              [
+                724,
+                178
+              ]
+            ],
+            "label": [
+              788,
+              178
+            ]
+          },
+          "host-ipc": {
+            "start": "bottom",
+            "end": "top",
+            "via": [],
+            "label": [
+              644,
+              181
+            ]
+          },
+          "launch-ipc": {
+            "start": "bottom",
+            "end": "left",
+            "endRatio": 0.28,
+            "via": [
+              [
+                387,
+                218
+              ],
+              [
+                536,
+                218
+              ],
+              [
+                536,
+                251
+              ]
+            ],
+            "label": [
+              440,
+              218
+            ]
+          },
+          "database": {
+            "start": "right",
+            "startRatio": 0.84,
+            "end": "top",
+            "via": [
+              [
+                782,
+                358
+              ],
+              [
+                782,
+                324
+              ],
+              [
+                927,
+                324
+              ]
+            ],
+            "label": [
+              918,
+              324
+            ]
+          },
+          "cli-history": {
+            "start": "left",
+            "end": "top",
+            "via": [
+              [
+                806,
+                68
+              ],
+              [
+                806,
+                170
+              ],
+              [
+                270,
+                170
+              ],
+              [
+                270,
+                274
+              ],
+              [
+                387,
+                274
+              ]
+            ],
+            "label": [
+              370,
+              274
+            ]
+          },
+          "sender-ipc": {
+            "start": "right",
+            "end": "left",
+            "endRatio": 0.69,
+            "via": [
+              [
+                252,
+                350
+              ],
+              [
+                252,
+                290
+              ],
+              [
+                536,
+                290
+              ],
+              [
+                536,
+                329
+              ]
+            ],
+            "label": [
+              388,
+              290
+            ]
+          },
+          "wake-pty": {
+            "start": "left",
+            "startRatio": 0.42,
+            "end": "left",
+            "endRatio": 0.55,
+            "via": [
+              [
+                500,
+                278
+              ],
+              [
+                500,
+                246
+              ],
+              [
+                427,
+                246
+              ],
+              [
+                427,
+                202
+              ],
+              [
+                538,
+                202
+              ],
+              [
+                538,
+                110
+              ]
+            ],
+            "label": [
+              438,
+              246
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "tmux",
+      "label": "tmux 会话",
+      "command": "tmux new-session -s agentx-dev → agentx launch --tool codex",
+      "summary": "tmux 持有终端，客户端可以 detach",
+      "nodeIds": [
+        "terminal",
+        "launcher",
+        "tmux",
+        "pty",
+        "provider",
+        "hooks",
+        "daemon",
+        "store",
+        "history",
+        "sender"
+      ],
+      "edgeIds": [
+        "terminal-launch",
+        "launch-pty",
+        "pty-provider",
+        "provider-hooks",
+        "hook-ipc",
+        "host-ipc",
+        "launch-ipc",
+        "database",
+        "cli-history",
+        "sender-ipc",
+        "wake-pty",
+        "terminal-tmux",
+        "tmux-pty"
+      ],
+      "initial": {
+        "nodes": {
+          "terminal": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "launcher": {
+            "label": "启动已完成",
+            "tone": "neutral"
+          },
+          "tmux": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "pty": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "provider": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "hooks": {
+            "label": "按事件启动",
+            "tone": "neutral"
+          },
+          "daemon": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "store": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "history": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "sender": {
+            "label": "运行中",
+            "tone": "running"
+          }
+        },
+        "facts": {
+          "connection": "已连接",
+          "host": "宿主存活",
+          "provider": "原生进程存活",
+          "turn": "空闲",
+          "inbox": "无待收消息"
+        }
+      },
+      "layout": {
+        "width": 1044,
+        "height": 404,
+        "nodes": {
+          "terminal": {
+            "x": 16,
+            "y": 42
+          },
+          "launcher": {
+            "x": 286,
+            "y": 42
+          },
+          "tmux": {
+            "x": 16,
+            "y": 152
+          },
+          "pty": {
+            "x": 556,
+            "y": 42
+          },
+          "provider": {
+            "x": 826,
+            "y": 42
+          },
+          "hooks": {
+            "x": 826,
+            "y": 222
+          },
+          "daemon": {
+            "x": 556,
+            "y": 198
+          },
+          "store": {
+            "x": 826,
+            "y": 342
+          },
+          "history": {
+            "x": 286,
+            "y": 310
+          },
+          "sender": {
+            "x": 16,
+            "y": 310
+          }
+        },
+        "routes": {
+          "hook-ipc": {
+            "start": "left",
+            "end": "top",
+            "endRatio": 0.83,
+            "via": [
+              [
+                786,
+                270
+              ],
+              [
+                786,
+                178
+              ],
+              [
+                724,
+                178
+              ]
+            ],
+            "label": [
+              788,
+              178
+            ]
+          },
+          "host-ipc": {
+            "start": "bottom",
+            "end": "top",
+            "via": [],
+            "label": [
+              644,
+              181
+            ]
+          },
+          "launch-ipc": {
+            "start": "bottom",
+            "end": "left",
+            "endRatio": 0.28,
+            "via": [
+              [
+                387,
+                218
+              ],
+              [
+                536,
+                218
+              ],
+              [
+                536,
+                251
+              ]
+            ],
+            "label": [
+              440,
+              218
+            ]
+          },
+          "database": {
+            "start": "right",
+            "startRatio": 0.84,
+            "end": "top",
+            "via": [
+              [
+                782,
+                358
+              ],
+              [
+                782,
+                324
+              ],
+              [
+                927,
+                324
+              ]
+            ],
+            "label": [
+              918,
+              324
+            ]
+          },
+          "cli-history": {
+            "start": "left",
+            "end": "top",
+            "via": [
+              [
+                806,
+                68
+              ],
+              [
+                806,
+                170
+              ],
+              [
+                270,
+                170
+              ],
+              [
+                270,
+                274
+              ],
+              [
+                387,
+                274
+              ]
+            ],
+            "label": [
+              370,
+              274
+            ]
+          },
+          "sender-ipc": {
+            "start": "right",
+            "end": "left",
+            "endRatio": 0.69,
+            "via": [
+              [
+                252,
+                350
+              ],
+              [
+                252,
+                290
+              ],
+              [
+                536,
+                290
+              ],
+              [
+                536,
+                329
+              ]
+            ],
+            "label": [
+              388,
+              290
+            ]
+          },
+          "wake-pty": {
+            "start": "left",
+            "startRatio": 0.42,
+            "end": "left",
+            "endRatio": 0.55,
+            "via": [
+              [
+                500,
+                278
+              ],
+              [
+                500,
+                246
+              ],
+              [
+                427,
+                246
+              ],
+              [
+                427,
+                202
+              ],
+              [
+                538,
+                202
+              ],
+              [
+                538,
+                110
+              ]
+            ],
+            "label": [
+              438,
+              246
+            ]
+          },
+          "terminal-tmux": {
+            "start": "bottom",
+            "end": "top",
+            "via": [],
+            "label": [
+              126,
+              125
+            ]
+          },
+          "tmux-pty": {
+            "start": "right",
+            "end": "left",
+            "endRatio": 0.88,
+            "via": [
+              [
+                248,
+                178
+              ],
+              [
+                248,
+                198
+              ],
+              [
+                530,
+                198
+              ],
+              [
+                530,
+                149
+              ]
+            ],
+            "label": [
+              356,
+              198
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "appserver",
+      "label": "共享 App Server",
+      "command": "agentx launch --tool codex --stdio --go -- app-server",
+      "summary": "桥是独立进程；AgentX daemon 不是原生协议代理",
+      "nodeIds": [
+        "client",
+        "bridge",
+        "codex",
+        "thread",
+        "hooks",
+        "daemon",
+        "store",
+        "history",
+        "sender"
+      ],
+      "edgeIds": [
+        "client-bridge",
+        "bridge-native",
+        "native-thread",
+        "native-history",
+        "native-hooks",
+        "hook-ipc",
+        "bridge-ipc",
+        "database",
+        "sender-ipc",
+        "wake-bridge"
+      ],
+      "initial": {
+        "nodes": {
+          "client": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "bridge": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "codex": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "thread": {
+            "label": "空闲",
+            "tone": "neutral"
+          },
+          "hooks": {
+            "label": "按事件启动",
+            "tone": "neutral"
+          },
+          "daemon": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "store": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "history": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "sender": {
+            "label": "运行中",
+            "tone": "running"
+          }
+        },
+        "facts": {
+          "connection": "已连接",
+          "host": "宿主存活",
+          "provider": "原生进程存活",
+          "turn": "空闲",
+          "inbox": "无待收消息"
+        }
+      },
+      "layout": {
+        "width": 1044,
+        "height": 404,
+        "nodes": {
+          "client": {
+            "x": 16,
+            "y": 42
+          },
+          "bridge": {
+            "x": 286,
+            "y": 42
+          },
+          "codex": {
+            "x": 556,
+            "y": 42
+          },
+          "thread": {
+            "x": 826,
+            "y": 42
+          },
+          "hooks": {
+            "x": 826,
+            "y": 230
+          },
+          "daemon": {
+            "x": 556,
+            "y": 198
+          },
+          "store": {
+            "x": 826,
+            "y": 342
+          },
+          "history": {
+            "x": 826,
+            "y": 142
+          },
+          "sender": {
+            "x": 16,
+            "y": 310
+          }
+        },
+        "routes": {
+          "native-history": {
+            "start": "bottom",
+            "startRatio": 0.85,
+            "end": "top",
+            "via": [
+              [
+                728,
+                114
+              ],
+              [
+                927,
+                114
+              ]
+            ],
+            "label": [
+              898,
+              114
+            ]
+          },
+          "native-hooks": {
+            "start": "bottom",
+            "startRatio": 0.15,
+            "end": "top",
+            "via": [
+              [
+                586,
+                134
+              ],
+              [
+                810,
+                134
+              ],
+              [
+                810,
+                214
+              ],
+              [
+                927,
+                214
+              ]
+            ],
+            "label": [
+              678,
+              134
+            ]
+          },
+          "hook-ipc": {
+            "start": "left",
+            "end": "top",
+            "endRatio": 0.83,
+            "via": [
+              [
+                786,
+                270
+              ],
+              [
+                786,
+                178
+              ],
+              [
+                724,
+                178
+              ]
+            ],
+            "label": [
+              716,
+              178
+            ]
+          },
+          "bridge-ipc": {
+            "start": "bottom",
+            "startRatio": 0.4,
+            "end": "left",
+            "endRatio": 0.28,
+            "via": [
+              [
+                367,
+                214
+              ],
+              [
+                536,
+                214
+              ],
+              [
+                536,
+                251
+              ]
+            ],
+            "label": [
+              440,
+              214
+            ]
+          },
+          "database": {
+            "start": "right",
+            "startRatio": 0.84,
+            "end": "top",
+            "via": [
+              [
+                782,
+                358
+              ],
+              [
+                782,
+                324
+              ],
+              [
+                927,
+                324
+              ]
+            ],
+            "label": [
+              918,
+              324
+            ]
+          },
+          "sender-ipc": {
+            "start": "right",
+            "end": "left",
+            "endRatio": 0.69,
+            "via": [
+              [
+                252,
+                350
+              ],
+              [
+                252,
+                290
+              ],
+              [
+                536,
+                290
+              ],
+              [
+                536,
+                329
+              ]
+            ],
+            "label": [
+              388,
+              290
+            ]
+          },
+          "wake-bridge": {
+            "start": "left",
+            "startRatio": 0.42,
+            "end": "bottom",
+            "endRatio": 0.6,
+            "via": [
+              [
+                506,
+                278
+              ],
+              [
+                506,
+                254
+              ],
+              [
+                407,
+                254
+              ]
+            ],
+            "label": [
+              440,
+              254
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "workbench",
+      "label": "Web 工作台",
+      "command": "agentx workbench --collaboration",
+      "summary": "浏览器、HTTP 宿主和 AgentX daemon 分开",
+      "nodeIds": [
+        "browser",
+        "web",
+        "daemon",
+        "store"
+      ],
+      "edgeIds": [
+        "browser-http",
+        "web-ipc",
+        "database"
+      ],
+      "initial": {
+        "nodes": {
+          "browser": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "web": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "daemon": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "store": {
+            "label": "持久保存",
+            "tone": "stored"
+          }
+        },
+        "facts": {
+          "connection": "HTTP 可访问",
+          "host": "HTTP 宿主存活",
+          "provider": "此视图不推断 Provider",
+          "turn": "由执行宿主报告",
+          "inbox": "无待收消息"
+        }
+      },
+      "layout": {
+        "width": 1044,
+        "height": 246,
+        "nodes": {
+          "browser": {
+            "x": 16,
+            "y": 104
+          },
+          "web": {
+            "x": 286,
+            "y": 94
+          },
+          "daemon": {
+            "x": 556,
+            "y": 42
+          },
+          "store": {
+            "x": 826,
+            "y": 118
+          }
+        },
+        "routes": {
+          "database": {
+            "start": "right",
+            "startRatio": 0.84,
+            "end": "top",
+            "via": [
+              [
+                782,
+                358
+              ],
+              [
+                782,
+                324
+              ],
+              [
+                927,
+                324
+              ]
+            ],
+            "label": [
+              918,
+              324
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "appserver-disconnect",
+      "modeId": "appserver",
+      "label": "关闭前台连接",
+      "question": "前台关了，究竟哪个进程结束，哪个状态改变？",
+      "initial": {
+        "nodes": {
+          "client": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "bridge": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "codex": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "thread": {
+            "label": "轮次活动",
+            "tone": "busy"
+          },
+          "hooks": {
+            "label": "按事件启动",
+            "tone": "neutral"
+          },
+          "daemon": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "store": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "history": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "sender": {
+            "label": "运行中",
+            "tone": "running"
+          }
+        },
+        "facts": {
+          "connection": "已连接",
+          "host": "宿主存活",
+          "provider": "原生进程存活",
+          "turn": "轮次活动（示意）",
+          "inbox": "无待收消息"
+        }
+      },
+      "steps": [
+        {
+          "id": "client-eof",
+          "title": "客户端关闭连接",
+          "actor": "client",
+          "handler": "bridge",
+          "edgeIds": [
+            "client-bridge"
+          ],
+          "actions": [
+            "stdio 收到 EOF / 终止信号",
+            "桥停止接收新的客户端帧"
+          ],
+          "event": "EOF / signal",
+          "patch": {
+            "nodes": {
+              "client": {
+                "label": "连接关闭",
+                "tone": "stopped"
+              },
+              "bridge": {
+                "label": "准备退出",
+                "tone": "waiting"
+              }
+            },
+            "facts": {
+              "connection": "客户端连接已断"
+            }
+          },
+          "sourceIds": [
+            "stdio"
+          ],
+          "certainty": "source",
+          "note": "本流程从实际 stdio 连接关闭开始；仅关闭外层产品的显示界面，不一定让其后台客户端断开原生连接。",
+          "beats": [
+            {
+              "kind": "disconnect",
+              "edgeId": "client-bridge",
+              "direction": "forward",
+              "label": "stdio EOF · 客户端断开"
+            },
+            {
+              "kind": "observe",
+              "nodeId": "bridge",
+              "label": "观察 EOF，停止接收新帧"
+            }
+          ]
+        },
+        {
+          "id": "release-root",
+          "title": "释放本连接的控制权",
+          "actor": "bridge",
+          "handler": "daemon",
+          "edgeIds": [
+            "bridge-ipc",
+            "database"
+          ],
+          "actions": [
+            "逐根线程调用 ReleaseNativeRoot",
+            "移除对应通知端点并清除桥 PID",
+            "写入 inactive / native:disconnected，退役本 owner 附件"
+          ],
+          "event": "ReleaseNativeRoot",
+          "patch": {
+            "nodes": {
+              "daemon": {
+                "label": "保存断开事实",
+                "tone": "running"
+              },
+              "store": {
+                "label": "inactive · disconnected",
+                "tone": "stored"
+              }
+            },
+            "facts": {
+              "connection": "AgentX 控制已断",
+              "host": "桥正在退出",
+              "inbox": "原消息与未决 claim 保留"
+            }
+          },
+          "sourceIds": [
+            "bridge",
+            "native-host",
+            "attachments"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "bridge-ipc",
+              "direction": "forward",
+              "label": "ReleaseNativeRoot"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "database",
+              "direction": "forward",
+              "label": "保存断开与 owner 退役"
+            },
+            {
+              "kind": "local",
+              "nodeId": "daemon",
+              "label": "清除本桥通知端点与 PID"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "bridge-ipc",
+              "direction": "reverse",
+              "label": "返回本 owner 释放结果"
+            }
+          ],
+          "interactions": [
+            {
+              "id": "release-owner",
+              "from": "bridge",
+              "portId": "release-root",
+              "requestBeat": 0,
+              "input": {
+                "owner": "本桥拥有的精确附件"
+              },
+              "result": {
+                "outcomeId": "released",
+                "summary": "仅释放本桥控制权，共享后端未被请求停止"
+              },
+              "effects": [
+                {
+                  "target": "node",
+                  "id": "daemon",
+                  "kind": "change"
+                },
+                {
+                  "target": "node",
+                  "id": "store",
+                  "kind": "change"
+                },
+                {
+                  "target": "fact",
+                  "id": "connection",
+                  "kind": "observation"
+                },
+                {
+                  "target": "fact",
+                  "id": "host",
+                  "kind": "observation"
+                },
+                {
+                  "target": "fact",
+                  "id": "inbox",
+                  "kind": "observation"
+                }
+              ],
+              "responseBeat": 3
+            }
+          ]
+        },
+        {
+          "id": "close-native",
+          "title": "关闭本条原生连接",
+          "actor": "bridge",
+          "handler": "codex",
+          "edgeIds": [
+            "bridge-native"
+          ],
+          "actions": [
+            "仅关闭本桥的 WebSocket",
+            "不发送 daemon stop、thread close 或 turn interrupt",
+            "本桥自动投递循环结束"
+          ],
+          "event": "WebSocket close",
+          "patch": {
+            "nodes": {
+              "bridge": {
+                "label": "已退出",
+                "tone": "stopped"
+              },
+              "codex": {
+                "label": "共享后端保留",
+                "tone": "running"
+              },
+              "thread": {
+                "label": "当前轮次待重新观察",
+                "tone": "unknown"
+              }
+            },
+            "facts": {
+              "host": "桥已退出",
+              "provider": "没有请求停止共享后端",
+              "turn": "当前执行结果未知"
+            }
+          },
+          "sourceIds": [
+            "bridge",
+            "managed",
+            "native-evidence"
+          ],
+          "certainty": "source",
+          "note": "实测证明断开 A 不停止后端，B 可继续工作；不能据此承诺所有客户端离开时 A 的活动轮次一定无缝完成。",
+          "beats": [
+            {
+              "kind": "disconnect",
+              "edgeId": "bridge-native",
+              "direction": "forward",
+              "label": "关闭本桥 WebSocket"
+            },
+            {
+              "kind": "retain",
+              "nodeId": "codex",
+              "label": "共享后端未被请求停止"
+            },
+            {
+              "kind": "observe",
+              "nodeId": "thread",
+              "label": "轮次结果待新证据"
+            }
+          ]
+        },
+        {
+          "id": "mail-after-close",
+          "title": "断开后再有消息",
+          "actor": "sender",
+          "handler": "daemon",
+          "edgeIds": [
+            "sender-ipc",
+            "database"
+          ],
+          "actions": [
+            "新业务消息先持久保存",
+            "目标的通知端点已释放",
+            "不向不存在的桥投递，不凭超时重发未知输入"
+          ],
+          "event": "Submit message",
+          "patch": {
+            "nodes": {},
+            "facts": {
+              "inbox": "待收保留，等待有效宿主",
+              "turn": "不以新消息推断执行活动"
+            }
+          },
+          "sourceIds": [
+            "messages",
+            "inbox"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "sender-ipc",
+              "direction": "forward",
+              "label": "新业务消息"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "database",
+              "direction": "forward",
+              "label": "消息持久保存"
+            },
+            {
+              "kind": "retain",
+              "nodeId": "store",
+              "label": "待收保留，无有效宿主"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "appserver-connect",
+      "modeId": "appserver",
+      "label": "首次接入与后端复用",
+      "question": "一条连接会不会创建一个新的 Codex 后端？",
+      "initial": {
+        "nodes": {
+          "client": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "bridge": {
+            "label": "尚未连接",
+            "tone": "stopped"
+          },
+          "codex": {
+            "label": "等待发现 / 首次启动",
+            "tone": "unknown"
+          },
+          "thread": {
+            "label": "尚未绑定",
+            "tone": "neutral"
+          },
+          "hooks": {
+            "label": "按事件启动",
+            "tone": "neutral"
+          },
+          "daemon": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "store": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "history": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "sender": {
+            "label": "运行中",
+            "tone": "running"
+          }
+        },
+        "facts": {
+          "connection": "尚未接入",
+          "host": "协议桥待启动",
+          "provider": "待发现兼容后端",
+          "turn": "尚未绑定线程",
+          "inbox": "无待收消息"
+        }
+      },
+      "steps": [
+        {
+          "id": "acquire",
+          "title": "获取兼容原生服务",
+          "actor": "client",
+          "handler": "bridge",
+          "edgeIds": [
+            "client-bridge",
+            "bridge-native"
+          ],
+          "actions": [
+            "解析 home、版本和后端配置",
+            "无兼容后端时执行官方 daemon start",
+            "已有匹配回执时复用同一后端；未知服务不接管"
+          ],
+          "event": "ManagedCodexService.connect",
+          "patch": {
+            "nodes": {
+              "bridge": {
+                "label": "原生连接建立",
+                "tone": "running"
+              },
+              "codex": {
+                "label": "首次启动或复用",
+                "tone": "running"
+              }
+            },
+            "facts": {}
+          },
+          "sourceIds": [
+            "managed",
+            "stdio",
+            "native-evidence"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "client-bridge",
+              "direction": "forward",
+              "label": "建立原生协议接入"
+            },
+            {
+              "kind": "local",
+              "nodeId": "bridge",
+              "label": "校验 home / 配置 / 版本"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "bridge-native",
+              "direction": "forward",
+              "label": "获取兼容原生服务"
+            }
+          ]
+        },
+        {
+          "id": "bind",
+          "title": "绑定成功的原生根线程",
+          "actor": "bridge",
+          "handler": "daemon",
+          "edgeIds": [
+            "bridge-ipc",
+            "database"
+          ],
+          "actions": [
+            "只在关联的 thread/start 或 resume 成功后建立附件",
+            "保存参与者、执行代次、thread 与独立 owner",
+            "注册唤醒端点；按原生初始状态记录 active / listening"
+          ],
+          "event": "RegisterNativeRoot",
+          "patch": {
+            "nodes": {
+              "thread": {
+                "label": "已绑定 · 空闲",
+                "tone": "neutral"
+              }
+            },
+            "facts": {}
+          },
+          "sourceIds": [
+            "bridge",
+            "attachments",
+            "native-host"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "bridge-ipc",
+              "direction": "forward",
+              "label": "成功 thread 的控制绑定"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "database",
+              "direction": "forward",
+              "label": "保存附件 / 执行代次"
+            },
+            {
+              "kind": "local",
+              "nodeId": "daemon",
+              "label": "注册本桥唤醒端点"
+            }
+          ]
+        },
+        {
+          "id": "renew",
+          "title": "桥持续续报",
+          "actor": "bridge",
+          "handler": "daemon",
+          "edgeIds": [
+            "bridge-ipc"
+          ],
+          "actions": [
+            "每 5 秒核验附件并续报心跳",
+            "心跳说明控制宿主有回应",
+            "原生 turn 活动仍由协议事件 / hooks 另行报告"
+          ],
+          "event": "RenewNativeRoot",
+          "patch": {
+            "nodes": {},
+            "facts": {
+              "host": "桥存活 · 5 秒续报",
+              "turn": "空闲（独立原生事实）"
+            }
+          },
+          "sourceIds": [
+            "stdio",
+            "bridge",
+            "native-host"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "bridge-ipc",
+              "direction": "forward",
+              "label": "宿主续报"
+            },
+            {
+              "kind": "observe",
+              "nodeId": "daemon",
+              "label": "更新控制宿主心跳"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "appserver-mail",
+      "modeId": "appserver",
+      "label": "消息怎样唤醒 Agent",
+      "question": "消息入库、唤醒和真正交付是同一件事吗？",
+      "initial": {
+        "nodes": {
+          "client": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "bridge": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "codex": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "thread": {
+            "label": "空闲",
+            "tone": "neutral"
+          },
+          "hooks": {
+            "label": "按事件启动",
+            "tone": "neutral"
+          },
+          "daemon": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "store": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "history": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "sender": {
+            "label": "运行中",
+            "tone": "running"
+          }
+        },
+        "facts": {
+          "connection": "已连接",
+          "host": "宿主存活",
+          "provider": "原生进程存活",
+          "turn": "空闲",
+          "inbox": "无待收消息"
+        }
+      },
+      "steps": [
+        {
+          "id": "persist",
+          "title": "消息先持久接受",
+          "actor": "sender",
+          "handler": "daemon",
+          "edgeIds": [
+            "sender-ipc",
+            "database"
+          ],
+          "actions": [
+            "路由业务收件人",
+            "事务保存消息及接受结果",
+            "保存成功不是模型已经收到"
+          ],
+          "event": "Submit",
+          "patch": {
+            "nodes": {},
+            "facts": {
+              "inbox": "1 条待收"
+            }
+          },
+          "sourceIds": [
+            "messages"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "sender-ipc",
+              "direction": "forward",
+              "label": "业务消息提交"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "database",
+              "direction": "forward",
+              "label": "事务保存消息"
+            },
+            {
+              "kind": "retain",
+              "nodeId": "store",
+              "label": "1 条待收，尚未交付"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "sender-ipc",
+              "direction": "reverse",
+              "label": "返回持久接受回执"
+            }
+          ],
+          "interactions": [
+            {
+              "id": "submit-message",
+              "from": "sender",
+              "portId": "inbox-submit",
+              "requestBeat": 0,
+              "input": {
+                "requestId": "示例 request-01",
+                "recipients": [
+                  "当前 Agent"
+                ],
+                "text": "待处理的业务消息"
+              },
+              "result": {
+                "outcomeId": "accepted",
+                "summary": "消息及回执已保存；尚未交给 Provider"
+              },
+              "effects": [
+                {
+                  "target": "fact",
+                  "id": "inbox",
+                  "kind": "change"
+                }
+              ],
+              "responseBeat": 3
+            }
+          ]
+        },
+        {
+          "id": "notify",
+          "title": "唤醒提示驱动检查队列",
+          "actor": "daemon",
+          "handler": "bridge",
+          "edgeIds": [
+            "wake-bridge"
+          ],
+          "actions": [
+            "通知桥有待处理工作",
+            "通知只是一条提示，不是业务消息内容",
+            "桥也保留有界兜底扫描"
+          ],
+          "event": "wake hint",
+          "patch": {
+            "nodes": {},
+            "facts": {}
+          },
+          "sourceIds": [
+            "messages",
+            "stdio"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "wake-bridge",
+              "direction": "forward",
+              "label": "唤醒提示"
+            },
+            {
+              "kind": "local",
+              "nodeId": "bridge",
+              "label": "准备检查待收队列"
+            }
+          ],
+          "interactions": [
+            {
+              "id": "wake-driver",
+              "from": "daemon",
+              "portId": "bridge-wake",
+              "requestBeat": 0,
+              "input": {
+                "target": "当前有效附件"
+              },
+              "result": {
+                "outcomeId": "observed",
+                "summary": "只收到检查提示，消息仍在队列"
+              },
+              "effects": []
+            }
+          ]
+        },
+        {
+          "id": "claim",
+          "title": "领取独占批次",
+          "actor": "bridge",
+          "handler": "daemon",
+          "edgeIds": [
+            "bridge-ipc",
+            "database"
+          ],
+          "actions": [
+            "校验精确参与者 / 执行 / 附件",
+            "冻结消息内容与窗口，取得独占 claim",
+            "其他 hook / listen 不可重复消费同批次"
+          ],
+          "event": "prepare / claim",
+          "patch": {
+            "nodes": {},
+            "facts": {
+              "inbox": "批次已领取，尚未确认"
+            }
+          },
+          "sourceIds": [
+            "driver",
+            "inbox"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "bridge-ipc",
+              "direction": "forward",
+              "label": "领取独占消息批次"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "database",
+              "direction": "forward",
+              "label": "冻结内容与 claim"
+            },
+            {
+              "kind": "local",
+              "nodeId": "daemon",
+              "label": "核验参与者与附件栅栏"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "bridge-ipc",
+              "direction": "reverse",
+              "label": "返回冻结的独占批次"
+            }
+          ],
+          "interactions": [
+            {
+              "id": "prepare-batch",
+              "from": "bridge",
+              "portId": "inbox-prepare",
+              "requestBeat": 0,
+              "input": {
+                "target": "当前参与者 / 执行 / 附件",
+                "snapshot": "本次待收窗口"
+              },
+              "result": {
+                "outcomeId": "prepared",
+                "summary": "冻结内容，独占批次；尚未确认交付"
+              },
+              "effects": [
+                {
+                  "target": "fact",
+                  "id": "inbox",
+                  "kind": "change"
+                }
+              ],
+              "responseBeat": 3
+            }
+          ]
+        },
+        {
+          "id": "input",
+          "title": "把真实消息交给原生线程",
+          "actor": "bridge",
+          "handler": "codex",
+          "edgeIds": [
+            "bridge-native",
+            "native-thread"
+          ],
+          "actions": [
+            "在可能写入前标记 Issuing",
+            "空闲时 turn/start，正常活动时有栅栏地 turn/steer",
+            "审批、回答或未知状态先延迟"
+          ],
+          "event": "turn/start or turn/steer",
+          "patch": {
+            "nodes": {
+              "thread": {
+                "label": "原生输入处理中",
+                "tone": "busy"
+              }
+            },
+            "facts": {
+              "turn": "输入已提交；等待原生记录",
+              "inbox": "Issuing · 结果尚未确认"
+            }
+          },
+          "sourceIds": [
+            "driver",
+            "inbox"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "local",
+              "nodeId": "bridge",
+              "label": "先标记 Issuing"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "bridge-native",
+              "direction": "forward",
+              "label": "turn/start 或 turn/steer"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "native-thread",
+              "direction": "forward",
+              "label": "原生线程接收输入"
+            }
+          ],
+          "interactions": [
+            {
+              "id": "issue-input",
+              "from": "bridge",
+              "portId": "native-input",
+              "requestBeat": 1,
+              "input": {
+                "threadId": "示例 thread-01",
+                "clientId": "本次冻结批次",
+                "content": [
+                  "冻结业务消息"
+                ]
+              },
+              "result": {
+                "outcomeId": "unknown",
+                "summary": "已发起原生输入；尚无匹配的输入记录"
+              },
+              "effects": [
+                {
+                  "target": "node",
+                  "id": "thread",
+                  "kind": "observation"
+                },
+                {
+                  "target": "fact",
+                  "id": "turn",
+                  "kind": "observation"
+                },
+                {
+                  "target": "fact",
+                  "id": "inbox",
+                  "kind": "observation"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "record",
+          "title": "观察匹配的原生输入记录",
+          "actor": "codex",
+          "handler": "bridge",
+          "edgeIds": [
+            "bridge-native"
+          ],
+          "actions": [
+            "匹配 thread、clientId 和完整冻结内容",
+            "需要 item/completed 的 userMessage 记录",
+            "RPC 成功或 turn/completed 都不能替代这份记录"
+          ],
+          "event": "item/completed · userMessage",
+          "patch": {
+            "nodes": {},
+            "facts": {}
+          },
+          "sourceIds": [
+            "driver",
+            "native-evidence"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "bridge-native",
+              "direction": "reverse",
+              "label": "item/completed · userMessage"
+            },
+            {
+              "kind": "observe",
+              "nodeId": "bridge",
+              "label": "匹配 thread / clientId / 完整内容"
+            }
+          ],
+          "interactions": [
+            {
+              "id": "observe-input",
+              "from": "codex",
+              "portId": "input-recorded",
+              "requestBeat": 0,
+              "input": {
+                "threadId": "示例 thread-01",
+                "clientId": "本次冻结批次",
+                "content": [
+                  "冻结业务消息"
+                ]
+              },
+              "result": {
+                "outcomeId": "observed",
+                "summary": "已匹配 userMessage，接下来才向 Inbox 确认"
+              },
+              "effects": []
+            }
+          ]
+        },
+        {
+          "id": "confirm",
+          "title": "事务确认本批次",
+          "actor": "bridge",
+          "handler": "daemon",
+          "edgeIds": [
+            "bridge-ipc",
+            "database"
+          ],
+          "actions": [
+            "核对批次与当前附件栅栏",
+            "推进对应收件游标",
+            "确认已交给 Provider；Agent 是否做完仍是另一件事"
+          ],
+          "event": "ProviderInputRecorded",
+          "patch": {
+            "nodes": {},
+            "facts": {
+              "inbox": "本批次交付已确认",
+              "turn": "Provider 可以处理这份输入"
+            }
+          },
+          "sourceIds": [
+            "driver",
+            "inbox"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "bridge-ipc",
+              "direction": "forward",
+              "label": "确认匹配输入记录"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "database",
+              "direction": "forward",
+              "label": "推进批次收件游标"
+            },
+            {
+              "kind": "retain",
+              "nodeId": "store",
+              "label": "交付已确认，工作完成另计"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "bridge-ipc",
+              "direction": "reverse",
+              "label": "返回交付确认结果"
+            }
+          ],
+          "interactions": [
+            {
+              "id": "confirm-batch",
+              "from": "bridge",
+              "portId": "inbox-confirm",
+              "requestBeat": 0,
+              "input": {
+                "target": "当前参与者 / 执行 / 附件",
+                "batch": "本次冻结批次",
+                "evidence": "精确匹配的 ProviderInputRecorded"
+              },
+              "result": {
+                "outcomeId": "advanced",
+                "summary": "仅确认输入交付；Agent 工作完成另计"
+              },
+              "effects": [
+                {
+                  "target": "fact",
+                  "id": "inbox",
+                  "kind": "change"
+                },
+                {
+                  "target": "fact",
+                  "id": "turn",
+                  "kind": "observation"
+                }
+              ],
+              "responseBeat": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "appserver-approval",
+      "modeId": "appserver",
+      "label": "审批与轮次状态",
+      "question": "进程活着，为什么消息还没继续执行？",
+      "initial": {
+        "nodes": {
+          "client": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "bridge": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "codex": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "thread": {
+            "label": "空闲",
+            "tone": "neutral"
+          },
+          "hooks": {
+            "label": "按事件启动",
+            "tone": "neutral"
+          },
+          "daemon": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "store": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "history": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "sender": {
+            "label": "运行中",
+            "tone": "running"
+          }
+        },
+        "facts": {
+          "connection": "已连接",
+          "host": "宿主存活",
+          "provider": "原生进程存活",
+          "turn": "空闲",
+          "inbox": "无待收消息"
+        }
+      },
+      "steps": [
+        {
+          "id": "native-wait",
+          "title": "原生线程等待审批",
+          "actor": "codex",
+          "handler": "bridge",
+          "edgeIds": [
+            "bridge-native"
+          ],
+          "actions": [
+            "原生事件 / 控制请求表明等待审批",
+            "桥停止新的自动 start / steer",
+            "等待不是进程结束"
+          ],
+          "event": "approval request",
+          "patch": {
+            "nodes": {
+              "thread": {
+                "label": "等待审批",
+                "tone": "waiting"
+              }
+            },
+            "facts": {
+              "turn": "等待审批",
+              "inbox": "有消息也先保留"
+            }
+          },
+          "sourceIds": [
+            "bridge",
+            "driver"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "bridge-native",
+              "direction": "reverse",
+              "label": "等待审批的原生事件"
+            },
+            {
+              "kind": "local",
+              "nodeId": "bridge",
+              "label": "门控新的自动输入"
+            }
+          ]
+        },
+        {
+          "id": "answer",
+          "title": "客户端回答审批",
+          "actor": "client",
+          "handler": "bridge",
+          "edgeIds": [
+            "client-bridge",
+            "bridge-native"
+          ],
+          "actions": [
+            "保留原生请求关联并转发用户答复",
+            "重新观察线程状态",
+            "不把 AgentX 消息伪装成审批答案"
+          ],
+          "event": "approval response",
+          "patch": {
+            "nodes": {
+              "thread": {
+                "label": "轮次恢复",
+                "tone": "busy"
+              }
+            },
+            "facts": {
+              "turn": "正常活动"
+            }
+          },
+          "sourceIds": [
+            "bridge",
+            "driver"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "client-bridge",
+              "direction": "forward",
+              "label": "审批答复"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "bridge-native",
+              "direction": "forward",
+              "label": "转发关联答复"
+            },
+            {
+              "kind": "observe",
+              "nodeId": "thread",
+              "label": "重新观察轮次状态"
+            }
+          ]
+        },
+        {
+          "id": "stop-hook",
+          "title": "一轮结束的 hook",
+          "actor": "hooks",
+          "handler": "daemon",
+          "edgeIds": [
+            "hook-ipc",
+            "database"
+          ],
+          "actions": [
+            "codex-stop 更新 listening",
+            "保存状态与事件，通知适用的投递循环",
+            "Stop 不等于 OS 进程退出"
+          ],
+          "event": "Stop hook",
+          "patch": {
+            "nodes": {
+              "thread": {
+                "label": "空闲",
+                "tone": "neutral"
+              }
+            },
+            "facts": {
+              "turn": "本轮结束，等待下一轮"
+            }
+          },
+          "sourceIds": [
+            "hooks"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "hook-ipc",
+              "direction": "forward",
+              "label": "codex-stop"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "database",
+              "direction": "forward",
+              "label": "保存 listening"
+            },
+            {
+              "kind": "retain",
+              "nodeId": "thread",
+              "label": "本轮结束，进程未退出"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "appserver-crash",
+      "modeId": "appserver",
+      "label": "桥突然崩溃",
+      "question": "没有退出报告，daemon 怎么知道状态可能失效？",
+      "initial": {
+        "nodes": {
+          "client": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "bridge": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "codex": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "thread": {
+            "label": "空闲",
+            "tone": "neutral"
+          },
+          "hooks": {
+            "label": "按事件启动",
+            "tone": "neutral"
+          },
+          "daemon": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "store": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "history": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "sender": {
+            "label": "运行中",
+            "tone": "running"
+          }
+        },
+        "facts": {
+          "connection": "已连接",
+          "host": "宿主存活",
+          "provider": "原生进程存活",
+          "turn": "空闲",
+          "inbox": "无待收消息"
+        }
+      },
+      "steps": [
+        {
+          "id": "crash",
+          "title": "桥进程突然结束",
+          "actor": "bridge",
+          "handler": "bridge",
+          "edgeIds": [],
+          "actions": [
+            "异常退出无法发送自己的 Release 请求",
+            "AgentX 保存的状态可能暂时停留在上次上报"
+          ],
+          "event": "abrupt process exit",
+          "patch": {
+            "nodes": {
+              "bridge": {
+                "label": "已崩溃",
+                "tone": "stopped"
+              }
+            },
+            "facts": {
+              "connection": "已断，尚无正常报告",
+              "host": "桥已死；daemon 尚待核实",
+              "turn": "未获得新的原生事实"
+            }
+          },
+          "sourceIds": [
+            "stdio",
+            "cleanup"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "local",
+              "nodeId": "bridge",
+              "label": "桥异常退出，没有 Release 报告"
+            },
+            {
+              "kind": "observe",
+              "nodeId": "daemon",
+              "label": "仍只有上次上报"
+            }
+          ]
+        },
+        {
+          "id": "stale",
+          "title": "心跳变旧",
+          "actor": "daemon",
+          "handler": "daemon",
+          "edgeIds": [],
+          "actions": [
+            "不再收到宿主续报",
+            "投影可显示 stale / inactive",
+            "过期不等于已经证明原生后端或线程退出"
+          ],
+          "event": "heartbeat age",
+          "patch": {
+            "nodes": {
+              "store": {
+                "label": "上报过期",
+                "tone": "unknown"
+              }
+            },
+            "facts": {
+              "host": "控制宿主失联",
+              "provider": "后端独立存活需单独观察"
+            }
+          },
+          "sourceIds": [
+            "status",
+            "native-host"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "observe",
+              "nodeId": "daemon",
+              "label": "续报时间变旧"
+            },
+            {
+              "kind": "retain",
+              "nodeId": "store",
+              "label": "失联投影，不证明后端已死"
+            }
+          ]
+        },
+        {
+          "id": "reconcile",
+          "title": "核对原进程代次",
+          "actor": "daemon",
+          "handler": "store",
+          "edgeIds": [
+            "database"
+          ],
+          "actions": [
+            "列表、维护或恢复路径可核验原 PID / incarnation",
+            "正面退出证据才能退役旧拥有者",
+            "观测失败不等于已死；未知输入 claim 不凭超时释放"
+          ],
+          "event": "cleanup / ownership check",
+          "patch": {
+            "nodes": {},
+            "facts": {
+              "connection": "旧控制者可据实退役",
+              "inbox": "未知输入保留待核对"
+            }
+          },
+          "sourceIds": [
+            "cleanup",
+            "attachments",
+            "inbox"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "observe",
+              "nodeId": "daemon",
+              "label": "核对原 PID / incarnation"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "database",
+              "direction": "forward",
+              "label": "据证据退役旧拥有者"
+            },
+            {
+              "kind": "retain",
+              "nodeId": "store",
+              "label": "未知输入仍保留"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "appserver-resume",
+      "modeId": "appserver",
+      "label": "恢复原线程",
+      "question": "再打开时，恢复的是身份、对话，还是旧进程？",
+      "initial": {
+        "nodes": {
+          "client": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "bridge": {
+            "label": "旧桥已退出",
+            "tone": "stopped"
+          },
+          "codex": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "thread": {
+            "label": "等待恢复绑定",
+            "tone": "unknown"
+          },
+          "hooks": {
+            "label": "按事件启动",
+            "tone": "neutral"
+          },
+          "daemon": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "store": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "history": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "sender": {
+            "label": "运行中",
+            "tone": "running"
+          }
+        },
+        "facts": {
+          "connection": "尚无有效控制连接",
+          "host": "新桥待创建",
+          "provider": "兼容原生后端保留",
+          "turn": "等待重新观察",
+          "inbox": "原队列与 claim 保留"
+        }
+      },
+      "steps": [
+        {
+          "id": "reconnect",
+          "title": "新桥接入兼容后端",
+          "actor": "client",
+          "handler": "bridge",
+          "edgeIds": [
+            "client-bridge",
+            "bridge-native"
+          ],
+          "actions": [
+            "新连接有独立 owner",
+            "相同兼容作用域可复用现有后端",
+            "连接成功不等于已经绑定原线程"
+          ],
+          "event": "connect",
+          "patch": {
+            "nodes": {
+              "bridge": {
+                "label": "新桥已连接",
+                "tone": "running"
+              }
+            },
+            "facts": {
+              "connection": "新连接建立",
+              "host": "新的桥进程"
+            }
+          },
+          "sourceIds": [
+            "managed",
+            "stdio"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "client-bridge",
+              "direction": "forward",
+              "label": "新客户端连接"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "bridge-native",
+              "direction": "forward",
+              "label": "新 owner 接入兼容后端"
+            }
+          ]
+        },
+        {
+          "id": "resume",
+          "title": "明确恢复原生 thread",
+          "actor": "bridge",
+          "handler": "codex",
+          "edgeIds": [
+            "bridge-native",
+            "native-thread",
+            "native-history"
+          ],
+          "actions": [
+            "向原生请求恢复指定 thread",
+            "使用实际 home 与原生成功结果",
+            "只读取历史不会自动取得控制绑定"
+          ],
+          "event": "thread/resume",
+          "patch": {
+            "nodes": {
+              "thread": {
+                "label": "恢复结果待绑定",
+                "tone": "waiting"
+              }
+            },
+            "facts": {}
+          },
+          "sourceIds": [
+            "bridge",
+            "attachments"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "bridge-native",
+              "direction": "forward",
+              "label": "恢复指定 thread"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "native-history",
+              "direction": "forward",
+              "label": "读取原会话历史"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "native-thread",
+              "direction": "forward",
+              "label": "恢复线程响应"
+            }
+          ]
+        },
+        {
+          "id": "attach",
+          "title": "恢复规范参与者并建立新附件",
+          "actor": "bridge",
+          "handler": "daemon",
+          "edgeIds": [
+            "bridge-ipc",
+            "database"
+          ],
+          "actions": [
+            "原有规范参与者优先，不创建第二收件人",
+            "旧 owner 必须已退役或有确切退出证据",
+            "新附件和后端执行代次各自核验"
+          ],
+          "event": "attach / RegisterNativeRoot",
+          "patch": {
+            "nodes": {
+              "thread": {
+                "label": "原线程已绑定",
+                "tone": "neutral"
+              }
+            },
+            "facts": {
+              "connection": "新控制连接有效",
+              "turn": "以恢复响应及新事件为准",
+              "inbox": "仅按原 claim 证据恢复"
+            }
+          },
+          "sourceIds": [
+            "attachments",
+            "native-host",
+            "native-evidence"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "bridge-ipc",
+              "direction": "forward",
+              "label": "绑定原规范参与者"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "database",
+              "direction": "forward",
+              "label": "保存新附件与代次"
+            },
+            {
+              "kind": "local",
+              "nodeId": "daemon",
+              "label": "按原 claim 证据恢复"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "foreground-launch",
+      "modeId": "foreground",
+      "label": "冷启动到前台 Agent",
+      "question": "哪些东西是新进程，哪些只是进程内模块？",
+      "initial": {
+        "nodes": {
+          "terminal": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "launcher": {
+            "label": "等待执行",
+            "tone": "neutral"
+          },
+          "pty": {
+            "label": "尚未启动",
+            "tone": "stopped"
+          },
+          "provider": {
+            "label": "尚未启动",
+            "tone": "stopped"
+          },
+          "hooks": {
+            "label": "按事件启动",
+            "tone": "neutral"
+          },
+          "daemon": {
+            "label": "尚未运行",
+            "tone": "stopped"
+          },
+          "store": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "history": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "sender": {
+            "label": "运行中",
+            "tone": "running"
+          }
+        },
+        "facts": {
+          "connection": "尚未启动",
+          "host": "尚无 PTY 宿主",
+          "provider": "尚无 CLI 进程",
+          "turn": "尚无轮次",
+          "inbox": "无待收消息"
+        }
+      },
+      "steps": [
+        {
+          "id": "command",
+          "title": "用户执行启动命令",
+          "actor": "terminal",
+          "handler": "launcher",
+          "edgeIds": [
+            "terminal-launch"
+          ],
+          "actions": [
+            "捕获当前 scope / cwd / 环境",
+            "选择普通交互 Provider 路径",
+            "不会因为工具名为 Codex 就自动进入 app-server 桥"
+          ],
+          "event": "agentx launch --tool codex",
+          "patch": {
+            "nodes": {
+              "launcher": {
+                "label": "准备启动",
+                "tone": "running"
+              }
+            },
+            "facts": {}
+          },
+          "sourceIds": [
+            "launch"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "terminal-launch",
+              "direction": "forward",
+              "label": "agentx launch --tool codex"
+            },
+            {
+              "kind": "local",
+              "nodeId": "launcher",
+              "label": "捕获 scope / cwd / 环境"
+            }
+          ]
+        },
+        {
+          "id": "daemon",
+          "title": "获取作用域 daemon",
+          "actor": "launcher",
+          "handler": "daemon",
+          "edgeIds": [
+            "launch-ipc",
+            "database"
+          ],
+          "actions": [
+            "连接既有兼容 daemon；缺失时启动同一映像的 daemon",
+            "等待单实例与就绪校验",
+            "daemon 负责打开受管 SQLite"
+          ],
+          "event": "acquire / ready",
+          "patch": {
+            "nodes": {
+              "daemon": {
+                "label": "已就绪",
+                "tone": "running"
+              },
+              "store": {
+                "label": "daemon 唯一管理",
+                "tone": "stored"
+              }
+            },
+            "facts": {}
+          },
+          "sourceIds": [
+            "daemon",
+            "server",
+            "startup-evidence"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "launch-ipc",
+              "direction": "forward",
+              "label": "获取兼容 daemon"
+            },
+            {
+              "kind": "local",
+              "nodeId": "daemon",
+              "label": "缺失则启动并等待就绪"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "database",
+              "direction": "forward",
+              "label": "打开受管 SQLite"
+            }
+          ]
+        },
+        {
+          "id": "spawn",
+          "title": "创建 PTY 宿主和原生子进程",
+          "actor": "launcher",
+          "handler": "pty",
+          "edgeIds": [
+            "launch-pty",
+            "pty-provider",
+            "host-ipc"
+          ],
+          "actions": [
+            "运行 agentx pty <tool>",
+            "宿主持有 PTY 和原生子进程",
+            "向 daemon 注册参与者、PID 与进程代次"
+          ],
+          "event": "spawn / RegisterProcess",
+          "patch": {
+            "nodes": {
+              "pty": {
+                "label": "前台宿主",
+                "tone": "running"
+              },
+              "provider": {
+                "label": "CLI 已启动",
+                "tone": "running"
+              },
+              "launcher": {
+                "label": "启动交付完成",
+                "tone": "neutral"
+              }
+            },
+            "facts": {}
+          },
+          "sourceIds": [
+            "launch",
+            "pty",
+            "process-host"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "launch-pty",
+              "direction": "forward",
+              "label": "启动 PTY 宿主"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "pty-provider",
+              "direction": "forward",
+              "label": "创建原生 CLI 子进程"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "host-ipc",
+              "direction": "forward",
+              "label": "注册 PID 与进程代次"
+            }
+          ]
+        },
+        {
+          "id": "terminal",
+          "title": "前台开始交互",
+          "actor": "terminal",
+          "handler": "pty",
+          "edgeIds": [
+            "terminal-pty",
+            "pty-provider"
+          ],
+          "actions": [
+            "键盘字节进入原生 CLI，输出返回窗口",
+            "投递循环与 hooks 保持状态上报",
+            "daemon 不转发终端画面"
+          ],
+          "event": "PTY I/O",
+          "patch": {
+            "nodes": {},
+            "facts": {
+              "connection": "前台 PTY 已连接",
+              "host": "前台宿主存活"
+            }
+          },
+          "sourceIds": [
+            "pty",
+            "delivery"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "terminal-pty",
+              "direction": "forward",
+              "label": "终端输入"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "pty-provider",
+              "direction": "forward",
+              "label": "PTY 字节进入 CLI"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "terminal-pty",
+              "direction": "reverse",
+              "label": "终端输出"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "foreground-turn",
+      "modeId": "foreground",
+      "label": "状态从哪里来",
+      "question": "active / listening 是谁上报的？",
+      "initial": {
+        "nodes": {
+          "terminal": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "launcher": {
+            "label": "启动已完成",
+            "tone": "neutral"
+          },
+          "pty": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "provider": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "hooks": {
+            "label": "按事件启动",
+            "tone": "neutral"
+          },
+          "daemon": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "store": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "history": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "sender": {
+            "label": "运行中",
+            "tone": "running"
+          }
+        },
+        "facts": {
+          "connection": "已连接",
+          "host": "宿主存活",
+          "provider": "原生进程存活",
+          "turn": "空闲",
+          "inbox": "无待收消息"
+        }
+      },
+      "steps": [
+        {
+          "id": "prompt",
+          "title": "Provider 收到输入",
+          "actor": "provider",
+          "handler": "hooks",
+          "edgeIds": [
+            "provider-hooks"
+          ],
+          "actions": [
+            "调用 UserPromptSubmit hook",
+            "hook 解析精确 AgentX 参与者 / session"
+          ],
+          "event": "UserPromptSubmit",
+          "patch": {
+            "nodes": {
+              "provider": {
+                "label": "本轮处理输入",
+                "tone": "busy"
+              },
+              "hooks": {
+                "label": "本次 hook 执行",
+                "tone": "running"
+              }
+            },
+            "facts": {}
+          },
+          "sourceIds": [
+            "hooks"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "provider-hooks",
+              "direction": "forward",
+              "label": "UserPromptSubmit"
+            },
+            {
+              "kind": "local",
+              "nodeId": "hooks",
+              "label": "解析精确参与者 / session"
+            }
+          ]
+        },
+        {
+          "id": "active",
+          "title": "hook 上报活动",
+          "actor": "hooks",
+          "handler": "daemon",
+          "edgeIds": [
+            "hook-ipc",
+            "database"
+          ],
+          "actions": [
+            "保存 active / prompt 与对应事件",
+            "PreToolUse 可继续上报工具活动",
+            "模型不需要自己手写状态消息"
+          ],
+          "event": "status active",
+          "patch": {
+            "nodes": {},
+            "facts": {
+              "turn": "正在处理本轮输入"
+            }
+          },
+          "sourceIds": [
+            "hooks"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "hook-ipc",
+              "direction": "forward",
+              "label": "上报 active / prompt"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "database",
+              "direction": "forward",
+              "label": "保存活动事件"
+            }
+          ]
+        },
+        {
+          "id": "heartbeat",
+          "title": "宿主仍然存活",
+          "actor": "pty",
+          "handler": "daemon",
+          "edgeIds": [
+            "host-ipc"
+          ],
+          "actions": [
+            "投递循环刷新心跳",
+            "心跳与轮次完成是不同事实",
+            "没有新输出也可能是活进程"
+          ],
+          "event": "Heartbeat",
+          "patch": {
+            "nodes": {},
+            "facts": {
+              "host": "投递循环有续报"
+            }
+          },
+          "sourceIds": [
+            "delivery",
+            "delivery-store"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "host-ipc",
+              "direction": "forward",
+              "label": "宿主心跳"
+            },
+            {
+              "kind": "observe",
+              "nodeId": "daemon",
+              "label": "存活与轮次完成分开观察"
+            }
+          ]
+        },
+        {
+          "id": "stop",
+          "title": "原生结束本轮",
+          "actor": "provider",
+          "handler": "hooks",
+          "edgeIds": [
+            "provider-hooks",
+            "hook-ipc",
+            "database"
+          ],
+          "actions": [
+            "Stop / Interrupt hook 写入 listening",
+            "Provider CLI 可继续等待下一轮",
+            "这不是进程退出报告"
+          ],
+          "event": "Stop / Interrupt",
+          "patch": {
+            "nodes": {
+              "provider": {
+                "label": "等待输入",
+                "tone": "neutral"
+              },
+              "hooks": {
+                "label": "按事件启动",
+                "tone": "neutral"
+              }
+            },
+            "facts": {
+              "turn": "本轮结束 · listening"
+            }
+          },
+          "sourceIds": [
+            "hooks"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "provider-hooks",
+              "direction": "forward",
+              "label": "Stop / Interrupt"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "hook-ipc",
+              "direction": "forward",
+              "label": "上报 listening"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "database",
+              "direction": "forward",
+              "label": "保存本轮结束"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "foreground-close",
+      "modeId": "foreground",
+      "label": "关闭普通前台",
+      "question": "关闭窗口是否等于全部原生后端都死了？",
+      "initial": {
+        "nodes": {
+          "terminal": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "launcher": {
+            "label": "启动已完成",
+            "tone": "neutral"
+          },
+          "pty": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "provider": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "hooks": {
+            "label": "按事件启动",
+            "tone": "neutral"
+          },
+          "daemon": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "store": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "history": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "sender": {
+            "label": "运行中",
+            "tone": "running"
+          }
+        },
+        "facts": {
+          "connection": "已连接",
+          "host": "宿主存活",
+          "provider": "原生进程存活",
+          "turn": "空闲",
+          "inbox": "无待收消息"
+        }
+      },
+      "steps": [
+        {
+          "id": "hup",
+          "title": "窗口断开",
+          "actor": "terminal",
+          "handler": "pty",
+          "edgeIds": [
+            "terminal-pty"
+          ],
+          "actions": [
+            "PTY 宿主观察 SIGHUP / 真正终端 EOF / 输出失败",
+            "进入现有退出和子进程清理路径"
+          ],
+          "event": "SIGHUP / TTY EOF",
+          "patch": {
+            "nodes": {
+              "terminal": {
+                "label": "窗口关闭",
+                "tone": "stopped"
+              },
+              "pty": {
+                "label": "退出清理",
+                "tone": "waiting"
+              }
+            },
+            "facts": {
+              "connection": "终端已断"
+            }
+          },
+          "sourceIds": [
+            "pty"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "disconnect",
+              "edgeId": "terminal-pty",
+              "direction": "forward",
+              "label": "SIGHUP / TTY EOF"
+            },
+            {
+              "kind": "local",
+              "nodeId": "pty",
+              "label": "进入退出清理"
+            }
+          ]
+        },
+        {
+          "id": "finish",
+          "title": "上报本宿主结束",
+          "actor": "pty",
+          "handler": "daemon",
+          "edgeIds": [
+            "host-ipc",
+            "database"
+          ],
+          "actions": [
+            "释放自己注册的端点",
+            "投递循环提交 Finish",
+            "按原参与者和子进程代次完成停止记录"
+          ],
+          "event": "Finish",
+          "patch": {
+            "nodes": {
+              "pty": {
+                "label": "宿主已结束",
+                "tone": "stopped"
+              },
+              "provider": {
+                "label": "CLI 退出 / 独立后端未知",
+                "tone": "unknown"
+              }
+            },
+            "facts": {
+              "host": "前台宿主结束",
+              "provider": "不能推断 CLI 内部独立后端",
+              "turn": "是否继续需原生新证据"
+            }
+          },
+          "sourceIds": [
+            "delivery",
+            "delivery-store",
+            "pty"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "host-ipc",
+              "direction": "forward",
+              "label": "Finish · 本宿主结束"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "database",
+              "direction": "forward",
+              "label": "保存停止记录"
+            },
+            {
+              "kind": "observe",
+              "nodeId": "provider",
+              "label": "独立原生后端需另行观察"
+            }
+          ]
+        },
+        {
+          "id": "retained",
+          "title": "保存的历史和消息仍可存在",
+          "actor": "daemon",
+          "handler": "store",
+          "edgeIds": [
+            "database"
+          ],
+          "actions": [
+            "daemon 和作用域数据独立保留",
+            "Provider 历史由原生存储拥有",
+            "resume 恢复历史不能证明旧进程从未退出"
+          ],
+          "event": "durable state retained",
+          "patch": {
+            "nodes": {},
+            "facts": {
+              "inbox": "按既有持久状态保留"
+            }
+          },
+          "sourceIds": [
+            "resume",
+            "inbox"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "database",
+              "direction": "forward",
+              "label": "已有持久记录"
+            },
+            {
+              "kind": "retain",
+              "nodeId": "store",
+              "label": "消息与状态保留"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "foreground-resume",
+      "modeId": "foreground",
+      "label": "恢复已保存的 Agent",
+      "question": "resume 是接回同一个活进程吗？",
+      "initial": {
+        "nodes": {
+          "terminal": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "launcher": {
+            "label": "准备恢复",
+            "tone": "neutral"
+          },
+          "pty": {
+            "label": "新宿主尚未创建",
+            "tone": "stopped"
+          },
+          "provider": {
+            "label": "原进程状态待核查",
+            "tone": "unknown"
+          },
+          "hooks": {
+            "label": "按事件启动",
+            "tone": "neutral"
+          },
+          "daemon": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "store": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "history": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "sender": {
+            "label": "运行中",
+            "tone": "running"
+          }
+        },
+        "facts": {
+          "connection": "等待恢复接入",
+          "host": "新宿主尚未创建",
+          "provider": "历史存在；原进程状态独立",
+          "turn": "待恢复结果",
+          "inbox": "无待收消息"
+        }
+      },
+      "steps": [
+        {
+          "id": "resolve",
+          "title": "解析已有会话",
+          "actor": "launcher",
+          "handler": "daemon",
+          "edgeIds": [
+            "launch-ipc",
+            "database"
+          ],
+          "actions": [
+            "读取已保存参与者快照与 session",
+            "核对旧运行与恢复条件",
+            "没有 session ID 时不能凭名字假装恢复"
+          ],
+          "event": "ResolveResume",
+          "patch": {
+            "nodes": {},
+            "facts": {}
+          },
+          "sourceIds": [
+            "resume",
+            "cleanup"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "launch-ipc",
+              "direction": "forward",
+              "label": "ResolveResume"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "database",
+              "direction": "forward",
+              "label": "读取参与者 / session"
+            },
+            {
+              "kind": "local",
+              "nodeId": "launcher",
+              "label": "核对恢复条件"
+            }
+          ]
+        },
+        {
+          "id": "launch",
+          "title": "重新启动 Provider 会话",
+          "actor": "launcher",
+          "handler": "pty",
+          "edgeIds": [
+            "launch-pty",
+            "pty-provider",
+            "cli-history"
+          ],
+          "actions": [
+            "准备原生 resume 参数",
+            "在原项目 / home 下启动运行",
+            "这是新的宿主 / 进程，不是透明终端 attach"
+          ],
+          "event": "spawn with resume",
+          "patch": {
+            "nodes": {
+              "pty": {
+                "label": "新的 PTY 宿主",
+                "tone": "running"
+              },
+              "provider": {
+                "label": "恢复原 session",
+                "tone": "running"
+              }
+            },
+            "facts": {
+              "host": "新运行宿主",
+              "provider": "新执行可恢复原会话"
+            }
+          },
+          "sourceIds": [
+            "resume",
+            "launch"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "launch-pty",
+              "direction": "forward",
+              "label": "创建新的运行宿主"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "pty-provider",
+              "direction": "forward",
+              "label": "原生 resume 参数"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "cli-history",
+              "direction": "forward",
+              "label": "恢复已有会话历史"
+            }
+          ]
+        },
+        {
+          "id": "bind",
+          "title": "绑定恢复的实际 session",
+          "actor": "hooks",
+          "handler": "daemon",
+          "edgeIds": [
+            "hook-ipc",
+            "host-ipc",
+            "database"
+          ],
+          "actions": [
+            "hook 确认原生 session 与参与者",
+            "保留可恢复的逻辑身份和会话历史",
+            "新的进程代次继续约束后续操作"
+          ],
+          "event": "SessionStart · resume",
+          "patch": {
+            "nodes": {},
+            "facts": {
+              "connection": "已恢复接入",
+              "turn": "以新的原生状态为准"
+            }
+          },
+          "sourceIds": [
+            "hooks",
+            "process-host",
+            "resume"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "hook-ipc",
+              "direction": "forward",
+              "label": "SessionStart · resume"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "database",
+              "direction": "forward",
+              "label": "保存实际 session 绑定"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "host-ipc",
+              "direction": "forward",
+              "label": "注册新进程代次"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "headless-launch",
+      "modeId": "headless",
+      "label": "后台 PTY 怎样启动",
+      "question": "没有窗口，交互式工具为什么还能运行？",
+      "initial": {
+        "nodes": {
+          "terminal": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "launcher": {
+            "label": "准备后台启动",
+            "tone": "neutral"
+          },
+          "pty": {
+            "label": "尚未创建",
+            "tone": "stopped"
+          },
+          "provider": {
+            "label": "尚未启动",
+            "tone": "stopped"
+          },
+          "hooks": {
+            "label": "按事件启动",
+            "tone": "neutral"
+          },
+          "daemon": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "store": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "history": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "sender": {
+            "label": "运行中",
+            "tone": "running"
+          }
+        },
+        "facts": {
+          "connection": "准备独立后台运行",
+          "host": "后台宿主尚未创建",
+          "provider": "原生 CLI 尚未启动",
+          "turn": "尚无轮次",
+          "inbox": "无待收消息"
+        }
+      },
+      "steps": [
+        {
+          "id": "prepare",
+          "title": "准备后台 runner",
+          "actor": "launcher",
+          "handler": "pty",
+          "edgeIds": [
+            "launch-pty"
+          ],
+          "actions": [
+            "准备身份 / 环境 / hooks 和 runner 脚本",
+            "后台仍选择 PTY 宿主",
+            "Claude 显式 print 是另一原生后台路径"
+          ],
+          "event": "--headless",
+          "patch": {
+            "nodes": {
+              "pty": {
+                "label": "后台启动中",
+                "tone": "waiting"
+              }
+            },
+            "facts": {}
+          },
+          "sourceIds": [
+            "launch"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "launch-pty",
+              "direction": "forward",
+              "label": "准备后台 runner"
+            },
+            {
+              "kind": "local",
+              "nodeId": "pty",
+              "label": "身份 / 环境 / hooks 就绪"
+            }
+          ]
+        },
+        {
+          "id": "detach",
+          "title": "脱离发起终端",
+          "actor": "launcher",
+          "handler": "pty",
+          "edgeIds": [
+            "launch-pty"
+          ],
+          "actions": [
+            "Unix 创建独立 session；Windows 使用独立进程组 / console 标志",
+            "外层 stdin 接空设备，stdout / stderr 写日志",
+            "发起 CLI 返回，不依赖窗口保持打开"
+          ],
+          "event": "spawn_detached",
+          "patch": {
+            "nodes": {
+              "launcher": {
+                "label": "启动命令已返回",
+                "tone": "neutral"
+              },
+              "pty": {
+                "label": "独立后台 PTY",
+                "tone": "running"
+              }
+            },
+            "facts": {
+              "connection": "无前台依赖",
+              "host": "独立后台 runner"
+            }
+          },
+          "sourceIds": [
+            "terminal",
+            "launch"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "launch-pty",
+              "direction": "forward",
+              "label": "spawn_detached"
+            },
+            {
+              "kind": "local",
+              "nodeId": "pty",
+              "label": "独立会话与日志流"
+            },
+            {
+              "kind": "local",
+              "nodeId": "launcher",
+              "label": "启动命令返回"
+            }
+          ]
+        },
+        {
+          "id": "virtual",
+          "title": "在伪终端里运行原生 CLI",
+          "actor": "pty",
+          "handler": "provider",
+          "edgeIds": [
+            "pty-provider",
+            "host-ipc"
+          ],
+          "actions": [
+            "原生工具仍有终端输入输出环境",
+            "空设备的 EOF 不被当成真实终端断线",
+            "注册子进程与投递端点"
+          ],
+          "event": "PTY child",
+          "patch": {
+            "nodes": {
+              "provider": {
+                "label": "CLI 运行中",
+                "tone": "running"
+              }
+            },
+            "facts": {}
+          },
+          "sourceIds": [
+            "pty",
+            "process-host"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "pty-provider",
+              "direction": "forward",
+              "label": "在 PTY 中启动原生 CLI"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "host-ipc",
+              "direction": "forward",
+              "label": "注册后台子进程"
+            }
+          ]
+        },
+        {
+          "id": "maintain",
+          "title": "后台继续上报与收信",
+          "actor": "pty",
+          "handler": "daemon",
+          "edgeIds": [
+            "host-ipc",
+            "wake-pty",
+            "database"
+          ],
+          "actions": [
+            "后台投递循环继续维护心跳和消息处理",
+            "没有可见窗口不等于没有宿主",
+            "遇到审批仍可能等待，不是永远自动执行"
+          ],
+          "event": "delivery / heartbeat",
+          "patch": {
+            "nodes": {},
+            "facts": {
+              "host": "后台投递循环存活",
+              "turn": "空闲或依原生事件更新"
+            }
+          },
+          "sourceIds": [
+            "delivery",
+            "delivery-store"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "host-ipc",
+              "direction": "forward",
+              "label": "后台投递循环续报"
+            },
+            {
+              "kind": "observe",
+              "nodeId": "daemon",
+              "label": "保存宿主观测"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "headless-close",
+      "modeId": "headless",
+      "label": "关掉发起终端",
+      "question": "关窗口之后，哪个进程负责让 Agent 继续？",
+      "initial": {
+        "nodes": {
+          "terminal": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "launcher": {
+            "label": "启动已完成",
+            "tone": "neutral"
+          },
+          "pty": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "provider": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "hooks": {
+            "label": "按事件启动",
+            "tone": "neutral"
+          },
+          "daemon": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "store": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "history": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "sender": {
+            "label": "运行中",
+            "tone": "running"
+          }
+        },
+        "facts": {
+          "connection": "无前台依赖",
+          "host": "独立会话中的 PTY",
+          "provider": "原生 CLI 存活",
+          "turn": "空闲",
+          "inbox": "无待收消息"
+        }
+      },
+      "steps": [
+        {
+          "id": "close",
+          "title": "关闭发起窗口",
+          "actor": "terminal",
+          "handler": "terminal",
+          "edgeIds": [],
+          "actions": [
+            "发起窗口已经不是后台 runner 的控制终端",
+            "不会据此向独立 runner 发送本前台的 HUP"
+          ],
+          "event": "initiating terminal close",
+          "patch": {
+            "nodes": {
+              "terminal": {
+                "label": "窗口关闭",
+                "tone": "stopped"
+              },
+              "launcher": {
+                "label": "早已返回",
+                "tone": "neutral"
+              }
+            },
+            "facts": {
+              "connection": "前台已关 · 无后台依赖"
+            }
+          },
+          "sourceIds": [
+            "terminal"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "local",
+              "nodeId": "terminal",
+              "label": "发起窗口关闭"
+            },
+            {
+              "kind": "retain",
+              "nodeId": "pty",
+              "label": "独立 runner 未收到前台 HUP"
+            }
+          ]
+        },
+        {
+          "id": "continue",
+          "title": "后台宿主仍持有执行",
+          "actor": "pty",
+          "handler": "provider",
+          "edgeIds": [
+            "pty-provider",
+            "host-ipc"
+          ],
+          "actions": [
+            "PTY 宿主持有原生 CLI 和投递循环",
+            "AgentX daemon 保存它持续上报的状态",
+            "独立后台执行不是由终端窗口保活"
+          ],
+          "event": "detached runner continues",
+          "patch": {
+            "nodes": {
+              "pty": {
+                "label": "后台宿主保留",
+                "tone": "running"
+              },
+              "provider": {
+                "label": "CLI 保留",
+                "tone": "running"
+              }
+            },
+            "facts": {
+              "host": "独立宿主仍运行",
+              "provider": "原生 CLI 仍运行"
+            }
+          },
+          "sourceIds": [
+            "pty",
+            "delivery",
+            "terminal"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "retain",
+              "nodeId": "pty",
+              "label": "PTY 与投递循环继续"
+            },
+            {
+              "kind": "retain",
+              "nodeId": "provider",
+              "label": "原生 CLI 继续"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "host-ipc",
+              "direction": "forward",
+              "label": "后台续报仍到达 daemon"
+            }
+          ]
+        },
+        {
+          "id": "limit",
+          "title": "保活与重启恢复分开",
+          "actor": "pty",
+          "handler": "daemon",
+          "edgeIds": [
+            "host-ipc"
+          ],
+          "actions": [
+            "后台进程自己退出后仍需相应结束 / 恢复流程",
+            "当前没有统一的完整终端 attach / detach 操作",
+            "不把后台 runner 当成任意崩溃后的自动重启总管"
+          ],
+          "event": "lifetime boundary",
+          "patch": {
+            "nodes": {},
+            "facts": {
+              "turn": "仍以原生 / hook 事实为准"
+            }
+          },
+          "sourceIds": [
+            "resume",
+            "launch",
+            "delivery"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "observe",
+              "nodeId": "pty",
+              "label": "保活不等于崩溃自动重启"
+            },
+            {
+              "kind": "observe",
+              "nodeId": "daemon",
+              "label": "仅按原生 / hook 事实更新"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tmux-detach",
+      "modeId": "tmux",
+      "label": "Detach 与 Attach",
+      "question": "为什么 tmux 能保留同一个活进程？",
+      "initial": {
+        "nodes": {
+          "terminal": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "launcher": {
+            "label": "启动已完成",
+            "tone": "neutral"
+          },
+          "tmux": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "pty": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "provider": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "hooks": {
+            "label": "按事件启动",
+            "tone": "neutral"
+          },
+          "daemon": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "store": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "history": {
+            "label": "持久保存",
+            "tone": "stored"
+          },
+          "sender": {
+            "label": "运行中",
+            "tone": "running"
+          }
+        },
+        "facts": {
+          "connection": "已连接",
+          "host": "宿主存活",
+          "provider": "原生进程存活",
+          "turn": "空闲",
+          "inbox": "无待收消息"
+        }
+      },
+      "steps": [
+        {
+          "id": "detach",
+          "title": "用户 detach 客户端",
+          "actor": "terminal",
+          "handler": "tmux",
+          "edgeIds": [
+            "terminal-tmux"
+          ],
+          "actions": [
+            "终端客户端脱离 tmux server",
+            "没有关闭 pane，也没有停止 Agent"
+          ],
+          "event": "Ctrl+B · D",
+          "patch": {
+            "nodes": {
+              "terminal": {
+                "label": "已 detach",
+                "tone": "neutral"
+              }
+            },
+            "facts": {
+              "connection": "显示客户端已脱离"
+            }
+          },
+          "sourceIds": [
+            "presets"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "disconnect",
+              "edgeId": "terminal-tmux",
+              "direction": "forward",
+              "label": "显示客户端 detach"
+            },
+            {
+              "kind": "retain",
+              "nodeId": "tmux",
+              "label": "server 与 pane 保留"
+            }
+          ]
+        },
+        {
+          "id": "pane",
+          "title": "tmux server 保留 pane",
+          "actor": "tmux",
+          "handler": "pty",
+          "edgeIds": [
+            "tmux-pty",
+            "pty-provider",
+            "host-ipc"
+          ],
+          "actions": [
+            "server 继续持有 pane 的终端",
+            "PTY 宿主和 Provider CLI 保留",
+            "原投递循环照常续报"
+          ],
+          "event": "server retains pane",
+          "patch": {
+            "nodes": {},
+            "facts": {
+              "host": "原 PTY 宿主仍在",
+              "provider": "同一个 CLI 进程"
+            }
+          },
+          "sourceIds": [
+            "presets",
+            "pty",
+            "delivery"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "retain",
+              "nodeId": "tmux",
+              "label": "继续持有原 pane"
+            },
+            {
+              "kind": "retain",
+              "nodeId": "pty",
+              "label": "同一 PTY 宿主继续"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "host-ipc",
+              "direction": "forward",
+              "label": "原投递循环续报"
+            }
+          ]
+        },
+        {
+          "id": "attach",
+          "title": "再次 attach",
+          "actor": "terminal",
+          "handler": "tmux",
+          "edgeIds": [
+            "terminal-tmux",
+            "tmux-pty"
+          ],
+          "actions": [
+            "新的终端客户端接回原会话画面",
+            "没有执行 AgentX resume，也没有创建新 Agent",
+            "kill pane / session 与 detach 是不同动作"
+          ],
+          "event": "tmux attach",
+          "patch": {
+            "nodes": {
+              "terminal": {
+                "label": "已 attach",
+                "tone": "running"
+              }
+            },
+            "facts": {
+              "connection": "回到原 pane",
+              "turn": "原任务状态连续保留"
+            }
+          },
+          "sourceIds": [
+            "presets"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "terminal-tmux",
+              "direction": "forward",
+              "label": "tmux attach"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "tmux-pty",
+              "direction": "forward",
+              "label": "接回原 pane 画面"
+            },
+            {
+              "kind": "retain",
+              "nodeId": "pty",
+              "label": "同一 CLI 进程，无 AgentX resume"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "workbench-close",
+      "modeId": "workbench",
+      "label": "关闭浏览器标签页",
+      "question": "关管理页面，会不会顺便把 Agent 关掉？",
+      "initial": {
+        "nodes": {
+          "browser": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "web": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "daemon": {
+            "label": "运行中",
+            "tone": "running"
+          },
+          "store": {
+            "label": "持久保存",
+            "tone": "stored"
+          }
+        },
+        "facts": {
+          "connection": "HTTP 可访问",
+          "host": "HTTP 宿主存活",
+          "provider": "此视图不推断 Provider",
+          "turn": "由执行宿主报告",
+          "inbox": "无待收消息"
+        }
+      },
+      "steps": [
+        {
+          "id": "read",
+          "title": "页面读取协作资源",
+          "actor": "browser",
+          "handler": "web",
+          "edgeIds": [
+            "browser-http",
+            "web-ipc",
+            "database"
+          ],
+          "actions": [
+            "HTTP 宿主把有限 API 转为原生 IPC",
+            "daemon 返回持久任务 / 结果 / 状态投影",
+            "页面显示读取结果，不能凭显示推断执行事实"
+          ],
+          "event": "HTTP read",
+          "patch": {
+            "nodes": {},
+            "facts": {}
+          },
+          "sourceIds": [
+            "web",
+            "web-api",
+            "workbench-evidence"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "browser-http",
+              "direction": "forward",
+              "label": "读取协作资源"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "web-ipc",
+              "direction": "forward",
+              "label": "有限原生读取"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "database",
+              "direction": "forward",
+              "label": "读取持久事实"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "browser-http",
+              "direction": "reverse",
+              "label": "返回资源投影"
+            }
+          ]
+        },
+        {
+          "id": "close",
+          "title": "关闭浏览器标签页",
+          "actor": "browser",
+          "handler": "web",
+          "edgeIds": [
+            "browser-http"
+          ],
+          "actions": [
+            "只断开这一浏览器的 HTTP 消费",
+            "不停止独立 HTTP 宿主或 AgentX daemon",
+            "有限协作 API 不等于通用进程管理器"
+          ],
+          "event": "tab close",
+          "patch": {
+            "nodes": {
+              "browser": {
+                "label": "标签页关闭",
+                "tone": "stopped"
+              }
+            },
+            "facts": {
+              "connection": "浏览器已关",
+              "host": "HTTP 宿主保留",
+              "provider": "此视图没有停止 Provider"
+            }
+          },
+          "sourceIds": [
+            "web",
+            "web-api"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "disconnect",
+              "edgeId": "browser-http",
+              "direction": "forward",
+              "label": "关闭本页 HTTP 消费"
+            },
+            {
+              "kind": "retain",
+              "nodeId": "web",
+              "label": "HTTP 宿主保留"
+            },
+            {
+              "kind": "retain",
+              "nodeId": "daemon",
+              "label": "daemon 保留"
+            }
+          ]
+        },
+        {
+          "id": "open",
+          "title": "重新打开同一 URL",
+          "actor": "browser",
+          "handler": "web",
+          "edgeIds": [
+            "browser-http",
+            "web-ipc"
+          ],
+          "actions": [
+            "重新读取 scope / project 的现有资源",
+            "从原生持久事实恢复页面",
+            "不是重新启动或 resume 某个 Provider Agent"
+          ],
+          "event": "open URL",
+          "patch": {
+            "nodes": {
+              "browser": {
+                "label": "新页面已打开",
+                "tone": "running"
+              }
+            },
+            "facts": {
+              "connection": "HTTP 再次可访问"
+            }
+          },
+          "sourceIds": [
+            "web",
+            "web-api"
+          ],
+          "certainty": "source",
+          "note": "",
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "browser-http",
+              "direction": "forward",
+              "label": "重新打开 URL"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "web-ipc",
+              "direction": "forward",
+              "label": "读取已有资源"
+            },
+            {
+              "kind": "local",
+              "nodeId": "browser",
+              "label": "恢复页面，不启动 Provider"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "factDefinitions": [
+    {
+      "id": "connection",
+      "label": "连接"
+    },
+    {
+      "id": "host",
+      "label": "宿主"
+    },
+    {
+      "id": "provider",
+      "label": "Provider"
+    },
+    {
+      "id": "turn",
+      "label": "轮次"
+    },
+    {
+      "id": "inbox",
+      "label": "收件箱"
+    }
+  ],
+  "defaults": {
+    "modeId": "appserver",
+    "scenarioId": "appserver-disconnect"
+  },
+  "ports": [
+    {
+      "id": "inbox-submit",
+      "nodeId": "daemon",
+      "label": "Messaging.Submit",
+      "kind": "command",
+      "input": [
+        {
+          "name": "requestId",
+          "type": "RequestId",
+          "required": true
+        },
+        {
+          "name": "recipients",
+          "type": "Participant[]",
+          "required": true
+        },
+        {
+          "name": "text",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "accepted",
+          "label": "已持久接受",
+          "kind": "accepted"
+        },
+        {
+          "id": "rejected",
+          "label": "提交被拒绝",
+          "kind": "rejected"
+        },
+        {
+          "id": "unknown",
+          "label": "接受结果待查询",
+          "kind": "unknown"
+        }
+      ],
+      "description": "原生 Request::Submit 能力的讲解边界。事务保存消息及稳定请求回执；接受不代表 Provider 已收到，更不代表业务工作完成。",
+      "sourceIds": [
+        "message-contract",
+        "messages"
+      ]
+    },
+    {
+      "id": "inbox-prepare",
+      "nodeId": "daemon",
+      "label": "Inbox.Prepare",
+      "kind": "command",
+      "input": [
+        {
+          "name": "target",
+          "type": "ActivationTarget",
+          "required": true
+        },
+        {
+          "name": "snapshot",
+          "type": "PendingSnapshot",
+          "required": true
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "prepared",
+          "label": "已领取批次",
+          "kind": "returned"
+        },
+        {
+          "id": "rejected",
+          "label": "领取被拒绝",
+          "kind": "rejected"
+        }
+      ],
+      "description": "原生 InboxOperation::Prepare / PendingInbox 能力，校验精确参与者和附件，冻结内容并取得独占批次。",
+      "sourceIds": [
+        "message-contract",
+        "inbox-contract",
+        "inbox"
+      ]
+    },
+    {
+      "id": "bridge-wake",
+      "nodeId": "bridge",
+      "label": "WakeHint",
+      "kind": "event",
+      "input": [
+        {
+          "name": "target",
+          "type": "ActivationTarget",
+          "required": true
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "observed",
+          "label": "已观察待收提示",
+          "kind": "observed"
+        }
+      ],
+      "description": "本地通知端点输入能力的讲解名称；只提示检查队列，不携带业务交付证明。",
+      "sourceIds": [
+        "stdio",
+        "messages"
+      ]
+    },
+    {
+      "id": "native-input",
+      "nodeId": "codex",
+      "label": "turn/start · turn/steer",
+      "kind": "command",
+      "input": [
+        {
+          "name": "threadId",
+          "type": "NativeThreadId",
+          "required": true
+        },
+        {
+          "name": "clientId",
+          "type": "FrozenBatchId",
+          "required": true
+        },
+        {
+          "name": "content",
+          "type": "NativeInput[]",
+          "required": true
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "admitted",
+          "label": "原生调用已接纳",
+          "kind": "accepted"
+        },
+        {
+          "id": "unknown",
+          "label": "输入已发出 · 交付待确认",
+          "kind": "unknown"
+        },
+        {
+          "id": "rejected",
+          "label": "明确未接纳",
+          "kind": "rejected"
+        }
+      ],
+      "description": "实际原生请求。RPC 成功不是已记录输入；示范在本步骤只知道 Issuing，须等匹配 userMessage。",
+      "sourceIds": [
+        "driver",
+        "inbox-contract"
+      ]
+    },
+    {
+      "id": "input-recorded",
+      "nodeId": "bridge",
+      "label": "item/completed · userMessage",
+      "kind": "event",
+      "input": [
+        {
+          "name": "threadId",
+          "type": "NativeThreadId",
+          "required": true
+        },
+        {
+          "name": "clientId",
+          "type": "FrozenBatchId",
+          "required": true
+        },
+        {
+          "name": "content",
+          "type": "NativeInput[]",
+          "required": true
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "observed",
+          "label": "匹配输入记录已观察",
+          "kind": "observed"
+        }
+      ],
+      "description": "原生通知进入桥的事件处理边界；必须匹配 thread、clientId 和完整冻结内容。本例标签是消息方法与项目回调的联合说明。",
+      "sourceIds": [
+        "driver",
+        "native-evidence"
+      ]
+    },
+    {
+      "id": "inbox-confirm",
+      "nodeId": "daemon",
+      "label": "Inbox.Confirm",
+      "kind": "command",
+      "input": [
+        {
+          "name": "target",
+          "type": "ActivationTarget",
+          "required": true
+        },
+        {
+          "name": "batch",
+          "type": "BatchId",
+          "required": true
+        },
+        {
+          "name": "evidence",
+          "type": "ProviderInputRecorded",
+          "required": true
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "advanced",
+          "label": "交付游标已确认",
+          "kind": "accepted"
+        },
+        {
+          "id": "rejected",
+          "label": "证据或附件不匹配",
+          "kind": "rejected"
+        }
+      ],
+      "description": "原生 InboxOperation::Confirm / PendingInbox.confirm。匹配记录仅证明输入交付边界，不证明 Agent 工作完成。",
+      "sourceIds": [
+        "message-contract",
+        "inbox-contract",
+        "inbox",
+        "driver"
+      ]
+    },
+    {
+      "id": "release-root",
+      "nodeId": "daemon",
+      "label": "ReleaseNativeRoot",
+      "kind": "command",
+      "input": [
+        {
+          "name": "owner",
+          "type": "NativeOwnerAttachment",
+          "required": true
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "released",
+          "label": "本连接控制权已释放",
+          "kind": "accepted"
+        }
+      ],
+      "description": "真实宿主释放能力，退役本 owner 附件并移除端点；不调用停止共享 Codex 后端。",
+      "sourceIds": [
+        "native-host",
+        "bridge",
+        "attachments"
+      ]
+    }
+  ]
+}

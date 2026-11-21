@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="32" viewBox="0 0 64 32">
+  <title>Three worn windbreak steps</title>
+  <defs>
+<linearGradient id="step" x2="0" y2="1"><stop offset="0.000" stop-color="#e4c28e"/><stop offset="0.500" stop-color="#af916c"/><stop offset="1.000" stop-color="#d1ad7c"/></linearGradient>
+  </defs>
+<path d="m9 5 45 0 9 24-3 3H5L1 28z" fill="#344d50" opacity=".27"/>
+<path d="m11 3 40 0 9 26H3z" fill="#5b5752" stroke="#524a45"/>
+<path d="m11 3 40 0 1.8 6H9zm-3 10h46.2l2 6H6zm-3.6 10h53.2l2.3 5.7H2.7z" fill="url(#step)"/>
+<path d="M10 9h43m-46 10h49M4 28.5h55" stroke="#f5d8a3" stroke-width="1.1" stroke-opacity=".85"/>
+<path d="m6 30 51 0M11 11h39M9 21h44" stroke="#776350"/>
+<path d="m12 4 3 0-7 24-4 0zm35 0h3l7 24h-4z" fill="#54827a" opacity=".84"/>
+<path d="M24 5h6m5 0h9m-25 12h12m5-1h9m-25 11h7m4-1h15" stroke="#fff0c8" opacity=".48" stroke-width=".6"/>
+</svg>

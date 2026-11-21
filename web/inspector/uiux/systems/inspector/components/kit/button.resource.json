@@ -1,0 +1,271 @@
+{
+  "schemaVersion": 1,
+  "system": "inspector",
+  "id": "inspector/button",
+  "kind": "component",
+  "title": "按钮",
+  "summary": "主／次／危险动作与互斥的 busy、disabled 语义。",
+  "maturity": "stable",
+  "source": [
+    "./kit.native.tsx"
+  ],
+  "design": "./button.design.md",
+  "useWhen": [
+    "主／次／危险动作与互斥的 busy、disabled 语义。"
+  ],
+  "avoidWhen": [
+    "不要用外观或动画推断业务成功；数据与命令留在领域。"
+  ],
+  "dependencies": [
+    "inspector/themes"
+  ],
+  "events": [
+    {
+      "name": "press",
+      "description": "被接受的本地点击"
+    }
+  ],
+  "states": [
+    {
+      "id": "default",
+      "title": "默认",
+      "description": "主／次／危险动作与互斥的 busy、disabled 语义。",
+      "scene": "default"
+    },
+    {
+      "id": "disabled",
+      "title": "禁用",
+      "description": "保留名称和尺寸，拒绝重复执行与事件。",
+      "scene": "disabled"
+    },
+    {
+      "id": "busy",
+      "title": "处理中",
+      "description": "保留名称和尺寸，拒绝重复执行与事件。",
+      "scene": "busy"
+    }
+  ],
+  "interactions": [
+    {
+      "id": "operate",
+      "title": "操作与事件",
+      "trigger": "pointer / Enter / Space，输入使用键盘编辑",
+      "from": "default",
+      "to": "default",
+      "events": [
+        "press"
+      ],
+      "scene": "default",
+      "result": "只更新本地示例并记录事件，不触发业务请求",
+      "interruption": "禁用与 busy 不提交；切换主题不重建；显式重置清空本地状态"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "matrix",
+      "title": "完整状态搭配",
+      "description": "同主题下比较主次动作、危险、禁用和处理中。",
+      "kind": "interaction",
+      "controls": [
+        {
+          "id": "label",
+          "label": "按钮文字",
+          "type": "text",
+          "default": "主操作"
+        },
+        {
+          "id": "variant",
+          "label": "动作变体",
+          "type": "select",
+          "default": "primary",
+          "options": [
+            {
+              "label": "primary",
+              "value": "primary"
+            },
+            {
+              "label": "secondary",
+              "value": "secondary"
+            },
+            {
+              "label": "ghost",
+              "value": "ghost"
+            },
+            {
+              "label": "danger",
+              "value": "danger"
+            }
+          ]
+        },
+        {
+          "id": "disabled",
+          "label": "禁用",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "id": "busy",
+          "label": "处理中",
+          "type": "boolean",
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "default",
+      "title": "默认与可操作示例",
+      "description": "主／次／危险动作与互斥的 busy、disabled 语义。",
+      "kind": "interaction",
+      "controls": [
+        {
+          "id": "label",
+          "label": "按钮文字",
+          "type": "text",
+          "default": "主操作"
+        },
+        {
+          "id": "variant",
+          "label": "动作变体",
+          "type": "select",
+          "default": "primary",
+          "options": [
+            {
+              "label": "primary",
+              "value": "primary"
+            },
+            {
+              "label": "secondary",
+              "value": "secondary"
+            },
+            {
+              "label": "ghost",
+              "value": "ghost"
+            },
+            {
+              "label": "danger",
+              "value": "danger"
+            }
+          ]
+        },
+        {
+          "id": "disabled",
+          "label": "禁用",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "id": "busy",
+          "label": "处理中",
+          "type": "boolean",
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "disabled",
+      "title": "禁用",
+      "description": "与生产组件相同的行为约束。",
+      "kind": "state",
+      "controls": [
+        {
+          "id": "label",
+          "label": "按钮文字",
+          "type": "text",
+          "default": "主操作"
+        },
+        {
+          "id": "variant",
+          "label": "动作变体",
+          "type": "select",
+          "default": "primary",
+          "options": [
+            {
+              "label": "primary",
+              "value": "primary"
+            },
+            {
+              "label": "secondary",
+              "value": "secondary"
+            },
+            {
+              "label": "ghost",
+              "value": "ghost"
+            },
+            {
+              "label": "danger",
+              "value": "danger"
+            }
+          ]
+        },
+        {
+          "id": "disabled",
+          "label": "禁用",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "id": "busy",
+          "label": "处理中",
+          "type": "boolean",
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "busy",
+      "title": "处理中",
+      "description": "与生产组件相同的行为约束。",
+      "kind": "state",
+      "controls": [
+        {
+          "id": "label",
+          "label": "按钮文字",
+          "type": "text",
+          "default": "主操作"
+        },
+        {
+          "id": "variant",
+          "label": "动作变体",
+          "type": "select",
+          "default": "primary",
+          "options": [
+            {
+              "label": "primary",
+              "value": "primary"
+            },
+            {
+              "label": "secondary",
+              "value": "secondary"
+            },
+            {
+              "label": "ghost",
+              "value": "ghost"
+            },
+            {
+              "label": "danger",
+              "value": "danger"
+            }
+          ]
+        },
+        {
+          "id": "disabled",
+          "label": "禁用",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "id": "busy",
+          "label": "处理中",
+          "type": "boolean",
+          "default": true
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "entry": "../../inspector.native.ts",
+    "symbols": [
+      "Button"
+    ]
+  }
+}

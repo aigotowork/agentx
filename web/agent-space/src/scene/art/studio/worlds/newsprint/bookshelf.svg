@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="56" height="64" viewBox="0 0 56 64">
+  <path fill="#315696" opacity=".29" d="M5 53h43l7 7-6 3H5l-4-3z"/>
+  <g stroke="#211a26" stroke-width="2" stroke-linejoin="round">
+    <path fill="#211a26" d="M8 52h7v8H7zm32 0h7l1 8h-8z"/>
+    <path fill="#d9463d" d="M4 11 11 4h34l6 5v44l-7 4H4z"/>
+    <path fill="#f7e7bf" d="M4 11 11 4h34l6 5-7 4z"/>
+    <path fill="#211a26" d="M9 15h31v34H9z"/>
+    <path fill="none" stroke="#f7e7bf" stroke-width="1.1" d="m46 14 2-2v38m-37 4h28"/>
+    <path fill="#315696" d="M10 16h7v15h-7z"/>
+    <path fill="#d9463d" d="M17 19h7v12h-7z"/>
+    <path fill="#f7e7bf" d="m26 17 5-2 6 14-5 2z"/>
+    <path fill="#f7e7bf" d="M9 30h32v4H9z"/>
+    <path fill="#315696" d="M10 36h15v12H10z"/>
+    <path fill="#d9463d" d="M26 37h13v11H26z"/>
+    <path fill="#f7e7bf" stroke="none" d="M14 39h7v2h-7zm15 1h7v2h-7z"/>
+    <path fill="none" stroke="#f7e7bf" stroke-width="1.1" d="M12 24h3m4 1h3m-10 20h11m6 0h8"/>
+  </g>
+</svg>

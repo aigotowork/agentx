@@ -1,0 +1,39 @@
+/* All rules stay within the full Inspector; the legacy recovery experience retains its own kit. */
+:root[data-experience="inspector"] {
+  --inspector-corner: 2px;
+  --inspector-step: 3px;
+  --inspector-hard-shadow: 2px 2px 0 var(--host-border);
+  --inspector-focus-width: 2px;
+  --inspector-focus-gap: 3px;
+  --inspector-palette-size: 32px;
+  --inspector-preview-max: 1180px;
+  --inspector-preview-card-min: 300px;
+  --inspector-preview-space: 20px;
+  --inspector-preview-line-height: 1.6;
+  .inspector-pixel-icon { flex-shrink: 0; shape-rendering: crispEdges; }
+  .component-preview { width: 100%; overflow: auto; padding: var(--host-padding); color: var(--host-foreground); font-size: var(--host-font); }
+  .component-preview-inner { max-width: var(--inspector-preview-max); margin-inline: auto; display: flex; flex-direction: column; gap: var(--inspector-preview-space); }
+  .component-preview-heading { display: flex; align-items: center; gap: var(--host-gap); }
+  .component-preview-heading h1 { font-size: var(--host-heading-font); margin: 0; flex: 1; }
+  .component-preview-heading a { color: var(--host-accent); }
+  .component-preview-note { margin: 0; color: var(--host-foregroundMuted); line-height: var(--inspector-preview-line-height); }
+  .component-preview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--inspector-preview-card-min)), 1fr)); gap: var(--inspector-preview-space); }
+  .component-preview-block { min-width: 0; padding: var(--host-padding); border: 1px solid var(--host-border); border-radius: var(--host-radius); background: var(--host-surface1); display: flex; flex-direction: column; gap: var(--host-padding); }
+  .component-preview-block h2 { font-size: var(--host-font); margin: 0; }
+  .component-preview-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--host-gap); }
+  .component-preview-status { font-size: var(--host-small); color: var(--host-foregroundMuted); margin: 0; }
+  .component-preview-swatches { display: flex; flex-wrap: wrap; gap: var(--host-padding); }
+  .component-preview-swatch { display: flex; flex-direction: column; align-items: center; gap: var(--host-gap); color: var(--host-foregroundMuted); font-size: var(--host-small); }
+  &[data-style="pixel"] {
+    --host-radius: var(--inspector-corner);
+    --host-shadow: var(--inspector-hard-shadow);
+    [data-inspector-ui="button"], [data-inspector-ui="tab"], [data-inspector-ui="chip"], [data-inspector-ui="icon-button"] { isolation: isolate; }
+    [data-inspector-ui="button"]:focus-visible, [data-inspector-ui="icon-button"]:focus-visible, [data-inspector-ui="tab"]:focus-visible,
+    [data-inspector-ui="chip"]:focus-visible, input:focus-visible, textarea:focus-visible, [role="switch"]:focus-visible {
+      outline: var(--inspector-focus-width) solid var(--host-accent); outline-offset: var(--inspector-focus-gap);
+    }
+    [data-inspector-ui="field"]:focus-within { outline: var(--inspector-focus-width) solid var(--host-accent); outline-offset: var(--inspector-focus-gap); }
+    .host-modal, .component-preview-block { box-shadow: var(--inspector-hard-shadow); }
+    .host-icon { border-radius: var(--inspector-corner); }
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "system": "space",
+  "id": "space/object-window",
+  "kind": "component",
+  "title": "对象阅读窗",
+  "summary": "对象阅读窗 · 与真实 Space 共享实现",
+  "maturity": "experimental",
+  "source": [
+    "./components/ObjectWindow.tsx"
+  ],
+  "design": "./window.design.md",
+  "useWhen": [
+    "操作和检查实际 Space 对象阅读窗"
+  ],
+  "avoidWhen": [
+    "不要把本地演示结果当作原生操作或最终验收"
+  ],
+  "dependencies": [
+    "space/controls"
+  ],
+  "events": [],
+  "states": [
+    {
+      "id": "default",
+      "title": "打开关闭与返回",
+      "description": "打开关闭与返回；真实组件，本地演示",
+      "scene": "default"
+    }
+  ],
+  "interactions": [],
+  "scenes": [
+    {
+      "id": "default",
+      "title": "打开关闭与返回",
+      "description": "打开关闭与返回；真实组件，本地演示",
+      "kind": "interaction"
+    }
+  ],
+  "usage": {
+    "entry": "./space.web.ts",
+    "symbols": [
+      "ObjectWindow"
+    ]
+  }
+}

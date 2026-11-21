@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "system": "inspector",
+  "id": "inspector/tool-playground",
+  "kind": "block",
+  "title": "原创工具试敲",
+  "summary": "斜锤向下、五粒方块与本地缺口，不表示业务成功。",
+  "maturity": "experimental",
+  "source": [
+    "./tool-playground.web.tsx"
+  ],
+  "design": "./tool-playground.design.md",
+  "useWhen": [
+    "斜锤向下、五粒方块与本地缺口，不表示业务成功。"
+  ],
+  "avoidWhen": [
+    "不要将样例结果解释为业务事实或权限。"
+  ],
+  "dependencies": [
+    "inspector/themes"
+  ],
+  "events": [],
+  "states": [],
+  "interactions": [],
+  "scenes": [
+    {
+      "id": "default",
+      "title": "真实资源预览",
+      "description": "斜锤向下、五粒方块与本地缺口，不表示业务成功。",
+      "kind": "experiment",
+      "question": "锤头角度、下敲与碎屑是否有助于确认本地操作？"
+    }
+  ],
+  "usage": {
+    "entry": "../../inspector.web.ts",
+    "symbols": [
+      "ToolPlayground"
+    ]
+  }
+}

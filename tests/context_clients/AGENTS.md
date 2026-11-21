@@ -1,0 +1,5 @@
+# Context client independent acceptance
+
+Read the [assigned Task](../../.controller/context-clients/acceptance.md), [case map](README.md) and [canonical bridge contract](../../.docs/agent-management/web-context.md). This directory owns finite tests, fixture composition and original evidence only. Product source repairs belong to @nadevo (demo) and @zanota (extension); controller is @nube. No delegation.
+
+Mutation destinations must be fresh loopback `LiveFixture` services, never the selected LAN service or a user Agent. Pin accepted r3 candidate hash and exact consumed demo/ZIP bytes. Browser profiles, Xvfb, extra demo runners and native fixture processes are disposable and must be recorded and cleaned; the demo owner's public server remains running. Reuse existing native acceptance instead of replaying its suites. Real unpacked MV3 loading and actual browser APIs are required for extension claims. Preserve failed attempts and distinguish host limitations, driver mistakes and product failures.

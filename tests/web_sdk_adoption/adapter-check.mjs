@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+import {writeFile} from 'node:fs/promises';
+const out=process.argv[2];
+const {outputFiles}=await build({entryPoints:['web/management/api/client.ts'],bundle:true,platform:'browser',format:'esm',write:false});
+const code=outputFiles[0].text;
+globalThis.location={search:'?managementUrl=http://127.0.0.1:1',origin:'http://127.0.0.1:2'};
+let observed, aborted=false;
+globalThis.fetch=async(input,init)=>{observed={url:input.url,body:await input.clone().text(),signal:init.signal};return await new Promise((resolve,reject)=>{init.signal.addEventListener('abort',()=>{aborted=true;reject(init.signal.reason);},{once:true});});};
+const api=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
+const stop=new AbortController();const reading=api.management.describe({signal:stop.signal}).catch(e=>e);
+while(!observed)await new Promise(r=>setTimeout(r,10));stop.abort('acceptance cancellation');await reading;assert(aborted&&observed.signal.aborted);
+globalThis.fetch=async(input)=>{observed={url:input.url,body:await input.clone().text()};const body=JSON.parse(observed.body);return new Response(JSON.stringify({request_id:body.request_id,generation:body.generation,status:'Accepted',result:null,error:null}),{status:202,headers:{'Content-Type':'application/json'}});};
+const body={request_id:'adapter-label-removal',generation:'g',agent:{name:'a',incarnation:'18446744073709551615',stopped_event:null},remove:['example']};
+const result=await api.submitManagement('labels',body);assert.equal(result.request_id,body.request_id);assert(observed.url.includes('/labels'));assert.deepEqual(JSON.parse(observed.body).remove,['example']);assert.equal(JSON.parse(observed.body).set,undefined);
+await writeFile(out,JSON.stringify({status:'passed',cancellation:'caller Request.signal reached global fetch and aborted',removalsOnly:{body:JSON.parse(observed.body),result},boundary:'Actual bundled consumer adapter/public SDK with finite Fetch; native/browser paths separately evidenced'},null,2)+'\n');

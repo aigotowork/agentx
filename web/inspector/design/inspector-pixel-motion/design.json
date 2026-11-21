@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "title": "Agent Inspector · 像素动效实验台",
+  "kind": "prototype",
+  "description": "沿用已接受鲜彩v2与阶梯内切角；四张离线可操作画板评审按钮、工具光标、状态、图表与恢复调查局部动效。动效与声音为提案；默认静音，无业务请求。",
+  "artboards": [
+    {
+      "id": "frames",
+      "title": "01 阶梯框与按钮状态",
+      "file": "react-frames.html",
+      "width": 1280,
+      "height": 900,
+      "group": "像素动效",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "tools",
+      "title": "02 原创工具光标与声音",
+      "file": "react-tools.html",
+      "width": 1280,
+      "height": 900,
+      "group": "像素动效",
+      "x": 1360,
+      "y": 0
+    },
+    {
+      "id": "signals",
+      "title": "03 状态节奏与真实几何",
+      "file": "react-signals.html",
+      "width": 1280,
+      "height": 900,
+      "group": "像素动效",
+      "x": 0,
+      "y": 980
+    },
+    {
+      "id": "investigation",
+      "title": "04 恢复调查局部动效",
+      "file": "react-investigation.html",
+      "width": 1280,
+      "height": 900,
+      "group": "像素动效",
+      "x": 1360,
+      "y": 980
+    }
+  ],
+  "tweaks": [
+    {
+      "id": "press-duration",
+      "label": "按下时长",
+      "var": "--press-ms",
+      "type": "range",
+      "min": 70,
+      "max": 110,
+      "step": 10,
+      "unit": "ms",
+      "default": 90
+    },
+    {
+      "id": "press-depth",
+      "label": "按下位移",
+      "var": "--press-depth",
+      "type": "range",
+      "min": 1,
+      "max": 2,
+      "step": 1,
+      "unit": "px",
+      "default": 2
+    },
+    {
+      "id": "running-rhythm",
+      "label": "运行节奏",
+      "var": "--running-ms",
+      "type": "range",
+      "min": 1000,
+      "max": 1800,
+      "step": 100,
+      "unit": "ms",
+      "default": 1200
+    },
+    {
+      "id": "chart-reveal",
+      "label": "图表显露",
+      "var": "--reveal-ms",
+      "type": "range",
+      "min": 100,
+      "max": 260,
+      "step": 20,
+      "unit": "ms",
+      "default": 180
+    }
+  ]
+}

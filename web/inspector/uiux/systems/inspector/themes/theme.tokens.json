@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "system": "inspector",
+  "tokens": {
+    "base.accent": {
+      "label": "基础强调色",
+      "type": "color",
+      "value": "#315BFF",
+      "group": "foundation"
+    },
+    "accent": {
+      "label": "强调色",
+      "type": "color",
+      "value": {
+        "ref": "base.accent"
+      },
+      "group": "semantic"
+    },
+    "step": {
+      "label": "阶梯切角",
+      "type": "dimension",
+      "unit": "px",
+      "value": 4,
+      "min": 2,
+      "max": 10,
+      "step": 2,
+      "group": "component"
+    },
+    "shadow": {
+      "label": "硬阴影",
+      "type": "dimension",
+      "unit": "px",
+      "value": 2,
+      "min": 0,
+      "max": 6,
+      "step": 1,
+      "group": "component"
+    },
+    "press": {
+      "label": "按下时长",
+      "type": "duration",
+      "unit": "ms",
+      "value": 90,
+      "min": 70,
+      "max": 110,
+      "step": 1,
+      "group": "component"
+    },
+    "icon": {
+      "label": "图标微动",
+      "type": "duration",
+      "unit": "ms",
+      "value": 240,
+      "min": 120,
+      "max": 400,
+      "step": 1,
+      "group": "component"
+    },
+    "pressDepth": {
+      "label": "按下距离",
+      "type": "dimension",
+      "unit": "px",
+      "value": 2,
+      "min": 1,
+      "max": 2,
+      "step": 1,
+      "group": "component"
+    },
+    "rhythm": {
+      "label": "状态节奏",
+      "type": "duration",
+      "unit": "ms",
+      "value": 1200,
+      "min": 1000,
+      "max": 1800,
+      "step": 1,
+      "group": "component"
+    },
+    "chart": {
+      "label": "图表时长",
+      "type": "duration",
+      "unit": "ms",
+      "value": 180,
+      "min": 100,
+      "max": 260,
+      "step": 1,
+      "group": "component"
+    }
+  },
+  "modes": {
+    "pixel.light": {
+      "label": "像素 · 浅色",
+      "values": {}
+    },
+    "pixel.dark": {
+      "label": "像素 · 深色",
+      "values": {
+        "base.accent": "#7096FF"
+      }
+    },
+    "original.light": {
+      "label": "原版 · 浅色",
+      "values": {
+        "base.accent": "#20744A",
+        "step": 8,
+        "shadow": 0
+      }
+    },
+    "original.dark": {
+      "label": "原版 · 深色",
+      "values": {
+        "base.accent": "#20744A",
+        "step": 8,
+        "shadow": 0
+      }
+    }
+  }
+}

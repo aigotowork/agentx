@@ -1,0 +1,9 @@
+schema: package
+description: Cloudflare 官方技能、工具选择和场景路由。
+artifacts:
+  - {kind: guidance, path: ./AGENTS.md, description: 按真实工作情境选择官方技能与执行方式。}
+  - {kind: documentation, path: ./README.md, description: 领域使用及上游快照维护。}
+  - {kind: scenario, path: ./operations.md, description: CLI、API、认证、部署与诊断。}
+  - {kind: reference, path: ./refs/agent-integrations.md, description: 明确选择 MCP 接入时才读取的可选集成说明。}
+  - {kind: skills, path: ./skills, description: 官方 Skill 原文、references、scripts 和许可证。}
+  - {kind: provenance, path: ./sources.json, description: 上游固定提交与下载内容身份。}

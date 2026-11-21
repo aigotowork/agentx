@@ -1,0 +1,84 @@
+---
+schema: task
+status: completed
+agent: context-demo-nadevo
+description: Build and host the LAN business example with a bottom-right floating AgentX conversation.
+---
+
+# Floating demo assignment
+
+## Current correction supersedes earlier completion
+
+The user rejected separate compact UI and duplicated wrapper member/attachment controls. Reopened narrowly for explicit correction: coordinate [canonical Space responsive owner](space-responsive.md), embed the same full Space with scene/list switch and native member navigation, remove duplicate target picker/manual attachment intake and reader-only query mode. Keep floating launch/close and page-context capture; service configuration remains disclosed. Do not lose captured context silently when native Space selection changes; establish actual current-target bridge contract with the owning Space professional rather than retaining duplicate selection just to satisfy old addContext shape. Original demo evidence is historical for the rejected composition, reusable only for unaffected semantics. Remove obsolete served UI/source/artifacts within your owned scope; preserve native service and unrelated user resources. Complete affected acceptance then update the retained demo server once via tracked ownership, not a new competing service. No new feature or broad cleanup.
+
+## Current corrected outcome
+
+After @rerove #30163 accepted r1 adoption and 14-asset/360px/desktop read-only smoke, corrected wrapper source was promoted from staging to canonical `web/context-demo/public/`; staging and rejected selector/discovery/manual-attachment paths were removed. The retained user-facing demo is **http://192.168.2.178:38024/**, PID 1682783 (current exact-package update; see below), with [canonical launch](../../web/context-demo/evidence/launch-canonical.json), [source hashes](../../web/context-demo/evidence/canonical-source.json) and [read-only smoke](../../web/context-demo/evidence/canonical-smoke.json). The native :38023 PID 1563302 and scope/generation were preserved after the separately owned r1 adoption.
+
+The demo exposes the same full Space UI, with parent-only order context capture and floating lifetime. Public extension download now serves independently accepted 1.2.1 after real browser acceptance #30609 and controller release #30632; [current download](http://192.168.2.178:38024/downloads/agentx-browser-context.zip) is 17,042 bytes, SHA-256 `495717f7044b023b0195fee1bfc81871a2bd921a8e3593560f2fad47e52d734e`. Historical v1 receipts/tests remain under evidence and [historical provenance](../../web/context-demo/historical-v1.md), not as a maintained UI. Four canonical server/bridge checks and browser syntax checks pass. Independent actual extension consumer acceptance has passed for 1.2.1; final independent read-only LAN binding passed #30733. No demo-native restart/build or live Agent send was performed.
+
+## Historical v1 outcome — superseded
+
+Completed scoped demo contribution: **http://192.168.2.178:38024/**, owned detached PID 1278016 intentionally retained for users. [Design/usage](../../web/context-demo/README.md), [launch receipt](../../web/context-demo/evidence/launch.json), [independent demo pass](../../tests/context_clients/evidence/demo-01/demo-result.json) and [independent exact ZIP download match](../../.artifacts/context-clients/download-check.json) establish the runnable/hosted outcome. Source exactly matches independently tested bytes. No demo defects remain. Parent Delivery/packaged-extension real-host judgment remain @nube/@lodize/@zanota-owned. Ordinary follow-up download linkage repairs remain with @nadevo if a successor package is requested; no additional authorization needed.
+
+## Assignment boundary
+
+Own the example application part of [Delivery](delivery.md), under [Proposal](../../.docs/proposals/context-clients.md) and [feature rules](AGENTS.md). Qualified coder professional design/implementation; no delegation. Write only `web/context-demo/**`, this Task and necessary own artifacts/launch receipts. Controller owns root/Delivery; no native/Agent Space/extension edits. Preserve unrelated workspace edits and services.
+
+Create a coherent, polished but compact Chinese business scenario (for example support tickets/order diagnostics) with meaningful information users can ask about, page selection and contextual ask buttons. Floating launch control at bottom-right expands to an overlay with existing AgentX `/space/` iframe; it is not a permanent inline column. Retain iframe/draft when collapsed, restore focus on close, support Escape, sensible width/height on desktop and narrow screens. Expose title/text/source context and image/file attachment intake without forcing manual protocol entry. No simulated AI answer. Let real selected Agent handle the deliberate send in child.
+
+Record scenario/layout/ownership, target discovery, CORS boundary, state/lifetime/error choices in module README/design before behavior. Build the public skeleton first. Service origin defaults to selected LAN AgentX but is configurable; choose current exact target using real descriptor/member reads, not user-authored identity JSON. Reuse accepted canonical bridge. Handle ready versus data-loaded and recoverable unavailable/stale targets. A minimal same-host read-only discovery adapter in this example runner is allowed if needed; constrain it to configured AgentX origin and finite needed GET endpoints, never unrestricted proxy or mutations. Do not alter daemon CORS merely for a demo.
+
+Use simple existing Node/static/browser facilities; no heavyweight app framework or new dependency without concrete need. Main entry, source AGENTS/README and startup commands must make reuse in another site understandable. Coordinate extension owner directly for final ZIP metadata/download URL; provide a downloads entry without exposing whole repo or user data. Demo runner may serve one configured exact package artifact. Do not wait on extension completion to implement the main scenario.
+
+Run focused development checks appropriate to boundaries. Independent consumer executor owns actual end-to-end browser acceptance. Hand them runnable commands, fixtures/selectors and behavior. Final public hosting is authorized: choose/check a free LAN non-default port (suggest 38024, fall back if occupied), start only owned demo server persistently, record command/PID/log/actual LAN URL and read-only smoke. It must remain accessible after agent exits. Do not restart AgentX or send to real user Agents automatically. Read-only live target discovery is permitted; mutation tests use disposable fixture.
+
+Completion requires useful actual LAN URL, working overlay/context journey, clear usage/source docs, linked/downloadable actual extension ZIP once provided, and clean handoff of retained user-facing process. Ordinary repairs remain assigned through independent acceptance; no unnecessary repeated builds/suites. Report design readiness/artifact/real blockers/completion to @nube and acceptance owner.
+
+## Owned working state
+
+Owner: @nadevo (`context-demo-nadevo`), controller @nube. Design and source map: [module README](../../web/context-demo/README.md). Independent consumer: @lodize; extension package: @zanota. Initial live descriptor read succeeded; no mutations or listener changes. Implementation uses the existing canonical bridge and only two native discovery GET routes.
+
+## Runnable handoff and authorized hosting
+
+2026-11-15: design/public skeleton then complete dependency-free implementation delivered under `web/context-demo/`. Current LAN URL: **http://192.168.2.178:38024/**. Owned detached Node PID 1278016; [launch receipt](../../web/context-demo/evidence/launch.json) records command/env/log/process start ticks. Existing :38023 PID 1149566 retained unchanged. [Read-only LAN smoke](../../web/context-demo/evidence/lan-smoke.json) returned 28 sendable exact current targets and complete discovery, with no live mutation. Download entry serves only configured extension candidate ZIP; served digest matches @zanota receipt. Final package identity remains subject to independent acceptance/ordinary repairs.
+
+Focused development checks: 3/3 `node --test web/context-demo/server.test.mjs` cases passed (finite exact discovery/GET boundaries, changed-generation rejection, exact ZIP/no directory exposure); `node --check` passed on browser modules. No native build or restart. @lodize received runnable fixture commands, selectors, behavior/state constraints and source docs. Remain assigned for independent acceptance and ordinary repairs. Parent Escape closes; key events inside cross-origin child do not bubble, so the always-reachable parent close remains the escape path there; no native change made.
+
+## Independent demo acceptance consumed
+
+@lodize reports and records **pass** in [demo-01 result](../../tests/context_clients/evidence/demo-01/demo-result.json), [explicit send/native receipt](../../tests/context_clients/evidence/demo-01/CC02-deliberate.json) and its native outcome. Scope: actual Linux Chrome/disposable accepted-r3 fixture, retained iframe/draft/focus, parent Escape/reopen, page and real image/file draft addition, deliberate exact Agent send with Succeeded receipt, 390px control geometry and failed discovery. Disposable runtime resources cleaned by acceptance owner. [source receipt](../../web/context-demo/evidence/source.json) confirms all seven current served-source hashes exactly match the independently tested bytes. No product repair was required. Physical clipboard/drop and all stale-target variants remain outside this finite execution.
+
+Author layout observation confirms desktop information hierarchy and 390px overlay bounds/focus with no selected live target or mutations; see [layout evidence](../../web/context-demo/evidence/layout.json). A capture-harness native-option visibility wait was corrected to attachment; no app code change or repeated product suite. The extension owner subsequently confirmed final exact LAN download binding in [download-check.json](../../.artifacts/context-clients/download-check.json): the configured versioned ZIP bytes match the exposed route. Packaged-extension real-host acceptance remains owned by @lodize/@zanota, separately from this passed demo. Original demo process remains retained.
+
+## Correction design and next dependency
+
+@nadevo received and acknowledged controller request #29315. [Current module design](../../web/context-demo/README.md) records parent/Space ownership, exact selected-context requirements, source removal inventory and retained-server adoption boundary. Original v1 instructions moved to [historical provenance](../../web/context-demo/historical-v1.md), explicitly rejected as current UX. No old-UX validation repeated; no live restart/native/DB changes. Native busy remains separately owned.
+
+Next finite implementation dependency: actual bound Space professional publishes child-selected exact target/context contract, including ready versus data-loaded, selection read/add race fencing, result target identity and captured-content retention. Parent will remove discovery/member selector/manual attachments, embed the full `/space/` once without reader-only parameters, and retain only page capture and float lifetime. Since the retained server serves source files directly, preparation must not partially update `public/`; complete accepted correction then adopt coherently once under tracked ownership.
+
+Unpublished skeleton now materialized at `web/context-demo/correction/`: host server without obsolete discovery, complete-Space iframe shell without selector/files, retained order scenario and narrowed styles, explicit parent bridge API skeleton pending canonical wire. This is a temporary staged replacement, not a runnable/final alternate UI or live service. It will be adopted coherently then removed once the owning bridge and affected acceptance are ready.
+
+## Canonical bridge received and corrected source ready
+
+@rerove #29455 published getTarget/target selected exact identity+opaque selectionRevision, fenced addContext admission/precommit and target+revision result; #29492 confirms no-selection retains capture and fresh binding requires deliberate user action. The unpublished `web/context-demo/correction/` now implements this wire and full `/space/` host, with no native-read adapter/member selector/manual attachment controls or compact query. Parent captures immutable page contents, reads binding explicitly, displays a receipt (not a navigator), adds only same target/revision, and retains contents on selection-change/unavailable/error without retarget or retry. Public source remains historical, not partially updated.
+
+Four focused staged checks passed (GET-only host without upstream discovery, exact ZIP boundaries, exact target/revision/source/correlation, unavailable/change/mismatched-result failures); browser modules syntax checked. Final tiny lifetime/focus guards cover dormant about:blank and close during disabled capture; affected bridge checks 2/2 passed and app syntax passed before handoff. Actual corrected consumer requires @rerove canonical Space candidate and @lodize execution. Current README includes runnable fixture command and corrected selectors.
+
+## Pinned corrected consumer acceptance handoff
+
+Consumed @rerove #29763 sole integrated `.bin/agentx-space-responsive-r1` (`agentx 0.7.31`, SHA-256 `5e6843eedb521dfa5bfbb2cde983bc7ed8e78cf61ee2a9f5098a5600a36064e5`) and @zanota 1.1.0 ZIP. [Corrected wrapper source receipt](../../web/context-demo/evidence/correction-source.json) pins seven actual staged served files, candidate and package for @lodize. No duplicate build or live adoption performed. Await finite actual full-Space/selected-context acceptance, then promote/clean once and replace only tracked retained demo with 1.1.0 configured package.
+
+## Canonical promotion completed
+
+After @rerove #30163 accepted r1 adoption and 14-asset/360px/desktop read-only smoke, promoted `web/context-demo` from correction staging to the canonical full-Space wrapper and removed the staging tree, old parent selector/discovery proxy/manual attachment paths and old 1.0.0 ZIP/unpacked package. Replaced only identity-verified owned demo PID 1278016 (start tick 978292288) with PID 1585864 (start tick 978652692); [canonical receipt](../../web/context-demo/evidence/launch-canonical.json). Native :38023 PID 1563302 was not touched by this owner.
+
+[Canonical smoke](../../web/context-demo/evidence/canonical-smoke.json): demo HTTP 200, configured origin and scope/generation match, full `/space/` iframe present, old parent selector absent, extension config null, download route 404, old PID absent, native PID present. Private 1.1.0 ZIP remains unadvertised for open extension acceptance. Historical v1 receipts/source remain under evidence and `historical-v1.md`; no rejected implementation is a maintained path.
+
+## Accepted 1.2.1 final download release
+
+Consumed independent real action/sidePanel/capture/File/deliberate native-send acceptance #30609, package owner metadata #30625 and controller release #30632. Added one bounded exact-package route and config metadata to the canonical runner; it reads immutable bytes once and validates SHA-256/receipt size/version before serving. Three affected host checks pass, including invalid-digest rejection and no old-version/directory route. Public wrapper files remain byte-identical to the accepted canonical composition; [source receipt](../../web/context-demo/evidence/download-121-source.json). No bridge/native/full-suite replay.
+
+Identity-verified owned PID 1585864/start 978652692 stopped, replaced by PID **1682783/start 978765996**, retained on :38024. [Current launch receipt](../../web/context-demo/evidence/launch-download-121.json) records exact command/package/log and native preservation. [Actual LAN download smoke](../../web/context-demo/evidence/download-121-smoke.json): GET 200, exact 17,042 bytes and accepted digest, filename `agentx-browser-context-1.2.1.zip`. Native PID 1563302/start 978621828 untouched; no live sends. Chinese README now explains download/unpacked installation, actual toolbar action, full Space selection and deliberate capture/add/send. Final read-only binding requested directly from @lodize; obsolete package cleanup owned and reported by @zanota #30658.
+
+Final independent binding #30733 **PASS**: [final-live-binding-121](../../tests/context_clients/evidence/final-live-binding-121.json) and [package-final-121](../../tests/context_clients/evidence/package-final-121.json) verify actual GET 200/exact package/config, six served wrapper assets matching accepted corrected-demo source, unchanged native/demo process identities and clean disposable fixture roots. Demo contribution complete with retained process; no remaining demo defect or download gap.

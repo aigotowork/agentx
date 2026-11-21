@@ -1,0 +1,1537 @@
+{
+  "components": {
+    "schemas": {
+      "AgentPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AgentView"
+            },
+            "type": "array"
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next"
+        ],
+        "type": "object"
+      },
+      "AgentRegistration": {
+        "additionalProperties": false,
+        "properties": {
+          "generation": {
+            "type": "string"
+          },
+          "host": {
+            "type": "string"
+          },
+          "incarnation": {
+            "type": "string"
+          },
+          "installation_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "generation",
+          "installation_id",
+          "host",
+          "incarnation"
+        ],
+        "type": "object"
+      },
+      "AgentView": {
+        "additionalProperties": false,
+        "properties": {
+          "host": {
+            "type": "string"
+          },
+          "incarnation": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "host",
+          "incarnation"
+        ],
+        "type": "object"
+      },
+      "ClaimInbox": {
+        "additionalProperties": false,
+        "properties": {
+          "agent": {
+            "$ref": "#/components/schemas/AgentView"
+          },
+          "claim_id": {
+            "type": "string"
+          },
+          "generation": {
+            "type": "string"
+          },
+          "installation_id": {
+            "type": "string"
+          },
+          "limit": {
+            "format": "u-int32",
+            "maximum": 100,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "wait_ms": {
+            "format": "u-int32",
+            "maximum": 20000,
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "generation",
+          "installation_id",
+          "agent",
+          "claim_id"
+        ],
+        "type": "object"
+      },
+      "ConfirmInbox": {
+        "additionalProperties": false,
+        "properties": {
+          "agent": {
+            "$ref": "#/components/schemas/AgentView"
+          },
+          "claim_id": {
+            "type": "string"
+          },
+          "generation": {
+            "type": "string"
+          },
+          "installation_id": {
+            "type": "string"
+          },
+          "message_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "generation",
+          "installation_id",
+          "agent",
+          "claim_id",
+          "message_ids"
+        ],
+        "type": "object"
+      },
+      "ControlCommand": {
+        "oneOf": [
+          {
+            "properties": {
+              "initial_prompt": {
+                "maxLength": 16384,
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "kind": {
+                "enum": [
+                  "launch"
+                ],
+                "type": "string"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "role": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "workspace": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "workspace",
+              "kind"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "incarnation": {
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "stop"
+                ],
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "incarnation",
+              "kind"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "ControlOutcome": {
+        "oneOf": [
+          {
+            "properties": {
+              "agent": {
+                "$ref": "#/components/schemas/AgentView"
+              },
+              "status": {
+                "enum": [
+                  "succeeded"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "agent",
+              "status"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "failed"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "status"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "uncertain"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "status"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "ControlPoll": {
+        "properties": {
+          "operation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ControlReceipt"
+              }
+            ]
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "type": "object"
+      },
+      "ControlReceipt": {
+        "properties": {
+          "claim_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "command": {
+            "$ref": "#/components/schemas/ControlCommand"
+          },
+          "generation": {
+            "type": "string"
+          },
+          "host": {
+            "type": "string"
+          },
+          "installation_id": {
+            "type": "string"
+          },
+          "outcome": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ControlOutcome"
+              }
+            ]
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ControlStatus"
+          }
+        },
+        "required": [
+          "generation",
+          "request_id",
+          "host",
+          "installation_id",
+          "command",
+          "status",
+          "claim_id",
+          "outcome"
+        ],
+        "type": "object"
+      },
+      "ControlStatus": {
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "failed",
+          "uncertain"
+        ],
+        "type": "string"
+      },
+      "Descriptor": {
+        "properties": {
+          "generation": {
+            "type": "string"
+          },
+          "protocol_version": {
+            "format": "u-int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "scope_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "scope_id",
+          "generation",
+          "protocol_version"
+        ],
+        "type": "object"
+      },
+      "HostCapabilities": {
+        "properties": {
+          "generation": {
+            "type": "string"
+          },
+          "host": {
+            "type": "string"
+          },
+          "installation_id": {
+            "type": "string"
+          },
+          "observed_at": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "online": {
+            "type": "boolean"
+          },
+          "workspaces": {
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceCapability"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "generation",
+          "host",
+          "installation_id",
+          "online",
+          "observed_at",
+          "workspaces"
+        ],
+        "type": "object"
+      },
+      "HostPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/HostView"
+            },
+            "type": "array"
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next"
+        ],
+        "type": "object"
+      },
+      "HostRegistration": {
+        "additionalProperties": false,
+        "properties": {
+          "generation": {
+            "type": "string"
+          },
+          "installation_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "generation",
+          "installation_id"
+        ],
+        "type": "object"
+      },
+      "HostView": {
+        "properties": {
+          "last_seen": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "online": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "last_seen",
+          "online"
+        ],
+        "type": "object"
+      },
+      "InboxBatch": {
+        "properties": {
+          "claim_id": {
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MessageView"
+            },
+            "type": "array"
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "claim_id",
+          "items",
+          "next"
+        ],
+        "type": "object"
+      },
+      "InboxConfirmation": {
+        "properties": {
+          "confirmed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "confirmed"
+        ],
+        "type": "object"
+      },
+      "Intent": {
+        "enum": [
+          "request",
+          "inform",
+          "ack"
+        ],
+        "type": "string"
+      },
+      "MessageOperation": {
+        "properties": {
+          "message": {
+            "$ref": "#/components/schemas/MessageView"
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OperationStatus"
+          }
+        },
+        "required": [
+          "request_id",
+          "status",
+          "message"
+        ],
+        "type": "object"
+      },
+      "MessageView": {
+        "properties": {
+          "body": {
+            "type": "string"
+          },
+          "created_at": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "from": {
+            "$ref": "#/components/schemas/AgentView"
+          },
+          "id": {
+            "type": "string"
+          },
+          "intent": {
+            "$ref": "#/components/schemas/Intent"
+          },
+          "reply_to": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "thread": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "to": {
+            "$ref": "#/components/schemas/AgentView"
+          }
+        },
+        "required": [
+          "id",
+          "from",
+          "to",
+          "body",
+          "intent",
+          "reply_to",
+          "thread",
+          "created_at"
+        ],
+        "type": "object"
+      },
+      "OperationStatus": {
+        "enum": [
+          "accepted",
+          "claimed",
+          "confirmed",
+          "undeliverable"
+        ],
+        "type": "string"
+      },
+      "PollControlOperation": {
+        "additionalProperties": false,
+        "properties": {
+          "generation": {
+            "type": "string"
+          },
+          "installation_id": {
+            "type": "string"
+          },
+          "lease_id": {
+            "type": "string"
+          },
+          "wait_ms": {
+            "format": "u-int32",
+            "maximum": 10000,
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "generation",
+          "installation_id",
+          "lease_id"
+        ],
+        "type": "object"
+      },
+      "RecoverInbox": {
+        "additionalProperties": false,
+        "properties": {
+          "agent": {
+            "$ref": "#/components/schemas/AgentView"
+          },
+          "claim_id": {
+            "type": "string"
+          },
+          "generation": {
+            "type": "string"
+          },
+          "installation_id": {
+            "type": "string"
+          },
+          "release": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "generation",
+          "installation_id",
+          "agent",
+          "claim_id"
+        ],
+        "type": "object"
+      },
+      "RenewControlLease": {
+        "additionalProperties": false,
+        "properties": {
+          "generation": {
+            "type": "string"
+          },
+          "installation_id": {
+            "type": "string"
+          },
+          "lease_id": {
+            "type": "string"
+          },
+          "previous_lease_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workspaces": {
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceCapability"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "generation",
+          "installation_id",
+          "lease_id",
+          "workspaces"
+        ],
+        "type": "object"
+      },
+      "ReportControlOperation": {
+        "additionalProperties": false,
+        "properties": {
+          "claim_id": {
+            "type": "string"
+          },
+          "generation": {
+            "type": "string"
+          },
+          "installation_id": {
+            "type": "string"
+          },
+          "lease_id": {
+            "type": "string"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/ControlOutcome"
+          }
+        },
+        "required": [
+          "generation",
+          "installation_id",
+          "lease_id",
+          "claim_id",
+          "outcome"
+        ],
+        "type": "object"
+      },
+      "RoleCapability": {
+        "additionalProperties": false,
+        "properties": {
+          "available": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "available",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "ScopeError": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
+      "SendMessage": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "type": "string"
+          },
+          "from": {
+            "$ref": "#/components/schemas/AgentView"
+          },
+          "generation": {
+            "type": "string"
+          },
+          "installation_id": {
+            "type": "string"
+          },
+          "intent": {
+            "$ref": "#/components/schemas/Intent"
+          },
+          "reply_to": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "thread": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "to": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "generation",
+          "installation_id",
+          "request_id",
+          "from",
+          "to",
+          "body",
+          "intent"
+        ],
+        "type": "object"
+      },
+      "WorkspaceCapability": {
+        "additionalProperties": false,
+        "properties": {
+          "alias": {
+            "type": "string"
+          },
+          "default_available": {
+            "type": "boolean"
+          },
+          "default_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/RoleCapability"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "alias",
+          "default_available",
+          "default_reason",
+          "roles"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "scopeBearer": {
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "contact": {
+      "name": "agentx"
+    },
+    "description": "Base: configured scope URL plus /api/v1. All calls require the scope Bearer. Delivery is confirmed by the exact recipient host after Provider evidence. Opaque identifiers and decimal string message IDs remain strings.",
+    "license": {
+      "identifier": "MIT",
+      "name": "MIT"
+    },
+    "title": "AgentX Scope Communication",
+    "version": "1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/agents": {
+      "get": {
+        "operationId": "scopeListAgents",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "format": "u-int32",
+              "maximum": 200,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "host",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentPage"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScopeError"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "scopeBearer": []
+          }
+        ],
+        "tags": []
+      }
+    },
+    "/agents/{name}": {
+      "put": {
+        "operationId": "scopeRegisterAgent",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRegistration"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentView"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScopeError"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "scopeBearer": []
+          }
+        ],
+        "tags": []
+      }
+    },
+    "/agents/{name}/retire": {
+      "post": {
+        "operationId": "scopeRetireAgent",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRegistration"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentView"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScopeError"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "scopeBearer": []
+          }
+        ],
+        "tags": []
+      }
+    },
+    "/descriptor": {
+      "get": {
+        "operationId": "scopeDescribe",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Descriptor"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScopeError"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "scopeBearer": []
+          }
+        ],
+        "tags": []
+      }
+    },
+    "/hosts": {
+      "get": {
+        "operationId": "scopeListHosts",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "format": "u-int32",
+              "maximum": 200,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostPage"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScopeError"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "scopeBearer": []
+          }
+        ],
+        "tags": []
+      }
+    },
+    "/hosts/{host}": {
+      "put": {
+        "operationId": "scopeRenewHost",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "host",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HostRegistration"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostView"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScopeError"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "scopeBearer": []
+          }
+        ],
+        "tags": []
+      }
+    },
+    "/hosts/{host}/control/lease": {
+      "put": {
+        "operationId": "scopeRenewControlLease",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "host",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenewControlLease"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostCapabilities"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScopeError"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "scopeBearer": []
+          }
+        ],
+        "tags": []
+      }
+    },
+    "/hosts/{host}/control/operations/{request_id}/report": {
+      "post": {
+        "operationId": "scopeReportControlOperation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "host",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportControlOperation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ControlReceipt"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScopeError"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "scopeBearer": []
+          }
+        ],
+        "tags": []
+      }
+    },
+    "/hosts/{host}/control/poll": {
+      "post": {
+        "operationId": "scopePollControlOperation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "host",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PollControlOperation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ControlPoll"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScopeError"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "scopeBearer": []
+          }
+        ],
+        "tags": []
+      }
+    },
+    "/inbox/claim": {
+      "post": {
+        "operationId": "scopeClaimInbox",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimInbox"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxBatch"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScopeError"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "scopeBearer": []
+          }
+        ],
+        "tags": []
+      }
+    },
+    "/inbox/confirm": {
+      "post": {
+        "operationId": "scopeConfirmInbox",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmInbox"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxConfirmation"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScopeError"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "scopeBearer": []
+          }
+        ],
+        "tags": []
+      }
+    },
+    "/inbox/recover": {
+      "post": {
+        "operationId": "scopeRecoverInbox",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecoverInbox"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxBatch"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScopeError"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "scopeBearer": []
+          }
+        ],
+        "tags": []
+      }
+    },
+    "/messages": {
+      "post": {
+        "operationId": "scopeSendMessage",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMessage"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageView"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScopeError"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "scopeBearer": []
+          }
+        ],
+        "tags": []
+      }
+    },
+    "/operations/{request_id}": {
+      "get": {
+        "operationId": "scopeGetOperation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOperation"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScopeError"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "scopeBearer": []
+          }
+        ],
+        "tags": []
+      }
+    }
+  },
+  "x-agentx-codec": {
+    "identities": "Scope generation, participant incarnation, request_id, claim_id and message IDs remain strings.",
+    "integerFormats": {
+      "int64": "bigint",
+      "u-int32": "number"
+    },
+    "wire": "ordinary-json-v1"
+  }
+}

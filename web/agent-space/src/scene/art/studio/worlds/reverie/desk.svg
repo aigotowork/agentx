@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="86" height="68" viewBox="0 0 86 68">
+  <defs><linearGradient id="shell" x2="25%" y2="100%"><stop stop-color="#fff0ca"/><stop offset=".24" stop-color="#f2c6b3"/><stop offset=".56" stop-color="#d694a9"/><stop offset="1" stop-color="#9a668c"/></linearGradient><linearGradient id="glass" x2="35%" y2="100%"><stop stop-color="#a5c6de"/><stop offset="1" stop-color="#56729e"/></linearGradient></defs>
+  <g stroke="#33294f" stroke-width="1.5" stroke-linejoin="round">
+    <path d="M12 40h7l-1 21-5 5H7l5-7zm55 0h7v18l5 8h-7l-5-5z" fill="#ad7294"/>
+    <path d="M4 33q3-7 14-8h51q10 1 13 8l-5 14q-8 9-33 7-26 2-36-7z" fill="url(#shell)"/>
+    <path d="M5 34q32-8 76 0l-2 6q-35-5-73 0z" fill="#f8d9bd"/>
+    <path d="M20 27q3-11 15-14 17-4 28 7l3 8q-25 6-46-1z" fill="url(#glass)"/>
+    <path d="M22 29q2-8 9-10 8-2 13 2l-2 7z" fill="#fff0d1"/>
+    <path d="m50 23 10-1 4 5-13 2z" fill="#9ad9cd"/>
+  </g>
+  <path d="M15 44q13 4 26 3t28-4m-52 5 13 3m23 0 11-3" fill="none" stroke="#ffe0c7" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="m43 43 2 2-2 2-2-2z" fill="#fbefbd"/>
+</svg>

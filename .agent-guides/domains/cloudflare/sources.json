@@ -1,0 +1,100 @@
+{
+  "repository": "https://github.com/cloudflare/skills",
+  "revision": "626547c06881a20b3322bdc2ed6e6451b33a4fb6",
+  "retrieved_at": "2026-09-29",
+  "setup_instructions": "https://developers.cloudflare.com/agent-setup/prompt.md",
+  "license": {
+    "spdx": "Apache-2.0",
+    "upstream_path": "LICENSE",
+    "local_path": "skills/LICENSE",
+    "sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd"
+  },
+  "adoption": "All upstream skills directories copied unchanged, including resources. Plugin/MCP registration and optional external skill dependencies are not included. Local routing lives outside skills/.",
+  "sha256_tree_format": "SHA-256 of UTF-8 compact JSON array sorted by relative POSIX path. Each object has keys path then sha256; sha256 hashes the raw file bytes. JSON uses ensure_ascii=false and separators comma/colon without spaces.",
+  "skills": [
+    {
+      "name": "agents-sdk",
+      "upstream_path": "skills/agents-sdk",
+      "files": 20,
+      "sha256_tree": "9c200d8bd80091437eff616806a3f3f821f5e73a7bc5751869e06690ada25168"
+    },
+    {
+      "name": "cloudflare",
+      "upstream_path": "skills/cloudflare",
+      "files": 289,
+      "sha256_tree": "a38acd0c8af491d4d0787218ecc594bff2810d67616782af3b23ccc39578e6b6"
+    },
+    {
+      "name": "cloudflare-email-service",
+      "upstream_path": "skills/cloudflare-email-service",
+      "files": 6,
+      "sha256_tree": "300a1d22b14c37e3acf6915ab5ec94a005e95768909cffcf97195df46d6893c7"
+    },
+    {
+      "name": "cloudflare-one",
+      "upstream_path": "skills/cloudflare-one",
+      "files": 1,
+      "sha256_tree": "45a404b903fb4521ab43460382f88a558c9fd2609468cae8ba18b3079b2a9e6f"
+    },
+    {
+      "name": "cloudflare-one-migrations",
+      "upstream_path": "skills/cloudflare-one-migrations",
+      "files": 1,
+      "sha256_tree": "78350e5349ae4300c4567eea470d1dd142baaff612b8ea774783650835f91b93"
+    },
+    {
+      "name": "durable-objects",
+      "upstream_path": "skills/durable-objects",
+      "files": 4,
+      "sha256_tree": "1226b76dca98b350945196cad8f9b5ee25b151fca65f75500b8a39a4c2877a08"
+    },
+    {
+      "name": "nextjs-on-cloudflare",
+      "upstream_path": "skills/nextjs-on-cloudflare",
+      "files": 1,
+      "sha256_tree": "795af0b7c16078e4b7f758216980ea50cdc9c1c12c171f163af9897cece12fab"
+    },
+    {
+      "name": "sandbox-migrate-to-next",
+      "upstream_path": "skills/sandbox-migrate-to-next",
+      "files": 1,
+      "sha256_tree": "5f62d1d94ce5c5c28f708126bd390f6a8f6a3d505fcab4a818aab65ff18042c2"
+    },
+    {
+      "name": "sandbox-next",
+      "upstream_path": "skills/sandbox-next",
+      "files": 3,
+      "sha256_tree": "504ce5bb63d0a635071b38b6a6b92178d8fd1f7875812c07eb311239439a67e0"
+    },
+    {
+      "name": "sandbox-stable",
+      "upstream_path": "skills/sandbox-stable",
+      "files": 1,
+      "sha256_tree": "dc1a528cea95457b2e43e765fbf79f33294dcae3b0b68026a538a4d9e1da6411"
+    },
+    {
+      "name": "turnstile-spin",
+      "upstream_path": "skills/turnstile-spin",
+      "files": 13,
+      "sha256_tree": "0264b01b06000dd45745651f2d30b3855ea004324e2ec6a14f56d53881132e80"
+    },
+    {
+      "name": "web-perf",
+      "upstream_path": "skills/web-perf",
+      "files": 1,
+      "sha256_tree": "a7b7c45e8253acb46ed9f89c7969629df3720788f2e80723dfe2568348cbbed6"
+    },
+    {
+      "name": "workers-best-practices",
+      "upstream_path": "skills/workers-best-practices",
+      "files": 4,
+      "sha256_tree": "0aa2751ed2a35bd679f3197032c38fc8b7c92e30097a80aaa1d8adff48124087"
+    },
+    {
+      "name": "wrangler",
+      "upstream_path": "skills/wrangler",
+      "files": 1,
+      "sha256_tree": "d47a5afbbfadb8f99cde737aa0ec97fce3447740edcfbeed3200a54cb6e4cc3f"
+    }
+  ]
+}

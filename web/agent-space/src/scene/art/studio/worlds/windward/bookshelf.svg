@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="56" height="64" viewBox="0 0 56 64">
+  <title>Library of cloud charts and rolled routes</title>
+  <defs>
+<linearGradient id="wood" x2=".9" y2="1"><stop offset="0.000" stop-color="#c28a55"/><stop offset="0.500" stop-color="#a77048"/><stop offset="1.000" stop-color="#6d493b"/></linearGradient>
+  </defs>
+<ellipse cx="30" cy="61" rx="24" ry="3" fill="#213c40" opacity=".18"/><ellipse cx="27" cy="60.3" rx="19.0" ry="1.7" fill="#283737" opacity=".14"/>
+
+<path d="M7 5 12 2h38l4 3v54l-4 3-4-2H10l-3 2-4-2V8z" fill="#4b433b" stroke="#473c39"/>
+<path d="M5 7h43v51H5z" fill="url(#wood)"/>
+<path d="M50 6l3-1v54l-4 3z" fill="#725442"/>
+<path d="M9 10h36v13H9zm0 17h36v13H9zm0 17h36v11H9z" fill="#3c4541"/>
+<path d="m8 4 5-2h36l3 2-5 3H4z" fill="#be9866"/>
+<path d="M6 7h42m-40 3v44m4-30h33m-33 17h33m-35 15h35" stroke="#e3ae77" stroke-width=".8"/>
+
+<path d="M11 14h4v9h-4z" fill="#b67b58"/>
+<path d="M11.55 15v7m0 -6h2.65" fill="none" stroke="#fce8b4" stroke-opacity="0.55" stroke-width="0.58" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M15 12h4v11h-4z" fill="#e2ba79"/>
+<path d="M15.55 13v9m0 -8h2.65" fill="none" stroke="#fce8b4" stroke-opacity="0.55" stroke-width="0.58" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M20 16h4v7h-4z" fill="#7fa59c"/>
+<path d="M20.55 17v5m0 -4h2.65" fill="none" stroke="#fce8b4" stroke-opacity="0.55" stroke-width="0.58" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M35 13h3v10h-3z" fill="#a67a5b"/>
+<path d="M35.55 14v8m0 -7h1.65" fill="none" stroke="#fce8b4" stroke-opacity="0.55" stroke-width="0.58" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M39 15h4v8h-4z" fill="#dec295"/>
+<path d="M39.55 16v6m0 -5h2.65" fill="none" stroke="#fce8b4" stroke-opacity="0.55" stroke-width="0.58" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M11 31h5v9h-5z" fill="#57857e"/>
+<path d="M11.55 32v7m0 -6h3.65" fill="none" stroke="#fce8b4" stroke-opacity="0.55" stroke-width="0.58" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M17 28h4v12h-4z" fill="#b09567"/>
+<path d="M17.55 29v10m0 -9h2.65" fill="none" stroke="#fce8b4" stroke-opacity="0.55" stroke-width="0.58" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M21 34h4v6h-4z" fill="#b9785b"/>
+<path d="M21.55 35v4m0 -3h2.65" fill="none" stroke="#fce8b4" stroke-opacity="0.55" stroke-width="0.58" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M11 48h4v7h-4z" fill="#cf9469"/>
+<path d="M11.55 49v5m0 -4h2.65" fill="none" stroke="#fce8b4" stroke-opacity="0.55" stroke-width="0.58" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M16 46h5v9h-5z" fill="#8c9e8d"/>
+<path d="M16.55 47v7m0 -6h3.65" fill="none" stroke="#fce8b4" stroke-opacity="0.55" stroke-width="0.58" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M22 49h4v6h-4z" fill="#efc687"/>
+<path d="M22.55 50v4m0 -3h2.65" fill="none" stroke="#fce8b4" stroke-opacity="0.55" stroke-width="0.58" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M38 46h5v9h-5z" fill="#b78e69"/>
+<path d="M38.55 47v7m0 -6h3.65" fill="none" stroke="#fce8b4" stroke-opacity="0.55" stroke-width="0.58" stroke-linecap="round" stroke-linejoin="round"/>
+
+<path d="m26 15 7 1-.2 7-7-1z" fill="#c59768"/>
+<path d="M27 16q2-3 5 .1l-.4 4q-2 2-4-.1z" fill="#f5e0af"/>
+<path d="m26 37 7-7 10 2v8H26z" fill="#978060"/>
+<path d="M34 30l8 2-2 4-8-2zM28 35l8 2-1 2-7-1z" fill="#efcc92"/>
+<path d="M27 47h10v8H27z" fill="#528278" stroke="#354f4d" stroke-width=".6"/>
+<path d="M30 49h4m-4 2h3" stroke="#e7c489" stroke-width=".65"/>
+<path d="M8 58h40m-2-49v13m0 8v8m0 8v8" stroke="#f0ce94" stroke-opacity=".52" stroke-width=".65"/>
+</svg>

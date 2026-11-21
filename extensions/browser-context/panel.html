@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>AgentX 上下文</title><link rel="stylesheet" href="panel.css"></head>
+<body class="panel-layout">
+<header class="connection-block"><div class="brand-row"><strong>AgentX</strong><span>网页上下文</span><details id="settings"><summary title="配置 AgentX 服务">连接设置</summary><form id="connection"><label for="service">AgentX 服务地址</label><div class="connection-row"><input id="service" type="url" required value="http://192.168.2.178:38023" spellcheck="false"><button id="connect" type="submit">连接</button></div></form></details></div></header>
+<nav class="capture-block" aria-label="添加到会话草稿"><button id="selection" data-capture title="添加当前网页选中的文字">选区</button><button id="page" data-capture title="添加当前网页正文（最多 24000 字符）、标题和 URL">正文</button><button id="screenshot" data-capture title="添加当前标签页可见区域截图">截图</button></nav>
+<div class="feedback-block"><span id="status" role="status" aria-live="polite">正在连接…</span><button id="retry" hidden title="复用原请求 ID 查询或重试；不会重复添加">重试原请求</button></div>
+<details id="retained" class="retained-capture" hidden><summary>本次采集副本（结果请在 Space 核对）</summary><textarea id="capture-copy" readonly aria-label="保留的网页文字"></textarea><img id="capture-image" alt="本次采集截图副本" hidden><a id="capture-download" hidden>保存截图副本</a><button id="discard-copy" type="button">丢弃副本</button></details>
+<main class="conversation-frame"><div id="empty" class="empty-state">连接 AgentX，在 Space 中选择成员后添加网页上下文。</div><iframe id="conversation" title="完整 AgentX Space：办公室、成员和对话" hidden></iframe></main>
+<script type="module" src="panel.js"></script></body></html>

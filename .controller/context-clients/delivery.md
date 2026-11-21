@@ -1,0 +1,85 @@
+---
+schema: delivery
+description: LAN floating AgentX example application and installable Chrome/Edge context extension.
+status: completed
+stages:
+  clients: {description: Build independent real consumers of the accepted native feature., tasks: [./demo.md, ./extension.md]}
+  correction: {description: Correct rejected parallel embedded UI through the canonical Space structure and resolve actual discovery503., tasks: [./space-responsive.md, ./service-busy.md]}
+  acceptance: {description: Independently exercise demo and extension artifacts., tasks: [./acceptance.md], depends_on: [{stage: clients, condition: Runnable client contracts/artifacts available; each consumer can be accepted independently.}]}
+---
+
+# Context client delivery
+
+## Completed current outcome
+
+The corrected same-Space delivery is complete and accepted. User entry: `http://192.168.2.178:38024/`; extension1.2.1 ZIP: `http://192.168.2.178:38024/downloads/agentx-browser-context.zip`,17042B, SHA-256 `495717f7044b023b0195fee1bfc81871a2bd921a8e3593560f2fad47e52d734e`. Both embed the same complete canonical Space with scene/chat navigation, native member selection and attachments; no parallel reader-only UI or duplicate parent selectors remain. Space responsive r1 is adopted on selected `:38023`, scope/generation retained. Superseded client implementation/staging and old ZIP/unpacked directories are removed; only historical evidence remains.
+
+Independent corrected Space/demo and genuine extension1.2.1 evidence below establish the intended context journey. Lodize #30733 final read-only binding confirms public ZIP/config/source parity, all six served wrapper assets match accepted source, native/demo process identity unchanged, and successful fixture roots removed with clean cleanup manifests. Final evidence: `tests/context_clients/evidence/{package-final-121,final-live-binding-121}.json`; actual extension workflow in `extension-full-r1-121/`. Controller consumes the independent results, implementation/current usage and cleanup as sufficient, releases completed professional assignments, and closes the Delivery without another build/test/service action. Task-local acceptance record reconciliation is administrative, not missing product work.
+
+Scope: Linux local Chrome-for-Testing actual configured browser action/native sidePanel and generated-hook fixture, read-only LAN adoption checks. No separately executed Edge/branded-browser physical-toolbar/store/physical clipboard-drag claim. Files are readable host references, not proof of paid Provider image ingestion. Native Busy full cause was not established; [unbound native work disposition](service-busy.md) preserves the actual observation without inventing a fix. Existing unrelated listeners, installed/default binaries and user-Agent state remain preserved. Future maintenance starts from canonical module guides; do not revive rejected UX or old acceptance queues.
+
+## Current user decision supersedes earlier UI direction
+
+The user rejected reader-only `EmbeddedLayout` and duplicated wrapper selection/attachment UI. Required outcome is the SAME complete Space UI in a narrower/taller iframe/sidebar, retaining office-scene versus list/chat switching and native member navigation/conversation. Diagnose canonical design-system/page structure before responsive implementation; remove the wrong alternate component/styles/docs/served artifacts rather than maintain two UI paths. Earlier accepted backend/context evidence remains valid; client compact-layout evidence is historical and cannot establish this changed product promise. [Space responsive Task](space-responsive.md) owns structure/design-system implementation; client owners simplify wrappers, independent acceptance checks actual complete narrow UI. Separately, user-reported extension503 was reproduced as native `daemon is busy`, owned by [native diagnosis](service-busy.md), not assumed browser permissions. No live restart is authorized by diagnosis alone; preserve current service until an explicit coordinated correction plan.
+
+## Intended result
+
+User opens a LAN demo, expands the bottom-right AI overlay, chooses a current Agent and adds page information/images/files to that Agent's draft; the existing child conversation performs deliberate send. User downloads an extension ZIP, unpacks/loads it into Chrome/Edge, configures the AgentX service and current target, then captures page text/selection/screenshot/files into the embedded conversation. No new-Agent operation.
+
+## Professional responsibilities and integration
+
+| Owner | Cohesive result | Consumer and completion |
+| --- | --- | --- |
+| Demo qualified coder | `web/context-demo/` design, application, bounded runner, LAN hosting, download entry | User gets actual URL, useful page scenario and floating iframe; extension ZIP download is linked/served once package owner hands artifact |
+| Extension qualified coder | `extensions/browser-context/` design, MV3 browser-host integration, reproducible package | User gets ZIP and unpacked installation path; independent acceptance loads exact artifact and exercises browser APIs |
+| Independent acceptance qualified coder | `tests/context_clients/` scenarios and runtime/package evidence | Finite actual UI/iframe and real unpacked extension evidence; use disposable AgentX fixture for mutations, live reads only |
+| nube | Scope, interfaces/dependencies, receipt consumption and closure | Combined result and discoverable source/usage, original services preserved |
+
+Two implementers are justified by independent consumer outcomes and distinct browser-host context; their source scopes do not overlap. One independent executor follows the complex-task validation requirement. No child controller or additional review tier. Reuse existing native evidence rather than retesting unrelated daemon behavior. Acceptance can prepare while client work proceeds; its execution starts per usable consumer, not a fixed batch barrier. Demo download linkage depends on extension artifact handoff only, not on demo UI design.
+
+## Shared constraints
+
+Canonical bridge/HTTP: `.docs/agent-management/web-context.md`. Preserve exact scope/generation/Agent identity, no automatic messages on query/addContext. Do not silently queue context across target/service changes. Interface is Chinese, compact and directly useful; technical protocol instructions live in docs/config disclosure. Select targets through real native data, never hardcoded incarnation or editable JSON as primary flow. Cross-origin API access and Chrome JSON extension-hop transport must be solved at their proper host boundary with actual evidence. No generic unrestricted proxy, redundant native daemon or native rebuild absent a concrete gap.
+
+User permits LAN startup for the demo on a free non-default port. Preserve all existing listeners, selected `:38023`, installed binaries and user Agents. Demo owner records process/command/log/actual URL and retains the user-facing demo; acceptance disposables are cleaned. Extension ZIP and extracted directory must match tested files, include no user data/secrets/node_modules, and have repeatable packaging instructions. Prefer one functional package with evidence before download exposure.
+
+## Bindings and current state
+
+| Actual instance | Profile / responsibility | Owned resources | Readiness and next condition |
+| --- | --- | --- | --- |
+| nadevo | coder / demo | demo Task, `web/context-demo/**`, retained owned LAN server | Batch `b18f428d` ready 2026-11-15; design and implement useful floating application, hand runnable client to lodize |
+| zanota | coder / extension | extension Task, `extensions/browser-context/**`, `.artifacts/context-clients/**` package | Batch `18e516b8` ready 2026-11-15; establish official MV3 host constraints, implement/package and hand to demo/acceptance |
+| lodize | coder / independent acceptance | acceptance Task, `tests/context_clients/**`, disposable fixtures/browser profiles | Batch `0806dd78` ready 2026-11-15; derive cases now, execute per actual client readiness and report scoped evidence |
+| rerove | design-system / canonical full-Space responsive correction | `web/agent-space/**`, responsive Task and owned design | Batch `f782103f` ready 2026-11-15 after transient Busy; publish structural design/context contract, remove wrong fork and implement same-UI narrow layout |
+
+All selected project coder profile (`gpt-6.1-sol`) with explicit max reasoning override and no delegation. No writes overlap by assignment. Browser choice is user-confirmed Chrome/Edge. Direct design/handoff/defect notifications coordinate dependencies; no periodic polling or intermediate approval gate. Next: client design/skeleton/implementation and independent case preparation, then actual verification, demo startup/download linkage and final closure. No browser store publish or user browser profile modification is included.
+
+User correction reconciles those original readiness notes: nadevo's previously completed demo is reopened for explicit wrapper cleanup; zanota/lodize retain ongoing assignments with corrected semantics. Rerove uses project design-system profile, also gpt-6.1-sol/max. Earlier compact-UX acceptance is superseded, except reusable unchanged backend/host facts. Native service-busy diagnosis Task is prepared but its fresh coder launch failed Busy; no runtime binding is falsely recorded for it. Existing service remains untouched, and diagnosis evidence distinguishes observed host I/O waits from an established complete cause.
+
+## Consumer contributions received
+
+### Current corrected candidate handoff
+
+Rerove #29763 handed `.bin/agentx-space-responsive-r1`, SHA-256 `5e6843eedb521dfa5bfbb2cde983bc7ed8e78cf61ee2a9f5098a5600a36064e5`, version0.7.31, with affected source/asset receipts and actual14-asset snapshot. This candidate removes the parallel embedded UI and adds canonical responsive full Space/current-selection context fencing; no native source edits or live adoption. Zanota #29648 handed corrected extension1.1.0 ZIP SHA-256 `5cfb58741992f6e7e4c0233624e38a4a1182ee84bf212741f32f06e4658c4496`, matching unpacked artifact/receipt. Nadevo's corrected unpublished wrapper staging uses full `/space/`, no outer selector/attachment intake/discovery proxy. Lodize owns actual corrected finite consumer acceptance on disposable scopes; old compact results below are historical only. After success owners promote corrected canonical source, delete rejected owned UI/public artifacts and coherently replace selected services/download. Current handoff is not an acceptance/adoption claim.
+
+Lodize #29957 establishes corrected canonical Space PASS at 450/390/360/320×800, scene/chat return, exact draft/selection revision and stale-target/held-upload commit fencing, in `tests/context_clients/evidence/space-full-r1-05/space-result.json`. Corrected full-Space demo explicit binding, native attachment/send and narrow path also PASS in `demo-full-r1-01/demo-full-result.json`; both fixture cleanups complete. Controller consumes these scoped contributions, without claiming live adoption. Extension1.1.0 ZIP parity and genuine MV3 panel/runtime load pass, but browser optional-origin permission remains false after Connect and real prompt attempts, with no API traffic. This is an unresolved actual-host acceptance gap owned by zanota/lodize, not an established native defect or screenshot/send support. Remaining extension path and coherent promotion/old-artifact cleanup remain required before Delivery completion.
+
+### Released selected correction adoption
+
+Controller consumes the concrete preflight/rollback/resource plan #30048 and releases rerove alone to adopt exact accepted responsive r1 on selected `:38023`, after verifying actual process identity, scope/generation and fixed candidate digest. Stop/start only the matched selected daemon; preserve other listeners/default binaries/Agents/data. Record existing settings/logs and rollback only the candidate to the recorded r3 command if required. After successful native HTTP/scope/14-asset read-only smoke, nadevo alone promotes corrected wrapper to its canonical module, deletes rejected controls/adapter/staging, replaces only verified owned `:38024` and records read-only result. No competing native restart. Earlier plan to expose1.1.0 is explicitly rejected until actual extension acceptance: withdraw obsolete1.0.0 public download, keep frozen successor private, and omit/disable download honestly. Authorization is for correcting/cleaning the user's selected services, not unrelated service operations. Actual adoption is still pending owner receipts.
+
+Rerove #30136/#30163 establishes actual adoption PASS: selected `:38023` now runs exact responsive r1, PID1563302/start978621828, instancebaf14db0-df10-4a33-8276-2b9ce93ca5b7, original scope/project/generation retained. Authoritative receipts `.bin/space-responsive-rollout/{after,live-assets,live-browser,resource-delta}.json` establish all14 served assets match, actual LAN Chrome same full Space at360/1440 with scene/chat navigation and no page/API errors or mutations; other TCP listeners and protected binary hashes unchanged. Controller consumes owner evidence without repeating it. This releases nadevo's already-authorized canonical demo promotion/cleanup; extension permission gap and download publication remain separate outstanding work.
+
+Nadevo #30378 completed actual canonical promotion/cleanup: corrected demo retained at `:38024`, owned PID1585864, old verified process stopped, correction staging/rejected selectors/discovery/manual attachments removed. `web/context-demo/evidence/{launch-canonical,canonical-smoke,canonical-source}.json` own actual source/process facts. Old1.0.0 ZIP/unpacked and public download removed (404); no dual maintained demo UI. Native responsive r1 remains untouched.
+
+Extension architecture disposition #30327/#30345 removed unnecessary optional-host permission gate left behind after discovery polling was deleted. Successor1.2.0 ZIP SHA-256 `50016ac37239ea238272e85d764530208b8b89fe790f8d3e396f7abb587810bb` passed parity and genuine full-Space sidebar load without that gate. Capture remains unaccepted: #30512 raw tab metadata and #30552 actual X11 browser extension-menu click show same current tab/window but no URL/title exposed, even while actual native sidePanel opens. This supersedes earlier keyboard-only/focus theories. Zanota owns minimal action-dispatch/sidePanel grant diagnosis/correction, lodize actual toolbar/scripting/screenshot evidence. No blanket permissions/native changes or accepted screenshot/send claim. Public successor download remains withheld pending that consumer result.
+
+### Accepted corrected extension outcome
+
+Lodize #30609 supersedes the preceding pending extension state: immutable1.2.1 ZIP SHA-256 `495717f7044b023b0195fee1bfc81871a2bd921a8e3593560f2fad47e52d734e`,17042B, independently PASS. The source correction disables auto-open behavior and uses immediate standard `action.onClicked`→`sidePanel.open`, without broader permissions/native edits. Actual configured browser action yields readable tab metadata, genuine scripting selection/page capture, actual screenshot PNG→File in same full Space iframe, native child file input and deliberate exact-recipient message receipt Succeeded. Restricted-page and held-upload service-change retention/isolation also pass. Authoritative original evidence is `tests/context_clients/evidence/extension-full-r1-121/`, package parity `package-corrected-03.json`; all disposable cleanup complete, candidate unchanged. Controller accepts this contribution and releases exact1.2.1 public download only, via nadevo's existing canonical demo. Remaining required work: final live download/source parity and superseded-artifact/docs/Task closure; no native restart/new build/broad suite.
+
+### Historical initial compact client evidence (superseded UI)
+
+Zanota #29047 handed deterministic extension version 1.0.0 ZIP `.artifacts/context-clients/agentx-browser-context-1.0.0.zip`, SHA-256 `4ba6f84614732f148521650cc4a76c79e834f6bb20549e7a770ac4c615631bb2`. Its implementation syntax/package checks are distinct from lodize's actual extension-host acceptance. Lodize #28934 established genuine unpacked Chrome host discovery and sidePanel user-gesture behavior without a native workaround.
+
+Nadevo #29066 retained the authorized demo at `http://192.168.2.178:38024/`; `web/context-demo/evidence/launch.json` owns tracked process/command and `lan-smoke.json` owns actual discovery/download/service-preservation facts. Lodize #29077 passed actual disposable floating iframe/draft/focus, keyboard, text/image/file intake, deliberate exact-recipient send, 390px layout and discovery failure. Its authoritative original receipts live under `tests/context_clients/evidence/demo-01/`; all acceptance disposables cleaned. Remaining: exact live URL/download matching and complete packaged-extension consumer evidence, then owned Task/current usage and Delivery closure. Do not replay passing demo/native checks or mutate live Agents.

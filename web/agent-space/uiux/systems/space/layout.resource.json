@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "system": "space",
+  "id": "space/layout",
+  "kind": "layout",
+  "title": "Space 工作布局",
+  "summary": "Space 工作布局 · 与真实 Space 共享实现",
+  "maturity": "experimental",
+  "source": [
+    "./layouts/OfficeLayout.tsx",
+    "./layouts/SpaceLayout.tsx",
+    "./layouts/ChatLayout.tsx",
+    "./layouts/WorkspaceLayout.tsx"
+  ],
+  "design": "./layout.design.md",
+  "useWhen": [
+    "操作和检查实际 Space Space 工作布局"
+  ],
+  "avoidWhen": [
+    "不要把本地演示结果当作原生操作或最终验收"
+  ],
+  "dependencies": [],
+  "events": [],
+  "states": [
+    {
+      "id": "default",
+      "title": "实际完整布局",
+      "description": "实际完整布局；真实组件，本地演示",
+      "scene": "default"
+    }
+  ],
+  "interactions": [],
+  "scenes": [
+    {
+      "id": "default",
+      "title": "实际完整布局",
+      "description": "实际完整布局；真实组件，本地演示",
+      "kind": "overview",
+      "controls": [
+        {
+          "id": "narrow",
+          "label": "窄容器",
+          "type": "boolean",
+          "default": false
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "entry": "./space.web.ts",
+    "symbols": [
+      "OfficeLayout",
+      "SpaceLayout",
+      "ChatLayout",
+      "ConversationLayout"
+    ]
+  }
+}

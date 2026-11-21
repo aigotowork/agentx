@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en" data-ax-style="management" data-ax-brightness="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Interface system · AgentX target preview</title>
+  <link rel="stylesheet" href="system.css">
+  <link rel="stylesheet" href="specimen.css">
+  <script type="module" src="specimen.js"></script>
+</head>
+<body>
+  <header class="preview-nav">
+    <div class="preview-width ax-cluster">
+      <a class="preview-brand" href="../"><span aria-hidden="true">AX</span> AgentX</a>
+      <nav aria-label="Preview destinations" class="ax-cluster">
+        <a class="ax-button" data-variant="quiet" href="../management/">Management</a>
+        <a class="ax-button" data-variant="quiet" href="../space/">Space</a>
+        <a class="ax-button" aria-current="page" href="./">Interface system</a>
+      </nav>
+    </div>
+  </header>
+  <main class="preview-width ax-stack">
+    <header class="specimen-head ax-cluster">
+      <div>
+        <div class="kicker">AgentX · Design study</div>
+        <h1>Interface system</h1>
+      </div>
+      <div class="ax-cluster appearance">
+        <label for="style">Style
+          <select class="ax-input" id="style">
+            <option value="management">Management</option><option value="space">Space</option>
+          </select>
+        </label>
+        <label for="brightness">Brightness
+          <select class="ax-input" id="brightness">
+            <option value="light">Light</option><option value="dark">Dark</option>
+          </select>
+        </label>
+      </div>
+    </header>
+    <section class="scene-banner ax-cluster" aria-labelledby="scene-title">
+      <div class="ax-cluster"><h2 id="scene-title">Release coordination</h2><span class="ax-badge">Synthetic</span></div>
+      <button class="ax-button" data-variant="quiet" id="reset">Reset specimen</button>
+    </section>
+    <div class="ax-split" id="workspace" data-view="index">
+      <section class="ax-split-index ax-panel" aria-labelledby="index-title">
+        <header class="slot-head">
+          <h3 id="index-title">Participants</h3>
+          <label class="search-label" for="search"><svg class="ax-icon" aria-hidden="true"><use href="icons.svg#search"></use></svg><span class="sr-only">Filter participants</span></label>
+          <input class="ax-input" id="search" type="search" placeholder="Filter participants" autocomplete="off">
+        </header>
+        <ul class="participant-list" id="participants" aria-label="Participants"></ul>
+        <p class="ax-row" id="empty" role="status" hidden>No participants match the filter.</p>
+      </section>
+      <section class="ax-split-detail ax-panel ax-reader" aria-labelledby="subject-title">
+        <header class="slot-head subject-head">
+          <button class="ax-button ax-split-back" data-variant="quiet" id="back" type="button">
+            <svg class="ax-icon" aria-hidden="true"><use href="icons.svg#back"></use></svg>Participants
+          </button>
+          <div class="ax-cluster subject-tools">
+            <div class="subject-name">
+              <h3 id="subject-title" tabindex="-1"></h3>
+              <span class="meta" id="subject-role"></span>
+            </div>
+            <span id="subject-state" class="ax-badge"></span>
+            <button class="ax-button ax-icon-button" id="facts" type="button" popovertarget="exact-facts" aria-label="Exact identity" title="Exact identity">
+              <svg class="ax-icon" aria-hidden="true"><use href="icons.svg#info"></use></svg>
+            </button>
+            <section class="ax-popover ax-stack" popover="auto" id="exact-facts" aria-label="Exact identity">
+              <div class="ax-cluster spread"><h4>Exact identity</h4><button class="ax-button ax-icon-button" aria-label="Close identity" type="button" popovertarget="exact-facts" popovertargetaction="hide"><svg class="ax-icon" aria-hidden="true"><use href="icons.svg#close"></use></svg></button></div>
+              <dl class="facts">
+                <dt>Workspace</dt><dd>release-coordination</dd>
+                <dt>Instance</dt><dd><code id="identity"></code></dd>
+                <dt>Generation</dt><dd><code>demo-g04</code></dd>
+              </dl>
+            </section>
+          </div>
+        </header>
+        <div class="ax-reader-body slot-body ax-stack">
+          <div class="ax-cluster spread"><h4>Activity</h4><button class="ax-button" data-variant="quiet" id="receipt" type="button" aria-haspopup="dialog"><svg class="ax-icon" aria-hidden="true"><use href="icons.svg#panel"></use></svg>Receipt</button></div>
+          <article class="activity">
+            <div class="ax-cluster spread"><strong id="record-author"></strong><time class="meta" datetime="2026-11-18T10:42:00">10:42</time></div>
+            <p id="record"></p>
+            <details class="ax-details"><summary>Record metadata</summary><p class="meta">Source: synthetic activity · snapshot 10:45</p></details>
+          </article>
+          <div class="ax-notice ax-cluster spread" id="notice" data-tone="warning">
+            <span><strong id="notice-title">Outcome unknown</strong><br><span id="notice-detail">The same request needs receipt lookup.</span></span>
+            <button class="ax-button" id="lookup" type="button">Look up</button>
+          </div>
+          <p id="live-feedback" class="sr-only" role="status"></p>
+        </div>
+        <footer class="slot-head composer">
+          <label for="draft">Draft note <span class="meta" id="draft-length">0 chars</span></label>
+          <textarea rows="2" class="ax-input" id="draft" placeholder="Write a note for this participant"></textarea>
+          <div class="ax-cluster spread">
+            <span class="meta">Local to this specimen</span>
+            <button class="ax-button" data-variant="primary" id="review" type="button" aria-haspopup="dialog" disabled>Review note<svg class="ax-icon" aria-hidden="true"><use href="icons.svg#arrow-right"></use></svg></button>
+          </div>
+        </footer>
+      </section>
+    </div>
+    <details class="ax-details ax-panel reference">
+      <summary>Type, space and state reference</summary>
+      <div class="reference-grid">
+        <div><h3>Typography</h3><p class="ref-large">Section title</p><p>Queue and receipt detail</p><code>demo-g04 / req-403</code></div>
+        <div><h3>Spacing</h3><div class="ruler" aria-label="4, 8, 12, 16, 24 and 32 pixel increments"><i></i><i></i><i></i><i></i><i></i><i></i></div><p class="meta">4 · 8 · 12 · 16 · 24 · 32</p></div>
+        <div><h3>States</h3><div class="ax-cluster"><span class="ax-badge" data-tone="info">Pending</span><span class="ax-badge" data-tone="success">Confirmed</span><span class="ax-badge" data-tone="warning">Unknown</span><span class="ax-badge" data-tone="danger">Failed</span><span class="ax-badge">Unavailable</span></div></div>
+        <section class="ax-panel nested" data-ax-style="space" data-ax-brightness="dark"><h3>Nested override</h3><span class="ax-badge" data-tone="success">Space · Dark</span></section>
+      </div>
+    </details>
+  </main>
+  <dialog class="ax-dialog" id="note-dialog" aria-labelledby="note-title">
+    <header class="ax-dialog-head"><h2 id="note-title">Review note</h2></header>
+    <div class="ax-dialog-body ax-stack"><strong id="note-target"></strong><p class="draft-copy" id="note-text"></p></div>
+    <form class="ax-dialog-actions" method="dialog">
+      <button class="ax-button" value="cancel" autofocus>Keep editing</button>
+      <button class="ax-button" data-variant="primary" value="save">Save local note</button>
+    </form>
+  </dialog>
+  <dialog class="ax-dialog" id="receipt-dialog" data-placement="drawer" aria-labelledby="receipt-title">
+    <header class="ax-dialog-head"><h2 id="receipt-title">Request receipt</h2></header>
+    <div class="ax-dialog-body ax-stack">
+      <div class="ax-cluster"><code>req-403</code><span class="ax-badge" id="receipt-state" data-tone="warning">Outcome unknown</span></div>
+      <dl class="facts"><dt>Intent</dt><dd>Read coordination status</dd><dt>Workspace</dt><dd>release-coordination</dd><dt>Requested</dt><dd>10:41</dd><dt>Transport</dt><dd>Synthetic fixture</dd></dl>
+    </div>
+    <form class="ax-dialog-actions" method="dialog"><button class="ax-button" value="close" autofocus>Close receipt</button></form>
+  </dialog>
+</body>
+</html>

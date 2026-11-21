@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "brand": { "name": "邻里图书馆", "footer": "BORROWING DESIGN" },
+  "initial": { "layerId": "desk", "subjectId": "LoanDesk" },
+  "domains": { "circulation": { "label": "借阅", "color": "teal" }, "inventory": { "label": "馆藏", "color": "violet" } },
+  "walkthrough": {
+    "scenarioId": "preview-a-loan",
+    "layerId": "desk",
+    "stepTitles": ["确认副本", "查看凭条"]
+  }
+}

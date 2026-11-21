@@ -1,0 +1,33 @@
+/* Host styles must not affect the separate pixel recovery entry or its portals. */
+:root[data-experience="inspector"] {
+  & {
+    --host-surface0: #181b1a; --host-surface1: #1e2120; --host-surface2: #272a29; --host-border: #252b2a;
+    --host-foreground: #fafafa; --host-foregroundMuted: #a1a5a4;
+    --host-gap: 8px; --host-padding: 16px; --host-radius: 12px; --host-modal-width: 460px;
+    --host-modal-height: 80vh; --host-toolbar-height: 48px; --host-font: 13px; --host-small: 11px;
+    --host-shadow: 0 6px 24px rgb(0 0 0 / 18%); --host-scrim: rgb(0 0 0 / 40%); --host-heading-font: 20px;
+    --host-overlay: 1000; --host-toast-overlay: 2000; --host-toast-bottom: 20px; --host-toast-width: 420px;
+  }
+  * { box-sizing: border-box; }
+  &, body, #root { margin: 0; width: 100%; height: 100%; }
+  body { background: var(--host-surface0); color: var(--host-foreground); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans CJK SC', sans-serif; }
+  #root { display: flex; flex-direction: column; }
+  .inspector-frame { flex: 1; min-height: 0; display: flex; }
+  .inspector-frame > div { flex: 1; min-width: 0; }
+  .host-connection { display: flex; gap: var(--host-gap); align-items: center; justify-content: center; color: var(--host-foregroundMuted); }
+  .host-modal-backdrop { position: fixed; inset: 0; background: var(--host-scrim); display: flex; align-items: center; justify-content: center; z-index: var(--host-overlay); }
+  .host-modal { width: var(--host-modal-width); max-width: 100%; max-height: var(--host-modal-height); display: flex; flex-direction: column; background: var(--host-surface0); color: var(--host-foreground); border: 1px solid var(--host-border); border-radius: var(--host-radius); overflow: hidden; }
+  .host-modal-heading { display: flex; align-items: center; min-height: var(--host-toolbar-height); padding: 0 var(--host-gap) 0 var(--host-padding); border-bottom: 1px solid var(--host-border); }
+  .host-modal-heading span { flex: 1; }
+  .host-icon { border: 0; border-radius: var(--host-gap); padding: var(--host-gap); background: transparent; cursor: pointer; display: flex; }
+  .host-toasts { position: fixed; inset-inline: 0; bottom: var(--host-toast-bottom); display: flex; flex-direction: column; align-items: center; gap: var(--host-gap); pointer-events: none; z-index: var(--host-toast-overlay); }
+  .host-toasts > div { max-width: min(var(--host-toast-width), calc(100vw - 2 * var(--host-padding))); padding: var(--host-gap) var(--host-padding); border: 1px solid var(--host-border); border-radius: var(--host-radius); background: var(--host-surface2); color: var(--host-foreground); font-size: var(--host-font); box-shadow: var(--host-shadow); }
+  .host-settings { display: flex; flex-direction: column; gap: var(--host-gap); }
+  .host-settings h3 { margin: 0; font-size: var(--host-font); }
+  .host-settings-card { border: 1px solid var(--host-border); border-radius: var(--host-gap); padding: var(--host-gap); display: flex; flex-direction: column; gap: var(--host-gap); }
+  .host-settings-row { font-size: var(--host-font); }
+  .host-settings-row small { color: var(--host-foregroundMuted); display: block; font-size: var(--host-small); overflow-wrap: anywhere; }
+  .host-settings-row select { max-width: 100%; margin-block-start: var(--host-gap); }
+  .host-clipboard { position: fixed; opacity: 0; }
+  @media (max-width: 699px) { .host-modal-backdrop { align-items: flex-end; } .host-modal { width: 100%; max-height: 88vh; border-radius: var(--host-radius) var(--host-radius) 0 0; } }
+}

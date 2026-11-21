@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; font-src data:; base-uri 'none'; form-action 'none'">
+<title>AgentX · 对象图谱</title>
+<style>
+:root{color-scheme:light;--paper:#f5f2e8;--sheet:#fffdf4;--base:#eae7dc;--ink:#202a38;--muted:#52606e;--hair:#b8bcb4;--indigo:#294974;--rust:#91432d;--acid:#f6dc63;--mono:ui-monospace,"SFMono-Regular",Consolas,monospace;--sans:system-ui,"Noto Sans CJK SC",sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--base);color:var(--ink);font:14px/1.45 var(--sans)}button,input{font:inherit;color:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid #1e5496;outline-offset:3px}button:disabled{cursor:default}button svg{flex:none}svg{display:block}h1,h2,h3,p{margin:0}a{color:inherit}button{background:none;border:0}code,kbd,.mono{font-family:var(--mono)}.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.mast{height:55px;display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--ink);color:#f9f6ea;padding:0 clamp(15px,3vw,45px);border-bottom:2px solid #3c4a5a}.brand{display:flex;align-items:center;gap:11px;font:700 17px var(--sans);letter-spacing:-.02em}.brand .i{width:25px;height:25px;color:var(--acid)}.mast-note{display:flex;align-items:center;gap:8px;font:11px var(--mono);letter-spacing:.12em;color:#e0dfd6}.mast-note span{width:7px;height:7px;border:1px solid var(--acid);transform:rotate(45deg)}.frame{max-width:1770px;margin:auto;padding:0 clamp(14px,2.8vw,42px) 22px}.heading{display:flex;justify-content:space-between;align-items:end;gap:16px;padding:24px 0 18px}.eyebrow{font:700 10px var(--mono);letter-spacing:.16em;color:var(--indigo);display:flex;align-items:center;gap:9px;margin-bottom:7px}.eyebrow:before{content:"";width:20px;height:2px;background:var(--indigo)}h1{font-size:clamp(29px,3.05vw,46px);letter-spacing:-.07em;line-height:1.07;font-weight:850}.search-launch{display:flex;align-items:center;gap:10px;background:var(--sheet);border:1px solid #929b9c;padding:8px 10px;min-width:240px;text-align:left}.search-launch:hover{border-color:var(--indigo);background:white}.search-launch kbd{margin-left:auto}.search-launch span{font-size:13px}kbd{border:1px solid var(--hair);font-size:11px;padding:1px 5px;background:var(--paper);border-radius:3px}
+.viewbar{display:flex;align-items:stretch;border-top:1px solid var(--hair);gap:4px;overflow:auto;scrollbar-width:thin}.viewbar button{position:relative;white-space:nowrap;padding:12px 13px;font-weight:650;color:var(--muted);display:flex;align-items:center;gap:7px}.viewbar button:hover{color:var(--indigo);background:#e5e2d7}.viewbar button[aria-current]{color:var(--ink)}.viewbar button[aria-current]:after{content:"";position:absolute;bottom:0;left:12px;right:12px;height:3px;background:var(--ink)}.viewbar .receipt-tab{margin-left:auto}.viewbar .i{width:15px;height:15px}
+.deck{display:grid;grid-template-columns:minmax(0,1fr) clamp(292px,26vw,358px);border:1px solid #89939a;background:var(--paper);height:clamp(565px,calc(100dvh - 255px),770px);box-shadow:0 8px 20px #202a380b}.map-layout,.inspect{min-width:0;min-height:0;display:flex;flex-direction:column}.mapbar,.rail-head{min-height:44px;flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 13px;border-bottom:1px solid #b4b9b4;background:var(--sheet)}.map-id,.rail-head{font:700 11px var(--mono);letter-spacing:.08em}.map-id b{display:inline-block;color:var(--indigo);border:1px solid #acb3b8;padding:2px 5px;margin-right:7px}.tools{display:flex;align-items:center;gap:5px}.tool{display:inline-flex;align-items:center;gap:6px;padding:5px 7px;border:1px solid transparent;font-size:12px;white-space:nowrap}.tool:hover,.tool[aria-pressed=true]{background:#eceee7;border-color:#9da9aa}.tool[aria-pressed=true]{background:var(--acid);border-color:#7f702d}.tool .i{width:15px;height:15px}.pane{flex:1;min-height:0;overflow:auto;background-color:var(--paper);background-image:radial-gradient(circle,#a0a69d78 .7px,transparent .9px);background-size:16px 16px;scrollbar-color:#9ba6a7 var(--paper);scrollbar-width:thin}.scene{display:flex;align-items:center;justify-content:center;height:100%;width:100%;min-width:690px;position:relative}.map{width:100%;height:100%;overflow:visible}.legend{display:flex;flex-wrap:wrap;align-items:center;gap:7px 16px;padding:8px 13px;background:var(--sheet);border-top:1px solid var(--hair);font-size:11px;color:var(--muted);min-height:36px}.legend span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}.legend .line{width:21px;border-top:1px solid var(--indigo)}.legend .dashed{border-top:1px dashed var(--rust)}.legend .mobile-hint,.mobile-zones,.tool.mobile-inspector{display:none}.mark{width:10px;height:10px;display:inline-block;border:1.4px solid currentColor;color:var(--indigo);flex:none}.mark.ts{border-radius:3px;background:var(--indigo)}.mark.http{border-radius:0;background:transparent}.mark.native{transform:rotate(45deg) scale(.8);color:var(--rust)}
+.map text{font-family:var(--sans);fill:var(--ink);user-select:none}.map .coord,.map .zone-no,.map .node-id,.map .index{font-family:var(--mono);letter-spacing:.06em}.map .coord{font-size:10px;fill:#66717a}.map .zone-no{font-size:11px;fill:var(--indigo);font-weight:700}.map .zone-title{font-size:15px;font-weight:750}.zone-bg{fill:#faf7eb;fill-opacity:.65;stroke:#b8beb6;stroke-width:1}.zone-rule,.calibration{fill:none;stroke:#9ca9aa;stroke-width:1}.edge{fill:none;stroke:#496582;stroke-width:1.4}.edge.context{stroke:var(--rust);stroke-dasharray:5 4}.edge.is-hot{stroke-width:2.15}.edge-label{font-size:13px;font-weight:650;text-anchor:middle;paint-order:stroke;stroke:var(--paper);stroke-width:5px;stroke-linejoin:round}.edge-label.context{fill:var(--rust)}.edge-label.is-hot{font-weight:800}.edge.is-muted{opacity:.32}.edge-label.is-muted{opacity:.63}.object{cursor:pointer;outline:none}.object .slab{fill:var(--sheet);stroke:#738797;stroke-width:1.2}.object.native .slab{stroke:#987966;stroke-dasharray:4 3}.object .fold{fill:none;stroke:#738797;stroke-width:1}.object .tile{fill:#e6ebea}.object.native .tile{fill:#eee1d5}.object .glyph{fill:none;stroke:var(--indigo);stroke-width:1.55;stroke-linecap:round;stroke-linejoin:round}.object.native .glyph{stroke:var(--rust)}.object .name{font-size:19px;font-weight:800;letter-spacing:-.045em}.object .name.long{font-size:17px}.object .hint{font-size:13px;fill:#475767}.object .node-id{font-size:10px;fill:#536579;text-anchor:end}.object .port{fill:var(--sheet);stroke:#668199;stroke-width:1}.object:hover .slab,.object.is-near .slab{stroke:var(--indigo);stroke-width:1.8}.object.is-selected .slab{fill:var(--acid);stroke:#3b3830;stroke-width:2;stroke-dasharray:none}.object.is-selected .tile{fill:#282e38}.object.is-selected .glyph{stroke:var(--acid)}.object.is-selected .port{fill:var(--acid);stroke:#47443c}.object:focus-visible .focus-ring{stroke:#1e5496;stroke-width:2.5}.focus-ring{fill:none;stroke:none}.object.is-muted .slab{fill:#efede3}.object.is-muted .glyph,.object.is-muted .node-id{opacity:.72}
+.inspect{border-left:1px solid #89939a;background:#fdfaf0}.rail-head{justify-content:flex-start;color:var(--muted);gap:8px}.rail-head .i{width:15px;height:15px;color:var(--indigo)}.rail-head #ordinal{margin-left:auto}.inspector-title{padding:14px 15px 11px}.identity-kind{display:flex;align-items:center;gap:7px;color:var(--indigo);font-size:11px;font-weight:720}.inspector-title h2{font-size:clamp(23px,2.25vw,33px);letter-spacing:-.065em;line-height:1.15;margin:5px 0;overflow-wrap:anywhere}.inspector-title p{color:#455466;font-size:12px;line-height:1.55}.variants{display:flex;gap:1px;margin-top:11px;border:1px solid #aab2b1;width:max-content;background:#e9eae1}.variants button{font:12px var(--mono);padding:5px 9px}.variants [aria-pressed=true]{background:var(--ink);color:white}.detail-tabs{display:flex;border-bottom:1px solid var(--hair);padding:0 10px;gap:2px;flex:none}.detail-tabs button{padding:7px 9px;color:var(--muted);font-size:12px;border-bottom:2px solid transparent}.detail-tabs button[aria-selected=true]{border-bottom-color:var(--indigo);color:var(--indigo);font-weight:750}.detail-scroll{overflow:auto;min-height:0;flex:1;scrollbar-width:thin}.detail-body{padding:0 14px 12px}.rows{margin:0}.rows>div{border-bottom:1px solid #dcded3;padding:7px 0;display:grid;grid-template-columns:minmax(83px,43%) 1fr;gap:8px;font-size:12px}.rows dt{font:650 11px/1.5 var(--mono);overflow-wrap:anywhere;font-weight:650}.rows dd{margin:0;color:#455466;overflow-wrap:anywhere}.method,.source{padding:9px 1px;border-bottom:1px solid #dcded3}.method code,.source code{font-size:11px;color:#233e64;white-space:normal;overflow-wrap:anywhere}.method p,.source p,.no-method{font-size:12px;color:#455466;margin-top:4px}.source-line{display:flex;align-items:start;justify-content:space-between;gap:8px}.source textarea{display:block;width:100%;height:34px;resize:none;background:#fffdf4;border:1px solid #9da9aa;font:11px var(--mono);margin-top:5px}.source .tool{color:var(--indigo);padding:2px 5px}.neighbors{padding:9px 14px 13px;border-top:1px solid var(--hair);background:#f8f5ea}.neighbors h3{color:var(--muted);font-size:11px;margin-bottom:4px;display:flex;justify-content:space-between}.jump{display:flex;align-items:center;gap:6px;text-align:left;width:100%;padding:5px 3px;min-height:29px;border-bottom:1px solid #dadcd1}.jump:hover{background:#eeece0}.jump:last-child{border-bottom:0}.jump strong{font-size:12px;overflow-wrap:anywhere}.jump em{font-size:10px;color:var(--muted);font-style:normal;text-align:right;margin-left:auto}.jump .i{width:13px;height:13px;color:var(--indigo);flex:none}.bottomline{display:flex;justify-content:space-between;gap:12px;margin-top:9px;font:11px var(--mono);color:#4d5b6a}.bottomline a:hover,.mini-link:hover{color:var(--indigo)}.mini-link{font-size:12px;color:#405a7b;text-align:left;text-decoration:underline;padding:4px 0}
+.receipt-scene{display:flex;flex-direction:column;align-items:stretch;justify-content:center;padding:10px 17px;min-width:0;width:100%;max-width:100%;margin:auto}.receipt-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:1px 0 6px}.receipt-controls button{border:1px solid #939e9e;background:var(--sheet);padding:5px 9px;font-size:12px}.receipt-controls button[aria-pressed=true]{background:var(--acid);border-color:#756324;font-weight:700}.receipt-scroll{overflow:auto;scrollbar-width:thin;min-height:0}.receipt-scroll .map{min-width:670px;height:auto}.receipt-note{min-height:58px;margin-top:6px;border-left:3px solid var(--indigo);padding:6px 9px;background:var(--sheet);font-size:12px}.receipt-note strong{display:block;margin-bottom:2px;color:var(--indigo);font:700 12px var(--mono)}.trace-edge{fill:none;stroke:#8a989e;stroke-width:1.55}.trace-edge.is-active{stroke:var(--indigo);stroke-width:2.65}.trace-edge.is-loss{stroke:var(--rust);stroke-dasharray:5 4}.trace-card{cursor:pointer;outline:none}.trace-card .slab{fill:var(--sheet);stroke:#81909a;stroke-width:1.1}.trace-card.is-route .slab{stroke:#35577d;stroke-width:1.7}.trace-card.is-active .slab{fill:var(--acid);stroke:#605021;stroke-width:1.7}.trace-card:focus-visible .slab{stroke:#1e5496;stroke-width:3}.trace-card .name{font:700 14px var(--mono);letter-spacing:-.055em}.trace-card .hint{font-size:13px;fill:#475767}.trace-card .loss-name{fill:var(--rust)}.trace-adjunct{font-size:13px;fill:var(--muted)}.trace-adjunct.is-active{fill:var(--rust);font-weight:750}
+dialog{color:var(--ink);background:var(--sheet);border:1px solid var(--ink);padding:0;width:min(565px,calc(100vw - 26px));max-height:80vh;box-shadow:0 18px 70px #131b2e50}dialog::backdrop{background:#202a3866}.search-head{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--hair);padding:11px 13px}.search-head input{flex:1;min-width:0;border:0;background:none;padding:5px;font-size:16px}.search-head button{padding:4px}.results{margin:0;padding:6px 8px;overflow:auto;max-height:49vh;list-style:none}.result{width:100%;display:flex;align-items:center;gap:9px;text-align:left;padding:8px 8px;border-bottom:1px solid #e2e0d7}.result:hover,.result.hot{background:#f1e7b9}.result .desc{margin-left:auto;font-size:11px;color:var(--muted);text-align:right}.result strong{font-size:14px}.searchfoot{padding:8px 14px;border-top:1px solid var(--hair);color:var(--muted);font-size:11px}.empty{padding:14px}
+@media(max-width:1100px){.map-id b{margin-right:4px}.heading{padding-top:18px}.deck{grid-template-columns:minmax(0,1fr) 295px}.scene{min-width:620px}.receipt-scene{min-width:0}.pane{scrollbar-width:auto}}
+@media(max-width:860px){.deck{height:auto;grid-template-columns:minmax(0,1fr)}.pane{height:383px;flex:none}.pane.receipt-pane{height:auto}.scene{min-width:640px}.receipt-scene{min-width:0;height:auto}.map{height:auto}.tool.mobile-inspector{display:inline-flex}.mobile-zones:not(:empty){display:flex;background:var(--sheet);border-top:1px solid var(--hair);gap:4px;padding:3px 6px}.mobile-zones button{font-size:11px;font-weight:650;padding:6px 4px;flex:1;text-align:left;white-space:nowrap}.mobile-zones button:hover{background:#e5e2d7}.mobile-zones b{font:10px var(--mono);color:var(--indigo);padding-right:4px}.inspect{border-top:1px solid #89939a;border-left:0}.detail-scroll{max-height:none;min-height:250px}.legend .mobile-hint{display:inline-flex;margin-left:auto}.rail-head{min-height:36px}.heading{align-items:center}.search-launch{min-width:0}.search-launch kbd{display:none}}
+@media(max-width:520px){.mast{height:44px}.mast-note{font-size:9px}.frame{padding:0 10px 14px}.heading{padding:15px 1px 13px;gap:7px}.eyebrow{font-size:9px;letter-spacing:.075em}.search-launch{padding:7px;gap:5px}.search-launch .i{width:15px;height:15px}.search-launch span{font-size:12px}.viewbar{gap:0}.viewbar button{padding:9px 6px;font-size:11px;gap:4px}.viewbar button[aria-current]:after{left:6px;right:6px}.viewbar .i{width:13px;height:13px}.viewbar .receipt-tab{margin-left:0}.mapbar{padding:0 7px;min-height:38px}.map-id{font-size:10px;white-space:nowrap}.map-id b{font-size:9px}.tool{gap:4px;padding:4px;font-size:11px}.tool .i{width:13px;height:13px}.legend{padding:6px 7px;gap:5px 9px;font-size:10px}.legend span{gap:4px}.legend .line{width:15px}.legend .mobile-hint{font-size:9px}.receipt-scene{padding:8px}.bottomline{font-size:9px}}
+</style>
+</head>
+<body>
+<header class="mast"><div class="brand"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 7 9-5 9 5v10l-9 5-9-5zM3 7l9 5 9-5m-9 5v10M7.5 4.5l9 5"/></svg>AgentX</div><div class="mast-note"><span></span> SOURCE ATLAS / 离线</div></header>
+<main class="frame">
+  <div class="heading"><div><div class="eyebrow">AGENTX OBJECT ATLAS</div><h1>对象图谱</h1></div><button class="search-launch" id="searchOpen" aria-haspopup="dialog"></button></div>
+  <nav class="viewbar" id="nav" aria-label="图谱视图"></nav>
+  <div class="deck" data-layout="AtlasWorkbench">
+    <section class="map-layout" aria-label="关系画布" data-block="RelationshipCanvas">
+      <div class="mapbar"><div class="map-id" id="mapId"></div><div class="tools"><button class="tool" id="focusMode" aria-pressed="false" title="突出所选对象及直接关系"></button><button class="tool mobile-inspector" id="inspectorJump" title="跳到所选对象的检查器"></button><button class="tool" id="overview" title="回到核心对象默认视图"></button></div></div>
+      <div class="pane" id="pane" tabindex="0" aria-label="可滚动图谱画布"></div>
+      <nav class="mobile-zones" id="mobileZones" aria-label="画布分区"></nav><div class="legend" id="legend"></div>
+    </section>
+    <aside class="inspect" aria-label="对象检查器" data-block="ObjectInspector">
+      <div class="rail-head"><span id="railIcon"></span> 对象检查器 <span id="ordinal"></span></div>
+      <div class="inspector-title" id="inspectorTitle"></div>
+      <div class="detail-tabs" role="tablist" aria-label="对象详情" id="detailTabs"></div>
+      <div class="detail-scroll" id="detailScroll"><div class="detail-body" id="detail" role="tabpanel" tabindex="0"></div><div class="neighbors" id="neighbors"></div></div>
+    </aside>
+  </div>
+  <div class="bottomline"><span>AGENTX / DOMAIN REFERENCE</span><a href="companion.png" download>下载图版 PNG ↗</a></div>
+</main>
+<dialog id="searchDialog" aria-labelledby="searchLabel" data-block="GlobalSearch">
+  <form class="search-head" id="searchForm"><label class="sr" id="searchLabel" for="query">查找对象、字段或方法</label><span id="searchIcon"></span><input id="query" placeholder="查找对象、字段或方法…" autocomplete="off" spellcheck="false" role="combobox" aria-controls="results" aria-expanded="true" aria-autocomplete="list"><button type="button" id="searchClose" title="关闭搜索" aria-label="关闭搜索">Esc</button></form>
+  <ul class="results" id="results" role="listbox" aria-label="搜索结果"></ul><div class="searchfoot">↑ ↓ 选择 · Enter 打开 · Esc 关闭</div>
+</dialog>
+<div class="sr" role="status" id="announce"></div>
+<script>
+'use strict';
+/* Source aliases: repository-relative paths, kept local to this curated projection. */
+const sdk='packages/agentx-client/src/';
+const paths={D:sdk+'domain/contracts.ts',I:sdk+'domain/index.ts',A:sdk+'domain/agent.ts',W:sdk+'domain/workspace.ts',C:sdk+'client.ts',M:sdk+'management.ts',G:sdk+'generated/management/types.gen.ts',B:sdk+'workbench.ts',BG:sdk+'generated/workbench/types.gen.ts',O:sdk+'observation.ts',OG:sdk+'generated/observation/types.gen.ts',R:'src/management/contract.rs',RW:'src/management/web.rs',RS:'src/management/store.rs',P:'src/agents/attachments.rs',LP:'src/config/profiles.rs',IN:'src/inspection/contract.rs',MODEL:'.docs/model/typescript-domain-sdk.md',FILE:'.docs/file-task-bindings.md',WB:'.docs/collaboration-workbench/browser-api.md',OB:'.docs/observability/browser-api.md'};
+const items={};
+function item(id,name,kind,icon,hint,summary,fields,methods,sources,note=''){
+  const rows=s=>s?s.split('\n').map(r=>r.split('|')):[];
+  items[id]={id,name,kind,icon,hint,summary,fields:rows(fields),methods:rows(methods),sources:rows(sources),note,num:String(Object.keys(items).length+1).padStart(2,'0')};
+}
+item('scope','AgentXScope','ts','scope','监听器 · 作用域 · 代次','一次选择固定 Management 监听器、原生作用域和数据库代次。重新选择产生新句柄。',
+`baseUrl|规范化的监听器地址
+scope|必须与 expectedScope 匹配
+generation|由 describe 返回；旧地址不会自动重绑
+descriptor|只读；包含 max_page、max_text 等`,
+`selectAgentXScope({ baseUrl, expectedScope }) → AgentXScope|检查监听器描述；不授予权限。
+workspaces() → WorkspaceCatalog|读取有覆盖边界的发现目录。
+workspace(key) → Workspace|构造已知地址；不证明存在。
+agent(address) → Agent|重建同一选择下的精确句柄。
+operation(address) → OperationHandle|绑定原始回执地址。`,
+`I|13|selectAgentXScope
+D|95|AgentXScope
+G|163|Descriptor
+MODEL|82|Implementation and validation`);
+item('workspace','Workspace','ts','workspace','规范路径 / global','成员来自采用事实。当前工作目录、目录投递路由与成员身份各自独立。',
+`address.key|规范主机路径或显式 global
+address.scope|原始 AgentXScope 地址
+coverage.next|与 Workspace 地址绑定的全局游标
+currentComplete|全局扫描当前部分；不代表成员清单完整
+legacy / unavailable|分别计数；不能算作 global`,
+`roles() → RoleCatalog|当前有效角色目录；可能返回原生规范化后的 Workspace。
+members({ after?, limit? }) → MemberPage|只投影一页全局 Agent；空页仍可有下一页。`,
+`D|89|Workspace
+D|39|MemberPage / MemberCursor
+W|18|bindWorkspace
+MODEL|33|Coverage and continuation`);
+item('role','RoleDefinition','ts','role','当前目录 · Role.definition','当前目录观测值。Role 名称或同一路径都不能证明与启动时采用的版本相同。',
+`name / namespace|有效定义名称和来源命名空间
+path|规范文件路径；不含定义摘要
+profile|可空的定义配置
+default / description|原生目录元数据`, '',
+`D|31|Role / RoleCatalog
+G|490|RoleDefinitionView
+M|23|roles.list`, '只读值：通过 workspace.roles() 或 Management roles.list(...) 取得。');
+item('adopted','AdoptedRole','native','seal','启动时事实 · RoleView','冻结在精确 Agent 成员事实中，保留实际选用的 profile；目录后续编辑不改写它。',
+`name / namespace|启动时采用的角色与来源
+path|采用时的规范定义路径
+profile|实际选择的启动 profile
+default / description|启动元数据；不含 prompt、版本或摘要`, '',
+`D|21|Membership.role
+G|502|RoleView
+MODEL|16|Current Role / adopted Role`, '只读启动事实：由 agent.snapshot() 的 adopted 分支提供。');
+item('agent','Agent','ts','agent','当前实例 / 已停止记录','精确地址指向一次执行。同名后继必须另选；当前实例存在不代表 Provider 健康。',
+`scope|监听器 + 原生作用域 + 数据库代次
+name|原生参与者名
+incarnation|current：当前实例的身份栅栏
+membership|采用路径或 global / 旧记录缺失 / 不可用
+facts.can_send|只读提示；原生仍检查授权和可用性
+checkpoint|消息页游标绑定同一精确 Agent`,
+`snapshot() → AgentSnapshot|读取当前事实及采用成员资格。
+messages({ after?, limit? }) → MessagePage|读取该执行的有界历史，不消费收件箱。
+prepareMessage(message, requestId) → PreparedMessage|脱离草稿并固定当前目标；无网络请求。
+send(prepared) → OperationReceipt|显式发一次。回包丢失时查原回执。`,
+`D|75|AgentReader / CurrentAgent / StoppedAgent
+A|34|bindAgent
+G|20|AgentView
+M|28|ManagementClient.agents`);
+item('provider','ProviderSession','native','provider','Provider 原生会话键','Provider 会话通过运行期 attachment 关联参与者；session_id 单独不足以确定 Agent 或控制权。',
+`provider / scope / session_id|Provider 定义的不透明三元键
+participant|canonical_name + incarnation_bits
+execution / binding|绑定时的运行代次与新 token
+owner|独立控制主身份`, '',
+`P|39|ActivationTarget
+P|48|ProviderSessionKey / Attachment`, '原生概念：Management 的 session_id 是可见字段，不是可调用的 ProviderSession 句柄。');
+item('prepared','PreparedMessage','ts','prepare','精确目标 · 原始请求 ID','提交之前在本地保留的命令值。要跨刷新恢复，由调用方持久保留。',
+`target|精确 CurrentAgent 地址
+operation|原始 scope + 调用方生成的 requestId（UUID）
+message|完整消息输入的只读副本`, '',
+`D|62|PreparedMessage
+D|81|CurrentAgent.prepareMessage
+A|34|bindAgent`, '不可调用的值；可交给同一 CurrentAgent 的 send(prepared)。');
+item('operation','Operation','ts','receipt','原始回执 · OperationHandle','精确查询原始 journal 记录，与 Agent 是否仍为当前实例无关。',
+`address|原始 scope + requestId
+status|Accepted / Running / Succeeded / Failed / Unknown
+result|带类型的原生结果；消息操作为 Sent 时包含 message_id
+error|可空原生错误；Unknown 不能证明未执行`,
+`observe() → OperationReceipt|查询原 generation / request_id；不重新提交。
+wait({ signal?, timeoutMs? }) → OperationReceipt|轮询到终态；取消或超时只停止本地观察。`,
+`D|67|OperationReceipt / OperationHandle
+I|38|operation(target)
+R|463|OperationStatus / Operation
+C|112|getOperation / waitForOperation
+RW|650|GET /api/v1/operations/{request_id}
+RS|539|Journal admission / claim / finish / abandon`);
+item('message','Message','ts','message','历史值 · 精确执行','不可变历史值。事件 ID 归原代次；发件人或收件人名称不足以重建精确 Agent。',
+`id / at|原代次中的事件 ID 和时间
+from / recipients|历史名称
+text / intent|正文和可空意图
+thread / reply_to|线程和回复引用
+attachments|可选附件元数据`, '',
+`D|53|Message / MessagePage
+G|358|MessageView
+G|351|MessagePage`, '只读历史值；通过 agent.messages(...) 读取。成功的 Sent 可用 message_id 关联，但不代表交付、已读或回复。');
+item('directory','DirectoryEntry','http','workspace','目录端点 · 独立路由','原生解析目录端点和角色。解析出的路由目标不能代替精确 Agent 成员资格。',
+`generation / directory|请求代次和目录
+requested_workspace|可空请求 Workspace
+resolved_workspace|可空的解析 Workspace
+endpoint / role|端点状态与可安全显示的角色`,
+`directory.inspect({ generation, directory }) → DirectoryEntry|读取目录路由观察。
+directory.send(input) → Operation|单独的目录投递操作，和精确 Agent send 不同。`,
+`M|24|ManagementClient.directory
+G|177|DirectoryEntry / DirectorySendOutcome`);
+item('profile','LaunchProfile','native','sliders','原生配置 · 描述符投影','配置文件保存复用的 Provider 参数。Management 描述符仅公开 ProfileView；采用时保留选用 profile 信息。',
+`name|作用域配置中的键
+tool|Provider 工具
+args|原生配置参数；不出现在 ProfileView
+description|可选原生描述`, '',
+`LP|9|LaunchProfile / ProfileCatalog
+G|423|ProfileView
+G|163|Descriptor.profiles`, '无 Domain SDK Profile 句柄。通过 Management describe() 读取公开投影。');
+item('attachment','Attachment','http','clip','消息媒体 · 受限字节传输','消息附件是带 ID 的媒体对象；不同于原生 Provider attachment 或任务文件绑定。',
+`id / url|附件引用与可下载路径
+name / media_type|展示名与 MIME
+size|字节数，SDK 使用 bigint
+generation|上传、下载请求中的代次栅栏`,
+`attachments.upload({ generation, name, media_type?, bytes }) → Attachment|上传 Blob。
+attachments.download({ generation, id }) → Blob|按原身份读取字节。`,
+`M|40|ManagementClient.attachments
+G|89|Attachment
+G|358|MessageView.attachments`);
+item('file','FileBinding','native','file','Task / Delivery · 文件投影','绑定到 launch 的文件工作项引用。文件拥有任务状态；原生投影可重建，不把它当 Workbench Work。',
+`AgentView.file_bindings|精确 Agent 可见的绑定列表
+schema / path|文件种类和绑定路径
+status / diagnostic|来源状态与读失败；失败时可能保留旧观察`, '',
+`R|114|FileBindingView
+G|20|AgentView.file_bindings
+FILE|21|Assignment representation`, '无 Domain SDK 句柄；可从 Agent snapshot 或 Management AgentView 检视。');
+item('labels','AgentLabels','http','tag','当前修订 / 历史冻结','Agent 的标签投影。停止记录未采集的 labels 不得从同名当前实例补齐。',
+`agent|精确 AgentRef
+labels / labels_revision|观察值和修订；历史值可缺失
+if_revision|条件更新修订
+set / remove|显式补丁`,
+`agents.labels.get(input) → LabelsSnapshot|以精确身份读取。
+agents.labels.patch(input) → Operation|通过 Management journal 提交补丁。`,
+`M|38|ManagementClient.agents.labels
+G|20|AgentView.labels
+G|546|SubmitLabels`);
+item('inspector','Inspector','http','inspect','采集 · 分析 · 恢复','Management 的 Inspector 资源组。采集观察、分析 Job 和恢复 Attempt 各有自己的结果类型。',
+`generation / settings|原 Management 代次、采集和策略
+coverage|已采集窗口及可见缺口
+observations|带精确 AgentRef 的观察
+jobs / attempts|分析、恢复记录；非通用 Operation`,
+`inspection.get(generation) → Snapshot|读取采集概览。
+inspection.configure(input) → Snapshot|调整采集/恢复设置。
+inspection.analyze(input) → AnalysisJob|生成分析任务。
+inspection.cancelAnalysis(input) → AnalysisJob|按原任务取消分析。
+inspection.requestContinuation(input) → RecoveryAttempt|请求受约束的恢复。`,
+`M|49|ManagementClient.inspection
+IN|116|Snapshot
+IN|105|AnalysisJob
+G|523|Snapshot`);
+item('workbench','Workbench','http','scope','独立监听器 · Work 作用域','显式 Workbench 监听器描述 scope、project 和 generation；不会承继当前 Management 选择。',
+`baseUrl|调用方配置的 Workbench 监听器
+scope / project|由 Workbench 描述并原生检查
+generation|Workbench 描述值，可缺失
+available / collaboration|原生能力观察`,
+`createWorkbenchClient({ baseUrl }) → WorkbenchClient|绑定独立 HTTP 适配器。
+describe() → Descriptor|读取连接描述。
+read(input) / apply(input) → Response|闭合的原生读取与操作集合。`,
+`B|26|WorkbenchClient
+BG|147|Descriptor
+WB|9|Workbench browser contract`);
+item('work','Work','http','work','WorkRef · 结构化协作','Workbench 的工作记录；独立于 Task/Delivery 文件绑定。结构化结果和验收不能由聊天文本生成。',
+`reference / revision|WorkRef 与修改修订
+briefs / assignments|任务说明版本及分派记录
+messages / results / checks|结构化记录
+decisions|接受或要求改动`,
+`works.list(generation, input) → Response|分页工作列表。
+works.get(generation, input) → Response|读取明细和 eligibility。
+works.create(context, input) → Response|创建工作。
+works.accept(context, input) → Response|记录结构化验收。
+works.command(generation, command_id) → Response|以原命令 ID 查询，独立于 Management Operation。`,
+`B|30|WorkbenchClient.works
+BG|411|Work / WorkDetail
+WB|15|Command identity and lookup`);
+item('assignment','Assignment','http','assign','分派值 · 精确参与者','Work 下的分派记录。参与者可以从当前精确 Management AgentRef 显式转换（不接收 stopped），接收端仍检查其作用域与身份。',
+`id|分派记录的 ID
+participant|精确 ParticipantRef
+role|工作分派角色
+dispatched_brief|已派发的说明版本，可空`,
+`works.bind(context, input) → Response|Workbench 绑定参与者。
+works.dispatch(context, input) → Response|Workbench 发出结构化分派。
+participantFromAgent(agentRef) → ParticipantRef|SDK 显式转换身份形状。`,
+`B|38|WorkbenchClient.works.bind / dispatch
+B|96|participantFromAgent
+BG|47|Assignment`);
+item('observation','Observation','http','inspect','独立监听器 · 被动读','独立选择 Observer 监听器。其 DaemonRef 和资料时代不能由 Management 代次推断。',
+`canonical_scope|Observer 启动时选定的作用域
+daemon_instance|DaemonRef 的实例标识
+expected_daemon|可空原实例约束；不会自动换绑
+ReadResult|原生 Inspection 或适配器 LocalFailure`,
+`createObservationClient({ baseUrl }) → ObservationClient|绑定显式 Observer。
+scope() → ScopeRef|读取监听器启动作用域。
+runtime.snapshot() → ReadResult|读取有限被动快照。
+close()|仅取消本地读取。`,
+`O|18|ObservationClient
+OG|463|DaemonRef
+OG|1409|ScopeRef
+OB|22|Browser operations`);
+item('evidence','Evidence','http','evidence','配置来源 · 事件窗口','被动读取保留原生来源、覆盖、缺口和失败分支；一次成功请求不能证明当前运行健康。',
+`FieldEvidence|配置字段、值、解析证据与步骤
+epoch / frontier|配置时代或事件流位置；遵守各自约束
+coverage / loss|拒绝把保留窗口或缺失当完整证据
+raw artifacts|配置或事件底层资料；不是 SDK 句柄`,
+`configuration.head(input) / get(input) → ReadResult|查看配置时点和来源。
+configuration.compare(input) → ReadResult|比较原生配置证据。
+events.describe() / read(input) → ReadResult|查看有界事件窗口及缺口。`,
+`O|36|configuration / events
+OG|722|FieldEvidence
+OB|35|Precision and evidence branches`);
+item('paging','MembershipPaging','native','defer','延后 · 原生按成员筛选','当前 SDK 在全局分页之后做投影；完整、成比例的原生成员分页还未提供。',
+`available now|逐页投影 exact adopted membership
+deferred|筛选后分页；明确 legacy / unavailable / stopped 覆盖
+cursor|未来选择器须与作用域、代次和 Workspace 绑定`, '',
+`MODEL|33|Coverage and continuation
+D|39|MemberPage / MemberCursor`, '设计边界，无已实现方法；使用 Workspace.members(...) 的明确续页语义。');
+
+const shapes={
+ scope:'M3 8V3h5m8 0h5v5m0 8v5h-5m-8 0H3v-5m9-9 5 5-5 5-5-5z',
+ workspace:'M3 19V6h7l2 3h9v10zM3 12h18',
+ role:'M6 3h9l4 4v14H6zM14 3v5h5M9 12h7m-7 4h5',
+ seal:'M12 3l6 3v7l-6 4-6-4V6zM9 17l-1 4 4-2 4 2-1-4m-6-7 2 2 4-4',
+ agent:'M12 3l8 4.5v9L12 21l-8-4.5v-9zM9 11h.01m6 0h.01M9 15h6',
+ provider:'M4 5h16v14H4zM8 9l3 3-3 3m5 0h4',
+ prepare:'m3 4 18 8-18 8 3-8zM6 12h9',
+ receipt:'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6m-6 4h6m-6 4h3',
+ message:'M3 5h18v12h-9l-5 4v-4H3zM7 9h10m-10 4h7',
+ sliders:'M6 3v5m0 4v9m6-18v10m0 4v4m6-18v3m0 4v11M3 8h6m0 9h6m0-11h6',
+ clip:'M8 13l5-5a3 3 0 0 1 4 4l-7 7a5 5 0 0 1-7-7l8-8a6 6 0 0 1 9 9l-6 6',
+ file:'M5 3h10l4 4v14H5zM14 3v5h5M8 13h8m-8 4h5',
+ tag:'M3 4h9l9 9-8 8-9-9zM8 8h.01',
+ inspect:'M3 16h4l3-8 4 11 3-6h4M3 4h18v18H3z',
+ work:'M4 7h16v14H4zm5 0V4h6v3M4 12h16m-8 0v3',
+ assign:'M8 4h8v5H8zM5 7h3m8 0h3v14H5V7m3 9 2 2 5-5',
+ evidence:'M4 5h16v14H4zM7 15l3-4 3 3 4-6m-1 0h1v2',
+ defer:'M12 3v4m0 10v4M3 12h4m10 0h4m-12-3 6 6m0-6-6 6',
+ search:'M10.5 4a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM16 16l4.5 4.5',
+ arrow:'M5 12h14m-5-5 5 5-5 5',
+ focus:'M4 8V4h4m8 0h4v4m0 8v4h-4m-8 0H4v-4m8-6v4m-2-2h4',
+ overview:'M5 10a7 7 0 1 1 .3 5M5 5v5h5',
+ map:'M4 4h6v6H4zm10 10h6v6h-6zM7 10v7h7m0-10h6m-3-3v6',
+ copy:'M8 8h12v12H8zM16 8V4H4v12h4'
+};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ico=(name)=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="${shapes[name]}"/></svg>`;
+const kinds={ts:'TS 对象层',http:'HTTP / SDK 资源',native:'原生 / 上下文'};
+const charts={
+ core:{n:'01',title:'核心关系',tab:'核心对象',icon:'map',home:'agent',
+ zones:[['作用域与目录','SCOPE'],['精确身份','IDENTITY'],['消息与回执','RECEIPT']],
+ pos:{scope:[0,0],workspace:[0,1],role:[0,2],adopted:[1,0],agent:[1,1],provider:[1,2],prepared:[2,0],operation:[2,1],message:[2,2]}},
+ management:{n:'02',title:'管理上下文',tab:'管理资源',icon:'sliders',home:'directory',
+ zones:[['路由与配置','ROUTING'],['精确参与者','PARTICIPANT'],['运行与媒体','MANAGEMENT']],
+ pos:{directory:[0,0],workspace:[0,1],profile:[0,2],agent:[1,0],adopted:[1,1],file:[1,2],inspector:[2,0],labels:[2,1],attachment:[2,2]}},
+ evidence:{n:'03',title:'协作与观测',tab:'协作与观测',icon:'evidence',home:'work',
+ zones:[['独立 Workbench','WORKBENCH'],['身份与边界','BOUNDARY'],['独立 Observer','OBSERVATION']],
+ pos:{workbench:[0,0],work:[0,1],assignment:[0,2],workspace:[1,0],paging:[1,1],agent:[1,2],observation:[2,0],evidence:[2,1]}},
+ receipt:{n:'04',title:'原回执路径',tab:'回执路径',icon:'receipt',home:'operation'}
+};
+const links=[];
+function edge(a,b,label,kind='direct',routes={}){links.push({a,b,label,kind,routes});}
+// Routes own only the canvas geometry. Inspector and highlight use this same relationship inventory.
+edge('scope','workspace','构造 / 发现','direct',{core:['M142 187V269',142,231]});
+edge('workspace','role','当前目录','direct',{core:['M142 345V427',142,389]});
+edge('agent','workspace','采用成员','direct',{core:['M370 307H252',311,294]});
+edge('agent','adopted','快照携带','direct',{core:['M480 269V187',480,232],management:['M480 187V269',480,232]});
+edge('agent','provider','运行期绑定','context',{core:['M480 345V427',480,388]});
+edge('agent','prepared','当前可制备','direct',{core:['M590 287H644V149H708',644,204]});
+edge('prepared','operation','保留原地址','direct',{core:['M818 187V269',818,231]});
+edge('agent','message','精确历史','direct',{core:['M590 327H678V465H708',635,372]});
+edge('operation','message','Sent → 事件 ID','direct',{core:['M818 345V427',818,389]});
+edge('scope','operation','原作用域寻址');
+edge('directory','workspace','解析路径','context',{management:['M142 187V269',142,232]});
+edge('directory','adopted','路由角色 ≠ 采用','context');
+edge('adopted','profile','实际选择','context',{management:['M370 322H311V465H252',311,370]});
+edge('agent','file','launch 绑定','direct',{management:['M395 187V211H347V445H370',347,412]});
+edge('inspector','agent','观察 AgentRef','direct',{management:['M708 149H590',649,136]});
+edge('labels','agent','精确引用','direct',{management:['M708 307H650V170H590',649,252]});
+edge('message','attachment','媒体引用');
+edge('workbench','work','读写工作','direct',{evidence:['M142 187V269',142,231]});
+edge('work','assignment','包含分派','direct',{evidence:['M142 345V427',142,389]});
+edge('agent','assignment','显式转换','context',{evidence:['M370 465H252',311,452]});
+edge('workspace','paging','当前覆盖边界','context',{evidence:['M480 187V269',480,231]});
+edge('observation','evidence','被动读取','direct',{evidence:['M818 187V269',818,231]});
+
+const branch={
+ lost:{label:'回包丢失',at:'lookup',route:['prepare','send','loss','lookup','read']},
+ seen:{label:'收到回包',at:'accepted',route:['prepare','send','accepted','read']},
+ refused:{label:'明确拒绝',at:'refused',route:['prepare','send','refused']},
+ stopped:{label:'停止观察',at:'stopped',route:['prepare','send','accepted','read','stopped']}
+};
+const steps={
+ prepare:['prepareMessage','保留原命令','prepared','固定原作用域、当前目标、完整消息和 UUID。跨刷新恢复由调用方保留。'],
+ send:['send(prepared)','显式提交一次','agent','原生验证目标、代次和能力。一次 POST 的返回证据与真正发生的效果须分别判断。'],
+ loss:['OutcomeUnknown','回包丢失 / 不可验','operation','保留原始命令。连接断开或不可信回包不证明未执行。'],
+ lookup:['scope.operation(…)','绑定原始地址','operation','使用原 scope + request ID。只查收据，不重发 POST；同名后继也不参与恢复。'],
+ read:['observe() / wait()','查原 journal','operation','按原 generation + request_id 查询；404 或观察不可用保留不确定性。'],
+ accepted:['回包可用','以实际返回状态为准','operation','回包是当时的 Operation。Accepted / Running 可继续观察；已受理不等于交付。'],
+ refused:['明确拒绝','错误 / 本地校验','agent','按拒绝原因处理。陈旧目标或代次不触发自动换绑、重试或刷新。'],
+ stopped:['ObservationStopped','取消 / 超时','operation','仅停止本地等待；保留原地址，可能带最后一份已读回执。'],
+ nAccepted:['Accepted','入 journal','operation','原生已接纳该操作，尚未确认消息入历史或交付。'],
+ nRunning:['Running','工作器处理','operation','工作器处理原操作；调用端可独立停止观察。'],
+ nSucceeded:['Succeeded','Sent → message_id','message','Sent 证明消息已被受理并可关联历史；不证明交付、已读或回复。'],
+ nFailed:['Failed','原生失败','operation','查看失败原因。明确失败与回包丢失、Unknown 或不存在回执分别处理。'],
+ nUnknown:['Unknown','无法确定效果','operation','工作器退出或放弃等情况可留下 Unknown。等待会返回该状态；合法的原工作器结果仍可能让后续查询得到新证据。']
+};
+const state={view:'core',id:'agent',tab:'fields',variant:'current',focus:false,branch:'lost',step:'lookup'};
+const pos=(col,row)=>[32+338*col,111+158*row];
+const defs=`<defs><marker id="arrow" orient="auto" markerWidth="7" markerHeight="7" refX="6.2" refY="3.5" viewBox="0 0 7 7"><path d="M.5.7 6.2 3.5.5 6.3" fill="none" stroke="#496582" stroke-width="1.1"/></marker><marker id="arrowContext" orient="auto" markerWidth="7" markerHeight="7" refX="6.2" refY="3.5" viewBox="0 0 7 7"><path d="M.5.7 6.2 3.5.5 6.3" fill="none" stroke="#91432d" stroke-width="1.1"/></marker></defs>`;
+const layerMark=(kind,x,y)=>kind==='ts'?`<rect x="${x}" y="${y}" width="8" height="8" rx="2" fill="#294974"/>`:kind==='http'?`<rect x="${x}" y="${y}" width="8" height="8" fill="none" stroke="#294974"/>`:`<path d="M${x+4} ${y}l4 4-4 4-4-4z" fill="none" stroke="#91432d"/>`;
+function zonesFor(chart){
+ return chart.zones.map(([name,en],i)=>{
+   const x=14+i*338;
+   return `<g aria-hidden="true"><rect class="zone-bg" x="${x}" y="30" width="256" height="496" rx="3"/><path class="zone-rule" d="M${x} 81h256m-256 438h256"/><text class="zone-no" x="${x+13}" y="51">0${i+1} / ${en}</text><text class="zone-title" x="${x+13}" y="71">${name}</text><path class="calibration" d="M${x+9} 93v-5h5m232 0h5v5m0 417v5h-5m-232 0h-5v-5"/></g>`;
+ }).join('');
+}
+function objectNode(d,x,y,ports){
+ const body=`M0 0H207L220 13V76H0Z`;
+ return `<g class="object ${d.kind}" data-object="${d.id}" tabindex="0" role="button" aria-label="${esc(d.name)}，${esc(d.hint)}" aria-pressed="false" transform="translate(${x} ${y})">
+ <path class="focus-ring" d="M-4 -4H208L224 11V80H-4Z"/><path class="slab" d="${body}"/><path class="fold" d="M207 0v13h13"/>
+ <rect class="tile" x="11" y="13" width="33" height="35" rx="3"/><path class="glyph" transform="translate(17 20) scale(.87)" d="${shapes[d.icon]}"/>
+ <text class="name ${d.name.length>=16?'long':''}" x="53" y="33">${esc(d.name)}</text><text class="hint" x="12" y="63">${esc(d.hint)}</text>
+ ${layerMark(d.kind,185,57)}<text class="node-id" x="212" y="65">${d.num}</text>
+ ${ports.map(([cx,cy])=>`<circle class="port" cx="${cx-x}" cy="${cy-y}" r="2.6"/>`).join('')}
+ </g>`;
+}
+function endpoint(d,first){
+ const nums=[...d.matchAll(/([MHV])([^MHV]+)/g)];
+ let x,y;
+ for(const [,cmd,str] of (first?nums.slice(0,1):nums)){
+   const [a,b]=str.trim().split(/\s+/).map(Number);
+   if(cmd==='M'){x=a;y=b;}else if(cmd==='H')x=a;else y=a;
+ }
+ return [x,y];
+}
+function mapMarkup(view) {
+ const chart=charts[view], ports={};
+ const edges=links.filter(x=>x.routes[view]).map(e=>{
+   const [d,x,y]=e.routes[view], cl=e.kind==='context'?'context':'';
+   (ports[e.a]??=[]).push(endpoint(d,true)); (ports[e.b]??=[]).push(endpoint(d,false));
+   return `<path class="edge ${cl}" data-edge="${e.a}:${e.b}" d="${d}" marker-end="url(#${cl?'arrowContext':'arrow'})"/><text class="edge-label ${cl}" data-edge="${e.a}:${e.b}" x="${x}" y="${y}">${esc(e.label)}</text>`;
+ }).join('');
+ return `<div class="scene"><svg class="map" viewBox="0 0 960 555" role="group" aria-label="${chart.title}">
+ ${defs}${zonesFor(chart)}
+ <path class="calibration" d="M14 540h932 M14 536v8m169-8v8m169-8v8m169-8v8m169-8v8m169-8v8m87-8v8"/>
+ <text class="coord" x="14" y="20">AX / ${chart.n}</text><text class="coord" x="946" y="20" text-anchor="end">RELATIONSHIP PLATE</text>
+ ${edges}${Object.entries(chart.pos).map(([id,[col,row]])=>objectNode(items[id],...pos(col,row),ports[id]??[])).join('')}
+ </svg></div>`;
+}
+function traceCard(id,x,y,w=151){
+ const [title,sub]=steps[id], loss=['loss','nUnknown','refused','stopped'].includes(id);
+ return `<g class="trace-card" role="button" tabindex="0" aria-label="${esc(title+'，'+sub)}" aria-pressed="false" data-step="${id}" transform="translate(${x} ${y})">
+  <path class="slab" d="M0 0H${w-10}l10 10v44H0z"/><text class="name ${loss?'loss-name':''}" x="9" y="21">${esc(title)}</text><text class="hint" x="9" y="41">${esc(sub)}</text></g>`;
+}
+function traceEdge(a,b,poly,loss=false){
+ return `<path class="trace-edge ${loss?'is-loss':''}" data-route="${a}:${b}" d="${poly}" marker-end="url(#${loss?'arrowContext':'arrow'})"/>`;
+}
+function receiptMarkup(){
+ return `<div class="scene receipt-scene" data-block="ReceiptLens">
+ <div class="receipt-controls" aria-label="回执情形">${Object.entries(branch).map(([v,b])=>`<button data-branch="${v}" aria-pressed="false">${b.label}</button>`).join('')}</div>
+ <div class="receipt-scroll" tabindex="0" aria-label="可滚动回执路径"><svg class="map" viewBox="0 0 960 388" role="group" aria-label="调用端证据与原生操作状态">
+ ${defs}
+ <rect x="1" y="1" width="958" height="235" class="zone-bg" rx="3"/><rect x="1" y="247" width="958" height="139" class="zone-bg" rx="3"/>
+ <text class="zone-no" x="14" y="21">A / CALLER KNOWLEDGE</text><text class="zone-title" x="14" y="44">调用端证据</text>
+ <text class="zone-no" x="14" y="269">B / NATIVE JOURNAL</text><text class="zone-title" x="14" y="292">原生操作状态</text>
+ ${traceEdge('prepare','send','M168 120H202')}
+ ${traceEdge('send','loss','M353 120H374V75H393',true)}
+ ${traceEdge('send','accepted','M353 120H374V145H393')}
+ ${traceEdge('send','refused','M353 120H374V207H393',true)}
+ ${traceEdge('loss','lookup','M544 75H579',true)}
+ ${traceEdge('lookup','read','M756 75H765V120H779')}
+ ${traceEdge('accepted','read','M544 145H761V133H779')}
+ ${traceEdge('read','stopped','M862 147V180',true)}
+ ${traceCard('prepare',17,93)}${traceCard('send',202,93)}${traceCard('loss',393,48)}${traceCard('accepted',393,118)}${traceCard('refused',393,180)}${traceCard('lookup',579,48,177)}${traceCard('read',779,93,166)}${traceCard('stopped',779,180,166)}
+ ${traceEdge('nAccepted','nRunning','M149 343H177')}
+ ${traceEdge('nRunning','nSucceeded','M305 343H369V318H400')}
+ ${traceEdge('nRunning','nFailed','M305 343H355V359H577')}
+ ${traceEdge('nRunning','nUnknown','M305 343H347V379H738V349H772',true)}
+ ${traceEdge('nAccepted','nUnknown','M136 316V283H840V316',true)}
+ ${traceCard('nAccepted',21,316,128)}${traceCard('nRunning',177,316,128)}${traceCard('nSucceeded',400,291,152)}${traceCard('nFailed',577,316,142)}${traceCard('nUnknown',772,316,167)}
+ </svg></div><div class="receipt-note" id="receiptNote" aria-live="polite"></div>
+ </div>`;
+}
+const detailTabs={fields:'属性',methods:'方法',sources:'源码'};
+const currentFields=items.agent.fields;
+const stoppedFields=[
+ ['scope','原监听器、原生作用域与原代次'],
+ ['name','历史参与者名'],
+ ['stopped_event','stopped：精确停止事件，不用当前 incarnation'],
+ ['membership','只读取停止记录中的采用事实；缺失不回填'],
+ ['facts.labels','历史可缺失；不能用同名后继填补'],
+ ['checkpoint','独立于后继的精确消息游标']
+];
+function say(str){$('announce').textContent=str;}
+function drawNav(){
+ $('nav').innerHTML=Object.entries(charts).map(([k,c])=>`<button data-view="${k}" class="${k==='receipt'?'receipt-tab':''}" ${k===state.view?'aria-current="page"':''}>${ico(c.icon)}${c.tab}</button>`).join('');
+}
+function saySelection(){say(`已选 ${items[state.id].name} · ${charts[state.view].title}`);}
+function paintCanvas({center=false}={}){
+ const c=charts[state.view], isReceipt=state.view==='receipt';
+ $('mapId').innerHTML=`<b>${c.n}</b>${c.title}`;
+ $('focusMode').hidden=isReceipt;
+ $('focusMode').style.display=isReceipt?'none':'';
+ $('focusMode').setAttribute('aria-pressed',String(state.focus));
+ $('legend').innerHTML=isReceipt?'<span><i class="line"></i> 观察或状态路径</span><span><i class="line dashed"></i> 拒绝 / 不确定 / 停止</span><span class="mobile-hint">横滑以查看完整路径 ↔</span>':
+ `<span><i class="mark ts"></i> TS 对象层</span><span><i class="mark http"></i> HTTP / SDK</span><span><i class="mark native"></i> 原生 / 上下文</span><span><i class="line"></i> 对象关系</span><span><i class="line dashed"></i> 上下文关系</span><span class="mobile-hint">横滑画布 ↔</span>`;
+ $('mobileZones').innerHTML=isReceipt?'':c.zones.map(([label],i)=>`<button data-zone="${i}"><b>0${i+1}</b>${label}</button>`).join('');
+ $('pane').classList.toggle('receipt-pane',isReceipt);
+ $('pane').innerHTML=isReceipt?receiptMarkup():mapMarkup(state.view);
+ $('pane').scrollTop=0;
+ if(isReceipt)paintTrace();else{paintSelection();if(center)centerNode();}
+}
+function paintSelection(){
+ const nearby=new Set(links.flatMap(e=>e.a===state.id?[e.b]:e.b===state.id?[e.a]:[]));
+ for(const n of $('pane').querySelectorAll('[data-object]')){
+   const id=n.dataset.object, selected=id===state.id, near=nearby.has(id);
+   n.classList.toggle('is-selected',selected);
+   n.classList.toggle('is-near',state.focus&&near);
+   n.classList.toggle('is-muted',state.focus&&!near&&!selected);
+   n.setAttribute('aria-pressed',String(selected));
+ }
+ for(const n of $('pane').querySelectorAll('[data-edge]')){
+   const active=n.dataset.edge.split(':').includes(state.id);
+   n.classList.toggle('is-hot',active);
+   n.classList.toggle('is-muted',state.focus&&!active);
+ }
+}
+function centerNode(){
+ const pane=$('pane'), node=pane.querySelector(`[data-object="${state.id}"]`);
+ if(!node||pane.scrollWidth<=pane.clientWidth)return;
+ const a=node.getBoundingClientRect(), b=pane.getBoundingClientRect();
+ pane.scrollLeft+=a.left-b.left+a.width/2-b.width/2;
+}
+function paintTrace(){
+ const br=branch[state.branch];
+ $('pane').querySelectorAll('[data-branch]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.branch===state.branch)));
+ $('pane').querySelectorAll('[data-step]').forEach(el=>{
+    const s=el.dataset.step;
+    el.classList.toggle('is-active',s===state.step);
+    el.classList.toggle('is-route',br.route.includes(s));
+    el.setAttribute('aria-pressed',String(s===state.step));
+ });
+ $('pane').querySelectorAll('[data-route]').forEach(el=>{
+   const [a,b]=el.dataset.route.split(':');
+   el.classList.toggle('is-active',br.route.includes(a)&&br.route.includes(b));
+ });
+ const [title,sub,,note]=steps[state.step];
+ $('receiptNote').innerHTML=`<strong>${esc(title)} · ${esc(sub)}</strong><span>${esc(note)}</span>`;
+}
+function related(d){
+ const list=links.filter(e=>e.a===d.id||e.b===d.id);
+ if(!list.length)return '';
+ return `<h3>关联对象 <span>${list.length}</span></h3>`+list.map(e=>{
+   const out=e.a===d.id, target=items[out?e.b:e.a];
+   return `<button class="jump" data-jump="${target.id}" title="${out?'指向':'来自'} ${esc(target.name)}：${esc(e.label)}"><i class="mark ${target.kind}"></i><strong>${target.name}</strong><em>${out?'→':'←'} ${esc(e.label)}</em>${ico('arrow')}</button>`;
+ }).join('');
+}
+function paintInspector({scroll=false}={}){
+ const d=items[state.id],stopped=d.id==='agent'&&state.variant==='stopped';
+ $('ordinal').textContent='OBJ / '+d.num;
+ $('inspectorTitle').innerHTML=`<div class="identity-kind"><i class="mark ${d.kind}"></i>${d.id==='paging'?'延后覆盖':kinds[d.kind]}</div><h2 id="selectedTitle" tabindex="-1">${d.name}</h2><p>${esc(d.summary)}</p>`+
+   (d.id==='agent'?`<div class="variants" aria-label="精确 Agent 变体"><button data-variant="current" aria-pressed="${!stopped}">Current</button><button data-variant="stopped" aria-pressed="${stopped}">Stopped</button></div>`:'');
+ $('detailTabs').innerHTML=Object.entries(detailTabs).map(([k,label])=>`<button id="tab-${k}" role="tab" aria-selected="${state.tab===k}" aria-controls="detail" tabindex="${state.tab===k?0:-1}" data-tab="${k}">${label}</button>`).join('');
+ $('detail').setAttribute('aria-labelledby','tab-'+state.tab);
+ if(state.tab==='fields'){
+   const fields=d.id==='agent'?(stopped?stoppedFields:currentFields):d.fields;
+   $('detail').innerHTML=`<dl class="rows">${fields.map(([key,meaning])=>`<div><dt>${esc(key)}</dt><dd>${esc(meaning)}</dd></div>`).join('')}</dl>`;
+ }else if(state.tab==='methods'){
+   const methods=stopped?d.methods.slice(0,2):d.methods;
+   $('detail').innerHTML=methods.map(([sig,meaning])=>`<div class="method"><code>${esc(sig)}</code><p>${esc(meaning)}</p></div>`).join('')+
+   (d.note||stopped?`<p class="no-method">${esc(d.note||'StoppedAgent 只读，没有 prepareMessage 或 send。')}</p>`:'')+
+   (d.id==='operation'?'<button class="mini-link" data-view="receipt">查看原回执路径 ↗</button>':'');
+ }else{
+   $('detail').innerHTML=d.sources.map(([file,line,symbol],i)=>{
+     const path=paths[file]+':'+line;
+     return `<div class="source"><div class="source-line"><code>${esc(path)}</code><button class="tool" data-copy="${i}" aria-label="复制 ${esc(symbol)} 源码位置" title="复制源码位置">${ico('copy')}</button></div><p>${esc(symbol)}</p></div>`;
+   }).join('');
+ }
+ $('neighbors').innerHTML=related(d);
+ if(scroll)$('detailScroll').scrollTop=0;
+}
+function activateView(view){
+ const c=charts[view];
+ if(!c)return;
+ if(state.view===view)return;
+ state.view=view;
+ if(view==='receipt'){state.step=branch[state.branch].at;state.id=steps[state.step][2];}
+ else if(!c.pos[state.id])state.id=c.home;
+ state.tab='fields';
+ drawNav();paintCanvas({center:true});paintInspector({scroll:true});saySelection();
+}
+function reset(){
+ Object.assign(state,{view:'core',id:'agent',tab:'fields',variant:'current',focus:false,branch:'lost',step:'lookup'});
+ drawNav();paintCanvas({center:true});paintInspector({scroll:true});saySelection();
+}
+function selectObject(id,{fromSearch=false,jump=false}={}){
+ if(!items[id])return;
+ const c=charts[state.view];
+ let newView=false;
+ if(!c.pos?.[id]){
+    state.view=Object.keys(charts).find(view=>charts[view].pos?.[id]);
+    newView=true;
+ }
+ state.id=id;state.tab='fields';
+ if(newView){drawNav();paintCanvas({center:true});}else{paintSelection();if(fromSearch||jump)centerNode();}
+ paintInspector({scroll:true});saySelection();
+ if(fromSearch){
+    const node=$('pane').querySelector(`[data-object="${id}"]`);
+    node?.focus({preventScroll:true});
+ }
+ if(jump)$('selectedTitle').focus({preventScroll:true});
+}
+function setStep(step){
+ if(!steps[step])return;
+ state.step=step;state.id=steps[step][2];state.tab='fields';
+ paintTrace();paintInspector({scroll:true});saySelection();
+}
+function openSearch(){
+ if($('searchDialog').open)return;
+ $('query').value='';searchIndex=0;
+ $('searchDialog').showModal();drawSearch();$('query').focus();
+}
+const normalize=s=>s.toLowerCase().replace(/\s+/g,' ').trim();
+let resultIds=[],searchIndex=0;
+function matches(d,parts){
+ const name=normalize(d.name), key=normalize(d.id+' '+d.hint);
+ const secondary=normalize([d.summary,kinds[d.kind],d.note,...d.fields.flat(),...(d.id==='agent'?stoppedFields.flat():[]),...d.methods.flat(),...d.sources.map(row=>row[2])].join(' '));
+ if(!parts.every(p=>name.includes(p)||key.includes(p)||secondary.includes(p)))return -1;
+ return parts.reduce((total,p)=>total+(name===p?12:name.startsWith(p)?8:name.includes(p)?5:key.includes(p)?3:1),0);
+}
+function drawSearch(){
+ const parts=normalize($('query').value).split(' ').filter(Boolean);
+ resultIds=Object.values(items).map(d=>[d.id,matches(d,parts)]).filter(x=>x[1]>=0).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
+ if(!parts.length)resultIds=[state.id,...resultIds.filter(id=>id!==state.id)];
+ searchIndex=Math.max(0,Math.min(searchIndex,resultIds.length-1));
+ $('results').innerHTML=resultIds.length?resultIds.map(id=>{
+   const d=items[id];
+   return `<li role="presentation"><button type="button" role="option" aria-selected="false" class="result" id="res-${id}" data-result="${id}" tabindex="-1"><i class="mark ${d.kind}"></i><strong>${d.name}</strong><span class="desc">${esc(d.hint)}</span></button></li>`;
+ }).join(''):'<li class="empty" role="presentation">未找到匹配对象</li>';
+ $('results').scrollTop=0;paintSearch(false);
+ say(resultIds.length?`${resultIds.length} 个匹配对象`:'没有匹配项');
+}
+function paintSearch(keepVisible=true){
+ const activeId=resultIds[searchIndex];
+ $('results').querySelectorAll('[data-result]').forEach(el=>{
+   const active=el.dataset.result===activeId;
+   el.classList.toggle('hot',active);
+   el.setAttribute('aria-selected',String(active));
+ });
+ if(!activeId){$('query').removeAttribute('aria-activedescendant');return;}
+ $('query').setAttribute('aria-activedescendant','res-'+activeId);
+ if(keepVisible)$('res-'+activeId).scrollIntoView({block:'nearest'});
+}
+function chooseResult(id){
+ if(!id)return;
+ $('searchDialog').close();
+ selectObject(id,{fromSearch:true});
+}
+async function copySource(button){
+ const d=items[state.id], [f,line]=d.sources[Number(button.dataset.copy)];
+ const value=paths[f]+':'+line;
+ try{
+   if(!navigator.clipboard)throw new Error('clipboard unavailable');
+   await navigator.clipboard.writeText(value);say('已复制 '+value);button.textContent='已复制';
+ }catch{
+   const source=button.closest('.source');
+   let input=source.querySelector('textarea');
+   if(!input){input=document.createElement('textarea');input.readOnly=true;input.setAttribute('aria-label','源码路径，按 Ctrl+C 复制');source.append(input);}
+   input.value=value;input.focus();input.select();say('已选中源码位置，可手动复制');
+ }
+}
+$('searchOpen').innerHTML=`${ico('search')}<span>查找对象</span><kbd>/</kbd>`;
+$('searchIcon').innerHTML=ico('search');$('railIcon').innerHTML=ico('inspect');
+$('focusMode').innerHTML=ico('focus')+'邻域聚焦';$('overview').innerHTML=ico('overview')+'总览';
+$('searchOpen').addEventListener('click',openSearch);
+$('searchClose').addEventListener('click',()=>{$('searchDialog').close();$('searchOpen').focus();});
+$('searchDialog').addEventListener('cancel',()=>requestAnimationFrame(()=>$('searchOpen').focus()));
+$('query').addEventListener('input',()=>{searchIndex=0;drawSearch();});
+$('query').addEventListener('keydown',e=>{
+ if(['ArrowUp','ArrowDown','Home','End'].includes(e.key)&&resultIds.length){
+   e.preventDefault();
+   searchIndex=e.key==='Home'?0:e.key==='End'?resultIds.length-1:(searchIndex+(e.key==='ArrowDown'?1:resultIds.length-1))%resultIds.length;
+   paintSearch();
+ }
+});
+$('searchForm').addEventListener('submit',e=>{e.preventDefault();chooseResult(resultIds[searchIndex]);});
+$('results').addEventListener('click',e=>chooseResult(e.target.closest('[data-result]')?.dataset.result));
+$('overview').addEventListener('click',reset);
+$('inspectorJump').innerHTML=ico('inspect')+'检查';
+$('inspectorJump').addEventListener('click',()=>{
+ const title=$('selectedTitle');title.focus({preventScroll:true});title.scrollIntoView({block:'center'});
+});
+$('mobileZones').addEventListener('click',e=>{
+ const zone=e.target.closest('[data-zone]')?.dataset.zone;
+ if(zone===undefined)return;
+ const p=$('pane'), m=p.querySelector('.map').getBoundingClientRect();
+ p.scrollLeft+=m.left-p.getBoundingClientRect().left+((142+338*Number(zone))/960)*m.width-p.clientWidth/2;
+});
+$('focusMode').addEventListener('click',()=>{
+ state.focus=!state.focus;$('focusMode').setAttribute('aria-pressed',String(state.focus));paintSelection();
+ say(state.focus?'突出直接关系':'已显示完整关系');
+});
+$('nav').addEventListener('click',e=>{
+ const v=e.target.closest('[data-view]')?.dataset.view;
+ if(v){activateView(v);$('nav').querySelector(`[data-view="${v}"]`)?.focus({preventScroll:true});}
+});
+$('pane').addEventListener('click',e=>{
+ const n=e.target.closest('[data-object],[data-step],[data-branch]');
+ if(!n)return;
+ if(n.dataset.object)selectObject(n.dataset.object);
+ if(n.dataset.step)setStep(n.dataset.step);
+ if(n.dataset.branch){state.branch=n.dataset.branch;setStep(branch[state.branch].at);}
+});
+$('pane').addEventListener('keydown',e=>{
+ const n=e.target.closest('[data-object],[data-step]');
+ if(n&&(e.key==='Enter'||e.key===' ')){
+   e.preventDefault(); if(n.dataset.object)selectObject(n.dataset.object);else setStep(n.dataset.step);
+ }
+});
+$('inspectorTitle').addEventListener('click',e=>{
+ const v=e.target.dataset.variant;
+ if(v){state.variant=v;paintInspector({scroll:true});$('inspectorTitle').querySelector(`[data-variant="${v}"]`).focus({preventScroll:true});say('Agent '+v);}
+});
+function setTab(tab){
+ state.tab=tab;paintInspector({scroll:true});$('tab-'+tab).focus({preventScroll:true});
+}
+$('detailTabs').addEventListener('click',e=>{if(e.target.dataset.tab)setTab(e.target.dataset.tab);});
+$('detailTabs').addEventListener('keydown',e=>{
+ if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
+ e.preventDefault();
+ const tabs=Object.keys(detailTabs), at=tabs.indexOf(state.tab);
+ const next=e.key==='Home'?0:e.key==='End'?tabs.length-1:(at+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length;
+ setTab(tabs[next]);
+});
+$('detail').addEventListener('click',e=>{
+ const copy=e.target.closest('[data-copy]'), view=e.target.closest('[data-view]')?.dataset.view;
+ if(copy)copySource(copy);
+ if(view){activateView(view);$('nav').querySelector(`[data-view="${view}"]`)?.focus({preventScroll:true});}
+});
+$('neighbors').addEventListener('click',e=>{
+ const id=e.target.closest('[data-jump]')?.dataset.jump;
+ if(id)selectObject(id,{jump:true});
+});
+document.addEventListener('keydown',e=>{
+ if(e.defaultPrevented||e.altKey||e.ctrlKey||e.metaKey||$('searchDialog').open||e.target.closest('input,textarea,[contenteditable]'))return;
+ if(e.key==='/'){e.preventDefault();openSearch();}
+});
+drawNav();paintCanvas({center:true});paintInspector();
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" stroke-linejoin="round" stroke-linecap="round">
+<title>Notched warning pennant: attention</title>
+<defs>
+<linearGradient id="cinnabar" x2="1" y2="1"><stop offset="0" stop-color="#f7be91"/><stop offset="0.5" stop-color="#b47268"/><stop offset="1" stop-color="#5c344c"/></linearGradient><linearGradient id="paper" x2="1" y2="1"><stop offset="0" stop-color="#fff1bc"/><stop offset="0.5" stop-color="#ebc186"/><stop offset="1" stop-color="#ae776c"/></linearGradient><linearGradient id="red" x2="1" y2="1"><stop offset="0" stop-color="#edac87"/><stop offset="0.25" stop-color="#b76665"/><stop offset="0.64" stop-color="#73374e"/><stop offset="1" stop-color="#37263a"/></linearGradient><radialGradient id="shadow" cx=".36" cy=".32" r=".77"><stop offset="0" stop-color="#090e1a" stop-opacity=".8"/><stop offset="0.5" stop-color="#141724" stop-opacity=".56"/><stop offset="1" stop-color="#0b1020" stop-opacity="0"/></radialGradient>
+
+</defs>
+<ellipse cx="12" cy="19" rx="11" ry="4.8" fill="url(#shadow)"/>
+<path d="M2 8q0-4 4-5h12q4 1 4 5v9q0 4-4 4H6q-4 0-4-4Z" fill="#212c3c" stroke="url(#red)" stroke-width="1.05"/>
+<path d="M3.5 15V8q1-3 4-3h9" fill="none" stroke="#e8d2aa" stroke-width="0.59" opacity=".76"/>
+<ellipse cx="19" cy="18" rx="0.75" ry="0.75" fill="#ce9f8d" stroke="#192332" stroke-width="0.38"/>
+<path d="M7 18V7" fill="none" stroke="url(#paper)" stroke-width="1.34"/>
+<path d="M7 6h12l-3 4 3 5H7Z" fill="url(#cinnabar)" stroke="#ebbd9a" stroke-width="0.7"/>
+<path d="M11 8v3" fill="none" stroke="#ffe6ad" stroke-width="0.95"/>
+<ellipse cx="11" cy="13" rx="0.58" ry="0.57" fill="#ffedad"/>
+</svg>

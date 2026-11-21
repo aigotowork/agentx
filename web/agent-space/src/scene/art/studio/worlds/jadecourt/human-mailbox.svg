@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="62" height="62" viewBox="0 0 62 62" stroke-linejoin="round" stroke-linecap="round">
+<title>Petal postbox and the keeper’s cat</title>
+<defs>
+<linearGradient id="bronze" x2="1" y2="1"><stop offset="0" stop-color="#ffe2a1"/><stop offset="0.25" stop-color="#cc996e"/><stop offset="0.5" stop-color="#754353"/><stop offset="0.7" stop-color="#512f45"/><stop offset="1" stop-color="#a45e64"/></linearGradient><linearGradient id="glaze" x2="1" y2="1"><stop offset="0" stop-color="#e0ffff"/><stop offset="0.18" stop-color="#a8eee0"/><stop offset="0.45" stop-color="#499d9e"/><stop offset="0.74" stop-color="#215864"/><stop offset="1" stop-color="#16303e"/></linearGradient><linearGradient id="hair" x2="1" y2="1"><stop offset="0" stop-color="#533d52"/><stop offset="0.5" stop-color="#30283c"/><stop offset="1" stop-color="#201d30"/></linearGradient><linearGradient id="ivory" x2="1" y2="1"><stop offset="0" stop-color="#ffffd4"/><stop offset="0.5" stop-color="#c4d5af"/><stop offset="1" stop-color="#647f7f"/></linearGradient><linearGradient id="jadeDark" x2="1" y2="1"><stop offset="0" stop-color="#578f86"/><stop offset="0.5" stop-color="#27525a"/><stop offset="1" stop-color="#132e38"/></linearGradient><linearGradient id="lacquer" x2="1" y2="1"><stop offset="0" stop-color="#d38f77"/><stop offset="0.29" stop-color="#a45658"/><stop offset="0.58" stop-color="#593246"/><stop offset="1" stop-color="#30263a"/></linearGradient><linearGradient id="paper" x2="1" y2="1"><stop offset="0" stop-color="#fff1bc"/><stop offset="0.5" stop-color="#ebc186"/><stop offset="1" stop-color="#ae776c"/></linearGradient><linearGradient id="red" x2="1" y2="1"><stop offset="0" stop-color="#edac87"/><stop offset="0.25" stop-color="#b76665"/><stop offset="0.64" stop-color="#73374e"/><stop offset="1" stop-color="#37263a"/></linearGradient><radialGradient id="shadow" cx=".36" cy=".32" r=".77"><stop offset="0" stop-color="#090e1a" stop-opacity=".8"/><stop offset="0.5" stop-color="#141724" stop-opacity=".56"/><stop offset="1" stop-color="#0b1020" stop-opacity="0"/></radialGradient>
+
+</defs>
+<ellipse cx="32" cy="57" rx="30" ry="4.8" fill="url(#shadow)"/>
+<g transform="translate(36 31)">
+<path d="M-3 0H3L2.4 27 3.5 29 2.5 30H-2.7L-3.4 29-2.3 27Z" fill="url(#bronze)" stroke="#192332" stroke-width="1"/>
+<path d="M-1.7 1-1.1 26" fill="none" stroke="#e6bc9b" stroke-width="0.53"/>
+<path d="M-1.5 26H2.1" fill="none" stroke="#5f3d53" stroke-width="0.9"/></g>
+<path d="M23 56Q36 51 47 55L50 59 46 62H23L20 59Z" fill="url(#jadeDark)" stroke="#192332" stroke-width="1"/>
+<path d="M24 57q12-4 22 0" fill="none" stroke="#9ed2bf" stroke-width="0.78"/>
+<path d="M14 35V17Q17 12 31 7L33 4 37 2 40 6Q54 10 57 17V34L52 41H20Z" fill="url(#lacquer)" stroke="#192332" stroke-width="1"/>
+<path d="M17 18Q20 13 31 9l5-5 5 4q11 4 13 10L52 21H18Z" fill="url(#bronze)" stroke="#192332" stroke-width="1"/>
+<path d="M19 20h33v16H19Z" fill="url(#glaze)" stroke="#192332" stroke-width="1"/>
+<path d="M21 34V22h30" fill="none" stroke="#d2eee0" stroke-width="0.65"/>
+<path d="M24 25h23v7H24Z" fill="#253044" stroke="url(#bronze)" stroke-width="1.15"/>
+<g transform="rotate(-8 35 31)">
+<g transform="translate(35 31) scale(0.63)">
+<path d="M-11-6Q-11-7-10.5-7H10.5Q11-7 11-6V6Q11 7 10 7H-10Q-11 7-11 6Z" fill="url(#paper)" stroke="#192332" stroke-width="1"/>
+<path d="M-10.2 5L-3-.5M10 5L3-.5" fill="none" stroke="#b57b70" stroke-width="0.65"/>
+<path d="M-10.5-6 0 2 10.5-6Z" fill="#fff0c0" stroke="#b87e6d" stroke-width="0.7"/>
+<path d="M-2-.2 0-1.6 2-.3 1.3 2.6-1.4 2.6Z" fill="url(#red)" stroke="#84404c" stroke-width="0.5"/>
+<path d="M-1 .3 0 1 1 .3" fill="none" stroke="#fbc887" stroke-width="0.45"/></g></g>
+<path d="M18 38h34" fill="none" stroke="#d5ac8d" stroke-width="0.95"/>
+<g transform="translate(36 12) scale(0.63)">
+<path d="M0-5Q4-3 0 2Q-4-3 0-5ZM0 2Q-2-2-6-1Q-5 3 0 4Q5 3 6-1Q2-2 0 2Z" fill="#efca96"/>
+<ellipse cx="0" cy="4" rx="0.65" ry="0.65" fill="#ffdf99"/></g>
+<ellipse cx="21" cy="37" rx="0.63" ry="0.63" fill="#ecd1a2" stroke="#192332" stroke-width="0.38"/>
+<ellipse cx="26" cy="37" rx="0.63" ry="0.63" fill="#ecd1a2" stroke="#192332" stroke-width="0.38"/>
+<ellipse cx="31" cy="37" rx="0.63" ry="0.63" fill="#ecd1a2" stroke="#192332" stroke-width="0.38"/>
+<ellipse cx="36" cy="37" rx="0.63" ry="0.63" fill="#ecd1a2" stroke="#192332" stroke-width="0.38"/>
+<ellipse cx="41" cy="37" rx="0.63" ry="0.63" fill="#ecd1a2" stroke="#192332" stroke-width="0.38"/>
+<ellipse cx="46" cy="37" rx="0.63" ry="0.63" fill="#ecd1a2" stroke="#192332" stroke-width="0.38"/>
+<ellipse cx="51" cy="37" rx="0.63" ry="0.63" fill="#ecd1a2" stroke="#192332" stroke-width="0.38"/>
+<path d="M7 56Q1 55 3 48q1-3 4-3-2 7 3 6h5v6Z" fill="url(#hair)" stroke="#141b2b" stroke-width="0.9"/>
+<path d="M8 55q1-7 4-10l-.5-9 5 3 4-3 1 8q5 3 5 8l-2 6H13Z" fill="url(#hair)" stroke="#141b2b" stroke-width="1"/>
+<path d="M12 44q3 2 7-2 3 2 5 4l-3 8-6 1Z" fill="url(#ivory)"/>
+<path d="M12 42v-4l3 2m4 0 1-2 .5 4m-8 5-5 1m13-.8 5 .8" fill="none" stroke="#e7bba2" stroke-width="0.5"/>
+<ellipse cx="14" cy="43" rx="0.85" ry="0.51" fill="#d8e8c1"/>
+<ellipse cx="18" cy="43" rx="0.85" ry="0.51" fill="#d8e8c1"/>
+<ellipse cx="16" cy="45" rx="0.57" ry="0.57" fill="#d88782" stroke="#192332" stroke-width="0.38"/>
+<path d="M12 49q-1 7 3 7m6-6 1 6" fill="none" stroke="#8d7f91" stroke-width="0.7"/>
+</svg>

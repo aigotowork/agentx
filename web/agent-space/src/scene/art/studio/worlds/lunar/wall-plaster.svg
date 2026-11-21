@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="64" viewBox="0 0 160 64">
+  <defs>
+    <linearGradient id="wall" x2="0" y2="1">
+      <stop stop-color="#4b638a"/>
+      <stop offset=".21" stop-color="#28385c"/>
+      <stop offset=".25" stop-color="#34466c"/>
+      <stop offset=".82" stop-color="#202b4c"/>
+      <stop offset="1" stop-color="#131f3d"/>
+    </linearGradient>
+    <linearGradient id="apron" x2="0" y2="1">
+      <stop stop-color="#071229" stop-opacity=".65"/>
+      <stop offset="1" stop-color="#071229" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#wall)" d="M0 0h160v48H0z"/>
+  <path fill="#172646" d="M0 0h160v5H0zm0 41h160v7H0z"/>
+  <path d="M0 5.5h160m-160 6h160m-160 30h160" fill="none" stroke="#6b85ab" stroke-opacity=".5"/>
+  <path fill="#435a84" d="M13 7h5l3 6-5 25 4 3h-9l-3-4 4-24-3-3zm80 0h5l3 6-5 25 4 3h-9l-3-4 4-24-3-3z"/>
+  <path fill="#16213d" d="M18 7h4l3 6-5 25 4 3h-4l-4-3 5-25zm80 0h4l3 6-5 25 4 3h-4l-4-3 5-25z"/>
+  <path d="M30 16h46m-46 3h46m-46 16h50m30-19h46m-46 3h46m-46 16h50" stroke="#172445" stroke-width="1.5" opacity=".7" fill="none"/>
+  <path d="M2 8h5m61 36h8m6-36h5m61 36h8" stroke="#85bfed" stroke-opacity=".6" stroke-width="2"/>
+  <path fill="url(#apron)" d="M0 48h160v16H0z"/>
+  <path fill="#84c2fc" opacity=".08" d="M42 49h37l6 8H39zm80 0h37l1 7v1h-41z"/>
+</svg>

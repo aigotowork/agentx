@@ -1,0 +1,45 @@
+{
+  "kind": "harness-authored-adaptation",
+  "sourceFiles": [
+    {
+      "source": "harness/.sketches/howtodesign/experiments/ui-design-imagegen/production/.tools/design_batch.py",
+      "target": "scripts/design_batch.py",
+      "sourceSha256": "39517bf4cae7fb87be7b1e03332d87a3b8a8ee845b763f3b4fb304bc9870e3b3"
+    },
+    {
+      "source": "harness/.sketches/howtodesign/experiments/ui-design-imagegen/production/catalog/styles.json",
+      "target": "catalog/styles.json",
+      "sourceSha256": "f66e6adc27d51b1990cc041cf1ec14f03476664ac80b084263c5fdc657f1bd73"
+    },
+    {
+      "source": "harness/.sketches/howtodesign/experiments/ui-design-imagegen/production/catalog/asset-styles.json",
+      "target": "catalog/asset-styles.json",
+      "sourceSha256": "0bbf173fd0241343137a7b71f16339311f24e070a335b460e132c948056b8555"
+    },
+    {
+      "source": "harness/.sketches/howtodesign/experiments/ui-design-imagegen/production/catalog/formats.json",
+      "target": "catalog/formats.json",
+      "sourceSha256": "2af547e68b0730ec252a62e5f4696f67c5dc70c6a4f9410e585949f8c570f88e"
+    },
+    {
+      "source": "harness/.sketches/howtodesign/experiments/ui-design-imagegen/production/examples/fitness-brief.json",
+      "target": "assets/fitness-brief.json",
+      "sourceSha256": "4e636f480e79d4c2ade679ab4fcd70632319d191b327ad1e380953ab37cedf96"
+    },
+    {
+      "source": "harness/.sketches/howtodesign/experiments/ui-design-imagegen/production/contract.md",
+      "target": "references/contract.md",
+      "sourceSha256": "38589726d361d0f9f25fa1265a4a8edf202ce71b25e7fbcd3afdb02402c619ea"
+    },
+    {
+      "source": "harness/.sketches/howtodesign/experiments/ui-design-imagegen/production/tool.md",
+      "target": "references/tool.md",
+      "sourceSha256": "ad26c8abf8cd10ed62426e67999ccb2c3a26b82e58f3a98029b58d8ecdaeea0a"
+    }
+  ],
+  "changes": [
+    "Move compiler and three catalogs into the maintained Skill; preserve original research.",
+    "Portable documentation paths; standard-library runtime requirements declared."
+  ],
+  "historicalEvidence": "Not included as runtime input; original experiments remain unchanged."
+}

@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN" data-ax-style="space">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Space · AgentX 协作空间</title>
+  <link rel="stylesheet" href="../system/system.css">
+  <link rel="stylesheet" href="./space.css">
+</head>
+<body data-ui-page="Space">
+<main class="space-layout" data-ui-layout="SpaceWorkspace" id="workspace">
+  <header class="space-header" data-ui-block="WorkspaceHeader">
+    <a class="space-brand" href="../" title="返回设计预览"><span class="brand-symbol" data-icon="space"></span><span><strong>Space</strong><small>AGENTX / 协作空间</small></span></a>
+    <nav class="mode-control" aria-label="工作区视图">
+      <button class="ax-button" data-action="mode" data-value="chat"><span data-icon="list"></span>会话</button>
+      <button class="ax-button" data-action="mode" data-value="scene"><span data-icon="map"></span>办公室</button>
+    </nav>
+    <div class="header-actions">
+      <button class="ax-button mailbox-control" popovertarget="demo-menu" title="预览设置" aria-label="预览设置"><span data-icon="flask"></span><span class="demo-label">合成预览</span></button>
+      <button class="ax-button mailbox-control" data-action="mail" title="我的信箱"><span data-icon="mail"></span><span class="mail-label">信箱</span><span class="mail-count" id="mail-count">2</span></button>
+    </div>
+    <div id="demo-menu" class="ax-popover local-popover" popover aria-label="预览设置" data-ui-block="PreviewControls">
+      <strong>合成预览 · Space</strong>
+      <label for="send-mode">模拟下一次发送</label>
+      <select id="send-mode" class="ax-input"><option value="accepted">已受理</option><option value="rejected">明确拒绝</option><option value="unknown">结果未知 → 核对后受理</option><option value="unresolved">结果未知 → 仍未确认</option></select>
+      <label for="read-mode">模拟 Provider 读取</label>
+      <select id="read-mode" class="ax-input"><option value="normal">按样本读取</option><option value="error">读取失败</option><option value="empty">没有记录</option></select>
+      <button class="ax-button" data-action="receive">模拟收到一条新消息</button>
+      <button class="ax-button" data-action="reset">重置样本</button>
+    </div>
+  </header>
+  <section class="discovery-bar" data-ui-block="ScopeAndDiscovery" aria-label="范围与筛选">
+    <label class="scope-picker"><span data-icon="folder"></span><select id="scope" aria-label="办公室范围"></select></label>
+    <label class="search-field"><span data-icon="search"></span><input class="ax-input" id="search" type="search" placeholder="搜索 Agent、岗位或办公室" aria-label="搜索 Agent、岗位或办公室"></label>
+    <label class="status-picker"><span data-icon="filter"></span><select id="status" aria-label="状态筛选"><option value="">全部状态</option><option value="working">工作中</option><option value="waiting">等待消息</option><option value="offline">未运行</option><option value="unknown">状态未知</option></select></label>
+  </section>
+  <div id="route-notice" class="ax-notice route-notice" data-tone="warning" hidden></div>
+  <div class="space-body" data-ui-layout="DiscoveryReaderSplit" id="space-body">
+    <section class="discovery-pane" id="discovery" aria-label="发现会话" data-ui-layout="DiscoveryPane">
+      <div class="discovery-head">
+        <div class="collection-label" id="collection-label"></div>
+        <nav class="resource-tabs" id="resource-tabs" aria-label="会话范围"></nav>
+      </div>
+      <div id="index" class="scroll-pane" data-ui-block="ConversationIndex"></div>
+      <div id="scene" class="office-block" data-ui-block="OfficeMap" hidden>
+        <div class="map-toolbar">
+          <span class="floor-label"><b>01</b><span>协作楼层</span></span>
+          <div class="map-actions" role="group" aria-label="地图操作">
+            <button class="ax-button" data-action="directory"><span data-icon="list"></span>目录</button>
+            <button class="ax-button ax-icon-button" data-action="zoom" data-value="-1" aria-label="缩小" title="缩小"><span data-icon="minus"></span></button>
+            <button class="ax-button ax-icon-button" data-action="zoom" data-value="1" aria-label="放大" title="放大"><span data-icon="plus"></span></button>
+            <button class="ax-button ax-icon-button" data-action="reframe" aria-label="重置视野" title="重置视野"><span data-icon="focus"></span></button>
+          </div>
+        </div>
+        <div class="map-viewport" id="map-viewport" tabindex="0" aria-label="办公室地图，方向键平移">
+          <img src="./office-plan.svg" class="map-plan" id="map-plan" alt="" draggable="false">
+          <div class="map-markers" id="map-markers"></div>
+          <aside id="map-directory" class="map-directory ax-panel" data-ui-block="SceneDirectory" aria-label="办公室目录" hidden></aside>
+        </div>
+        <div class="map-footer"><button class="ax-button ax-icon-button" popovertarget="pan-menu" title="平移地图" aria-label="平移地图"><span data-icon="focus"></span></button><div id="pan-menu" class="ax-popover pan-menu" popover aria-label="平移地图"><button class="ax-button" data-action="pan" data-value="44,0" aria-label="向左看">←</button><button class="ax-button" data-action="pan" data-value="-44,0" aria-label="向右看">→</button><button class="ax-button" data-action="pan" data-value="0,44" aria-label="向上看">↑</button><button class="ax-button" data-action="pan" data-value="0,-44" aria-label="向下看">↓</button></div><span><i class="scene-dot" data-status="working"></i>工作中</span><span><i class="scene-dot" data-status="waiting"></i>等待消息</span><span><i class="scene-dot" data-status="offline"></i>未运行</span><span class="camera-label" id="camera-label"></span></div>
+      </div>
+    </section>
+    <article class="reader" id="reader" data-ui-block="ConversationReader" hidden>
+      <header class="reader-head">
+        <button class="ax-button ax-icon-button reader-return" data-action="return" title="返回" aria-label="返回"><span data-icon="back"></span><span class="return-locus" hidden></span></button>
+        <div class="reader-identity" id="reader-identity" tabindex="-1"></div>
+        <div class="reader-actions">
+          <button class="ax-button ax-icon-button" data-action="share" title="复制会话链接" aria-label="复制会话链接"><span data-icon="share"></span></button>
+          <button class="ax-button ax-icon-button" data-action="facts" title="会话详情" aria-label="会话详情"><span data-icon="info"></span></button>
+        </div>
+      </header>
+      <nav class="channel-tabs" id="channels" aria-label="会话记录类型"></nav>
+      <section class="reader-cue" id="reader-cue" hidden></section>
+      <div class="thread scroll-pane" id="thread" tabindex="0" aria-label="会话记录" data-ui-block="RecordStream"></div>
+      <button class="ax-button latest-cue" id="latest-cue" data-action="latest" hidden>跳到最新</button>
+      <section id="compose-block" class="compose-block" data-ui-block="MessageComposer">
+        <div id="operation" aria-live="polite"></div>
+        <div class="composer-chips" id="composer-chips"></div>
+        <form id="composer" class="composer-frame">
+          <label class="sr-only" for="draft">撰写消息</label>
+          <textarea id="draft" placeholder="撰写消息…" maxlength="4000" rows="2"></textarea>
+          <div class="composer-tools">
+            <div class="composer-options">
+              <button type="button" class="ax-button ax-icon-button" data-action="attachment-picker" title="添加样本附件" aria-label="添加样本附件"><span data-icon="clip"></span></button>
+              <button type="button" class="ax-button ax-icon-button" data-action="composer-options" title="消息选项" aria-label="消息选项"><span data-icon="more"></span></button>
+              <button type="button" class="ax-button reply-control" data-action="reply" title="引用最近一条消息"><span data-icon="reply"></span><span>引用</span></button>
+            </div>
+            <small id="compose-recipient"></small>
+            <button type="submit" class="ax-button send-button" data-variant="primary"><span>发送</span><span data-icon="send"></span></button>
+          </div>
+        </form>
+      </section>
+    </article>
+    <section class="welcome" id="welcome" data-ui-block="WorkspaceWelcome">
+      <div class="welcome-content">
+        <div class="welcome-art" aria-hidden="true"><img src="./office-plan.svg" alt=""></div>
+        <span class="eyebrow">AGENTX / SPACE</span>
+        <h1>找到对的人，<br>继续手头的事。</h1>
+        <p>从会话列表继续阅读，或到办公室看看成员在哪。</p>
+        <button class="ax-button" data-action="mode" data-value="scene"><span data-icon="map"></span>查看办公室<span data-icon="forward"></span></button>
+      </div>
+    </section>
+  </div>
+  <div class="space-announcement" id="announcement" role="status" hidden></div>
+</main>
+<dialog id="disclosure" class="ax-dialog space-disclosure" data-placement="drawer" aria-labelledby="dialog-title" data-ui-layout="LocalDisclosure">
+  <header class="ax-dialog-head"><h2 id="dialog-title"></h2><form method="dialog"><button class="ax-button ax-icon-button" title="关闭" aria-label="关闭" autofocus><span data-icon="close"></span></button></form></header>
+  <div class="ax-dialog-body scroll-pane" id="dialog-body"></div>
+</dialog>
+</body>
+<script type="module" src="./space.js"></script>
+</html>

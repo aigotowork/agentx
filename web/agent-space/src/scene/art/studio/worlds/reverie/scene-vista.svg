@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="sky" x2="0%" y2="100%"><stop stop-color="#24244f"/><stop offset=".5" stop-color="#616da4"/><stop offset=".78" stop-color="#a49ac8"/><stop offset="1" stop-color="#e1a7aa"/></linearGradient>
+    <radialGradient id="halo"><stop stop-color="#ffdfb8" stop-opacity=".7"/><stop offset=".35" stop-color="#f3b9b4" stop-opacity=".4"/><stop offset="1" stop-color="#edc6ed" stop-opacity="0"/></radialGradient>
+    <linearGradient id="ribbon" x2="100%" y2="30%"><stop stop-color="#f9ae9e" stop-opacity="0"/><stop offset=".32" stop-color="#f6b7ad" stop-opacity=".76"/><stop offset=".64" stop-color="#e8c8ed" stop-opacity=".43"/><stop offset="1" stop-color="#a9cddf" stop-opacity="0"/></linearGradient>
+    <linearGradient id="cloud" x2="0%" y2="100%"><stop stop-color="#f5d3d5"/><stop offset=".52" stop-color="#b09ac8"/><stop offset="1" stop-color="#7981b8"/></linearGradient>
+    <linearGradient id="foreground" x2="50%" y2="100%"><stop stop-color="#6279a2"/><stop offset="1" stop-color="#30305c"/></linearGradient>
+  </defs>
+  <path d="M0 0h800v450H0z" fill="url(#sky)"/>
+  <circle cx="187" cy="69" r="80" fill="url(#halo)"/>
+  <path d="M194 27c-17 10-23 30-17 47 7 18 26 27 44 24a40 40 0 1 1-27-71Z" fill="#fff1c9"/>
+  <path d="M159 80q12 23 41 22" fill="none" stroke="#ffe2b3" stroke-width="2"/>
+  <path d="M-47 134C61 28 164 101 270 80s148-79 291-46 194 13 266-15C711 103 634 73 560 59 426 35 385 103 269 105S61 57-47 134Z" fill="url(#ribbon)"/>
+  <path d="M-30 70C85 133 164 77 240 76S357 91 424 68 525 0 658 27s152-3 180-20C768 53 710 48 650 36 541 14 508 57 426 86S306 85 242 88 86 144-30 70Z" fill="#b1d8df" opacity=".43"/>
+  <path d="M60 103C127 105 146 87 199 84m248-10q42-14 72-29m141-8q55 15 96 5" fill="none" stroke="#ffe0d4" stroke-width="1" opacity=".62"/>
+  <g fill="#faf1d8">
+    <path d="m86 37 2 4 4 1-4 1-2 5-1-5-5-1 5-1zm273 10 1 3 4 1-4 1-1 4-1-4-4-1 4-1zm313 40 2 4 4 1-4 1-2 5-1-5-5-1 5-1zm61-54 1 3 4 1-4 1-1 4-1-4-4-1 4-1Z"/>
+    <circle cx="283" cy="22" r="1.4"/><circle cx="249" cy="44" r="1.5"/><circle cx="94" cy="19" r="1.2"/><circle cx="119" cy="33" r="1"/><circle cx="460" cy="28" r="1.4"/><circle cx="699" cy="16" r="1.4"/>
+  </g>
+  <g fill="url(#cloud)">
+    <path d="M-10 146q20-17 44-13 17-22 49-13 27-12 44 3 31 1 52 12-38 8-61 8-33 20-71 8-32 8-57-5Z" opacity=".82"/>
+    <path d="M610 153q26-18 58-15 18-27 47-23 24-18 55 1 25-5 43 9v26q-46 15-87 8-41 12-116-6Z" opacity=".74"/>
+    <path d="M12 209q19-10 36-8 16-13 36-6 18-9 29 6l39 5q-35 13-62 13-42 10-78-10Z" opacity=".54"/>
+    <path d="M629 220q22-7 49-9 10-15 37-11 26-11 42 4l43 11q-30 11-68 12-44 10-103-7Z" opacity=".42"/>
+  </g>
+  <path d="m43 149 16 17 15 1 9 27 13-28 25-21q-38 12-78 4Zm649 11 22 29 13 6 15 24 14-33 27-31q-32 10-91 5Z" fill="#535e90" opacity=".85"/>
+  <path d="M0 340q44-40 98 2 19-37 94-15 28 22 59 25 60-17 152 6 127 35 238-13 74-37 159-19v124H0Z" fill="#b296bb" opacity=".64"/>
+  <path d="M-14 397q62-33 120-21 21 25 92 20t88 14q96 17 201-10 82-24 143 1 76 14 185-42v91H-14Z" fill="url(#foreground)"/>
+  <path d="M0 407q57-27 117-8m537 19q61 9 136-31M22 381q54-24 89-6" fill="none" stroke="#d3c4e5" stroke-width="1.3" opacity=".58"/>
+</svg>

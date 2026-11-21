@@ -1,0 +1,199 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" role="img" aria-labelledby="title description">
+<title id="title">Agents 资源、精确身份与关联工作</title>
+<desc id="description">资源工作区修订稿；来源、任务、分工、产物与检查关联可见，选中对象的操作在局部展开。全部内容为设计示例。</desc>
+<defs><style>
+text{font-family:system-ui,-apple-system,'Noto Sans CJK SC','Microsoft YaHei',sans-serif;font-size:14px;fill:#253542}
+.paper{fill:#fff}.canvas{fill:#f5f7f9}.nav{fill:#f3f5f7}.wash{fill:#f8fafb}.selected{fill:#eaf3f0}
+.line{fill:none;stroke:#e0e6eb;stroke-width:1}.border{fill:#fff;stroke:#ced8df;stroke-width:1}
+.accent{fill:#176b5b}.green{fill:#176b5b}.amber{fill:#8e610d}.red{fill:#b04c45}.blue{fill:#45649a}
+.green-bg{fill:#eaf3f0}.amber-bg{fill:#fff5df}.red-bg{fill:#fbeeed}.blue-bg{fill:#edf1f9}
+.muted{fill:#697a88}.quiet{fill:#82919c}.white{fill:#fff}.small{font-size:12px}.caption{font-size:13px}
+.medium{font-weight:600}.section{font-size:16px;font-weight:650}.title{font-size:21px;font-weight:650;letter-spacing:-.4px}.brand{font-size:18px;font-weight:750}
+.mono{font-family:ui-monospace,'SFMono-Regular',Consolas,monospace}.stroke{fill:none;stroke:#6b7c89;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.green-stroke{fill:none;stroke:#176b5b;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.white-stroke{fill:none;stroke:#fff;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.selected-border{fill:#f4f9f7;stroke:#176b5b;stroke-width:1.3}.shadow-line{fill:none;stroke:#cbd5dd;stroke-width:1}
+.disabled{opacity:.4}
+
+.focus-ring{fill:none;stroke:#316fd0;stroke-width:2}.invalid-field{fill:#fff;stroke:#b04c45;stroke-width:1.4}.skeleton{fill:#dfe5e9}
+</style></defs>
+<g id="agent-resource-table-and-exact-identity-related-work">
+<rect x="0" y="0" width="1440" height="900" rx="0" class="canvas"/>
+<rect x="0" y="0" width="1440" height="48" rx="0" class="paper"/>
+<path d="M0 48L1440 48" class="line"/>
+<rect x="0" y="49" width="216" height="827" rx="0" class="nav"/>
+<path d="M216 48L216 876" class="line"/>
+<rect x="18" y="13" width="22" height="22" rx="5" class="accent"/>
+<text x="29" y="29" class="medium white" text-anchor="middle">A</text>
+<text x="49" y="31" class="brand" >AgentX</text>
+<text x="242" y="30" class="medium" >atlas-cli</text>
+<text x="330" y="30" class="caption muted" >/ 资源工作区</text>
+<text x="1103" y="30" class="small muted" >设计示例</text>
+<rect x="1230" y="12" width="100" height="24" rx="4" class="green-bg"/><text x="1280.0" y="29" class="small medium green" text-anchor="middle">协作可用</text>
+<g aria-label="查看固定项目与协作能力"><title>查看固定项目与协作能力</title><rect x="1354" y="8" width="32" height="32" rx="5" class="paper"/><path d="M8 7v6M8 4h.1M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0" transform="translate(1362.0 16.0)" class="stroke"/></g>
+<g id="source-reference-navigation-and-agent-resources">
+<text x="20" y="84" class="small medium muted" >资源</text>
+<rect x="10" y="100" width="196" height="36" rx="5" class="selected"/>
+<path d="M1 5h6l2-3h7v13H1z" transform="translate(21 111)" class="green-stroke"/>
+<text x="47" y="123" class="medium green" >全部工作</text>
+<text x="188" y="123" class="caption green" text-anchor="end">5</text>
+<text x="20" y="169" class="small medium muted" >交付 / 来源</text>
+<g aria-label="来源分组按已有任务引用路径呈现"><title>来源分组按已有任务引用路径呈现</title><rect x="172" y="150" width="32" height="32" rx="5" class="paper"/><path d="M8 7v6M8 4h.1M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0" transform="translate(180.0 158.0)" class="stroke"/></g>
+<path d="M1 5h6l2-3h7v13H1z" transform="translate(22 192)" class="stroke"/>
+<text x="48" y="204" class="medium" >cli-1.4</text>
+<text x="187" y="204" class="caption muted" text-anchor="end">4</text>
+<text x="48" y="228" class="small muted mono" >.tasks/cli-1.4/</text>
+<path d="M1 5h6l2-3h7v13H1z" transform="translate(22 253)" class="stroke"/>
+<text x="48" y="265" class="medium" >install</text>
+<text x="187" y="265" class="caption muted" text-anchor="end">1</text>
+<text x="48" y="289" class="small muted mono" >.tasks/install/</text>
+<path d="M20 328L196 328" class="line"/>
+<text x="20" y="365" class="small medium muted" >资源视图</text>
+<path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0M2 16v-2a6 6 0 0 1 12 0v2" transform="translate(22 386)" class="stroke"/>
+<text x="49" y="400" class="caption" >Agents</text>
+<text x="187" y="400" class="small muted" text-anchor="end">4</text>
+<path d="M3 1h7l4 4v12H3zM10 1v5h4M6 10h5M6 13h5" transform="translate(22 424)" class="stroke"/>
+<text x="49" y="438" class="caption" >产物 / 结果</text>
+<path d="M8 1 15 4v5c0 4-7 8-7 8S1 13 1 9V4zM4 8l3 3 5-6" transform="translate(22 462)" class="stroke"/>
+<text x="49" y="476" class="caption" >检查与接受</text>
+<path d="M20 517L196 517" class="line"/>
+<text x="20" y="550" class="small medium muted" >Agents</text>
+<circle cx="34.0" cy="588.0" r="14.0" class="green-bg"/><text x="34.0" y="592.0" class="small medium green" text-anchor="middle">L</text>
+<text x="59" y="592" class="caption medium" >Lin</text>
+<circle cx="147" cy="588" r="3" class="muted"/>
+<text x="191" y="592" class="small muted" text-anchor="end">空闲</text>
+<circle cx="34.0" cy="637.0" r="14.0" class="blue-bg"/><text x="34.0" y="641.0" class="small medium blue" text-anchor="middle">M</text>
+<text x="59" y="641" class="caption medium" >Moss</text>
+<circle cx="147" cy="637" r="3" class="muted"/>
+<text x="191" y="641" class="small muted" text-anchor="end">空闲</text>
+<circle cx="34.0" cy="686.0" r="14.0" class="green-bg"/><text x="34.0" y="690.0" class="small medium green" text-anchor="middle">I</text>
+<text x="59" y="690" class="caption medium" >Iris</text>
+<circle cx="147" cy="686" r="3" class="green"/>
+<text x="191" y="690" class="small green" text-anchor="end">工作中</text>
+<circle cx="34.0" cy="735.0" r="14.0" class="blue-bg"/><text x="34.0" y="739.0" class="small medium blue" text-anchor="middle">A</text>
+<text x="59" y="739" class="caption medium" >Ash</text>
+<circle cx="147" cy="735" r="3" class="green"/>
+<text x="191" y="739" class="small green" text-anchor="end">工作中</text>
+<path d="M20 805L196 805" class="line"/>
+<g aria-label="打开当前项目连接与诊断"><title>打开当前项目连接与诊断</title><rect x="17" y="823" width="32" height="32" rx="5" class="paper"/><path d="M8 7v6M8 4h.1M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0" transform="translate(25.0 831.0)" class="stroke"/></g>
+<text x="58" y="844" class="caption muted" >连接与诊断</text>
+</g>
+<rect x="216" y="49" width="1224" height="827" rx="0" class="paper"/>
+<text x="240" y="88" class="title" >全部工作</text>
+<text x="345" y="87" class="small muted" >已载入 5 项</text>
+<rect x="1010" y="65" width="230" height="32" rx="5" class="border"/>
+<path d="M12 12l5 5M13 7.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" transform="translate(1022 73)" class="stroke"/>
+<text x="1047" y="87" class="caption muted" >搜索任务、Agent、产物</text>
+<rect x="1252" y="65" width="164" height="32" rx="5" class="border"/><text x="1334.0" y="86.0" class="medium" text-anchor="middle">＋ 新建任务</text>
+<rect x="240" y="109" width="56" height="24" rx="4" class="green-bg"/><text x="268.0" y="126" class="small medium green" text-anchor="middle">全部</text>
+<text x="318" y="126" class="caption muted" >待我处理</text>
+<text x="418" y="126" class="caption muted" >待检查</text>
+<text x="516" y="126" class="caption muted" >进行中</text>
+<text x="1180" y="126" class="caption muted" >按来源分组</text>
+<g aria-label="更改来源分组与筛选"><title>更改来源分组与筛选</title><rect x="1273" y="105" width="32" height="32" rx="5" class="paper"/><path d="M4 6l4 4 4-4" transform="translate(1281.0 113.0)" class="stroke"/></g>
+<g aria-label="刷新已载入工作"><title>刷新已载入工作</title><rect x="1311" y="105" width="32" height="32" rx="5" class="paper"/><path d="M14 5a6 6 0 1 0 0 7M14 1v5H9" transform="translate(1319.0 113.0)" class="stroke"/></g>
+<g aria-label="列显示设置"><title>列显示设置</title><rect x="1349" y="105" width="32" height="32" rx="5" class="paper"/><path d="M2 8h.1M8 8h.1M14 8h.1" transform="translate(1357.0 113.0)" class="stroke"/></g>
+<rect x="216" y="876" width="1224" height="24" rx="0" class="wash"/>
+<path d="M0 876L1440 876" class="line"/>
+<text x="20" y="892" class="small muted" >atlas-cli</text>
+<text x="240" y="892" class="small muted" >5 项已载入 · 1 本页草稿</text>
+<text x="1416" y="892" class="small muted" text-anchor="end">更新于 10:42</text>
+<rect x="10" y="100" width="196" height="36" rx="5" class="nav"/>
+<path d="M1 5h6l2-3h7v13H1z" transform="translate(21 111)" class="stroke"/>
+<text x="47" y="123" class="caption" >全部工作</text>
+<text x="188" y="123" class="small muted" text-anchor="end">5</text>
+<rect x="10" y="380" width="196" height="36" rx="5" class="selected"/>
+<path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0M2 16v-2a6 6 0 0 1 12 0v2" transform="translate(22 386)" class="green-stroke"/>
+<text x="49" y="400" class="caption medium green" >Agents</text>
+<rect x="218" y="50" width="1222" height="824" rx="0" class="paper"/>
+<text x="240" y="87" class="title" >Agents</text>
+<text x="420" y="86" class="small muted" >当前项目 · 4 个已运行身份</text>
+<rect x="1010" y="65" width="230" height="32" rx="5" class="border"/>
+<path d="M12 12l5 5M13 7.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" transform="translate(1021 72)" class="stroke"/>
+<text x="1048" y="87" class="caption muted" >搜索当前已载入资源</text>
+<g aria-label="刷新当前资源"><title>刷新当前资源</title><rect x="1253" y="65" width="32" height="32" rx="5" class="paper"/><path d="M14 5a6 6 0 1 0 0 7M14 1v5H9" transform="translate(1261.0 73.0)" class="stroke"/></g>
+<g aria-label="当前视图筛选"><title>当前视图筛选</title><rect x="1291" y="65" width="32" height="32" rx="5" class="paper"/><path d="M2 8h.1M8 8h.1M14 8h.1" transform="translate(1299.0 73.0)" class="stroke"/></g>
+<rect x="240" y="112" width="56" height="24" rx="4" class="green-bg"/><text x="268.0" y="129" class="small medium green" text-anchor="middle">全部</text>
+<text x="318" y="129" class="caption muted" >有已载入工作</text>
+<text x="475" y="129" class="caption muted" >可选状态</text>
+<rect x="236" y="151" width="1180" height="34" rx="0" class="wash"/>
+<text x="250" y="173" class="small medium muted" >Agent / 精确身份</text>
+<text x="565" y="173" class="small medium muted" >运行观测</text>
+<text x="740" y="173" class="small medium muted" >可选状态</text>
+<text x="924" y="173" class="small medium muted" >已载入关联工作</text>
+<text x="1310" y="173" class="small medium muted" >操作</text>
+<rect x="236" y="185" width="1180" height="54" rx="0" class="paper"/>
+<circle cx="264.0" cy="212.0" r="14.0" class="green-bg"/><text x="264.0" y="216.0" class="small medium green" text-anchor="middle">L</text>
+<text x="291" y="210" class="medium" >Lin</text>
+<text x="291" y="229" class="small mono muted" >…a71c</text>
+<text x="565" y="216" class="caption" >空闲</text>
+<rect x="740" y="200" width="110" height="24" rx="4" class="green-bg"/><text x="795.0" y="217" class="small medium green" text-anchor="middle">可接收工作</text>
+<text x="924" y="216" class="caption" >#024 实现 / #021 实现 / #020 实现</text>
+<g aria-label="查看 Lin 精确身份与关联工作"><title>查看 Lin 精确身份与关联工作</title><rect x="1320" y="196" width="32" height="32" rx="5" class="paper"/><path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0M2 16v-2a6 6 0 0 1 12 0v2" transform="translate(1328.0 204.0)" class="stroke"/></g>
+<g aria-label="复制 Lin 参与者引用"><title>复制 Lin 参与者引用</title><rect x="1358" y="196" width="32" height="32" rx="5" class="paper"/><path d="M6 5l2-2a4 4 0 0 1 6 6l-2 2M10 11l-2 2a4 4 0 0 1-6-6l2-2M5 10l6-6" transform="translate(1366.0 204.0)" class="stroke"/></g>
+<path d="M236 239L1416 239" class="line"/>
+<rect x="236" y="239" width="1180" height="54" rx="0" class="selected"/>
+<circle cx="264.0" cy="266.0" r="14.0" class="blue-bg"/><text x="264.0" y="270.0" class="small medium blue" text-anchor="middle">M</text>
+<text x="291" y="264" class="medium" >Moss</text>
+<text x="291" y="283" class="small mono muted" >…c82f</text>
+<text x="565" y="270" class="caption" >空闲</text>
+<rect x="740" y="254" width="110" height="24" rx="4" class="green-bg"/><text x="795.0" y="271" class="small medium green" text-anchor="middle">可接收工作</text>
+<text x="924" y="270" class="caption" >#024 检查 / #023 检查 / #021 检查</text>
+<g aria-label="查看 Moss 精确身份与关联工作"><title>查看 Moss 精确身份与关联工作</title><rect x="1320" y="250" width="32" height="32" rx="5" class="paper"/><path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0M2 16v-2a6 6 0 0 1 12 0v2" transform="translate(1328.0 258.0)" class="stroke"/></g>
+<g aria-label="复制 Moss 参与者引用"><title>复制 Moss 参与者引用</title><rect x="1358" y="250" width="32" height="32" rx="5" class="paper"/><path d="M6 5l2-2a4 4 0 0 1 6 6l-2 2M10 11l-2 2a4 4 0 0 1-6-6l2-2M5 10l6-6" transform="translate(1366.0 258.0)" class="stroke"/></g>
+<path d="M236 293L1416 293" class="line"/>
+<rect x="236" y="293" width="1180" height="54" rx="0" class="paper"/>
+<circle cx="264.0" cy="320.0" r="14.0" class="green-bg"/><text x="264.0" y="324.0" class="small medium green" text-anchor="middle">I</text>
+<text x="291" y="318" class="medium" >Iris</text>
+<text x="291" y="337" class="small mono muted" >…e93d</text>
+<text x="565" y="324" class="caption" >工作中</text>
+<rect x="740" y="308" width="110" height="24" rx="4" class="green-bg"/><text x="795.0" y="325" class="small medium green" text-anchor="middle">可接收工作</text>
+<text x="924" y="324" class="caption" >#023 实现 / #019 实现</text>
+<g aria-label="查看 Iris 精确身份与关联工作"><title>查看 Iris 精确身份与关联工作</title><rect x="1320" y="304" width="32" height="32" rx="5" class="paper"/><path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0M2 16v-2a6 6 0 0 1 12 0v2" transform="translate(1328.0 312.0)" class="stroke"/></g>
+<g aria-label="复制 Iris 参与者引用"><title>复制 Iris 参与者引用</title><rect x="1358" y="304" width="32" height="32" rx="5" class="paper"/><path d="M6 5l2-2a4 4 0 0 1 6 6l-2 2M10 11l-2 2a4 4 0 0 1-6-6l2-2M5 10l6-6" transform="translate(1366.0 312.0)" class="stroke"/></g>
+<path d="M236 347L1416 347" class="line"/>
+<rect x="236" y="347" width="1180" height="54" rx="0" class="paper"/>
+<circle cx="264.0" cy="374.0" r="14.0" class="blue-bg"/><text x="264.0" y="378.0" class="small medium blue" text-anchor="middle">A</text>
+<text x="291" y="372" class="medium" >Ash</text>
+<text x="291" y="391" class="small mono muted" >…f04a</text>
+<text x="565" y="378" class="caption" >工作中</text>
+<rect x="740" y="362" width="110" height="24" rx="4" class="green-bg"/><text x="795.0" y="379" class="small medium green" text-anchor="middle">可接收工作</text>
+<text x="924" y="378" class="caption" >#019 检查 / #020 检查</text>
+<g aria-label="查看 Ash 精确身份与关联工作"><title>查看 Ash 精确身份与关联工作</title><rect x="1320" y="358" width="32" height="32" rx="5" class="paper"/><path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0M2 16v-2a6 6 0 0 1 12 0v2" transform="translate(1328.0 366.0)" class="stroke"/></g>
+<g aria-label="复制 Ash 参与者引用"><title>复制 Ash 参与者引用</title><rect x="1358" y="358" width="32" height="32" rx="5" class="paper"/><path d="M6 5l2-2a4 4 0 0 1 6 6l-2 2M10 11l-2 2a4 4 0 0 1-6-6l2-2M5 10l6-6" transform="translate(1366.0 366.0)" class="stroke"/></g>
+<path d="M236 401L1416 401" class="line"/>
+<path d="M216 425L1440 425" class="line"/>
+<rect x="216" y="426" width="1224" height="48" rx="0" class="wash"/>
+<circle cx="252.0" cy="450.0" r="12.0" class="blue-bg"/><text x="252.0" y="454.0" class="small medium blue" text-anchor="middle">M</text>
+<text x="277" y="457" class="section" >Moss</text>
+<text x="350" y="457" class="caption mono muted" >atlas-cli · …c82f</text>
+<g aria-label="关闭 Agent 详情并返回选中行"><title>关闭 Agent 详情并返回选中行</title><rect x="1370" y="433" width="32" height="32" rx="5" class="paper"/><path d="M3 3l10 10M13 3 3 13" transform="translate(1378.0 441.0)" class="stroke"/></g>
+<text x="240" y="510" class="small medium muted" >身份</text>
+<text x="240" y="540" class="caption mono" >moss · incarnation …c82f</text>
+<g aria-label="当前绑定引用精确身份；同名新身份不会自动替换"><title>当前绑定引用精确身份；同名新身份不会自动替换</title><rect x="485" y="518" width="32" height="32" rx="5" class="paper"/><path d="M8 7v6M8 4h.1M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0" transform="translate(493.0 526.0)" class="stroke"/></g>
+<text x="240" y="570" class="caption" >项目  atlas-cli</text>
+<text x="240" y="600" class="caption" >运行  空闲 · 10:42 观测</text>
+<text x="240" y="630" class="caption green" >可选  可接收工作</text>
+<g aria-label="运行空闲与可接收工作是不同事实"><title>运行空闲与可接收工作是不同事实</title><rect x="483" y="610" width="32" height="32" rx="5" class="paper"/><path d="M8 7v6M8 4h.1M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0" transform="translate(491.0 618.0)" class="stroke"/></g>
+<path d="M546 491L546 830" class="line"/>
+<text x="570" y="510" class="section" >关联工作（已载入）</text>
+<text x="1250" y="510" class="caption muted" >来源 / cli-1.4</text>
+<text x="570" y="560" class="caption blue" >#024 CSV 导出</text>
+<text x="904" y="560" class="caption" >独立检查者</text>
+<text x="1100" y="560" class="caption muted" >待结果</text>
+<g aria-label="查看 #024 CSV 导出，保留 Agent 视图返回点"><title>查看 #024 CSV 导出，保留 Agent 视图返回点</title><rect x="1355" y="542" width="32" height="32" rx="5" class="paper"/><path d="M2 8h12M9 3l5 5-5 5" transform="translate(1363.0 550.0)" class="stroke"/></g>
+<path d="M570 584L1398 584" class="line"/>
+<text x="570" y="627" class="caption blue" >#023 配置路径解析</text>
+<text x="904" y="627" class="caption" >独立检查者</text>
+<text x="1100" y="627" class="caption muted" >检查中 · r1</text>
+<g aria-label="查看 #023 配置路径解析，保留 Agent 视图返回点"><title>查看 #023 配置路径解析，保留 Agent 视图返回点</title><rect x="1355" y="609" width="32" height="32" rx="5" class="paper"/><path d="M2 8h12M9 3l5 5-5 5" transform="translate(1363.0 617.0)" class="stroke"/></g>
+<path d="M570 651L1398 651" class="line"/>
+<text x="570" y="694" class="caption blue" >#021 命令行错误信息</text>
+<text x="904" y="694" class="caption" >独立检查者</text>
+<text x="1100" y="694" class="caption muted" >已接受 r1</text>
+<g aria-label="查看 #021 命令行错误信息，保留 Agent 视图返回点"><title>查看 #021 命令行错误信息，保留 Agent 视图返回点</title><rect x="1355" y="676" width="32" height="32" rx="5" class="paper"/><path d="M2 8h12M9 3l5 5-5 5" transform="translate(1363.0 684.0)" class="stroke"/></g>
+<path d="M570 718L1398 718" class="line"/>
+<g aria-label="#021 已接受并关闭；保留阅读、来源、复制与新建关联工作"><title>#021 已接受并关闭；保留阅读、来源、复制与新建关联工作</title><rect x="1310" y="676" width="32" height="32" rx="5" class="paper"/><path d="M8 7v6M8 4h.1M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0" transform="translate(1318.0 684.0)" class="stroke"/></g>
+<rect x="1210" y="800" width="188" height="32" rx="5" class="border"/><text x="1304.0" y="821.0" class="medium" text-anchor="middle">查看 #024 任务</text>
+</g>
+</svg>

@@ -1,0 +1,9 @@
+# AgentX Management design brief
+
+Scope: the Management console; other AgentX products retain their own design owners. The [operator scenarios](../.docs/web-product-design/management.md) own the audience and outcomes; the [technical ledger](../.docs/web-product-design/management.style.design.md) owns the visual direction. The [implementation task](../.controller/management-ui-craft/task.md) records the navigation, tradeoffs and verification.
+
+Keep exact identity next to action. Preserve working context when an operator changes destination. Give uncertainty a clear local next step. Use compact, direct Chinese copy with original native values available where they clarify diagnostics. The success path is selecting the intended execution, taking the allowed action and finding its original receipt from the same page or after a reload. Charts, marketing surfaces and provider configuration are outside this console brief.
+
+The operator wants exceptionally refined, modern, elegant interactions, with particular attention to dialogs and motion. Treat modality, focus, field validation, interruption, reply context, and the motion of real state changes as first-class design work. Use the [interaction refinement](../.controller/management-ui-craft/task.md#interaction-refinement) as the implementation contract.
+
+Learned constraint: the user rejects bulky controls, broad panels, heavy framing, and visual hierarchy obtained by enlarging everything. Establish elegance through content priority, alignment, type weight, proportions, and action placement. Review the open dialog, editing state, confirmation, error, and return against representative desktop and phone screens before calling a pass refined. See the [compact design pass](../.controller/management-ui-craft/task.md#compact-design-pass).

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="112" viewBox="0 0 192 112">
+  <defs>
+    <pattern id="rug-screen" width="6" height="6" patternUnits="userSpaceOnUse">
+      <circle cx="1.75" cy="1.75" r="1.35" fill="#644771" opacity=".45"/>
+    </pattern>
+  </defs>
+  <path fill="#315696" opacity=".36" d="M8 8h180l2 99H5z"/>
+  <path fill="#ce8878" stroke="#55324a" stroke-width="2" d="M4 4h180l3 99H1z"/>
+  <path fill="#e3a18a" stroke="#eac291" stroke-width="2" d="M10 10h168l3 87H7z"/>
+  <path fill="url(#rug-screen)" d="M12 12h164l3 83H9z"/>
+  <path fill="#e5a991" stroke="#ae6870" stroke-width="2" d="m19 84 34-28-8-8 44-13 10-12 16 13 37 4-5 11 22 25-34 4-15 9-18-7-35 7-13-8z"/>
+  <path fill="none" stroke="#ae6870" stroke-width="2" d="m18 28 21 7m-8 2 12 4m121-17-18 9m12 1-9 4m-25 47 28 6m-103-3-15 3"/>
+  <path fill="none" stroke="#6e4054" stroke-opacity=".45" d="M7 104v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5m5-5v5"/>
+</svg>

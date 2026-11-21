@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "system": "inspector",
+  "id": "inspector/foundations",
+  "kind": "foundation",
+  "title": "基础值",
+  "summary": "基础尺度是共享角色，实际用途由语义层选择。",
+  "maturity": "stable",
+  "source": [
+    "./foundation.tokens.ts"
+  ],
+  "design": "./foundations.design.md",
+  "useWhen": [
+    "基础尺度是共享角色，实际用途由语义层选择。"
+  ],
+  "avoidWhen": [
+    "不要将样例结果解释为业务事实或权限。"
+  ],
+  "dependencies": [],
+  "events": [],
+  "states": [],
+  "interactions": [],
+  "scenes": [
+    {
+      "id": "default",
+      "title": "真实资源预览",
+      "description": "基础尺度是共享角色，实际用途由语义层选择。",
+      "kind": "overview"
+    }
+  ],
+  "usage": {
+    "entry": "../inspector.tokens.ts",
+    "symbols": [
+      "space",
+      "fontSize"
+    ]
+  }
+}

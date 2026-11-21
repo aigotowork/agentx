@@ -1,0 +1,19 @@
+---
+scope: Space live runtime entry and the shared style library
+status: completed
+owner: kula
+---
+
+# Use one live Domain SDK path for Space
+
+The deployed :38023 artifact predates default Domain SDK adoption. The source had a second reader selected only by build-time host settings. The style catalog uses the same App and scene/reader components; its fixture preview and deployed Space are separate artifacts.
+
+Use the native listener's configured scope in the embedded Space document and the document origin as its listener. Standalone real hosts provide an explicit URL and expected scope. URL and API response data cannot select trust; explicit sample routes are available only without a live host. Pin generation as before. Keep all-offices and legacy/unknown business views with a scope-wide SDK Agent page; known offices use bounded `Workspace.members`. Use exact Agent handles for reads and send, `Workspace.roles` for roles, and original operation handles for receipt recovery. Preserve same-origin journal continuity across upgrade. Keep features the domain SDK does not yet model (Transcript, attachments, mailbox, launches, relations, directory contact) on the generated client bound to the same listener. Styles do not select business paths.
+
+Verify one native embedded candidate with its real daemon and isolated Agent, plus targeted SDK/consumer cases for scoped paging and rejection. Keep :38023 and installed binaries untouched. [Prior Delivery](delivery.delivery.md) owns opt-in evidence; [style evidence](../space-ui-styles/style-library/design.md) owns the appearance library.
+
+The source and isolated Linux result is complete. `cargo build --bin agentx` produced the [recorded candidate](../../.artifacts/space-domain-sdk/embedded-r3/manifest.json). The [real-daemon browser run](../../.artifacts/space-domain-sdk/embedded-r3/browser-report.json) passed all five flows without browser errors, including embedded listener selection, the all-offices roster, pixel/watercolor and chat/scene continuity, one deliberate send and its fixture reply, and one deliberate read-only Transcript operation. It used an isolated hook fixture, not a live Provider account. The 29 focused Node cases, launch-failure script, UIUX check and updated [Contract Canvas consumer](../../.docs/object-atlas-v2/README.md) also passed. The earlier browser run `embedded-r2` verified the same candidate but asserted send availability before entering a draft; `embedded-r3` corrected the test and changed no product bytes. No deployed service or installed executable was modified. Known offices still use bounded membership pages, so a page with no matches may offer continuation; the source does not claim complete office coverage from one page.
+
+Replay: `python3 .controller/space-ui-styles/style-library/native-check.py target/debug/agentx /absolute/new/evidence --embedded` from the repository root. It starts and releases its own daemon, listener and fixture Agent.
+
+The hands-on follow-up ran the same candidate on an explicitly selected private interface at `:38031`. The [browser trace](../../.artifacts/space-domain-sdk/hands-on-r1/live/browser-report.json) passed its five scenarios, and an independent [read-only SDK probe](../../.artifacts/space-domain-sdk/hands-on-r1/live/sdk-report.json) checked Workspace roles/members, exact Agent messages, original-operation observation, wrong scope and stale identity. The first startup declined its LAN descriptor because the generic fixture defaults to loopback; the preview now explicitly matches the requested bind address, while all ordinary fixture callers retain their default. Read [preview usage](verification/README.md#hands-on-native-preview) for replay and cleanup. This is native HTTP/daemon integration with a local echo Provider, not validation against a real model account.

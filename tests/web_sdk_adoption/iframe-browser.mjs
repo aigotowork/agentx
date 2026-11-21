@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import {createServer} from 'node:http';
+import {readFile,mkdir,writeFile} from 'node:fs/promises';
+import {createRequire} from 'node:module';
+const c=JSON.parse(await readFile(process.argv[2],'utf8'));await mkdir(c.evidence,{recursive:false});
+const server=createServer((req,res)=>{res.setHeader('Content-Type','text/html');res.end('<!doctype html><title>Independent iframe host</title><iframe title="Full Space" style="width:390px;height:844px;border:0"></iframe>');});
+await new Promise(r=>server.listen(0,'127.0.0.1',r));
+const {chromium}=createRequire(import.meta.url)('/home/long/.npm/_npx/e41f203b7505f1fb/node_modules/playwright');
+const b=await chromium.launch({executablePath:'/usr/bin/google-chrome',headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--no-proxy-server']});const page=await b.newPage({viewport:{width:1000,height:950}});const errors=[],traffic=[];let result,failure;
+page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.url().includes('/api/'))traffic.push({url:r.url(),method:r.method(),frame:r.frame().url()});});
+try{
+ await page.goto(`http://127.0.0.1:${server.address().port}`);
+ const direct=await page.evaluate(async url=>{const r=await fetch(url+'/api/v1/management');return {status:r.status,descriptor:await r.json()};},c.url);assert.equal(direct.status,200);
+ await page.locator('iframe').evaluate((el,url)=>el.src=url+'/space/',c.url);const f=page.frameLocator('iframe');
+ await f.getByRole('button',{name:'聊天',exact:true}).click();await f.getByRole('combobox',{name:'工作区范围',exact:true}).selectOption('');
+ await f.getByRole('navigation',{name:'办公室内容'}).getByRole('button',{name:/^成员/}).click();await f.getByRole('region',{name:'Agent 名册'}).getByRole('button',{name:new RegExp('^@'+c.agent.name+' ·')}).click();
+ await f.getByRole('textbox',{name:'Agent 消息草稿',exact:true}).fill('full Space iframe normal pointer send');
+ const pending=page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname.endsWith('/messages'));await f.getByRole('button',{name:'发送 AgentX 消息',exact:true}).click();const r=await pending;assert.equal(r.status(),202);const accepted=await r.json();
+ const frame=page.frames().find(x=>x.url().startsWith(c.url+'/space/'));
+ await frame.waitForFunction(id=>JSON.parse(localStorage.getItem('agentx.space.operations.v1')??'[]').find(x=>x.id===id)?.operation?.status==='Succeeded',accepted.request_id);
+ const target=await page.evaluate(url=>new Promise((resolve,reject)=>{const id=crypto.randomUUID();const timer=setTimeout(()=>reject(new Error('getTarget timeout')),6000);function got(e){if(e.data?.requestId===id){clearTimeout(timer);removeEventListener('message',got);resolve(e.data);}}addEventListener('message',got);document.querySelector('iframe').contentWindow.postMessage({protocol:'agentx.context.v1',type:'getTarget',requestId:id},url);}),c.url);
+ assert.equal(target.status,'selected');assert.equal(target.target.agent.incarnation,c.agent.incarnation);
+ const geometry=await frame.evaluate(()=>({width:innerWidth,scrollWidth:document.documentElement.scrollWidth}));assert(geometry.scrollWidth<=geometry.width+1);await page.screenshot({path:c.evidence+'/iframe.png',fullPage:true});assert.deepEqual(errors,[]);
+ result={directParentFetch:direct,frameAccepted:accepted,target,geometry,boundary:'Separate parent-origin Fetch and iframe-origin SDK traffic, finite native Provider only'};
+}catch(e){failure={message:e.message,stack:e.stack};}finally{await writeFile(c.evidence+'/result.json',JSON.stringify({status:failure?'failed':'passed',browser:b.version(),result,errors,traffic,failure},null,2)+'\n');await b.close();await new Promise(r=>server.close(r));}if(failure)throw new Error(failure.message);

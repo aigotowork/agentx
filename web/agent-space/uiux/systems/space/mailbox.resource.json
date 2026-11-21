@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "system": "space",
+  "id": "space/human-mailbox",
+  "kind": "block",
+  "title": "Human 信箱 Block",
+  "summary": "精确发送者分组、待处理与全部历史、明确处理已显示信件",
+  "maturity": "experimental",
+  "source": [
+    "./blocks/HumanMailboxBlock.tsx"
+  ],
+  "design": "./mailbox.design.md",
+  "useWhen": [
+    "操作和检查实际 Space Conversation 阅读 Block"
+  ],
+  "avoidWhen": [
+    "不要把本地演示结果当作原生操作或最终验收"
+  ],
+  "dependencies": [
+    "space/controls"
+  ],
+  "events": [],
+  "states": [
+    {
+      "id": "default",
+      "title": "待处理与历史",
+      "description": "明确处理本地演示信件",
+      "scene": "default"
+    }
+  ],
+  "interactions": [],
+  "scenes": [
+    {
+      "id": "default",
+      "title": "信箱处理与保留历史",
+      "description": "真实受控 Block，本地演示处理",
+      "kind": "interaction"
+    }
+  ],
+  "usage": {
+    "entry": "./space.web.ts",
+    "symbols": [
+      "HumanMailboxBlock"
+    ]
+  }
+}

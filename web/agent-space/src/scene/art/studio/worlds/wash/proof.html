@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wash · After the rain</title>
+<style>
+* { box-sizing:border-box }
+body { margin:0; background:#dedacc; color:#2e424e; font:13px system-ui,sans-serif }
+main { width:min(848px,100%); padding:clamp(12px,3.5vw,24px); margin:auto }
+header { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:4px 12px; padding:4px 0 12px; border-bottom:1px solid #7d877f; margin-bottom:12px }
+h1 { font:500 clamp(26px,5vw,40px)/1 Georgia,serif; letter-spacing:-.035em; margin:0 }
+header span, h2 { font-size:10px; text-transform:uppercase; letter-spacing:.13em }
+.stage { position:relative; aspect-ratio:800 / 450; isolation:isolate; container-type:inline-size; overflow:hidden; border-radius:4px; outline:1px solid #465b625c }
+.stage img,.room-shadow,.office { position:absolute; left:calc(var(--x)*.125cqw); top:calc(var(--y)*.125cqw); width:calc(var(--w)*.125cqw); height:calc(var(--h)*.125cqw) }
+.stage img { display:block }
+.office,.room-shadow { --x:126; --y:65; --w:548; --h:326 }
+.room-shadow { transform:translate(1cqw,1cqw); background:#4964724a }
+.office { overflow:hidden }
+.tiles,.window-light,.lamp-light,.rear,.edge { position:absolute; inset:0 }
+.tiles { background:url(floor-oak.svg) left top / 16cqw 16cqw repeat }
+.window-light { background:linear-gradient(125deg,#627d8554,transparent 42%,#667c785c 95%),radial-gradient(ellipse at 28% 22%,#eef0cc81,transparent 52%) }
+.lamp-light { background:radial-gradient(circle at 8% 35%,#f7d4a097,transparent 24%) }
+.rear { bottom:auto; height:8cqw; background:url(wall-plaster.svg) left top / 20cqw 8cqw repeat-x }
+.edge { border-inline: .75cqw solid #79867e; box-shadow:inset .23cqw 0 #d6bc8d,inset -.23cqw 0 #d6bc8d }
+.edge::after { content:""; height:.75cqw; position:absolute; inset:auto 0 0; background:linear-gradient(to right,#79867e 5%,transparent 5% 17%,#79867e 17%) }
+.label { position:absolute; left:calc(var(--x)*.125cqw); top:calc(var(--y)*.125cqw); transform:translateX(-50%); padding:0 .48cqw; border-radius:.38cqw; color:#293e49; background:#f3ead6e8; font-size:1.25cqw; font-weight:650 }
+.cast { margin-top:18px; padding-top:12px; border-top:1px solid #7d877f; display:grid; gap:10px }
+h2 { font-weight:650; margin:0 }
+.lineup { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px }
+figure { min-width:0; margin:0 }
+figure div { height:94px; display:grid; place-items:center; background:#ede2ca; border:1px solid #b5a99a }
+figure img { width:64px; height:72px }
+figcaption { padding-top:5px; font-size:11px }
+</style>
+<main>
+<header><h1>After the rain</h1><span>Wash · Studio art proof</span></header>
+<div class="stage" role="img" aria-label="Watercolor studio with six figures among workbenches, shelves and a lounge, overlooking a wet river terrace.">
+<img alt="" src="scene-vista.svg" style="--x:0;--y:0;--w:800;--h:450">
+<div class="room-shadow"></div><div class="office"><div class="tiles"></div>
+<img alt="" src="rug.svg" style="--x:336;--y:173;--w:192;--h:112">
+<div class="window-light"></div><div class="lamp-light"></div><div class="rear"></div><div class="edge"></div>
+<img alt="" src="wall-window.svg" style="--x:27;--y:1;--w:120;--h:48">
+<img alt="" src="wall-print.svg" style="--x:220;--y:1;--w:54;--h:48">
+<img alt="" src="wall-window.svg" style="--x:398;--y:1;--w:120;--h:48">
+<img alt="" src="door-threshold.svg" style="--x:32;--y:294;--w:64;--h:32">
+<img alt="" src="scene-lantern.svg" style="--x:-8;--y:61;--w:64;--h:62">
+<img alt="" src="bookshelf.svg" style="--x:255;--y:54;--w:56;--h:64">
+<img alt="" src="plant.svg" style="--x:500;--y:63;--w:32;--h:46">
+<img alt="" src="sofa.svg" style="--x:353;--y:74;--w:108;--h:60">
+<img alt="" src="coffee.svg" style="--x:479;--y:109;--w:54;--h:62">
+<img alt="" src="cabinet.svg" style="--x:454;--y:234;--w:68;--h:64">
+<img alt="" src="desk.svg" style="--x:56;--y:45;--w:86;--h:68">
+<img alt="" src="stool.svg" style="--x:80;--y:103;--w:38;--h:36">
+<img alt="" src="desk.svg" style="--x:176;--y:85;--w:86;--h:68">
+<img alt="" src="stool.svg" style="--x:200;--y:143;--w:38;--h:36">
+<img alt="" src="desk.svg" style="--x:73;--y:149;--w:86;--h:68">
+<img alt="" src="stool.svg" style="--x:97;--y:207;--w:38;--h:36">
+<img alt="" src="actor-maker.svg" style="--x:67;--y:51;--w:64;--h:72">
+<img alt="" src="glyph-work.svg" style="--x:119;--y:68;--w:24;--h:24">
+<span class="label" style="--x:99;--y:131">@tobi</span>
+<img alt="" src="actor-designer.svg" style="--x:187;--y:91;--w:64;--h:72">
+<img alt="" src="glyph-work.svg" style="--x:239;--y:108;--w:24;--h:24">
+<span class="label" style="--x:219;--y:171">@luna</span>
+<img alt="" src="actor-keeper.svg" style="--x:378;--y:102;--w:64;--h:72">
+<img alt="" src="glyph-available.svg" style="--x:430;--y:119;--w:24;--h:24">
+<span class="label" style="--x:410;--y:182">@sira</span>
+<img alt="" src="actor-maker.svg" style="--x:84;--y:155;--w:64;--h:72">
+<img alt="" src="glyph-work.svg" style="--x:136;--y:172;--w:24;--h:24">
+<span class="label" style="--x:116;--y:235">@vera</span>
+<img alt="" src="actor-keeper.svg" style="--x:343;--y:202;--w:64;--h:72">
+<img alt="" src="glyph-attention.svg" style="--x:395;--y:219;--w:24;--h:24">
+<span class="label" style="--x:375;--y:282">@riku</span>
+<img alt="" src="glyph-select.svg" style="--x:200;--y:273;--w:64;--h:24">
+<img alt="" src="actor-scout.svg" style="--x:200;--y:213;--w:64;--h:72">
+<span class="label" style="--x:232;--y:293">@mora</span>
+<img alt="" src="envelope.svg" style="--x:269;--y:220;--w:24;--h:16">
+</div>
+<img alt="" src="human-mailbox.svg" style="--x:67;--y:321;--w:62;--h:62">
+</div>
+<section class="cast" aria-label="Four character masters at native size">
+<h2>Cast · 64 × 72</h2>
+<div class="lineup">
+<figure><div><img src="actor-maker.svg" alt="Ochre cap, blue apron and brush"></div><figcaption>Maker</figcaption></figure>
+<figure><div><img src="actor-designer.svg" alt="Swept hair, madder smock and swatch page"></div><figcaption>Designer</figcaption></figure>
+<figure><div><img src="actor-keeper.svg" alt="Grey hair, round frames and folio"></div><figcaption>Keeper</figcaption></figure>
+<figure><div><img src="actor-scout.svg" alt="Pointed rain hood, trailing scarf and dispatch satchel"></div><figcaption>Scout</figcaption></figure>
+</div>
+</section>
+</main>
+</html>

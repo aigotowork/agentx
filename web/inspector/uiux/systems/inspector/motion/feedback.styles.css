@@ -1,0 +1,106 @@
+/* Pixel expression is scoped to the full Web adapter. Geometry and time values arrive from shared skin tokens. */
+:root[data-experience="inspector"] {
+  --inspector-frame-cut: var(--inspector-shape-step);
+  --inspector-frame-width: var(--inspector-shape-outline);
+  --inspector-bevel: 2px;
+  --inspector-press-shift: var(--inspector-shape-pressDepth,2px);
+  --inspector-feedback-gap: 12px;
+  --inspector-frame-shadow: #B8C6ED;
+  --inspector-frame-highlight: #FFFFFF;
+  --inspector-scan-offset: 4px;
+  --inspector-tool-cursor: pointer;
+  --inspector-tool-pressed: pointer;
+  .pixel-feedback-controls { display: flex; flex-direction: column; gap: var(--inspector-feedback-gap); }
+  .pixel-preference { display: flex; align-items: center; justify-content: space-between; gap: var(--inspector-feedback-gap); font-size: var(--host-font); }
+  .pixel-preference input { max-width: 60%; accent-color: var(--host-accent); }
+  &[data-theme="dark"] { --inspector-frame-shadow: #070C19; --inspector-frame-highlight: #61769C; }
+  &[data-style="pixel"] {
+    /* Two independent stepped silhouettes form an actual inset frame. Content, focus and hit areas stay unclipped. */
+    :is([data-inspector-ui="button"], [data-inspector-ui="icon-button"], [data-inspector-ui="chip"], [data-inspector-ui="field"], [data-inspector-ui="card"], [data-inspector-ui="hero"], [data-inspector-ui="tab"][aria-selected="true"], .component-preview-block, .host-modal) {
+      --inspector-frame-cut: var(--inspector-shape-step);
+      position: relative;
+      isolation: isolate;
+      border-radius: 0 !important;
+      background-color: transparent !important;
+      border-color: transparent !important;
+      box-shadow: none !important;
+      filter: drop-shadow(var(--inspector-shape-shadow) var(--inspector-shape-shadow) 0 var(--inspector-frame-shadow));
+      &::before, &::after {
+        content: "";
+        position: absolute;
+        pointer-events: none;
+        clip-path: polygon(var(--inspector-cut) 0, calc(100% - var(--inspector-cut)) 0, calc(100% - var(--inspector-cut)) var(--inspector-cut), 100% var(--inspector-cut), 100% calc(100% - var(--inspector-cut)), calc(100% - var(--inspector-cut)) calc(100% - var(--inspector-cut)), calc(100% - var(--inspector-cut)) 100%, var(--inspector-cut) 100%, var(--inspector-cut) calc(100% - var(--inspector-cut)), 0 calc(100% - var(--inspector-cut)), 0 var(--inspector-cut), var(--inspector-cut) var(--inspector-cut));
+      }
+      &::before {
+        --inspector-cut: var(--inspector-frame-cut);
+        --inspector-inset: var(--inspector-frame-width);
+        --inspector-outer-path: var(--inspector-cut) 0, calc(100% - var(--inspector-cut)) 0, calc(100% - var(--inspector-cut)) var(--inspector-cut), 100% var(--inspector-cut), 100% calc(100% - var(--inspector-cut)), calc(100% - var(--inspector-cut)) calc(100% - var(--inspector-cut)), calc(100% - var(--inspector-cut)) 100%, var(--inspector-cut) 100%, var(--inspector-cut) calc(100% - var(--inspector-cut)), 0 calc(100% - var(--inspector-cut)), 0 var(--inspector-cut), var(--inspector-cut) var(--inspector-cut), var(--inspector-cut) 0;
+        --inspector-inner-path: calc(var(--inspector-cut) + var(--inspector-inset)) var(--inspector-inset), calc(100% - var(--inspector-cut) - var(--inspector-inset)) var(--inspector-inset), calc(100% - var(--inspector-cut) - var(--inspector-inset)) calc(var(--inspector-cut) + var(--inspector-inset)), calc(100% - var(--inspector-inset)) calc(var(--inspector-cut) + var(--inspector-inset)), calc(100% - var(--inspector-inset)) calc(100% - var(--inspector-cut) - var(--inspector-inset)), calc(100% - var(--inspector-cut) - var(--inspector-inset)) calc(100% - var(--inspector-cut) - var(--inspector-inset)), calc(100% - var(--inspector-cut) - var(--inspector-inset)) calc(100% - var(--inspector-inset)), calc(var(--inspector-cut) + var(--inspector-inset)) calc(100% - var(--inspector-inset)), calc(var(--inspector-cut) + var(--inspector-inset)) calc(100% - var(--inspector-cut) - var(--inspector-inset)), var(--inspector-inset) calc(100% - var(--inspector-cut) - var(--inspector-inset)), var(--inspector-inset) calc(var(--inspector-cut) + var(--inspector-inset)), calc(var(--inspector-cut) + var(--inspector-inset)) calc(var(--inspector-cut) + var(--inspector-inset)), calc(var(--inspector-cut) + var(--inspector-inset)) var(--inspector-inset);
+        inset: 0; z-index: -2; background: var(--inspector-frame-edge, var(--host-border));
+        clip-path: polygon(evenodd, var(--inspector-outer-path), var(--inspector-inner-path), var(--inspector-cut) 0);
+      }
+      &::after {
+        --inspector-cut: var(--inspector-frame-cut);
+        inset: var(--inspector-frame-width); z-index: -1;
+        background: var(--inspector-frame-fill, var(--host-surface0));
+        box-shadow: inset 0 var(--inspector-bevel) 0 color-mix(in srgb, var(--inspector-frame-fill, var(--host-surface0)) 72%, var(--inspector-frame-highlight)), inset 0 calc(-1 * var(--inspector-bevel)) 0 color-mix(in srgb, var(--inspector-frame-fill, var(--host-surface0)) 84%, var(--inspector-frame-shadow));
+      }
+    }
+    :is([data-inspector-ui="icon-button"], [data-inspector-ui="chip"], [data-inspector-ui="field"]) { --inspector-frame-cut: var(--inspector-shape-compactStep); }
+    :is([data-inspector-ui="card"], [data-inspector-ui="hero"], .component-preview-block, .host-modal) { --inspector-frame-cut: var(--inspector-shape-panelStep); }
+    .component-preview-block { --inspector-frame-fill: var(--host-surface1); }
+    .host-modal { --inspector-frame-fill: var(--host-surface0); }
+    [data-inspector-ui="field"] { filter: none; }
+    [data-inspector-ui="field"] input, [data-inspector-ui="field"] textarea { background: transparent; border-radius: 0; }
+    [data-inspector-ui="field"]:focus-within { --inspector-frame-edge: var(--host-accent) !important; }
+    :is([data-inspector-ui="button"], [data-inspector-ui="icon-button"], [data-inspector-ui="chip"][role="button"], [data-inspector-ui="tab"], [data-inspector-ui="switch"]) {
+      transition: filter var(--inspector-motion-hover) steps(2, end), translate var(--inspector-motion-release) steps(2, end);
+      &:is(:active, [data-feedback-pressed="true"]):not([disabled], [aria-disabled="true"], [aria-busy="true"]) {
+        translate: 0 var(--inspector-press-shift);
+        filter: none;
+        transition-duration: var(--inspector-motion-press);
+      }
+    }
+    @media (hover: hover) {
+      :is([data-inspector-ui="button"], [data-inspector-ui="icon-button"], [data-inspector-ui="chip"][role="button"]):hover:not([disabled], [aria-disabled="true"], [aria-busy="true"]) { --inspector-frame-edge: var(--host-accent) !important; }
+    }
+    [data-inspector-motion="spin"] { animation-timing-function: steps(4, end) !important; animation-duration: var(--inspector-motion-scan) !important; }
+    [data-inspector-motion="loader"] div { border-radius: 0 !important; }
+    [data-inspector-motion="scan"] { animation-timing-function: steps(4, end) !important; animation-duration: var(--inspector-motion-scan) !important; }
+    [data-inspector-motion="ping"] { border-radius: 0 !important; animation-timing-function: steps(3, end) !important; }
+    [data-inspector-motion="pop"] { animation-timing-function: steps(3, end) !important; animation-duration: var(--inspector-motion-enter) !important; }
+    [data-inspector-motion="enter"] { animation-timing-function: steps(3, end) !important; animation-duration: var(--inspector-motion-enter) !important; }
+    :is([data-inspector-motion="grow-y"], [data-inspector-motion="grow-x"]) { animation-timing-function: steps(6, end) !important; animation-duration: var(--inspector-motion-chart) !important; animation-delay: 0ms !important; }
+    [data-inspector-motion^="work-"] { animation: inspector-work var(--inspector-motion-rhythm) steps(3, end) infinite; }
+    [data-inspector-motion="work-1"] { animation-delay: -400ms; }
+    [data-inspector-motion="work-2"] { animation-delay: -800ms; }
+    [data-inspector-motion^="scan-"] { animation: inspector-scan var(--inspector-motion-scan) steps(1, end) infinite; }
+    [data-inspector-motion="scan-1"] { animation-delay: -200ms; }
+    [data-inspector-motion="scan-2"] { animation-delay: -400ms; }
+    [data-inspector-motion="scan-3"] { animation-delay: -600ms; }
+    [data-feedback-visible="false"] { animation-play-state: paused !important; }
+    &[data-feedback-active="false"] [data-inspector-motion] { animation-play-state: paused !important; }
+    &[data-motion="reduced"] {
+      [data-inspector-motion], .inspector-pixel-icon { animation: none !important; }
+      [data-inspector-ui] { transition: none !important; translate: none !important; }
+    }
+  }
+  @media (pointer: fine) and (hover: hover) {
+    &[data-style="pixel"]:not([data-cursor="system"]) {
+      body, button, a, summary, [role="button"], [role="tab"], [role="switch"] { cursor: var(--inspector-tool-cursor) !important; }
+      &[data-tool-pressed="true"][data-motion="full"] :is(body, button, a, summary, [role="button"], [role="tab"], [role="switch"]) { cursor: var(--inspector-tool-pressed) !important; }
+      input, textarea, [contenteditable="true"] { cursor: text !important; }
+      select, input[type="range"], input[type="checkbox"] { cursor: auto !important; }
+      [disabled], [aria-disabled="true"], [aria-disabled="true"] * { cursor: not-allowed !important; }
+      [aria-busy="true"], [aria-busy="true"] * { cursor: progress !important; }
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &[data-style="pixel"] {
+      [data-inspector-motion], .inspector-pixel-icon { animation: none !important; }
+      [data-inspector-ui] { transition: none !important; translate: none !important; }
+    }
+  }
+}
+@keyframes inspector-work { 0%, 100% { transform: scaleY(.5); } 34% { transform: scaleY(1); } 67% { transform: scaleY(.75); } }
+@keyframes inspector-scan { 0% { opacity: 1; } 25%, 100% { opacity: .25; } }

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="24" viewBox="0 0 64 24" stroke-linejoin="round" stroke-linecap="round">
+<title>Engraved celadon selection ring</title>
+<defs>
+<linearGradient id="mint" x2="1" y2="1"><stop offset="0" stop-color="#e5fff1"/><stop offset="0.5" stop-color="#7ed9c3"/><stop offset="1" stop-color="#368885"/></linearGradient><linearGradient id="paper" x2="1" y2="1"><stop offset="0" stop-color="#fff1bc"/><stop offset="0.5" stop-color="#ebc186"/><stop offset="1" stop-color="#ae776c"/></linearGradient><radialGradient id="shadow" cx=".36" cy=".32" r=".77"><stop offset="0" stop-color="#090e1a" stop-opacity=".8"/><stop offset="0.5" stop-color="#141724" stop-opacity=".56"/><stop offset="1" stop-color="#0b1020" stop-opacity="0"/></radialGradient>
+
+</defs>
+<ellipse cx="32" cy="12" rx="30" ry="9.7" fill="url(#shadow)"/>
+<ellipse cx="32" cy="12" rx="27" ry="8" fill="none" stroke="#152d3a" stroke-width="3"/>
+<ellipse cx="32" cy="12" rx="27" ry="8" fill="none" stroke="url(#mint)" stroke-width="1.56"/>
+<ellipse cx="32" cy="12" rx="24" ry="6.2" fill="none" stroke="#d9f5d1" stroke-width="0.68" opacity=".76"/>
+<path d="M0 12l5-2.1 5 2.1-5 2.1ZM54 12l5-2.1 5 2.1-5 2.1ZM27 20l5-2.2 5 2.2-5 2.2Z" fill="url(#paper)" stroke="#355958" stroke-width="0.55"/>
+</svg>

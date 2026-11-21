@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="48" viewBox="0 0 120 48">
+  <defs><linearGradient id="pearl" x2="35%" y2="100%"><stop stop-color="#fcdfc1"/><stop offset=".48" stop-color="#c7c3e4"/><stop offset="1" stop-color="#9f759d"/></linearGradient><linearGradient id="glass" x2="0%" y2="100%"><stop stop-color="#3e467b"/><stop offset="1" stop-color="#a392c1"/></linearGradient><clipPath id="pane"><path d="M8 38V26q0-14 21-13Q39 3 60 6q21-3 31 7 21-1 21 13v12z"/></clipPath></defs>
+  <path d="M3 41V26Q3 9 26 9 39-1 60 2 81-1 94 9q23 0 23 17v15l-5 4H8z" fill="#3c325f"/>
+  <path d="M5 40V26Q5 12 28 11 40 1 60 4q20-3 32 7 23 1 23 15v14l-5 3H10z" fill="url(#pearl)"/>
+  <g clip-path="url(#pane)"><path d="M6 5h108v36H6z" fill="url(#glass)"/><path d="M5 34q12-9 25-5 10-6 21 2 19 5 36-3 18-9 29 2v10H5z" fill="#e2b6ca" opacity=".7"/><path d="M5 29C32 10 51 34 69 24s28-17 47-14" fill="none" stroke="#f6d0bd" stroke-width="2" opacity=".53"/><path d="M76 8a10 10 0 1 0 12 14c-9 1-13-6-12-14z" fill="#ffedc3"/><path d="M21 20h1m22-6h1m54 7h1m-44 3h1" stroke="#fff1d1" stroke-width="1.6" stroke-linecap="round"/></g>
+  <path d="M33 13v25m61-24v24M8 38h104" stroke="#d8bbce" stroke-width="1.5"/>
+  <path d="M10 42h100" stroke="#f6cfbd" stroke-linecap="round"/>
+</svg>

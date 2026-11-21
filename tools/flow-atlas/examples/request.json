@@ -1,0 +1,852 @@
+{
+  "schemaVersion": 1,
+  "title": "目录请求：对象端口与明确结果",
+  "scope": "虚构系统的声明式示例 · 查询、记住选择及拒绝/未知分支 · 非运行证据",
+  "factDefinitions": [
+    {
+      "id": "request",
+      "label": "请求"
+    },
+    {
+      "id": "record",
+      "label": "条目"
+    },
+    {
+      "id": "response",
+      "label": "响应"
+    }
+  ],
+  "defaults": {
+    "modeId": "lookup",
+    "scenarioId": "read-record"
+  },
+  "nodes": [
+    {
+      "id": "visitor",
+      "label": "访客",
+      "kind": "actor",
+      "stateFacts": [
+        "response"
+      ]
+    },
+    {
+      "id": "catalog",
+      "label": "目录服务",
+      "kind": "service",
+      "stateFacts": [
+        "request"
+      ]
+    },
+    {
+      "id": "archive",
+      "label": "目录存储",
+      "kind": "store",
+      "stateFacts": [
+        "record"
+      ]
+    }
+  ],
+  "ports": [
+    {
+      "id": "lookup-record",
+      "nodeId": "catalog",
+      "label": "查询条目",
+      "kind": "query",
+      "input": [
+        {
+          "name": "recordId",
+          "type": "目录条目编号",
+          "required": true
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "accepted",
+          "label": "查询已受理，条目尚未返回",
+          "kind": "accepted"
+        }
+      ],
+      "description": "本步只声明查询已接收；后续条目与展示由独立观察事件记录，不把接收当成查询完成。"
+    },
+    {
+      "id": "read-record",
+      "nodeId": "archive",
+      "label": "读取条目",
+      "kind": "query",
+      "input": [
+        {
+          "name": "recordId",
+          "type": "目录条目编号",
+          "required": true
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "accepted",
+          "label": "只读查询已开始",
+          "kind": "accepted"
+        }
+      ],
+      "description": "只读操作不改写存储；处理中的色调与事实仅表达本轨迹的当前认知。"
+    },
+    {
+      "id": "record-observed",
+      "nodeId": "catalog",
+      "label": "接收条目事件",
+      "kind": "event",
+      "input": [
+        {
+          "name": "recordId",
+          "type": "目录条目编号",
+          "required": true
+        },
+        {
+          "name": "row",
+          "type": "JSON 条目",
+          "required": true
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "observed",
+          "label": "服务已观察到条目",
+          "kind": "observed"
+        }
+      ],
+      "description": "存储返回的数据到达服务的入站事件处理端口；不声明另一条独立回复。"
+    },
+    {
+      "id": "result-observed",
+      "nodeId": "visitor",
+      "label": "接收展示结果",
+      "kind": "event",
+      "input": [
+        {
+          "name": "recordId",
+          "type": "目录条目编号",
+          "required": true
+        },
+        {
+          "name": "status",
+          "type": "HTTP 状态码",
+          "required": true
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "observed",
+          "label": "访客已看到条目",
+          "kind": "observed"
+        }
+      ]
+    },
+    {
+      "id": "remember-selection",
+      "nodeId": "catalog",
+      "label": "记住选择",
+      "kind": "command",
+      "input": [
+        {
+          "name": "recordId",
+          "type": "目录条目编号",
+          "required": true
+        },
+        {
+          "name": "clientLabel",
+          "type": "展示来源",
+          "required": false
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "accepted",
+          "label": "选择已记住",
+          "kind": "accepted"
+        },
+        {
+          "id": "rejected",
+          "label": "条目不存在，选择被拒绝",
+          "kind": "rejected"
+        },
+        {
+          "id": "unknown",
+          "label": "连接中断，是否记住未知",
+          "kind": "unknown"
+        }
+      ],
+      "description": "服务记住访客选择，不改写目录存储。成功、拒绝与未知由三条已编写场景分别展示。"
+    }
+  ],
+  "edges": [
+    {
+      "id": "public-api",
+      "from": "visitor",
+      "to": "catalog",
+      "label": "目录接口",
+      "transport": "HTTP"
+    },
+    {
+      "id": "data-link",
+      "from": "catalog",
+      "to": "archive",
+      "label": "只读连接",
+      "transport": "SQL"
+    }
+  ],
+  "modes": [
+    {
+      "id": "lookup",
+      "label": "目录查询与选择",
+      "nodeIds": [
+        "visitor",
+        "catalog",
+        "archive"
+      ],
+      "edgeIds": [
+        "public-api",
+        "data-link"
+      ],
+      "initial": {
+        "nodes": {
+          "visitor": {
+            "label": "待发起",
+            "tone": "neutral"
+          },
+          "catalog": {
+            "label": "空闲",
+            "tone": "running"
+          },
+          "archive": {
+            "label": "条目已保存",
+            "tone": "stored"
+          }
+        },
+        "facts": {
+          "request": "尚未发起",
+          "record": "存储中已有条目 42",
+          "response": "尚未返回"
+        }
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "read-record",
+      "modeId": "lookup",
+      "label": "成功：查询并记住条目 42",
+      "question": "查询如何到达存储，结果如何返回；记住选择后哪个对象发生改变？",
+      "initial": {
+        "nodes": {
+          "visitor": {
+            "label": "待发起",
+            "tone": "neutral"
+          },
+          "catalog": {
+            "label": "空闲",
+            "tone": "running"
+          },
+          "archive": {
+            "label": "条目已保存",
+            "tone": "stored"
+          }
+        },
+        "facts": {
+          "request": "尚未发起",
+          "record": "存储中已有条目 42",
+          "response": "尚未返回"
+        }
+      },
+      "steps": [
+        {
+          "id": "request-sent",
+          "title": "访客发起查询",
+          "event": "GET /catalog/42",
+          "actor": "visitor",
+          "handler": "catalog",
+          "edgeIds": [
+            "public-api"
+          ],
+          "actions": [
+            "访客发送条目查询",
+            "目录服务接收并解析请求"
+          ],
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "public-api",
+              "direction": "forward",
+              "label": "发送查询"
+            },
+            {
+              "kind": "local",
+              "nodeId": "catalog",
+              "label": "解析条目编号"
+            }
+          ],
+          "interactions": [
+            {
+              "id": "lookup-accepted",
+              "from": "visitor",
+              "portId": "lookup-record",
+              "requestBeat": 0,
+              "input": {
+                "recordId": "42"
+              },
+              "result": {
+                "outcomeId": "accepted"
+              },
+              "effects": [
+                {
+                  "target": "node",
+                  "id": "catalog",
+                  "kind": "change"
+                },
+                {
+                  "target": "fact",
+                  "id": "request",
+                  "kind": "observation"
+                },
+                {
+                  "target": "fact",
+                  "id": "response",
+                  "kind": "observation"
+                }
+              ]
+            }
+          ],
+          "patch": {
+            "nodes": {
+              "visitor": {
+                "label": "等待结果",
+                "tone": "waiting"
+              },
+              "catalog": {
+                "label": "处理查询",
+                "tone": "busy"
+              }
+            },
+            "facts": {
+              "request": "GET /catalog/42",
+              "response": "等待目录服务"
+            }
+          }
+        },
+        {
+          "id": "read-issued",
+          "title": "服务读取存储",
+          "event": "SELECT catalog WHERE id = 42",
+          "actor": "catalog",
+          "handler": "archive",
+          "edgeIds": [
+            "data-link"
+          ],
+          "actions": [
+            "目录服务提交只读查询",
+            "存储读取已有条目，不改写原数据"
+          ],
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "data-link",
+              "direction": "forward",
+              "label": "提交只读查询"
+            },
+            {
+              "kind": "local",
+              "nodeId": "archive",
+              "label": "读取条目 42"
+            }
+          ],
+          "interactions": [
+            {
+              "id": "read-accepted",
+              "from": "catalog",
+              "portId": "read-record",
+              "requestBeat": 0,
+              "input": {
+                "recordId": "42"
+              },
+              "result": {
+                "outcomeId": "accepted"
+              },
+              "effects": [
+                {
+                  "target": "node",
+                  "id": "archive",
+                  "kind": "observation"
+                },
+                {
+                  "target": "fact",
+                  "id": "record",
+                  "kind": "observation"
+                }
+              ]
+            }
+          ],
+          "patch": {
+            "nodes": {
+              "archive": {
+                "tone": "busy"
+              }
+            },
+            "facts": {
+              "record": "正在读取条目 42"
+            }
+          }
+        },
+        {
+          "id": "record-loaded",
+          "title": "条目返回服务",
+          "event": "row: catalog/42",
+          "actor": "archive",
+          "handler": "catalog",
+          "edgeIds": [
+            "data-link"
+          ],
+          "actions": [
+            "结果沿原连接反向返回",
+            "目录服务组装响应，原存储项保持保存"
+          ],
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "data-link",
+              "direction": "reverse",
+              "label": "返回条目"
+            },
+            {
+              "kind": "local",
+              "nodeId": "catalog",
+              "label": "组装响应"
+            },
+            {
+              "kind": "retain",
+              "nodeId": "archive",
+              "label": "保留原存储项"
+            }
+          ],
+          "interactions": [
+            {
+              "id": "record-arrived",
+              "from": "archive",
+              "portId": "record-observed",
+              "requestBeat": 0,
+              "input": {
+                "recordId": "42",
+                "row": {
+                  "id": "42",
+                  "title": "接口目录"
+                }
+              },
+              "result": {
+                "outcomeId": "observed"
+              },
+              "effects": [
+                {
+                  "target": "node",
+                  "id": "catalog",
+                  "kind": "observation"
+                },
+                {
+                  "target": "fact",
+                  "id": "record",
+                  "kind": "observation"
+                },
+                {
+                  "target": "fact",
+                  "id": "response",
+                  "kind": "observation"
+                }
+              ]
+            }
+          ],
+          "patch": {
+            "nodes": {
+              "archive": {
+                "tone": "stored"
+              },
+              "catalog": {
+                "label": "响应就绪"
+              }
+            },
+            "facts": {
+              "record": "已返回条目 42",
+              "response": "已组装，尚未发送"
+            }
+          }
+        },
+        {
+          "id": "response-sent",
+          "title": "访客收到响应",
+          "event": "200 · catalog/42",
+          "actor": "catalog",
+          "handler": "visitor",
+          "edgeIds": [
+            "public-api"
+          ],
+          "actions": [
+            "响应沿查询接口反向返回",
+            "访客展示条目，服务回到空闲"
+          ],
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "public-api",
+              "direction": "reverse",
+              "label": "返回 200 响应"
+            },
+            {
+              "kind": "observe",
+              "nodeId": "visitor",
+              "label": "展示条目 42"
+            }
+          ],
+          "interactions": [
+            {
+              "id": "result-arrived",
+              "from": "catalog",
+              "portId": "result-observed",
+              "requestBeat": 0,
+              "input": {
+                "recordId": "42",
+                "status": 200
+              },
+              "result": {
+                "outcomeId": "observed"
+              },
+              "effects": [
+                {
+                  "target": "node",
+                  "id": "visitor",
+                  "kind": "observation"
+                },
+                {
+                  "target": "fact",
+                  "id": "response",
+                  "kind": "observation"
+                }
+              ]
+            }
+          ],
+          "patch": {
+            "nodes": {
+              "visitor": {
+                "label": "已收到",
+                "tone": "running"
+              },
+              "catalog": {
+                "label": "空闲",
+                "tone": "running"
+              }
+            },
+            "facts": {
+              "response": "200 · 条目 42"
+            }
+          }
+        },
+        {
+          "id": "selection-remembered",
+          "title": "服务记住访客的选择",
+          "event": "POST /catalog/selection · 42 → 204",
+          "actor": "visitor",
+          "handler": "catalog",
+          "edgeIds": [
+            "public-api"
+          ],
+          "actions": [
+            "访客选择条目 42",
+            "服务记住当前选择并沿原接口回复 204；目录存储保持原样"
+          ],
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "public-api",
+              "direction": "forward",
+              "label": "提交选择 42"
+            },
+            {
+              "kind": "local",
+              "nodeId": "catalog",
+              "label": "记住选择"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "public-api",
+              "direction": "reverse",
+              "label": "返回 204 确认"
+            },
+            {
+              "kind": "observe",
+              "nodeId": "visitor",
+              "label": "看到已记住"
+            }
+          ],
+          "interactions": [
+            {
+              "id": "selection-accepted",
+              "from": "visitor",
+              "portId": "remember-selection",
+              "requestBeat": 0,
+              "responseBeat": 2,
+              "input": {
+                "recordId": "42",
+                "clientLabel": "资料浏览"
+              },
+              "result": {
+                "outcomeId": "accepted",
+                "summary": "服务已记住选择 42，访客收到 204 确认"
+              },
+              "effects": [
+                {
+                  "target": "node",
+                  "id": "catalog",
+                  "kind": "change"
+                },
+                {
+                  "target": "node",
+                  "id": "visitor",
+                  "kind": "observation"
+                },
+                {
+                  "target": "fact",
+                  "id": "response",
+                  "kind": "observation"
+                }
+              ]
+            }
+          ],
+          "patch": {
+            "nodes": {
+              "catalog": {
+                "label": "已记住条目 42"
+              },
+              "visitor": {
+                "label": "选择已确认"
+              }
+            },
+            "facts": {
+              "request": "POST /catalog/selection · 42",
+              "response": "204 · 已记住条目 42"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "reject-selection",
+      "modeId": "lookup",
+      "label": "拒绝：条目 999 不存在",
+      "question": "收到明确拒绝时，可以观察到什么，又不能声称什么成功变更？",
+      "initial": {
+        "nodes": {
+          "visitor": {
+            "label": "待发起",
+            "tone": "neutral"
+          },
+          "catalog": {
+            "label": "空闲",
+            "tone": "running"
+          },
+          "archive": {
+            "label": "条目已保存",
+            "tone": "stored"
+          }
+        },
+        "facts": {
+          "request": "尚未发起",
+          "record": "存储中已有条目 42",
+          "response": "尚未返回"
+        }
+      },
+      "steps": [
+        {
+          "id": "selection-rejected",
+          "title": "选择不存在的条目被拒绝",
+          "event": "POST /catalog/selection · 999 → 404",
+          "actor": "visitor",
+          "handler": "catalog",
+          "edgeIds": [
+            "public-api"
+          ],
+          "actions": [
+            "访客提交条目 999",
+            "服务返回明确拒绝，未记录该选择"
+          ],
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "public-api",
+              "direction": "forward",
+              "label": "提交选择 999"
+            },
+            {
+              "kind": "local",
+              "nodeId": "catalog",
+              "label": "检查编号"
+            },
+            {
+              "kind": "transfer",
+              "edgeId": "public-api",
+              "direction": "reverse",
+              "label": "返回 404 拒绝"
+            },
+            {
+              "kind": "observe",
+              "nodeId": "visitor",
+              "label": "看到拒绝"
+            }
+          ],
+          "interactions": [
+            {
+              "id": "rejected-selection",
+              "from": "visitor",
+              "portId": "remember-selection",
+              "requestBeat": 0,
+              "responseBeat": 2,
+              "input": {
+                "recordId": "999"
+              },
+              "result": {
+                "outcomeId": "rejected"
+              },
+              "effects": [
+                {
+                  "target": "node",
+                  "id": "visitor",
+                  "kind": "observation"
+                },
+                {
+                  "target": "fact",
+                  "id": "request",
+                  "kind": "observation"
+                },
+                {
+                  "target": "fact",
+                  "id": "response",
+                  "kind": "observation"
+                }
+              ]
+            }
+          ],
+          "patch": {
+            "nodes": {
+              "visitor": {
+                "label": "操作被拒绝",
+                "tone": "stopped"
+              }
+            },
+            "facts": {
+              "request": "POST /catalog/selection · 999",
+              "response": "404 · 条目不存在"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "unknown-selection",
+      "modeId": "lookup",
+      "label": "未知：连接中断",
+      "question": "请求发出后失去连接，为什么不能把断开当成响应或记住成功？",
+      "initial": {
+        "nodes": {
+          "visitor": {
+            "label": "待发起",
+            "tone": "neutral"
+          },
+          "catalog": {
+            "label": "空闲",
+            "tone": "running"
+          },
+          "archive": {
+            "label": "条目已保存",
+            "tone": "stored"
+          }
+        },
+        "facts": {
+          "request": "尚未发起",
+          "record": "存储中已有条目 42",
+          "response": "尚未返回"
+        }
+      },
+      "steps": [
+        {
+          "id": "selection-outcome-unknown",
+          "title": "请求已发出，结果仍未知",
+          "event": "POST /catalog/selection · 42 → connection lost",
+          "actor": "visitor",
+          "handler": "catalog",
+          "edgeIds": [
+            "public-api"
+          ],
+          "actions": [
+            "访客发出选择请求",
+            "连接中断，没有可声明的响应，也不能推断服务是否已记住"
+          ],
+          "beats": [
+            {
+              "kind": "transfer",
+              "edgeId": "public-api",
+              "direction": "forward",
+              "label": "提交选择 42"
+            },
+            {
+              "kind": "disconnect",
+              "edgeId": "public-api",
+              "direction": "reverse",
+              "label": "连接中断；不是响应"
+            },
+            {
+              "kind": "observe",
+              "nodeId": "visitor",
+              "label": "标记结果未知"
+            }
+          ],
+          "interactions": [
+            {
+              "id": "unknown-selection",
+              "from": "visitor",
+              "portId": "remember-selection",
+              "requestBeat": 0,
+              "input": {
+                "recordId": "42"
+              },
+              "result": {
+                "outcomeId": "unknown"
+              },
+              "effects": [
+                {
+                  "target": "node",
+                  "id": "visitor",
+                  "kind": "observation"
+                },
+                {
+                  "target": "fact",
+                  "id": "request",
+                  "kind": "observation"
+                },
+                {
+                  "target": "fact",
+                  "id": "response",
+                  "kind": "observation"
+                }
+              ]
+            }
+          ],
+          "patch": {
+            "nodes": {
+              "visitor": {
+                "label": "结果未知",
+                "tone": "unknown"
+              }
+            },
+            "facts": {
+              "request": "POST /catalog/selection · 42",
+              "response": "连接中断；是否已记住未知"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

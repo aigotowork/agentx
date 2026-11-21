@@ -1,0 +1,43 @@
+[workspace]
+members = ["cargo:."]
+
+# Config for 'dist'
+[dist]
+# The preferred dist version to use in CI (Cargo.toml SemVer syntax)
+cargo-dist-version = "0.33.0"
+# CI backends to support
+ci = "github"
+# Target platforms to build apps for (Rust target-triple syntax)
+targets = ["aarch64-apple-darwin", "aarch64-linux-android", "aarch64-unknown-linux-gnu", "aarch64-unknown-linux-musl", "x86_64-apple-darwin", "x86_64-pc-windows-msvc", "x86_64-unknown-linux-gnu", "x86_64-unknown-linux-musl"]
+# The installers to generate for each app
+installers = ["shell", "powershell", "homebrew"]
+# Use .tar.gz on Unix so curl-installed users on minimal Linux systems
+# don't need a separate `xz` executable just to unpack releases.
+unix-archive = ".tar.gz"
+# Local artifacts jobs to run in CI
+local-artifacts-jobs = ["./build-wheels"]
+# Publish jobs to run in CI
+publish-jobs = ["homebrew", "./publish-pypi"]
+# Post-announce jobs to run after the release is published
+post-announce-jobs = ["./post-announce-compare-link"]
+# Extra setup steps to run before dist builds
+github-build-setup = "../build-setup.yml"
+# Custom permissions for reusable workflow jobs
+github-custom-job-permissions = { "publish-pypi" = { id-token = "write", contents = "read" } }
+# A GitHub repo to push Homebrew formulas to
+tap = "aigotowork/homebrew-agentx"
+# Whether dist should create a Github Release or use an existing draft
+create-release = true
+# Path that installers should place binaries in
+install-path = "~/.local/bin"
+# Whether to install an updater program
+install-updater = false
+
+[dist.github-custom-runners.aarch64-linux-android]
+runner = "ubuntu-22.04"
+host = "x86_64-unknown-linux-gnu"
+
+[dist.github-action-commits]
+"actions/checkout" = "3d3c42e5aac5ba805825da76410c181273ba90b1"
+"actions/upload-artifact" = "cf430e030ddbb5b0abf93d22962f4752f3646cd9"
+"actions/download-artifact" = "9000827ccba6bdab643e8b6fd33ac0654aef8333"

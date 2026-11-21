@@ -1,0 +1,9 @@
+schema: package
+description: Outcome control for the AgentX task-centered collaboration workbench.
+artifacts:
+  - {kind: guidance, path: ./AGENTS.md, description: Professional responsibilities and shared authority.}
+  - {kind: delivery, path: ./delivery.md, description: User result and staged design-to-real-workflow acceptance.}
+  - {kind: controller, path: ./controller.md, description: Actual bindings and cross-domain coordination.}
+  - {kind: task, path: ./tasks, description: Original design, implementation and independent acceptance work.}
+  - {kind: tool, path: ./render-design.mjs, description: Freeze and render SVG discussion inputs with existing local Chrome; reuse unchanged captures.}
+

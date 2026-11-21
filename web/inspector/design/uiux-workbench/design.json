@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "title": "Agent Inspector · 组装式工作台",
+  "kind": "prototype",
+  "description": "整体组装画布优先的 UIUX 工作台：桌面默认、整体+局部检查器、窄屏与 Layout 槽位编辑态。",
+  "artboards": [
+    {
+      "id": "assembly-desktop",
+      "title": "整体组装画布 · 桌面默认",
+      "file": "assembly-desktop.html",
+      "width": 1440,
+      "height": 900,
+      "group": "assembly",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "selection-inspector",
+      "title": "整体画布 · 局部选中与检查器",
+      "file": "selection-inspector.html",
+      "width": 1440,
+      "height": 900,
+      "group": "assembly",
+      "x": 1480,
+      "y": 0
+    },
+    {
+      "id": "mobile-layout",
+      "title": "窄屏检查器 · Layout 槽位编辑",
+      "file": "mobile-layout.html",
+      "width": 390,
+      "height": 844,
+      "group": "responsive",
+      "x": 0,
+      "y": 940
+    }
+  ],
+  "tweaks": [
+    {
+      "id": "accent",
+      "label": "强调色",
+      "var": "--accent",
+      "type": "color",
+      "default": "#2563eb"
+    },
+    {
+      "id": "surface",
+      "label": "画布底色",
+      "var": "--bg",
+      "type": "color",
+      "default": "#f4f6f8"
+    },
+    {
+      "id": "density",
+      "label": "间距密度",
+      "var": "--space-2",
+      "type": "select",
+      "options": [
+        {
+          "label": "紧凑 6px",
+          "value": "6px"
+        },
+        {
+          "label": "标准 8px",
+          "value": "8px"
+        },
+        {
+          "label": "宽松 10px",
+          "value": "10px"
+        }
+      ],
+      "default": "8px"
+    },
+    {
+      "id": "radius",
+      "label": "圆角",
+      "var": "--radius-md",
+      "type": "range",
+      "min": 4,
+      "max": 14,
+      "step": 1,
+      "unit": "px",
+      "default": 8
+    }
+  ]
+}

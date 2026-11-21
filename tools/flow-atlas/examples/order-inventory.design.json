@@ -1,0 +1,422 @@
+{
+  "id": "order-inventory",
+  "label": "Order / inventory source design",
+  "metadata": {
+    "summary": "Schemas and handlers are imported by identity; no business method runs during export."
+  },
+  "format": "flow-atlas/inspector-1",
+  "domains": [
+    {
+      "id": "commerce",
+      "label": "Commerce"
+    }
+  ],
+  "modules": [
+    {
+      "id": "orders",
+      "label": "Orders",
+      "metadata": {
+        "responsibility": "Prepare order requests and ask inventory to reserve stock.",
+        "tags": [
+          "application"
+        ]
+      },
+      "domainId": "commerce",
+      "dependencies": [
+        "inventory"
+      ]
+    },
+    {
+      "id": "inventory",
+      "label": "Inventory",
+      "metadata": {
+        "responsibility": "Own available stock and reservation results.",
+        "tags": [
+          "domain"
+        ]
+      },
+      "domainId": "commerce",
+      "dependencies": []
+    }
+  ],
+  "objects": [
+    {
+      "id": "order-service",
+      "label": "Order service",
+      "kind": "service",
+      "moduleId": "orders",
+      "domainId": "commerce"
+    },
+    {
+      "id": "inventory-service",
+      "label": "Inventory service",
+      "kind": "service",
+      "moduleId": "inventory",
+      "domainId": "commerce"
+    }
+  ],
+  "schemas": [
+    {
+      "id": "order-request:input",
+      "label": "Order request",
+      "jsonSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sku": {
+            "type": "string",
+            "minLength": 1
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "orderId",
+          "sku",
+          "quantity"
+        ]
+      }
+    },
+    {
+      "id": "reservation-request:output",
+      "label": "Reservation request",
+      "jsonSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sku": {
+            "type": "string",
+            "minLength": 1
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "orderId",
+          "sku",
+          "quantity"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "id": "reservation-request:input",
+      "label": "Reservation request",
+      "jsonSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sku": {
+            "type": "string",
+            "minLength": 1
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "orderId",
+          "sku",
+          "quantity"
+        ]
+      }
+    },
+    {
+      "id": "reservation-result:output",
+      "label": "Reservation result",
+      "jsonSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "reserved"
+              },
+              "reservationId": {
+                "type": "string"
+              },
+              "remaining": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "kind",
+              "reservationId",
+              "remaining"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "rejected"
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "reason"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "unknown"
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    }
+  ],
+  "operations": [
+    {
+      "id": "orders.prepare",
+      "label": "prepareOrder",
+      "metadata": {
+        "summary": "Prepare an order using the native request contract.",
+        "sourceLinks": [
+          {
+            "label": "Native methods",
+            "uri": "tools/flow-atlas/authoring/examples/native-contracts.ts"
+          }
+        ]
+      },
+      "ownerId": "order-service",
+      "moduleId": "orders",
+      "kind": "command",
+      "inputSchemaId": "order-request:input",
+      "outputSchemaId": "reservation-request:output",
+      "outcomes": [
+        {
+          "id": "ready",
+          "label": "Prepared",
+          "meaning": "returned"
+        },
+        {
+          "id": "failed",
+          "label": "Preparation failed",
+          "meaning": "failed"
+        }
+      ]
+    },
+    {
+      "id": "inventory.reserve",
+      "label": "reserveInventory",
+      "metadata": {
+        "responsibility": "Return an authoritative result or preserve uncertainty.",
+        "sourceLinks": [
+          {
+            "label": "Native schemas and method",
+            "uri": "tools/flow-atlas/authoring/examples/native-contracts.ts"
+          }
+        ],
+        "documents": [
+          {
+            "id": "source-binding",
+            "label": "Design/code correspondence",
+            "uri": "tools/flow-atlas/design/source-binding.md"
+          }
+        ],
+        "extensions": {
+          "example:scope": {
+            "storage": "native in-memory inventory",
+            "concurrency": "sequential"
+          }
+        }
+      },
+      "ownerId": "inventory-service",
+      "moduleId": "inventory",
+      "kind": "command",
+      "inputSchemaId": "reservation-request:input",
+      "outputSchemaId": "reservation-result:output",
+      "outcomes": [
+        {
+          "id": "reserved",
+          "label": "Reserved",
+          "meaning": "returned"
+        },
+        {
+          "id": "rejected",
+          "label": "Insufficient stock",
+          "meaning": "rejected"
+        },
+        {
+          "id": "unknown",
+          "label": "Result unknown",
+          "meaning": "unknown"
+        },
+        {
+          "id": "failed",
+          "label": "Invocation failed",
+          "meaning": "failed"
+        },
+        {
+          "id": "no-response",
+          "label": "No response observed",
+          "meaning": "no-response"
+        }
+      ]
+    }
+  ],
+  "processes": [
+    {
+      "id": "place-order",
+      "label": "Place order and reserve inventory",
+      "metadata": {
+        "summary": "Explicit order/inventory boundary, including rejection and uncertain results."
+      },
+      "startId": "start",
+      "steps": [
+        {
+          "id": "start",
+          "label": "Order requested",
+          "kind": "start"
+        },
+        {
+          "id": "prepare-order",
+          "label": "Prepare order",
+          "kind": "operation",
+          "callerId": "order-service",
+          "operationId": "orders.prepare",
+          "bound": true
+        },
+        {
+          "id": "reserve-stock",
+          "label": "Reserve stock",
+          "kind": "operation",
+          "callerId": "order-service",
+          "operationId": "inventory.reserve",
+          "bound": true
+        },
+        {
+          "id": "reserved",
+          "label": "Reservation confirmed",
+          "kind": "end",
+          "outcome": "completed"
+        },
+        {
+          "id": "rejected",
+          "label": "Reservation rejected",
+          "kind": "end",
+          "outcome": "rejected"
+        },
+        {
+          "id": "unknown",
+          "label": "Reservation result unknown",
+          "kind": "end",
+          "outcome": "unknown"
+        },
+        {
+          "id": "failed",
+          "label": "Invocation failed",
+          "kind": "end",
+          "outcome": "failed"
+        }
+      ],
+      "flows": [
+        {
+          "id": "begin",
+          "label": "Begin",
+          "from": "start",
+          "to": "prepare-order"
+        },
+        {
+          "id": "prepared",
+          "label": "Ready",
+          "from": "prepare-order",
+          "to": "reserve-stock",
+          "outcomeId": "ready"
+        },
+        {
+          "id": "prepare-failed",
+          "label": "Preparation failed",
+          "from": "prepare-order",
+          "to": "failed",
+          "outcomeId": "failed"
+        },
+        {
+          "id": "reserved",
+          "label": "Confirmed",
+          "from": "reserve-stock",
+          "to": "reserved",
+          "outcomeId": "reserved"
+        },
+        {
+          "id": "rejected",
+          "label": "Rejected",
+          "from": "reserve-stock",
+          "to": "rejected",
+          "outcomeId": "rejected"
+        },
+        {
+          "id": "unknown",
+          "label": "Unknown",
+          "from": "reserve-stock",
+          "to": "unknown",
+          "outcomeId": "unknown"
+        },
+        {
+          "id": "failed",
+          "label": "Failed",
+          "from": "reserve-stock",
+          "to": "failed",
+          "outcomeId": "failed"
+        },
+        {
+          "id": "no-response",
+          "label": "No response",
+          "from": "reserve-stock",
+          "to": "unknown",
+          "outcomeId": "no-response"
+        }
+      ]
+    }
+  ],
+  "diagnostics": [],
+  "coverage": [
+    "Explicit authoring handles and direct declared module calls only; arbitrary source is not inspected.",
+    "Sequential observed operation paths only; no workflow scheduler, concurrent traces or automatic retries.",
+    "Native schema conversion exports structure; business refinements and arbitrary implementation correctness are not proved.",
+    "Full Definition/Scenario/state/event/layout compilation and oRPC import are not implemented by this slice."
+  ]
+}

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="72" viewBox="0 0 64 72">
+<title>Edda, the pigeonhole archivist</title>
+<defs>
+<linearGradient id="boot" x2="31%" y2="100%"><stop offset="0.000" stop-color="#69504b"/><stop offset="0.500" stop-color="#3c2b36"/><stop offset="1.000" stop-color="#27212b"/></linearGradient><linearGradient id="face" x2="31%" y2="100%"><stop offset="0.000" stop-color="#d8ae84"/><stop offset="0.500" stop-color="#ab7763"/><stop offset="1.000" stop-color="#764d4b"/></linearGradient><linearGradient id="stock" x2="31%" y2="100%"><stop offset="0.000" stop-color="#fff1be"/><stop offset="0.500" stop-color="#dcc18b"/><stop offset="1.000" stop-color="#a87b57"/></linearGradient><linearGradient id="cap" x2="31%" y2="100%"><stop offset="0.000" stop-color="#857c79"/><stop offset="0.500" stop-color="#534952"/><stop offset="1.000" stop-color="#292733"/></linearGradient><linearGradient id="coat" x2="31%" y2="100%"><stop offset="0.000" stop-color="#a1ad8d"/><stop offset="0.500" stop-color="#5b8483"/><stop offset="1.000" stop-color="#344653"/></linearGradient><pattern id="seam" width="3.3" height="3.3" patternUnits="userSpaceOnUse"><path d="M-1 1l2-2m-1 3.3l3.3-3.3m-1 4.3l2-2" stroke="#34232b" stroke-width=".6" opacity=".48"/></pattern>
+</defs>
+<g stroke-linecap="round" stroke-linejoin="round" color="#19151e">
+<ellipse cx="32" cy="69.4" rx="21" ry="2.15" fill="#130f19" opacity=".42"/><ellipse cx="29" cy="69.60000000000001" rx="14.5" ry="1.3" fill="#160e14" opacity=".55"/>
+
+<g stroke="currentColor" stroke-width="1.4">
+<path d="m21 59 10 1-1 8-3 2-10 .7-3-2 1-3 4-2Zm15 1 9-.4.4 5 4.6 2-.3 3-12 1-3-2Z" fill="url(#boot)"/>
+<path d="m24 31 15-3 9 7 5 10-.4 7-5 3 3 11-12 1-11-1.4-9 1-10-3 4-12-2-6 4-10Z" fill="url(#coat)"/>
+<path d="m23 35 8 6 6 1 8-7 2 5-4 8-7 6-4 11-3 .1 1-15-8-8Z" fill="#2e4a54" stroke-width=".76"/>
+<path d="m20 18 20-4 6 5 .6 8-4 7-7 4-8-1-6-5-4-7Z" fill="url(#face)"/>
+<path d="m21 19-7 .6-4-3 3-3 6-.2.3-10 5-2 7 1 6-.7 6 3-.3 8 7 .9 4 3-3 3-11 .8-11-1Z" fill="url(#cap)"/>
+<path d="M19 12.3l11-.7 13 .1.4 2.8-12-.3-12 1Z" fill="#b87955" stroke-width=".65"/>
+<path d="M20 29l5 1 5 3 6-.6 3-4 7-1-2 5-5 4-8 2-7-2Z" fill="#756973" stroke-width=".86"/>
+<path d="m16 38 5 4-3 9 6 5-3 4-7-2-4-6Z" fill="url(#coat)"/>
+<path d="m47 38 6 6 1 8-8 5-4-4 4-6-3-5Z" fill="url(#coat)"/>
+<path d="m22 51 23-8 4 2 .4 4-23 11-4-2-1-3Z" fill="url(#stock)" stroke-width=".83"/>
+<path d="m27 49 1 5 3 2 3-1-3-2-1-5" fill="#ad6253" stroke-width=".59"/>
+<path d="m18 53 4-3 5 1 1 4-4 4-5-1Zm23-6 3-2 5 .1 2 3-3 4-4 .1Z" fill="url(#face)" stroke-width=".81"/>
+</g>
+<path d="m19 24 4-.6 2-1 6 .1 1 2.2-1.6 3.5-5.3.3-2.4-2.8m9.7-1.4 2 .1 2.2-2.3 5.7-.4 1.3 1.8-1.5 3.4-4.7.7-1.6-2.2m-2 1.2-1 2.9 2 .8" fill="none" stroke="#e6bc8b" stroke-width="1"/>
+<path d="m27 24 .3 .85m12-.95.3 .8m-9 7.1 3.6 .4 2.2-1" fill="none" stroke="#30232d" stroke-width=".94"/>
+<path d="m20 7 1-3 6-.3m4 .5 7-.8 3 1.5m-26 11 11-.5m15 1 8 .1m-33 25-2 7m6-12 3 2m-8 21 7 2m14-5-1 6m4-24 3-4" stroke="#efbe94" opacity=".71" stroke-width=".73" fill="none"/>
+<path d="m39 6h4v6l-6-.1Zm3 33 4 1 5 6-4 5-4-2Zm2 16 4-.5 2 10-10 2Z" fill="url(#seam)"/>
+<path d="m32 47 5-2m-2 4.1 5-2m-12 8 5-2.1m-15 12 6-.3m16 .3 5 .1" fill="none" stroke="#a7795e" stroke-width=".65"/>
+</g>
+</svg>

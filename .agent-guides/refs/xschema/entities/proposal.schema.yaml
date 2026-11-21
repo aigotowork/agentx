@@ -1,0 +1,11 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: xschema proposal
+type: object
+required: [ schema, description, status ]
+properties:
+  schema: { const: proposal }
+  models: { $ref: common.schema.yaml#/$defs/references }
+  deliveries: { $ref: common.schema.yaml#/$defs/paths }
+allOf:
+  - { $ref: common.schema.yaml#/$defs/base }
+additionalProperties: true

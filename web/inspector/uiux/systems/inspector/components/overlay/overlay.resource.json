@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "system": "inspector",
+  "id": "inspector/overlay",
+  "kind": "component",
+  "title": "提示与 Sheet",
+  "summary": "共享挂载与互斥，焦点、触屏和 Escape 独立于按钮布局。",
+  "maturity": "stable",
+  "source": [
+    "./overlay.native.tsx"
+  ],
+  "design": "./overlay.design.md",
+  "useWhen": [
+    "共享挂载与互斥，焦点、触屏和 Escape 独立于按钮布局。"
+  ],
+  "avoidWhen": [
+    "不要用外观或动画推断业务成功；数据与命令留在领域。"
+  ],
+  "dependencies": [
+    "inspector/themes"
+  ],
+  "events": [
+    {
+      "name": "open",
+      "description": "打开本地 Sheet"
+    },
+    {
+      "name": "close",
+      "description": "关闭本地 Sheet"
+    }
+  ],
+  "states": [
+    {
+      "id": "default",
+      "title": "默认",
+      "description": "共享挂载与互斥，焦点、触屏和 Escape 独立于按钮布局。",
+      "scene": "default"
+    }
+  ],
+  "interactions": [
+    {
+      "id": "operate",
+      "title": "操作与事件",
+      "trigger": "pointer / Enter / Space，输入使用键盘编辑",
+      "from": "default",
+      "to": "default",
+      "events": [
+        "open",
+        "close"
+      ],
+      "scene": "default",
+      "result": "只更新本地示例并记录事件，不触发业务请求",
+      "interruption": "禁用与 busy 不提交；切换主题不重建；显式重置清空本地状态"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "default",
+      "title": "默认与可操作示例",
+      "description": "共享挂载与互斥，焦点、触屏和 Escape 独立于按钮布局。",
+      "kind": "interaction"
+    }
+  ],
+  "usage": {
+    "entry": "../../inspector.native.ts",
+    "symbols": [
+      "OverlayBoundary"
+    ]
+  }
+}

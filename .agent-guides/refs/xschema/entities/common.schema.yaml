@@ -1,0 +1,97 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: xschema common entity vocabulary
+$defs:
+  schemaId: {$ref: "../protocol.schema.yaml#/$defs/schemaId"}
+  text: {$ref: "../protocol.schema.yaml#/$defs/text"}
+  rootPath: {$ref: "../protocol.schema.yaml#/$defs/rootPath"}
+  rootScopePath: {$ref: "../protocol.schema.yaml#/$defs/rootScopePath"}
+  path: {$ref: "../protocol.schema.yaml#/$defs/path"}
+  reference: {$ref: "../protocol.schema.yaml#/$defs/reference"}
+  scopePath: {$ref: "../protocol.schema.yaml#/$defs/scopePath"}
+  paths: {$ref: "../protocol.schema.yaml#/$defs/paths"}
+  references: {$ref: "../protocol.schema.yaml#/$defs/references"}
+  strings: {$ref: "../protocol.schema.yaml#/$defs/strings"}
+  base:
+    type: object
+    properties:
+      description: { $ref: "#/$defs/text" }
+      content: { $ref: "#/$defs/text" }
+      status: { $ref: "#/$defs/text" }
+      tags: { $ref: "#/$defs/strings" }
+      links: { $ref: "#/$defs/references" }
+    allOf:
+      - if:
+          required: [ artifacts ]
+        then:
+          properties:
+            schema: { enum: [ package, module ] }
+      - if:
+          required: [ role ]
+        then:
+          properties:
+            schema: { const: role }
+      - if:
+          anyOf:
+            - required: [ scope ]
+            - required: [ controllers ]
+        then:
+          properties:
+            schema:
+              enum: [ controller ]
+      - if:
+          required: [ deliveries ]
+        then:
+          properties:
+            schema: { enum: [ controller, proposal ] }
+      - if:
+          required: [ items ]
+        then:
+          properties:
+            schema: { const: roadmap }
+      - if:
+          required: [ models ]
+        then:
+          properties:
+            schema: { const: proposal }
+      - if:
+          anyOf:
+            - required: [ agent ]
+        then:
+          properties:
+            schema:
+              enum: [ task, controller ]
+      - if:
+          anyOf:
+            - required: [ tasks ]
+        then:
+          properties:
+            schema:
+              enum: [ task, controller ]
+      - if:
+          anyOf:
+            - required: [ dependencies ]
+            - required: [ blocking_reason ]
+        then:
+          properties:
+            schema:
+              enum: [ task ]
+      - if:
+          anyOf:
+            - required: [ stages ]
+        then:
+          properties:
+            schema:
+              enum: [ delivery ]
+      - if:
+          anyOf:
+            - required: [ task ]
+            - required: [ state ]
+            - required: [ scenarios ]
+            - required: [ roles ]
+            - required: [ skills ]
+            - required: [ tools ]
+        then:
+          properties:
+            schema:
+              enum: [ task-meta ]
+    additionalProperties: true

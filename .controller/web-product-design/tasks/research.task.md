@@ -1,0 +1,14 @@
+---
+schema: task
+status: completed
+description: Establish the native and existing Web product baseline for Management and Space.
+agents: [{"scope":"/home/long/works/longwork/agentx/.agentx","generation":"a6195a5b-1dd4-4a6d-87d4-1f18f1b664fb","participant":{"canonical_name":"buro","incarnation_bits":4745315392095798537}}]
+---
+
+Read [Delivery](../delivery.delivery.md), [Management](../../../web/management/AGENTS.md), [Space](../../../web/agent-space/AGENTS.md) and [native Management design](../../../.docs/agent-management/design.md). Own a compact source-referenced baseline for both product owners: which operator/action/resource/relationship/status/data sources exist, which are read-only or inaccessible from Web, where exact references and operation recovery matter, and which charts or decisions have justified data. For Space identify task paths, actual view/route/disclosure/composer/embedding behaviors and continuity, with representative friction rather than source layout criticism alone. Capture comparable desktop/narrow baseline screenshots where existing safe synthetic pages/fixtures allow it; supplement with browser or source facts and state the limits. Do not mutate live data, contact people, invent interviews, or alter current source; read-only research with disposable browsers and synthetic fixtures. Own this Task, `.docs/web-product-design/baseline.md` and `.controller/web-product-design/evidence/baseline/`. Release high-impact facts to product owners early using this Task and actionable AgentX coordination through kula. Finish with actionable evidence and explicit unknowns, even if a baseline surface cannot be run.
+
+## Completed baseline
+
+[Source and decision baseline](../../../.docs/web-product-design/baseline.md) and [reproducible browser evidence](../evidence/baseline/README.md) are ready for both products and evaluation. Fresh Management and Space builds passed. Synthetic headless Chromium checks passed at 1440×900 and 390×844, retaining 12 PNGs, accessibility snapshots and assertions for original receipt lookup without replay and exact Space draft continuity across layout and history. Disposable servers and browser contexts were closed; no live data or current application source changed.
+
+High impact: distinguish current roster from process health and partial supply from absence; keep original receipt scope/generation/request/body tied to the target (current Management journal lacks explicit endpoint/scope); distinguish preview from actual directory send and Agent status from operation/message outcome. In Space preserve one conversation identity and draft across two layouts, give return a predictable destination, and preserve distinct record and mailbox semantics. Chart only decisions backed by bounded native data with visible coverage. Prior browser evidence and remaining user questions are linked in the baseline; no interview or live adoption claim.

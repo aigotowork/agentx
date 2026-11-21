@@ -1,0 +1,12 @@
+{
+  "name": "agentx",
+  "version": "1.0.0",
+  "description": "Let AI agents message, watch, and spawn each other across terminals. Claude Code, Gemini CLI, Codex, OpenCode, Kilo Code, Pi, Oh My Pi, Antigravity, Cursor, Kimi, Copilot, Qoder CLI, Grok Build.",
+  "author": {
+    "name": "aigotowork"
+  },
+  "homepage": "https://github.com/aigotowork/agentx",
+  "repository": "https://github.com/aigotowork/agentx",
+  "license": "MIT",
+  "keywords": ["agentx", "multi-agent", "communication", "claude", "gemini", "codex", "opencode", "kilo", "pi", "omp", "antigravity", "cursor", "kimi", "copilot", "qoder", "grok", "grok-build"]
+}

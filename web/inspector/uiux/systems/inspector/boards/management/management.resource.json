@@ -1,0 +1,261 @@
+{
+  "schemaVersion": 1,
+  "system": "inspector",
+  "id": "inspector/management",
+  "kind": "block",
+  "title": "管理场景 · 整体搭配",
+  "summary": "在同一完整界面中操作导航、搜索、列表、详情与浮层，局部选择检查真实参数。",
+  "maturity": "experimental",
+  "source": [
+    "./management.scenes.tsx",
+    "./management.styles.css"
+  ],
+  "design": "./management.design.md",
+  "useWhen": [
+    "检查整套组件在真实管理界面中的搭配和操作连续性。"
+  ],
+  "avoidWhen": [
+    "不是实时AgentX simulation数据，也不触发恢复发送。"
+  ],
+  "dependencies": [
+    "inspector/button",
+    "inspector/fields",
+    "inspector/display",
+    "inspector/panel",
+    "inspector/navigation",
+    "inspector/charts"
+  ],
+  "events": [
+    {
+      "name": "change",
+      "description": "持久化场景参数变化"
+    },
+    {
+      "name": "press",
+      "description": "本地预览动作"
+    },
+    {
+      "name": "select",
+      "description": "记录选择"
+    },
+    {
+      "name": "navigate",
+      "description": "本地页签导航"
+    },
+    {
+      "name": "tab",
+      "description": "详情侧面切换"
+    }
+  ],
+  "states": [
+    {
+      "id": "ready",
+      "title": "整体预览",
+      "description": "导航、列表与详情在同一上下文。",
+      "scene": "default"
+    }
+  ],
+  "interactions": [
+    {
+      "id": "inspect",
+      "title": "整体到局部",
+      "trigger": "局部检查图标、记录选择、键盘输入",
+      "from": "ready",
+      "to": "ready",
+      "events": [
+        "change",
+        "select"
+      ],
+      "scene": "default",
+      "result": "在当前场景操作并从同一检查器调整局部参数。",
+      "interruption": "主题、检查器、聚焦切换保留草稿；未知状态静态。"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "default",
+      "title": "管理界面搭配",
+      "description": "真实组件组合，固定本地样例。",
+      "kind": "experiment",
+      "question": "同一界面的导航、筛选、列表、详情在主题切换和局部检查后能否保持一致？",
+      "controls": [
+        {
+          "id": "buttonLabel",
+          "label": "操作按钮文字",
+          "type": "text",
+          "default": "查看记录"
+        },
+        {
+          "id": "buttonVariant",
+          "label": "操作按钮风格",
+          "type": "select",
+          "default": "primary",
+          "options": [
+            {
+              "label": "primary",
+              "value": "primary"
+            },
+            {
+              "label": "secondary",
+              "value": "secondary"
+            },
+            {
+              "label": "ghost",
+              "value": "ghost"
+            },
+            {
+              "label": "danger",
+              "value": "danger"
+            }
+          ]
+        },
+        {
+          "id": "buttonDisabled",
+          "label": "禁用操作按钮",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "id": "query",
+          "label": "记录搜索",
+          "type": "text",
+          "default": ""
+        },
+        {
+          "id": "filter",
+          "label": "记录范围",
+          "type": "select",
+          "default": "all",
+          "options": [
+            {
+              "label": "全部",
+              "value": "all"
+            },
+            {
+              "label": "运行中",
+              "value": "running"
+            },
+            {
+              "label": "结果未知",
+              "value": "unknown"
+            }
+          ]
+        },
+        {
+          "id": "record",
+          "label": "选中记录",
+          "type": "select",
+          "default": "design",
+          "options": [
+            {
+              "label": "设计系统工作台",
+              "value": "design"
+            },
+            {
+              "label": "Layout组件",
+              "value": "layout"
+            },
+            {
+              "label": "投递核验",
+              "value": "delivery"
+            },
+            {
+              "label": "设计说明",
+              "value": "notes"
+            }
+          ]
+        },
+        {
+          "id": "note",
+          "label": "场景备注",
+          "type": "text",
+          "default": ""
+        },
+        {
+          "id": "phase",
+          "label": "演示状态",
+          "type": "select",
+          "default": "original",
+          "options": [
+            {
+              "label": "记录原始状态",
+              "value": "original"
+            },
+            {
+              "label": "运行中",
+              "value": "running"
+            },
+            {
+              "label": "已停止",
+              "value": "stopped"
+            },
+            {
+              "label": "结果未知",
+              "value": "unknown"
+            },
+            {
+              "label": "等待回复",
+              "value": "waiting"
+            }
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "id": "actions",
+          "title": "操作工具栏",
+          "resource": "inspector/button",
+          "controls": [
+            "buttonLabel",
+            "buttonVariant",
+            "buttonDisabled"
+          ]
+        },
+        {
+          "id": "filters",
+          "title": "搜索与筛选",
+          "resource": "inspector/fields",
+          "controls": [
+            "query",
+            "filter"
+          ]
+        },
+        {
+          "id": "list",
+          "title": "会话列表",
+          "resource": "inspector/display",
+          "controls": [
+            "record"
+          ]
+        },
+        {
+          "id": "detail",
+          "title": "记录详情",
+          "resource": "inspector/panel",
+          "controls": [
+            "record",
+            "phase",
+            "note"
+          ]
+        },
+        {
+          "id": "chart",
+          "title": "事实图表",
+          "resource": "inspector/charts",
+          "controls": []
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "entry": "../../inspector.native.ts",
+    "symbols": [
+      "Button",
+      "SearchField",
+      "Chip",
+      "ViewTabs",
+      "Sheet",
+      "KeyValue"
+    ]
+  }
+}

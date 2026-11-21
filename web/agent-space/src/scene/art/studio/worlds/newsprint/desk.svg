@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="86" height="68" viewBox="0 0 86 68">
+  <defs>
+    <pattern id="apron-screen" width="4" height="4" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r=".85" fill="#211a26" opacity=".55"/>
+    </pattern>
+  </defs>
+  <path fill="#315696" opacity=".25" d="m9 58 62-1 13 8-11 2H8l-5-3z"/>
+  <g stroke="#211a26" stroke-width="2" stroke-linejoin="round">
+    <path fill="#211a26" d="m12 39 9 0-3 25h-7zm52 0h8l4 24h-8z"/>
+    <path fill="#315696" d="M19 38h44v13H19z"/>
+    <path fill="#d9463d" d="m3 34 12-16h55l13 16-4 10H7z"/>
+    <path fill="#f7e7bf" d="m3 34 12-16h55l13 16z"/>
+    <path fill="#d9463d" d="M7 35h72v9H7z"/>
+    <path fill="url(#apron-screen)" stroke="none" d="M8 36h70v7H8z"/>
+    <path fill="#315696" d="m24 31 5-9h24l6 9z"/>
+    <path fill="#f7e7bf" d="m27 29 5-9 19 1 4 8z"/>
+    <path fill="none" stroke-width="1" d="M34 23h14m-16 3h17"/>
+    <path fill="#d9463d" d="M59 29h12l1-6-13-1z"/>
+    <path fill="none" d="M64 24 68 9l-8-5"/>
+    <path fill="#d9463d" d="m57 3 8 5-3 7-13-6z"/>
+    <path fill="#f8e9bf" stroke-width="1" d="m53 9 9 4"/>
+    <path fill="#315696" d="M11 28h7l2-4h-7z"/>
+  </g>
+  <path stroke="#f7e7bf" stroke-width="1.2" d="M10 37h55m4 0h6"/>
+  <path fill="#f7e7bf" d="M34 46h12v2H34z"/>
+</svg>

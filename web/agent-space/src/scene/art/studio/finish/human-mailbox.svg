@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="62" height="62" viewBox="0 0 62 62">
+  <defs><linearGradient id="enamel" x2="0" y2="1"><stop stop-color="#91a58a"/><stop offset="1" stop-color="#4a6b61"/></linearGradient></defs>
+  <path fill="#463e2d" opacity=".14" d="M3 57h53l3 4H3z"/>
+  <g stroke="#493d30" stroke-width="1.25" stroke-linejoin="round">
+    <path fill="#8c664b" d="M37 34h8v24h-8z"/>
+    <path fill="#b48253" d="M33 53h16l3 6H30z"/>
+    <path fill="url(#enamel)" d="M24 27c0-5 4-9 9-9h13c5 0 9 4 9 9v12H24Z"/>
+    <path fill="#36574d" d="M45 38V27c0-4 1-7 4-8 4 1 6 4 6 8v11Z"/>
+    <path fill="#bd835c" d="M5 51c0-5 2-8 5-9l-2-4 1-7 4 4h5l4-4 2 6-1 5c3 3 4 6 3 12-3 4-19 5-21-3Z"/>
+    <path d="M24 54c9 0 9-7 5-7" fill="none" stroke="#a97251" stroke-width="2.8" stroke-linecap="round"/>
+  </g>
+  <path fill="#e7b886" d="M10 40c4 2 7 2 12 0l-1 5c-3 2-8 2-11-1z"/>
+  <path fill="#f1d39c" d="M10 52c0-4 7-6 11-4l1 6c-4 2-9 2-12-2Z"/>
+  <path d="m12 39 1 1m6-1-1 1m-3 2h2m-6 11h2m5 0h2" stroke="#5a4535" fill="none" stroke-linecap="round"/>
+  <path fill="#ecd7a0" stroke="#4b6457" stroke-width=".55" d="M28 25h15v10H28z"/>
+  <path d="m28 25 7.5 5 7.5-5" fill="none" stroke="#987650" stroke-width=".8"/>
+  <path fill="#ad654e" stroke="#673f36" stroke-width=".55" d="M49 12h2v10h-2zm2 0h7v5h-7z"/>
+  <path fill="#d2bd83" d="M40 41h1v12h-1z"/>
+</svg>

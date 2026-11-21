@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "system": "space",
+  "id": "space/controls",
+  "kind": "component",
+  "title": "控件与事实反馈",
+  "summary": "控件与事实反馈 · 与真实 Space 共享实现",
+  "maturity": "experimental",
+  "source": [
+    "./components/Controls.tsx",
+    "./components/FactButton.tsx",
+    "./components/SpaceInteractions.tsx"
+  ],
+  "design": "./controls.design.md",
+  "useWhen": [
+    "操作和检查实际 Space 控件与事实反馈"
+  ],
+  "avoidWhen": [
+    "不要把本地演示结果当作原生操作或最终验收"
+  ],
+  "dependencies": [
+    "space/foundation"
+  ],
+  "events": [
+    {
+      "name": "press",
+      "description": "用户接受的本地 press 意图"
+    }
+  ],
+  "states": [
+    {
+      "id": "default",
+      "title": "控件与事实",
+      "description": "控件与事实；真实组件，本地演示",
+      "scene": "default"
+    }
+  ],
+  "interactions": [],
+  "scenes": [
+    {
+      "id": "default",
+      "title": "控件与事实",
+      "description": "控件与事实；真实组件，本地演示",
+      "kind": "interaction"
+    }
+  ],
+  "usage": {
+    "entry": "./space.web.ts",
+    "symbols": [
+      "Button",
+      "Feedback",
+      "FactButton",
+      "SpaceInteractions"
+    ]
+  }
+}

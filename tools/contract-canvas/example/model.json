@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "id": "neighborhood-library",
+  "title": "邻里图书馆 · 借阅契约",
+  "authority": "本地示例：借阅设计提案，不连接馆藏系统。",
+  "layers": [
+    { "id": "desk", "name": "借阅台", "summary": "读者操作和借阅凭条。", "status": "proposed", "sourceRefs": ["desk-design"] },
+    { "id": "catalog", "name": "馆藏目录", "summary": "书本副本的稳定标识。", "status": "proposed", "sourceRefs": ["desk-design"] }
+  ],
+  "nodes": [
+    {
+      "id": "LoanDesk", "name": "LoanDesk", "kind": "interface", "domain": "circulation", "layerId": "desk", "provenance": "proposed",
+      "summary": "从借阅台读取指定副本的借阅预览。",
+      "fields": [{ "id": "LoanDesk.copy", "name": "copy", "summary": "所选副本。", "type": "CatalogCopy", "typeIds": ["CatalogCopy"] }],
+      "ports": ["LoanDesk.previewLoan"], "sourceRefs": ["desk-design"]
+    },
+    {
+      "id": "LoanDesk.previewLoan", "name": "previewLoan", "kind": "method", "domain": "circulation", "layerId": "desk", "provenance": "proposed",
+      "summary": "形成借阅预览，供读者确认。", "signature": "previewLoan(copy: CatalogCopy): LoanSlip", "owner": "LoanDesk",
+      "fields": [], "ports": [], "sourceRefs": ["desk-design"],
+      "inputs": [{ "name": "copy", "type": "CatalogCopy", "typeIds": ["CatalogCopy"] }],
+      "output": { "type": "LoanSlip", "typeIds": ["LoanSlip"] }, "errors": [], "outcomes": [], "effect": "read"
+    },
+    {
+      "id": "LoanSlip", "name": "LoanSlip", "kind": "value", "domain": "circulation", "layerId": "desk", "provenance": "proposed",
+      "summary": "标出选中的副本及预览还书日期。",
+      "fields": [
+        { "id": "LoanSlip.copy", "name": "copy", "summary": "预览凭条指向同一个馆藏副本。", "type": "CatalogCopy", "typeIds": ["CatalogCopy"] },
+        { "id": "LoanSlip.dueOn", "name": "dueOn", "summary": "还书日期。", "type": "CalendarDate", "typeIds": [] }
+      ],
+      "ports": [], "sourceRefs": ["desk-design"]
+    },
+    {
+      "id": "CatalogCopy", "name": "CatalogCopy", "kind": "value", "domain": "inventory", "layerId": "catalog", "provenance": "proposed",
+      "summary": "同一书目下可以有多个独立副本。",
+      "fields": [{ "id": "CatalogCopy.barcode", "name": "barcode", "summary": "副本条码。", "type": "string", "typeIds": [] }],
+      "ports": [], "sourceRefs": ["desk-design"]
+    }
+  ],
+  "edges": [
+    { "id": "LoanDesk|owns|LoanDesk.copy", "from": "LoanDesk", "to": "LoanDesk.copy", "kind": "owns", "label": "所选副本", "provenance": "proposed", "sourceRefs": [] },
+    { "id": "LoanDesk.copy|references|CatalogCopy", "from": "LoanDesk.copy", "to": "CatalogCopy", "kind": "references", "label": "借阅台依赖副本标识", "provenance": "proposed", "sourceRefs": ["desk-design"] },
+    { "id": "LoanDesk|owns|LoanDesk.previewLoan", "from": "LoanDesk", "to": "LoanDesk.previewLoan", "kind": "owns", "label": "借阅预览端口", "provenance": "proposed", "sourceRefs": [] },
+    { "id": "LoanDesk.previewLoan|accepts|CatalogCopy", "from": "LoanDesk.previewLoan", "to": "CatalogCopy", "kind": "accepts", "label": "使用所选副本", "provenance": "proposed", "sourceRefs": ["desk-design"] },
+    { "id": "LoanDesk.previewLoan|returns|LoanSlip", "from": "LoanDesk.previewLoan", "to": "LoanSlip", "kind": "returns", "label": "返回预览凭条", "provenance": "proposed", "sourceRefs": ["desk-design"] },
+    { "id": "LoanSlip|owns|LoanSlip.copy", "from": "LoanSlip", "to": "LoanSlip.copy", "kind": "owns", "label": "凭条上的副本", "provenance": "proposed", "sourceRefs": [] },
+    { "id": "LoanSlip|owns|LoanSlip.dueOn", "from": "LoanSlip", "to": "LoanSlip.dueOn", "kind": "owns", "label": "凭条上的到期日", "provenance": "proposed", "sourceRefs": [] },
+    { "id": "LoanSlip.copy|references|CatalogCopy", "from": "LoanSlip.copy", "to": "CatalogCopy", "kind": "references", "label": "凭条引用原副本", "provenance": "proposed", "sourceRefs": ["desk-design"] },
+    { "id": "CatalogCopy|owns|CatalogCopy.barcode", "from": "CatalogCopy", "to": "CatalogCopy.barcode", "kind": "owns", "label": "副本条码", "provenance": "proposed", "sourceRefs": [] }
+  ],
+  "sources": [{ "id": "desk-design", "path": "DESIGN.md", "line": 3, "symbol": "LoanDesk", "authority": "proposal" }],
+  "scenarios": [
+    {
+      "id": "preview-a-loan", "name": "借阅预览", "summary": "从精确副本读到借阅凭条。", "provenance": "proposed", "sourceRefs": ["desk-design"],
+      "steps": [
+        { "label": "先确认借阅台选中的馆藏副本。", "nodeIds": ["LoanDesk", "LoanDesk.copy", "CatalogCopy"] },
+        { "label": "读取预览端口的输入和凭条返回值。", "nodeIds": ["LoanDesk.previewLoan", "LoanSlip", "LoanSlip.dueOn"] }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,252 @@
+{
+  "sourceRoot": "/home/long/works/longwork/paseo-bots",
+  "scope": "Public source and license files only; synthetic conversation fixtures authored locally",
+  "files": [
+    {
+      "source": "shared/hall/pixel/emotes.ts",
+      "destination": "src/scene/art/pixel/emotes.ts",
+      "sourceSha256": "b5d50dbaabdf4ea5d0e831256d401e30cfb0f2543e48dbe21ef17315327c77fb",
+      "adapted": false
+    },
+    {
+      "source": "shared/hall/pixel/lru.ts",
+      "destination": "src/scene/art/pixel/lru.ts",
+      "sourceSha256": "0cc5919942da0b93eec00aa2bd3c594e92a702a7f36ce54a13d9f34ec4d867a1",
+      "adapted": false
+    },
+    {
+      "source": "shared/hall/pixel/scale.ts",
+      "destination": "src/scene/art/pixel/scale.ts",
+      "sourceSha256": "5e8cc3064436d716e43f1440c11f1a227adff946a323845d87e447091ddf17c3",
+      "adapted": false
+    },
+    {
+      "source": "shared/hall/pixel/grid.ts",
+      "destination": "src/scene/art/pixel/grid.ts",
+      "sourceSha256": "b89ec134e09131decaaf528e975b668134e63c8938ded4ba4f4e2e3caafa8097",
+      "adapted": false
+    },
+    {
+      "source": "shared/hall/pixel/props.ts",
+      "destination": "src/scene/art/pixel/props.ts",
+      "sourceSha256": "9609acea55f7d87193fe87dbe10b1965bd64e4223d57ff080b114e72f0bf5262",
+      "adapted": false
+    },
+    {
+      "source": "shared/hall/pixel/png.ts",
+      "destination": "src/scene/art/pixel/png.ts",
+      "sourceSha256": "5ae94a48cd31fac87b74c58009c60b75f24b1859abbf723fbc0bf672a2d3b17e",
+      "adapted": false
+    },
+    {
+      "source": "shared/hall/pixel/characters.ts",
+      "destination": "src/scene/art/pixel/characters.ts",
+      "sourceSha256": "599a275d9b6f92be04336c7de16beb4a34c011cf4362bee78599e31db736c042",
+      "adapted": false
+    },
+    {
+      "source": "shared/hall/pixel/color.ts",
+      "destination": "src/scene/art/pixel/color.ts",
+      "sourceSha256": "f1a59d748ed17c4093c3581a1765e00f24e794cc34f0f22ed07b3bf812ce0d9c",
+      "adapted": false
+    },
+    {
+      "source": "shared/hall/pixel/palette.ts",
+      "destination": "src/scene/art/pixel/palette.ts",
+      "sourceSha256": "77e429ed06cb52d3eae00da5701c49f41770eb71364f70a0b45043ce00da58c8",
+      "adapted": false
+    },
+    {
+      "source": "shared/hall/art.ts",
+      "destination": "src/scene/art/art.ts",
+      "sourceSha256": "b00f0675f8caafa2968dfe7d614855e3ac6600f45fafab7078bd6be42ba2fcbf",
+      "adapted": false
+    },
+    {
+      "source": "shared/hall/walk.ts",
+      "destination": "src/scene/art/walk.ts",
+      "sourceSha256": "16bb030bda837f3cdac0a9a0616689daa3924cb5e919ac4cea15b7e5f735551c",
+      "adapted": false
+    },
+    {
+      "source": "shared/hall/geometry.ts",
+      "destination": "src/scene/geometry.ts",
+      "sourceSha256": "60bdb501d9fa496c1033b3da449a4651e3963e7e92dbd746b5e18f3e9ef7ddd1",
+      "adapted": false
+    },
+    {
+      "source": "shared/hall/motion.ts",
+      "destination": "src/scene/motion.ts",
+      "sourceSha256": "148daf2c494f9d2700e34b97e4b6f90d2b38980eff369728d0208956bbccfb0e",
+      "adapted": true
+    },
+    {
+      "source": "client/paseo-hall/office-art.ts",
+      "destination": "src/scene/office-art.ts",
+      "sourceSha256": "2f1b692c55db5ebc59772816062c0ab8696c048b011e922e006570b71be4d60f",
+      "adapted": true
+    },
+    {
+      "source": "web/hall/HallScene.tsx",
+      "destination": "src/scene/HallScene.tsx",
+      "sourceSha256": "3662f01dbb60289193ed1164a3695c2b2d680e23fdc80df8ee5fc2812294e31a",
+      "adapted": true
+    },
+    {
+      "source": "web/office/ExpandedObject.tsx",
+      "destination": "src/scene/ExpandedObject.tsx",
+      "sourceSha256": "1ccf2452a0d021d0d2aa536db366c7b9692ddad7c85ca419ff0eac2692eccd1c",
+      "adapted": true
+    },
+    {
+      "source": "web/office/object-position.ts",
+      "destination": "src/scene/object-position.ts",
+      "sourceSha256": "19c37c584e057799fa9f806c62f36ec160f05b70f6b29326728724bb0c416521",
+      "adapted": true
+    },
+    {
+      "source": "web/office/layouts/OfficeLayout.tsx",
+      "destination": "src/layouts/OfficeLayout.tsx",
+      "sourceSha256": "96f2c9fe89806f1a0f6eb88f20c406dd6c6024acecc22ed8742e859beb344240",
+      "adapted": false
+    },
+    {
+      "source": "web/layouts/WorkspaceLayout.tsx",
+      "destination": "src/layouts/WorkspaceLayout.tsx",
+      "sourceSha256": "99510a1a9903d65e04e360cdf31e3792306f2309900f80e005d5c24a92af8ac9",
+      "adapted": false
+    },
+    {
+      "source": "web/office/office.css",
+      "destination": "src/scene/office.css",
+      "sourceSha256": "82af2b2cac5282c88c658fa6be8b569aa84a0d65df4882e3dda4cee54d80431f",
+      "adapted": false
+    },
+    {
+      "source": "web/hall/hall.css",
+      "destination": "src/scene/hall.css",
+      "sourceSha256": "b62dd0c66edd594cb1f429b6ceff240e5907730550f5d503cbeaca7e885d016c",
+      "adapted": false
+    },
+    {
+      "source": "web/conversation/history.css",
+      "destination": "src/conversation/history.css",
+      "sourceSha256": "82c0207cbdd518081e4d6cf4456ef612cfd77c46ecfdf3cb5f172c46bf2871f8",
+      "adapted": false
+    },
+    {
+      "source": "web/styles.css",
+      "destination": "src/source.css",
+      "sourceSha256": "0cf91bd56ff1b4fb984906e3a8eb4302b33c76e1ca749864f2a71f52b7179c9f",
+      "adapted": false
+    },
+    {
+      "source": "shared/markdown.ts",
+      "destination": "src/conversation/markdown-parser.ts",
+      "sourceSha256": "c6355e5ba3e315a216be46eb7b30a64e861c5e048c2e2f7f5c9ee642c3fd6b79",
+      "adapted": false
+    },
+    {
+      "source": "web/browser/clipboard.ts",
+      "destination": "src/conversation/clipboard.ts",
+      "sourceSha256": "83de36d0d178ace30300d1a5e209f8981e0094e19cfbfc413413c8c902ad68a0",
+      "adapted": false
+    },
+    {
+      "source": "web/conversation/CopyButton.tsx",
+      "destination": "src/conversation/CopyButton.tsx",
+      "sourceSha256": "c2f7699329beb003d0f702be459222ece561c2b836115524bade92c8b0ed75c9",
+      "adapted": true
+    },
+    {
+      "source": "web/conversation/Markdown.tsx",
+      "destination": "src/conversation/Markdown.tsx",
+      "sourceSha256": "1417eff05103f473d8664bf7b5a6362a9c18b73e1349a68bf2ac6b1abd61cca0",
+      "adapted": true
+    },
+    {
+      "source": "LICENSE",
+      "destination": "public/notices/Bots-MIT.txt",
+      "sourceSha256": "226dd42a4e5e6ca99b93e819d9e1e611b38a9667e97ef4d201a7c51b970a2dd4",
+      "adapted": false
+    },
+    {
+      "source": "shared/hall/NOTICE.md",
+      "destination": "public/notices/Hall-NOTICE.md",
+      "sourceSha256": "ad3b9fa656df31f1113bd8dcd097f3639503b3da3a5c071d2bd98aa5ec12427a",
+      "adapted": false
+    },
+    {
+      "source": "web/office/NOTICE.md",
+      "destination": "public/notices/Office-NOTICE.md",
+      "sourceSha256": "7247de5045df1de6e234cac1616326355821b46fd84d83992e4814169d37bcc4",
+      "adapted": false
+    },
+    {
+      "source": ".docs/design/conversation/NOTICE.md",
+      "destination": "public/notices/Conversation-NOTICE.md",
+      "sourceSha256": "0578c78b1c8d71b47d7876f1be03b3e3592418f5b5147e3c5cfe57fa36ba6dfb",
+      "adapted": false
+    },
+    {
+      "source": ".docs/design/conversation/licenses/Paseo-Apache-2.0.txt",
+      "destination": "public/notices/Conversation-Apache-2.0.txt",
+      "sourceSha256": "79d5aedce6aa0adc547336dc1bd34c5cc9308ba110fac7079ed97515ee573ad3",
+      "adapted": false
+    },
+    {
+      "source": ".docs/upstream/source.json",
+      "destination": "public/notices/bots-source.json",
+      "sourceSha256": "8e9154496e88c5c6e80ce2bb2e5f2ae54129aa8f4e04e5fc8b0e36beba332c32",
+      "adapted": false
+    },
+    {
+      "source": "repos/lobby-source.json",
+      "destination": "public/notices/lobby-source.json",
+      "sourceSha256": "00ec780606424d0e74b0019e895b15d77c10e820e049a0e512be3be671c99b90",
+      "adapted": false
+    },
+    {
+      "source": "repos/lobby/package.json",
+      "destination": "public/notices/lobby-package.json",
+      "sourceSha256": "293d58fc1dc9ace31fbee0a6094c49b129acf592743e6539cdb7c20a83d75380",
+      "adapted": false
+    },
+    {
+      "source": "repos/lobby/README.md",
+      "destination": "public/notices/Lobby-README.md",
+      "sourceSha256": "a53f6df1467bbe8a9c4bb0a5a95b4058aacd0f0ce0eccb05f522bab6dba38111",
+      "adapted": false
+    },
+    {
+      "source": "shared/hall/model.ts",
+      "destination": "src/scene/model.ts",
+      "sourceSha256": "c3346d4c3db97f33b363aa0d1628ea21bb0f3e85db430c9a0218f68493bba440",
+      "adapted": true
+    },
+    {
+      "source": "web/hall/HallHome.tsx",
+      "destination": "src/Directory.tsx",
+      "sourceSha256": "b8352db177bcaef789b6d04b164810aecdb1dd01ffdefb504015dd20f1b9fa0f",
+      "adapted": true
+    },
+    {
+      "source": "web/hall/HallConversation.tsx",
+      "destination": "src/conversation/Conversation.tsx",
+      "sourceSha256": "d9e9120daa903d422cebd037db78b50c23d066763927e538385695c0434b75fc",
+      "adapted": true
+    },
+    {
+      "source": "web/Conversation.tsx",
+      "destination": "src/conversation/History.tsx",
+      "sourceSha256": "d885ca7cef1f3b28a5bd00d60586a912ecc14790598cf5f4b91727cb275bba58",
+      "adapted": true
+    },
+    {
+      "source": "web/conversation/HistoryRecord.tsx",
+      "destination": "src/conversation/History.tsx",
+      "sourceSha256": "03ee1e92e451e691428c3061f48786b74d462819c7cf049a1a96f618be85f6e1",
+      "adapted": true
+    }
+  ]
+}

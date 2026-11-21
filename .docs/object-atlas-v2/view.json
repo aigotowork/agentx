@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "brand": {
+    "name": "AgentX",
+    "title": "AgentX · Contract Canvas",
+    "ariaLabel": "AgentX 契约画布总览",
+    "editionNumber": "03",
+    "footer": "TypeScript · Native · OpenAPI"
+  },
+  "initial": {"layerId": "application", "subjectId": "Office"},
+  "layers": {
+    "application": {
+      "label": "应用模型",
+      "order": [
+        "Office", "OfficeSession", "ActorPage", "ActorConversation", "ActorCard",
+        "MessageDraft", "Actor", "SendAvailability", "AgentActor", "ConversationRead",
+        "CurrentActor", "ConversationMessage", "ActorEntry", "OfficeRole"
+      ]
+    },
+    "sdk": {
+      "label": "Domain SDK",
+      "order": [
+        "AgentXScope", "Workspace", "NativeMemberPage", "MemberPage", "CurrentAgent",
+        "MessagePage", "Transcript", "LaunchRelationsPage", "PreparedOperation", "TypedOperationHandle",
+        "TypedOperationReceipt", "LaunchResult", "Attachments", "HumanInbox", "DirectoryRoutes",
+        "OfficeActivityPage", "Agent", "StoppedAgent", "RoleCatalog", "AgentSnapshot",
+        "OperationHandle", "OperationReceipt"
+      ]
+    },
+    "transport": {"label": "HTTP / Native"},
+    "platform": {"label": "JS / Web"}
+  },
+  "domains": {
+    "office": {"label": "办公室 / OFFICE"},
+    "management": {"label": "原生契约 / MANAGEMENT"},
+    "platform": {"label": "平台 / PLATFORM"},
+    "capabilities": {"label": "能力边界 / CAPABILITIES", "color": "amber"},
+    "scope": {"label": "作用域 / SCOPE", "color": "blue"},
+    "workspace": {"label": "工作空间 / WORKSPACE", "color": "teal"},
+    "agent": {"label": "Agent / IDENTITY", "color": "violet"},
+    "operation": {"label": "操作 / OPERATION", "color": "amber"},
+    "identity": {"label": "精确身份 / IDENTITY", "color": "blue"},
+    "messaging": {"label": "消息 / MESSAGING", "color": "amber"},
+    "paging": {"label": "分页 / PAGING", "color": "teal"},
+    "errors": {"label": "拒绝 / ERRORS", "color": "violet"},
+    "conversation": {"label": "会话记录 / CONVERSATION", "color": "violet"},
+    "lifecycle": {"label": "启动与生命周期 / LIFECYCLE", "color": "amber"},
+    "resources": {"label": "作用域资源 / RESOURCES", "color": "teal"}
+  },
+  "supportLabels": {
+    "sdk": "SDK",
+    "native": "Native"
+  },
+  "proposedSupportKeys": ["sdk"],
+  "overview": {
+    "subjectId": "Workspace",
+    "tab": "SDK 总览",
+    "title": "作用域、会话与操作回执",
+    "groups": [
+      {"label": "01 / 工作空间与成员", "nodeIds": ["AgentXScope", "Workspace", "NativeMemberPage", "MemberPage"]},
+      {"label": "02 / 会话记录与来路", "nodeIds": ["CurrentAgent", "MessagePage", "Transcript", "LaunchRelationsPage"]},
+      {"label": "03 / 命令、回执与启动身份", "nodeIds": ["PreparedOperation", "TypedOperationHandle", "TypedOperationReceipt", "LaunchResult"]},
+      {"label": "04 / 作用域内资源", "nodeIds": ["Attachments", "HumanInbox", "DirectoryRoutes", "OfficeActivityPage"]}
+    ],
+    "ports": ["AgentXScope.operation", "Workspace.memberPage", "CurrentAgent.messages", "TypedOperationHandle.observe", "Attachments.upload", "HumanInbox.list", "DirectoryRoutes.inspect"],
+    "highlightFrom": "Workspace.memberPage"
+  },
+  "neighborOrder": [
+    "MemberCursor", "Agent", "AgentSnapshot", "MemberCoverage", "Membership",
+    "OperationAddress", "OperationReceipt", "NativeMemberCursor", "NativeMemberPage", "MessagePage",
+    "Transcript", "LaunchRelationsPage", "PreparedOperation", "TypedOperationHandle", "TypedOperationReceipt",
+    "LaunchResult"
+  ],
+  "methodAnnotations": {
+    "Workspace.members": ["BoundedWorkspaceMemberProjection", "NativeWorkspaceMembershipPaging"],
+    "Workspace.memberPage": ["NativeWorkspaceMembershipPaging", "BoundedWorkspaceMemberProjection"]
+  },
+  "walkthrough": {
+    "scenarioId": "office-conversation-draft",
+    "layerId": "application",
+    "tab": "会话与草稿",
+    "title": "会话、草稿与发送资格",
+    "kicker": "APPLICATION / CONTRACT WALKTHROUGH",
+    "stepTitles": ["建立会话工作区", "选择精确 Actor", "打开会话", "编辑／重开草稿", "查看发送资格"]
+  },
+  "sequence": {
+    "tab": "发送与恢复",
+    "title": "一次发送，沿原操作恢复",
+    "kicker": "SEND / OBSERVE / RECOVER",
+    "stepHeading": "RECOVERY PATH",
+    "branchHeading": "RECEIPT BRANCHES",
+    "stepLabel": "恢复步骤",
+    "branchLabel": "回执分支",
+    "lanes": [
+      {"label": "调用方 / retained command", "narrowLabel": "Caller"},
+      {"label": "CurrentAgent"},
+      {"label": "OperationHandle / native receipt", "narrowLabel": "Operation"}
+    ],
+    "steps": [
+      {"id": "CurrentAgent.prepareMessage", "label": "prepareMessage", "caption": "保留精确目标与操作身份", "from": 0, "to": 1},
+      {"id": "PreparedMessage", "label": "PreparedMessage", "caption": "target + operation + message", "from": 1, "to": 0},
+      {"id": "CurrentAgent.send", "label": "send(prepared)", "caption": "同一原始命令 · 每次调用一次分派", "from": 0, "to": 1},
+      {"id": "OutcomeUnknown", "label": "响应丢失 / OutcomeUnknown", "caption": "保留 requestId；不推断发送结果", "from": 1, "to": 0, "error": true},
+      {"id": "OperationHandle.observe", "label": "operation(address).observe()", "caption": "仅持有地址时查原始回执；保留完整命令可走类型化恢复", "from": 0, "to": 2},
+      {"id": "OperationHandle.wait", "label": "wait(options)", "caption": "终态 / 本地停止等待", "from": 0, "to": 2},
+      {"id": "OperationReceipt", "label": "OperationReceipt", "caption": "查看原生回执的 outcome", "from": 2, "to": 0}
+    ],
+    "branchSource": "OperationStatus",
+    "annotation": {
+      "id": "ObservationStopped",
+      "ariaLabel": "ObservationStopped 本地停止等待",
+      "caption": "wait 的 signal / deadline 只停止本地观察；原生操作不因此取消。",
+      "narrowCaption": "停止本地观察 · 原操作仍需核对"
+    }
+  },
+  "lenses": [
+    {"id": "members", "label": "Workspace.members", "detail": "MemberPage", "scene": "method", "subjectId": "Workspace.members"},
+    {"id": "recovery", "label": "send", "detail": "Operation 恢复", "scene": "sequence"},
+    {"id": "native-members", "label": "Workspace.memberPage", "detail": "原生成员分页", "scene": "method", "subjectId": "Workspace.memberPage"},
+    {"id": "typed-recovery", "label": "operation(prepared)", "detail": "类型化回执", "scene": "method", "subjectId": "AgentXScope.operation"}
+  ]
+}

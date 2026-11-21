@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <pattern id="paper-grain" width="16" height="16" patternUnits="userSpaceOnUse">
+      <path fill="#a7634e" opacity=".24" d="M2 4h2v1H2zM10 11h1v1h-1zM14 1h1v1h-1zM5 14h1v1H5z"/>
+    </pattern>
+  </defs>
+  <path fill="#f1dcad" d="M0 0h128v128H0z"/>
+  <path fill="#f5e5c0" d="M0 1h128v30H0zM0 65h128v30H0z"/>
+  <path fill="url(#paper-grain)" d="M0 0h128v128H0z"/>
+  <path fill="none" stroke="#be876f" stroke-opacity=".46" d="M0 .5h128M0 32.5h128M0 64.5h128M0 96.5h128M32.5 0v32m64 0v32m-64 0v32m64 0v32"/>
+  <path fill="none" stroke="#d39878" stroke-opacity=".47" d="M12 16h12m31 5h20m22-8h16M8 47h17m20 8h7m23-12h15m16 3h13M11 83h15m38-6h23m18 12h13m-99 21h10m32 6h17m25-9h14"/>
+</svg>

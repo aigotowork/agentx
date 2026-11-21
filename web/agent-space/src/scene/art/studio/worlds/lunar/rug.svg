@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="112" viewBox="0 0 192 112">
+  <defs>
+    <pattern id="mesh" width="12" height="14" patternUnits="userSpaceOnUse">
+      <path fill="none" d="m0 3 6-3 6 3v7l-6 4-6-4z" stroke="#839dc5" stroke-width=".6" opacity=".23"/>
+    </pattern>
+  </defs>
+  <path fill="#131d39" opacity=".48" d="M19 7h157l15 15v73l-15 15H16L2 96V23z"/>
+  <path fill="#282c4d" d="M17 4h157l15 15v73l-15 15H16L2 93V20z"/>
+  <path fill="url(#mesh)" d="M19 10h153l11 11v69l-12 12H19L8 91V22z"/>
+  <path fill="none" stroke="#62759c" stroke-width="1" d="M17 5h157l14 14v73l-14 14H16L3 93V20z"/>
+  <path fill="none" stroke="#121d3b" opacity=".75" d="M20 10h150l13 13v64l-13 14H20L8 88V23z"/>
+  <path d="M14 27v-3l10-10h12m142 70v3l-10 10h-12" stroke="#8ea5c5" stroke-width="2" opacity=".5" fill="none"/>
+  <path d="M13 52v19m166-37v19" stroke="#cf815d" stroke-width="2" opacity=".42"/>
+</svg>

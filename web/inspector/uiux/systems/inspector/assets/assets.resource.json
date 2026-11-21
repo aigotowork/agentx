@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "system": "inspector",
+  "id": "inspector/assets",
+  "kind": "asset",
+  "title": "背景与工具资源",
+  "summary": "通过语义角色消费原创工具、背景 SVG、主题纹理与声音。",
+  "maturity": "stable",
+  "source": [
+    "./assets.roles.ts"
+  ],
+  "design": "./assets.design.md",
+  "useWhen": [
+    "通过语义角色消费原创工具、背景 SVG、主题纹理与声音。"
+  ],
+  "avoidWhen": [
+    "不要将样例结果解释为业务事实或权限。"
+  ],
+  "dependencies": [
+    "inspector/themes"
+  ],
+  "events": [],
+  "states": [],
+  "interactions": [],
+  "scenes": [
+    {
+      "id": "default",
+      "title": "真实资源预览",
+      "description": "通过语义角色消费原创工具、背景 SVG、主题纹理与声音。",
+      "kind": "overview"
+    }
+  ],
+  "usage": {
+    "entry": "../inspector.assets.ts",
+    "symbols": [
+      "resolveAsset"
+    ]
+  },
+  "roles": [
+    "background.workspace",
+    "background.investigation",
+    "tool.confirm",
+    "feedback.tap"
+  ],
+  "provenance": {
+    "origin": "原创系统资源；原版图标使用 Lucide",
+    "license": "原创资源 MIT；上游组件保留 plugin/NOTICE"
+  }
+}

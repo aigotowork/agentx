@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="32" viewBox="0 0 64 32" stroke-linejoin="round" stroke-linecap="round">
+<title>Watergate landing and inset brass runner</title>
+<defs>
+<linearGradient id="bronze" x2="1" y2="1"><stop offset="0" stop-color="#ffe2a1"/><stop offset="0.25" stop-color="#cc996e"/><stop offset="0.5" stop-color="#754353"/><stop offset="0.7" stop-color="#512f45"/><stop offset="1" stop-color="#a45e64"/></linearGradient><linearGradient id="jade" x2="1" y2="1"><stop offset="0" stop-color="#b9ece0"/><stop offset="0.18" stop-color="#75bfb1"/><stop offset="0.56" stop-color="#346c6c"/><stop offset="1" stop-color="#18313a"/></linearGradient><linearGradient id="jadeDark" x2="1" y2="1"><stop offset="0" stop-color="#578f86"/><stop offset="0.5" stop-color="#27525a"/><stop offset="1" stop-color="#132e38"/></linearGradient><linearGradient id="lacquer" x2="1" y2="1"><stop offset="0" stop-color="#d38f77"/><stop offset="0.29" stop-color="#a45658"/><stop offset="0.58" stop-color="#593246"/><stop offset="1" stop-color="#30263a"/></linearGradient>
+
+</defs>
+<path d="M11 2H53L61 26 57 31H7L3 26Z" fill="#172731"/>
+<path d="M12 2H52L55 18H8Z" fill="url(#jadeDark)" stroke="#192332" stroke-width="1"/>
+<path d="M8 18H55L60 25H4Z" fill="url(#jade)" stroke="#192332" stroke-width="1"/>
+<path d="M4 25H60L57 31H7Z" fill="url(#jadeDark)" stroke="#192332" stroke-width="1"/>
+<path d="M10 17H53M5 24.6H59M9 29.5H55" fill="none" stroke="#a9c5ab" stroke-width="0.75"/>
+<path d="M17 5H47L49 17 54 23H10L15 17Z" fill="url(#lacquer)" stroke="#254651" stroke-width="0.62"/>
+<path d="M18 7h27l3 12H15Z" fill="none" stroke="url(#bronze)" stroke-width="0.85"/>
+<g transform="translate(32 13) scale(1.12)">
+<path d="M0-5Q4-3 0 2Q-4-3 0-5ZM0 2Q-2-2-6-1Q-5 3 0 4Q5 3 6-1Q2-2 0 2Z" fill="#c7a183"/>
+<ellipse cx="0" cy="4" rx="0.65" ry="0.65" fill="#ffdf99"/></g>
+<path d="M11 7h2m37 0h2M7 20h4m43 0h4" fill="none" stroke="#eff3c5" stroke-width="0.75"/>
+</svg>

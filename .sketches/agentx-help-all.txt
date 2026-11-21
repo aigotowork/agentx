@@ -1,0 +1,1491 @@
+Command tree:
+agentx
+├─ launch
+├─ resume
+├─ fork
+├─ send
+├─ list
+├─ events
+│  ├─ launch
+│  ├─ sub
+│  │  └─ list
+│  └─ unsub
+├─ stop
+│  └─ all
+├─ start
+├─ listen
+├─ status
+├─ daemon
+│  ├─ status
+│  └─ restart
+├─ observe
+│  ├─ inspect
+│  ├─ request
+│  ├─ config
+│  ├─ config-current
+│  ├─ compare
+│  └─ events
+├─ observe-web
+├─ workbench
+├─ work
+│  ├─ show
+│  ├─ list
+│  ├─ candidates
+│  ├─ command
+│  ├─ report
+│  └─ apply
+├─ config
+│  ├─ environment
+│  ├─ env_files
+│  ├─ env_override
+│  └─ bootstrap
+│     ├─ show
+│     └─ render
+├─ hooks
+│  ├─ status
+│  ├─ add
+│  └─ remove
+├─ archive
+├─ reset
+│  └─ all
+├─ transcript
+│  ├─ timeline
+│  └─ search
+├─ bundle
+│  ├─ list
+│  ├─ cat
+│  ├─ prepare
+│  ├─ show
+│  ├─ create
+│  └─ chain
+├─ kill
+│  └─ all
+├─ term
+│  ├─ inject
+│  └─ debug
+│     ├─ on
+│     ├─ off
+│     └─ logs
+├─ relay
+│  ├─ status
+│  ├─ new
+│  ├─ token
+│  ├─ connect
+│  ├─ on
+│  ├─ off
+│  └─ daemon
+│     ├─ start
+│     ├─ stop
+│     └─ restart
+├─ run
+│  └─ docs
+└─ update
+
+Help controls (before --):
+  --help / -h                   Help for the current command
+  --help-all                    Full help for this command and all descendants
+
+Shared invocation options (where supported):
+  --name NAME                   Existing caller identity, not a new agent name
+  --go                          Skip confirmation/launch preview
+  --env-file PATH               Ordered dotenv files; repeatable
+  --env-override                Override inherited environment values
+  --no-env-override             Preserve inherited environment values (default)
+  AGENTX_DIR                    Data/config scope (default: ~/.agentx)
+  AGENTX_ENV_FILES              Comma-separated default dotenv list
+  AGENTX_ENV_OVERRIDE           Default environment override policy
+
+Native tool arguments belong after --. Native tool help and internal hooks are outside this public reference.
+
+=== agentx ===
+agentx (hook-comms) v0.7.31 - multi-agent communication
+
+Usage:
+  agentx                                  TUI dashboard
+  agentx <command>                        Run command
+  agentx [command...] --help              Show help for this command
+  agentx [command...] --help-all          Expand all help below this command
+
+Launch:
+  agentx launch --tool <tool> [--count N] [flags] [-- tool-args]
+  Tools: claude|gemini|codex|opencode|kilo|pi|omp|hermes|antigravity|cursor|kimi|copilot|qoder|grok
+  agentx resume <target>                  Resume stopped agent
+  agentx fork <target>                    Fork agent session (claude/codex/opencode/kilo/pi/omp/qoder/grok)
+  agentx kill <name(s)|all>         Kill + close terminal pane
+
+Commands:
+  send         Send message to your buddies
+  listen       Block until message or event arrives
+  list         Show agents, status, unread counts
+  events       Query event stream, manage subscriptions
+  bundle       Structured context packages for handoffs
+  transcript   Read another agent's conversation
+  start        Connect to agentx (run inside any AI tool)
+  stop         Disconnect from agentx
+  config       Get/set global and per-agent settings
+  run          Execute workflow scripts
+  relay        Cross-device sync + relay daemon
+  archive      Query past agentx sessions
+  reset        Archive and clear database
+  hooks        Add or remove hooks
+  status       Installation and diagnostics
+  observe      Inspect existing daemon/config/event evidence
+  observe-web  Serve read-only browser diagnostics
+  workbench    Open project collaboration in a browser
+  daemon       Inspect or explicitly restart the native scope daemon
+  work         Read work and report assigned results/checks
+  term         View/inject into agent PTY screens
+  update       Check and apply updates
+
+Environment files (before --):
+  --env-file PATH                         Ordered dotenv file (repeatable)
+  --env-override / --no-env-override       Replace / preserve inherited values
+  AGENTX_ENV_FILES                        Comma-separated file list
+  agentx config environment --json        Inspect sources/provenance without values
+
+=== agentx launch ===
+Launch one or more agents
+
+Usage: agentx launch [OPTIONS] --tool <TOOL> [-- <NATIVE_ARGS>...]
+
+Arguments:
+  [NATIVE_ARGS]...
+          Arguments passed verbatim to the native tool, after --
+
+Options:
+      --tool <TOOL>
+          CLI tool to launch (see the supported tools below)
+
+      --count <COUNT>
+          Number of agents to launch; must be positive
+          
+          [default: 1]
+
+          Group label for new agents
+
+      --terminal <TERMINAL>
+          Terminal preset for new windows
+
+      --device <DEVICE>
+          Launch on a remote relay device
+
+      --headless
+          Run in a background PTY
+
+      --stdio
+          Codex only: one local foreground connection on standard streams
+
+      --agentx-system-prompt <SYSTEM_PROMPT>
+          Append to the native system prompt
+
+      --agentx-prompt <INITIAL_PROMPT>
+          Initial user prompt
+
+      --batch-id <BATCH_ID>
+          Explicit launch batch identifier
+
+      --dir <DIR>
+          Working directory for the agent
+
+      --json
+          `--json`: report the outcome as one JSON object on stdout
+
+      --run-here
+          Run in the invoking terminal
+
+      --no-run-here
+          Open elsewhere rather than taking over the invoking terminal
+
+      --name <NAME>
+          Existing caller identity (not the new agent's name)
+
+      --go
+          Skip launch preview
+
+  -h, --help
+          Print help
+
+Put all native tool arguments after --.
+Example: agentx launch --tool codex --count 2 -- --model MODEL
+
+Environment options (before --):
+  --env-file PATH (repeatable)
+  --env-override / --no-env-override
+
+Supported tools: claude, gemini, codex, opencode, kilo, kilocode, pi, pi-agent, omp, omp-agent, hermes, antigravity, agy, cursor, cursor-agent, kimi, copilot, qoder, qodercli, grok, grok-build
+
+=== agentx resume ===
+Usage:
+  agentx resume <target> [flags] [-- tool-args...]    Resume a stopped agent
+
+<target> can be:
+  <name>                            agentx name (e.g. luna)
+  <uuid>                            claude/codex/gemini session UUID
+  ses_<id>                          opencode/kilo session ID
+  <thread-name>                     claude /rename title or codex thread_name
+  <target>:<device>                 run on a remote device via relay
+
+Adopting by UUID or thread-name reclaims the original agentx
+identity if one existed; otherwise a new identity is assigned.
+CWD is recovered from the session's transcript/DB.
+
+Flags (parsed before tool args; pass `--` to stop parsing):
+  --terminal <preset>               Where new windows open
+  --device <device>                 Run on a remote device via relay
+  --dir <path>                      Working directory
+  --env-file <path>                 Load dotenv data (repeat for ordered files)
+  --env-override / --no-env-overrideReplace / preserve inherited environment values
+  --headless                        Run in background
+  --run-here / --no-run-here        Use / leave the invoking terminal
+  --agentx-prompt <text>            Initial prompt
+  --agentx-system-prompt <text>     System prompt
+  --json                            Print the result as one JSON object
+  --go                              Skip preview, run immediately
+
+Native tool arguments must follow --; unknown AgentX options are errors.
+
+See also:
+  agentx f <target>                   Fork an agent session (claude/codex/opencode/kilo/pi/omp/qoder/grok)
+
+=== agentx fork ===
+Usage:
+  agentx fork <target> [flags] [-- tool-args...]    Fork an agent session (active or stopped)
+
+<target> can be:
+  <name>                            agentx name (e.g. luna)
+  <uuid>                            claude/codex/gemini session UUID
+  ses_<id>                          opencode/kilo session ID
+  <thread-name>                     claude /rename title or codex thread_name
+  <target>:<device>                 run on a remote device via relay
+
+Creates a new agent that continues from the forked session.
+Supported tools: claude, codex, opencode, kilo, pi, omp, qoder, grok.
+Remote fork (`:<device>`) requires --dir to pin the target cwd.
+
+Flags (parsed before tool args; pass `--` to stop parsing):
+  --terminal <preset>               Where new windows open
+  --device <device>                 Run on a remote device via relay
+  --dir <path>                      Working directory
+  --env-file <path>                 Load dotenv data (repeat for ordered files)
+  --env-override / --no-env-overrideReplace / preserve inherited environment values
+  --headless                        Run in background
+  --run-here / --no-run-here        Use / leave the invoking terminal
+  --agentx-prompt <text>            Initial prompt
+  --agentx-system-prompt <text>     System prompt
+  --json                            Print the result as one JSON object
+  --go                              Skip preview, run immediately
+
+Native tool arguments must follow --; unknown AgentX options are errors.
+
+See also:
+  agentx r <target>                   Resume a stopped agent
+
+=== agentx send ===
+Usage:
+  agentx send @name -- message text
+                                  Direct message
+  agentx send @name1 @name2 -- message
+                                  Multiple targets
+  agentx send -- message text     Broadcast to all
+  agentx send @name               Message from stdin (pipe or heredoc)
+  agentx send @name --file <path>
+                                  Message from file
+  agentx send @name --base64 <encoded>
+                                  Message from base64 string
+
+  Everything after -- is the message (no quotes needed).
+  All flags must come before --.
+
+Target matching:
+    @luna                          exact base name
+    @luna:BOXE                     exact or uniquely prefixed remote agent
+  Partial local names are rejected to avoid accidental fan-out.
+
+Envelope:
+    --intent <type>                request | inform | ack
+    request: expect a response
+    inform: FYI, no response needed
+    ack: replying to a request (requires --reply-to)
+    --reply-to <id>                Link to event ID (42 or 42:BOXE)
+    --thread <name>                Threaded routing: seed recipients once, then reuse thread members
+    broadcast + --thread reuses prior thread members; seed with @mentions first
+
+Sender:
+    --from <name>                  External sender identity
+    -b                             Shorthand for --from bigboss
+    --name <name>                  Your identity (agent name or UUID)
+
+Output:
+    --json                         JSON receipt; leaves mail unread
+    --quiet                        No output; leaves mail unread
+
+Inline bundle (attach structured context):
+    --title <text>                 Create and attach bundle inline
+    --description <text>           Bundle description (required with --title)
+    --events <ids>                 Event IDs/ranges: 1,2,5-10
+    --files <paths>                Comma-separated file paths
+    --transcript <ranges>          Format: 3-14:normal,6:full,22-30:detailed
+    --extends <id>                 Parent bundle (optional)
+  See 'agentx bundle --help' for bundle details
+
+Examples:
+    agentx send @luna -- Hello there!
+    agentx send @luna @nova --intent request -- Can you help?
+    agentx send -- Broadcast message to everyone
+    echo 'Complex message' | agentx send @luna
+    agentx send @luna <<'EOF'
+    Multi-line message with special chars
+    EOF
+
+=== agentx list ===
+Usage:
+  agentx list                     All alive agents, read receipts
+    -v                             Verbose (directory, session, etc)
+    --json                         JSON array of all agents
+    --names                        Just names, one per line
+    --format TPL                   Template per agent: --format '{name} {status}'
+    Fields: name, status, status_context, status_detail,
+    status_age_seconds, description, unread_count, tool, directory,
+    session_id, parent_name, agent_id, headless, created_at,
+    hooks_bound, process_bound, transcript_path, background_log_file,
+    launch_context
+
+  agentx list [self|<name>]       Single agent details, including recorded session usage
+    [field]                        Print specific field (status, directory, session_id, usage, ...)
+    --json                         Output as JSON
+    --sh                           Shell exports: eval "$(agentx list self --sh)"
+
+  agentx list --stopped [name]    Stopped agents (from events)
+    --all                          All stopped (default: last 20)
+
+Status icons:
+  ▶  active      processing, reads messages very soon
+  ◉  listening   idle, reads messages in <1s
+  ■  blocked     needs human approval
+  ○  inactive    dead or stale
+  ◦  unknown     neutral
+
+Tool labels:
+  [CLAUDE] [GEMINI] [CODEX] [OPENCODE] [KILO] [PI] [OMP] [ANTIGRAVITY] [CURSOR] [KIMI] [COPILOT] [QODER] [GROK]  agentx-launched, automatic delivery
+  [CLAUDE*]   hooks or process not bound (starting up, or lost); see: list <name>
+  [AD-HOC]    no hooks, checks messages manually
+
+=== agentx events ===
+Usage:
+  Query the event stream (messages, status changes, file edits, lifecycle)
+
+Query:
+    events                         Last 20 events as JSON Lines (one object per line)
+    --last N                       Limit count (default: 20)
+    --all                          Include archived sessions
+    --full                         Full event JSON (default: streamlined)
+    --wait [SEC]                   Block until match (default: 60s)
+    --sql EXPR                     Raw SQL WHERE (ANDed with flags)
+    --remote-fetch --device ID     One-shot fetch from remote device (with --full: whole status details)
+  Remote agents' details in list and TUI are previews. Full text:
+    events --remote-fetch --device ID --agent NAME --type status --last 1 --full
+  A trailing {"truncated": true} line means the answer hit the relay size limit
+
+Filters (same flag repeated = OR, different flags = AND):
+    --agent NAME                   Agent name
+    --type TYPE                    message | status | life
+    --status VAL                   active | listening | blocked | inactive | launching | error
+    --context PATTERN              tool:Bash | deliver:X (supports * wildcard)
+    --action VAL                   created | started | ready | stopped | batch_launched | launch_failed | launch_blocked
+    --cmd PATTERN                  Shell command (contains, ^prefix, =exact)
+    --file PATH                    File write (*.py for glob, file.py for contains)
+    --collision                    Two agents edit same file within 30s
+    --from NAME                    Sender
+    --participant NAME             Message sender or delivery recipient
+    --mention NAME                 @mention target
+    --intent VAL                   request | inform | ack
+    --thread NAME                  Thread name
+    --reply-to ID                  Message replying to this event
+    --after TIME                   After timestamp (ISO-8601)
+    --before TIME                  Before timestamp (ISO-8601)
+
+Shortcuts:
+    --idle NAME                    --agent NAME --status listening
+    --blocked NAME                 --agent NAME --status blocked
+
+Follow (streams until Ctrl-C or the reader exits):
+  agentx events --follow [filters]
+                                  New matching events as JSON Lines, oldest first
+    --last N                       Replay the N most recent matches first
+    --after-id ID                  Resume after a saved event id (replays every match since)
+  A {"db_reset": true} line means agentx reset ran and ids restarted
+
+Wait for a launch batch:
+  agentx events launch [batch_id]
+                                  Block until batch reaches a terminal state (JSON LaunchResult)
+    --timeout SEC                  Max seconds to wait (default: 30)
+  Exit codes: 0 ready, 1 error/no_launches, 2 timeout/blocked
+
+Subscribe (next matching event arrives as a message from [agentx-events]):
+  agentx events sub [filters]     Subscribe using filter flags
+  agentx events sub "SQL WHERE"   Subscribe using raw SQL
+    --once                         Auto-remove after first match
+    --for <name>                   Subscribe on behalf of another agent
+    --on-hit <text>                Also send this message each time it fires (@mentions ok)
+    --as <name> / -b               Own the sub without an agent identity, e.g. from a shell (-b = bigboss)
+    --device ID                    Install/list on a remote device (create requires --for, --as, or -b)
+  agentx events sub list          List active subscriptions
+    --device ID                    List subscriptions on a remote device
+  agentx events unsub <id>        Remove a subscription
+    --device ID                    Remove it from a remote device
+
+Examples:
+    agentx events --cmd git --agent peso
+    agentx events sub --idle peso  Notified when peso goes idle
+    agentx events sub --file '*.py' --once
+                                   One-shot: next .py file write
+
+SQL reference (events_v view):
+    Base                           id, timestamp, type, instance
+    msg_*                          from, text, scope, sender_kind, delivered_to[], mentions[], intent, thread, reply_to
+    status_*                       val, context, detail
+    life_*                         action, by, batch_id, reason
+
+    type                           message, status, life
+    msg_scope                      broadcast, mentions
+    msg_sender_kind                instance, external, system
+    status_context                 tool:X, deliver:X, approval, prompt, exit:X
+    life_action                    created, started, ready, stopped, batch_launched, launch_failed, launch_blocked
+
+  delivered_to/mentions are JSON arrays — query exact values with json_each(...)
+  Use <> instead of != for SQL negation
+
+=== agentx events launch ===
+Wait for a launch batch:
+  agentx events launch [batch_id]
+                                  Block until batch reaches a terminal state (JSON LaunchResult)
+    --timeout SEC                  Max seconds to wait (default: 30)
+  Exit codes: 0 ready, 1 error/no_launches, 2 timeout/blocked
+
+=== agentx events sub ===
+Subscribe (next matching event arrives as a message from [agentx-events]):
+  agentx events sub [filters]     Subscribe using filter flags
+  agentx events sub "SQL WHERE"   Subscribe using raw SQL
+    --once                         Auto-remove after first match
+    --for <name>                   Subscribe on behalf of another agent
+    --on-hit <text>                Also send this message each time it fires (@mentions ok)
+    --as <name> / -b               Own the sub without an agent identity, e.g. from a shell (-b = bigboss)
+    --device ID                    Install/list on a remote device (create requires --for, --as, or -b)
+  agentx events sub list          List active subscriptions
+    --device ID                    List subscriptions on a remote device
+
+Filters (same flag repeated = OR, different flags = AND):
+    --agent NAME                   Agent name
+    --type TYPE                    message | status | life
+    --status VAL                   active | listening | blocked | inactive | launching | error
+    --context PATTERN              tool:Bash | deliver:X (supports * wildcard)
+    --action VAL                   created | started | ready | stopped | batch_launched | launch_failed | launch_blocked
+    --cmd PATTERN                  Shell command (contains, ^prefix, =exact)
+    --file PATH                    File write (*.py for glob, file.py for contains)
+    --collision                    Two agents edit same file within 30s
+    --from NAME                    Sender
+    --participant NAME             Message sender or delivery recipient
+    --mention NAME                 @mention target
+    --intent VAL                   request | inform | ack
+    --thread NAME                  Thread name
+    --reply-to ID                  Message replying to this event
+    --after TIME                   After timestamp (ISO-8601)
+    --before TIME                  Before timestamp (ISO-8601)
+
+Shortcuts:
+    --idle NAME                    --agent NAME --status listening
+    --blocked NAME                 --agent NAME --status blocked
+
+Examples:
+    agentx events sub --idle peso  Notified when peso goes idle
+    agentx events sub --file '*.py' --once
+                                   One-shot: next .py file write
+
+  SQL columns: agentx events --help
+
+=== agentx events sub list ===
+agentx events sub list          List active subscriptions
+    --device ID                    List subscriptions on a remote device
+
+=== agentx events unsub ===
+agentx events unsub <id>        Remove a subscription
+    --device ID                    Remove it from a remote device
+
+=== agentx stop ===
+Usage:
+  agentx stop                     Disconnect self from agentx
+  agentx stop <name>              Disconnect specific agent
+  agentx stop <n1> <n2> ...       Disconnect multiple
+  agentx stop all                 Disconnect all agents
+
+=== agentx stop all ===
+Usage:
+  agentx stop all                 Disconnect all agents
+
+=== agentx start ===
+Usage:
+  agentx start                    Connect to agentx (from inside any AI session)
+  agentx start --name <agent-id>  Register a subagent using its agent ID (from SubagentStart)
+  agentx start --as <name>        Reclaim identity (after compaction/resume/clear)
+
+  Inside a sandbox? Prefix all agentx commands with: AGENTX_DIR=$PWD/.agentx
+
+  Tip: Do not truncate the agentx start output, it contains important information.
+
+=== agentx listen ===
+Usage:
+  agentx listen [timeout]         Block until message arrives
+    [timeout]                      Timeout in seconds (alias for --timeout)
+    --timeout N                    Timeout in seconds (default: 86400)
+    --json                         Output messages as JSON
+
+Filter flags:
+  Supports all filter flags from 'events' command
+  (--agent, --type, --status, --file, --cmd, --from, --intent, etc.)
+  Run 'agentx events --help' for full list
+  Filters combine with --sql using AND logic
+
+SQL filter mode:
+    --sql "type='message'"         Custom SQL against events_v
+    --sql stopped:name             Preset: wait for agent to stop
+    --idle NAME                    Shortcut: wait for agent to go idle
+
+Exit codes:
+    0                              Message received / event matched
+    1                              Timeout or error
+
+  Quick unread check: agentx listen 1
+
+=== agentx status ===
+Usage:
+  agentx status                   Installation status and diagnostics
+  agentx status --logs            Include recent errors and warnings
+  agentx status --json            Machine-readable output
+
+=== agentx daemon ===
+Inspect or explicitly restart the selected native daemon
+
+Usage: agentx daemon <COMMAND>
+
+Commands:
+  status   Read state and compatibility without starting a daemon or resolving identity
+  restart  Gracefully stop the verified scope owner and acquire this executable
+  help     Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help
+          Print help
+
+Scope: --scope overrides AGENTX_DIR; otherwise the normal home scope is used.
+Ordinary commands auto-start a missing daemon. Restart preserves managed data.
+See .docs/architecture/daemon.md for recovery and platform limits.
+
+=== agentx daemon status ===
+Read state and compatibility without starting a daemon or resolving identity
+
+Usage: agentx daemon status [OPTIONS]
+
+Options:
+      --scope <SCOPE>
+          Selected data scope; defaults to AGENTX_DIR or the normal home scope
+
+  -h, --help
+          Print help
+
+=== agentx daemon restart ===
+Gracefully stop the verified scope owner and acquire this executable
+
+Usage: agentx daemon restart [OPTIONS]
+
+Options:
+      --scope <SCOPE>
+          Selected data scope; defaults to AGENTX_DIR or the normal home scope
+
+  -h, --help
+          Print help
+
+=== agentx observe ===
+Read existing AgentX diagnostic evidence
+
+Usage: agentx observe [OPTIONS] [COMMAND]
+
+Commands:
+  inspect         Read the existing daemon's runtime/process snapshot
+  request         Read one exact native RequestObservationRef from a local JSON file
+  config          Read one exact retained ConfigSnapshotRef from a local JSON file
+  config-current  Explicitly reevaluate this invocation's scoped settings locally
+  compare         Compare two retained configuration refs; never reread current settings
+  events          Read a bounded native event window; follow stops on gaps/era changes
+  help            Print this message or the help of the given subcommand(s)
+
+Options:
+      --scope <PATH>
+          Existing data scope; default: originating AGENTX_DIR / home resolver
+
+      --json
+          Emit one JSON value; events --follow emits newline-delimited values
+
+  -h, --help
+          Print help
+
+No subcommand means inspect. Files contain exact native JSON refs/windows (at most 32 KiB).
+Usage and recovery: .docs/observability/cli.md
+
+=== agentx observe inspect ===
+Read the existing daemon's runtime/process snapshot
+
+Usage: agentx observe inspect [OPTIONS]
+
+Options:
+      --scope <PATH>
+          Existing data scope; default: originating AGENTX_DIR / home resolver
+
+      --json
+          Emit one JSON value; events --follow emits newline-delimited values
+
+  -h, --help
+          Print help
+
+=== agentx observe request ===
+Read one exact native RequestObservationRef from a local JSON file
+
+Usage: agentx observe request [OPTIONS] --ref-file <REF_FILE>
+
+Options:
+      --ref-file <REF_FILE>
+          
+
+      --scope <PATH>
+          Existing data scope; default: originating AGENTX_DIR / home resolver
+
+      --json
+          Emit one JSON value; events --follow emits newline-delimited values
+
+  -h, --help
+          Print help
+
+=== agentx observe config ===
+Read one exact retained ConfigSnapshotRef from a local JSON file
+
+Usage: agentx observe config [OPTIONS] --ref-file <REF_FILE>
+
+Options:
+      --ref-file <REF_FILE>
+          
+
+      --scope <PATH>
+          Existing data scope; default: originating AGENTX_DIR / home resolver
+
+      --json
+          Emit one JSON value; events --follow emits newline-delimited values
+
+  -h, --help
+          Print help
+
+=== agentx observe config-current ===
+Explicitly reevaluate this invocation's scoped settings locally
+
+Usage: agentx observe config-current [OPTIONS]
+
+Options:
+      --scope <PATH>
+          Existing data scope; default: originating AGENTX_DIR / home resolver
+
+      --json
+          Emit one JSON value; events --follow emits newline-delimited values
+
+  -h, --help
+          Print help
+
+=== agentx observe compare ===
+Compare two retained configuration refs; never reread current settings
+
+Usage: agentx observe compare [OPTIONS] --left-file <LEFT_FILE> --right-file <RIGHT_FILE>
+
+Options:
+      --left-file <LEFT_FILE>
+          
+
+      --scope <PATH>
+          Existing data scope; default: originating AGENTX_DIR / home resolver
+
+      --json
+          Emit one JSON value; events --follow emits newline-delimited values
+
+      --right-file <RIGHT_FILE>
+          
+
+      --field <FIELD>
+          Native setting name, context.FIELD or participant.FIELD; repeatable
+
+  -h, --help
+          Print help
+
+=== agentx observe events ===
+Read a bounded native event window; follow stops on gaps/era changes
+
+Usage: agentx observe events [OPTIONS]
+
+Options:
+      --scope <PATH>
+          Existing data scope; default: originating AGENTX_DIR / home resolver
+
+      --window-file <WINDOW_FILE>
+          
+
+      --json
+          Emit one JSON value; events --follow emits newline-delimited values
+
+      --limit <LIMIT>
+          Records per page, 1..256
+          
+          [default: 128]
+
+      --follow
+          
+
+  -h, --help
+          Print help
+
+=== agentx observe-web ===
+Serve finite diagnostics for one existing scope
+
+Usage: agentx observe-web [OPTIONS] --scope <SCOPE>
+
+Options:
+      --scope <SCOPE>
+          
+
+      --name <NAME>
+          Accepted for global CLI compatibility; diagnostics do not initialize an identity
+
+      --assets <ASSETS>
+          Directory containing the finite same-origin manifest.json asset bundle
+
+      --host <HOST>
+          Numeric interface address; use 0.0.0.0 for LAN access
+          
+          [default: 127.0.0.1]
+
+      --port <PORT>
+          HTTP port (0 chooses an available ephemeral port); nonzero must be >=1024
+          
+          [default: 0]
+
+  -h, --help
+          Print help
+
+=== agentx workbench ===
+Open bounded project collaboration with embedded resources
+
+Usage: agentx workbench [OPTIONS]
+
+Options:
+      --scope <SCOPE>
+          Data scope; defaults to AGENTX_DIR or the normal home scope
+
+      --project <PROJECT>
+          Project directory; defaults to the invoking working directory
+
+      --name <NAME>
+          CLI compatibility only; browser operator calls carry no participant claim
+
+      --collaboration
+          Enable finite operator mutations for clients reaching this listener
+
+      --assets <ASSETS>
+          
+
+      --host <HOST>
+          [default: 127.0.0.1]
+
+      --port <PORT>
+          [default: 0]
+
+  -h, --help
+          Print help
+
+=== agentx work ===
+Read project work and report exact assigned collaboration facts
+
+Usage: agentx work <COMMAND>
+
+Commands:
+  show        Read the current work, assignments, brief, evidence and eligibility
+  list        Read a finite page of work summaries
+  candidates  Read exact current project participants without credential-bearing fields
+  command     Reconcile a retained command without resubmitting it
+  report      Report a native AgentReport JSON value for your exact dispatched assignment
+  apply       Apply one finite operator command JSON value with durable command identity
+  help        Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help
+          Print help
+
+AgentReport payloads (ordinary JSON; do not infer completion from idle):
+  {"Progress":{"kind":"Acknowledged","summary":"Received assignment"}}
+  {"Progress":{"kind":"Started","summary":"Implementing the agreed brief"}}
+  {"Question":{"prompt":"Which overwrite policy?","suggestions":["Refuse","Replace"]}}
+  {"Result":{"summary":"Implemented change","source":{"reference":"git","revision":"FULL_IMMUTABLE_COMMIT_ID"},"artifacts":[{"Git":{"revision":"FULL_IMMUTABLE_COMMIT_ID","path":"src/export.rs"}}]}}
+  {"Check":{"request_id":"EXACT_ACTIVE_CHECK_REQUEST","result_id":"EXACT_CURRENT_RESULT","observed_fingerprint":"FULL_IMMUTABLE_COMMIT_ID","verdict":"Passed","criteria":[{"criterion_id":"EXACT_REQUIRED_CRITERION_ID","verdict":"Passed","evidence":"Concrete command/result or observation"}],"evidence":["Independent source/check evidence"]}}
+Progress kind is Acknowledged, Started or Progress. Check verdict is Passed, Failed or Unable; a pass requires matching immutable source and every required criterion passed with evidence. A Result never requests a check automatically. Only the explicitly requested independent checker may report Check. Read work show for current revision/assignment/brief/result/request/criterion IDs before reporting; retain one command ID per exact intent. On a lost reply, use work command with that ID before retrying; never generate a duplicate command for uncertain work. No merge, deployment or current working-tree certification is implied.
+
+=== agentx work show ===
+Read the current work, assignments, brief, evidence and eligibility
+
+Usage: agentx work show [OPTIONS] --scope <SCOPE> --project <PROJECT> --work <WORK>
+
+Options:
+      --scope <SCOPE>
+          
+
+      --project <PROJECT>
+          
+
+      --name <NAME>
+          Existing participant claim, checked by the native identity resolver
+
+      --work <WORK>
+          
+
+      --generation <GENERATION>
+          
+
+  -h, --help
+          Print help
+
+=== agentx work list ===
+Read a finite page of work summaries
+
+Usage: agentx work list [OPTIONS] --scope <SCOPE> --project <PROJECT>
+
+Options:
+      --scope <SCOPE>
+          
+
+      --project <PROJECT>
+          
+
+      --name <NAME>
+          Existing participant claim, checked by the native identity resolver
+
+      --limit <LIMIT>
+          [default: 32]
+
+      --after <AFTER>
+          
+
+  -h, --help
+          Print help
+
+=== agentx work candidates ===
+Read exact current project participants without credential-bearing fields
+
+Usage: agentx work candidates [OPTIONS] --scope <SCOPE> --project <PROJECT>
+
+Options:
+      --scope <SCOPE>
+          
+
+      --project <PROJECT>
+          
+
+      --name <NAME>
+          Existing participant claim, checked by the native identity resolver
+
+      --limit <LIMIT>
+          [default: 32]
+
+      --after <AFTER>
+          
+
+  -h, --help
+          Print help
+
+=== agentx work command ===
+Reconcile a retained command without resubmitting it
+
+Usage: agentx work command [OPTIONS] --scope <SCOPE> --project <PROJECT> --generation <GENERATION> --command-id <COMMAND_ID>
+
+Options:
+      --scope <SCOPE>
+          
+
+      --project <PROJECT>
+          
+
+      --name <NAME>
+          Existing participant claim, checked by the native identity resolver
+
+      --generation <GENERATION>
+          
+
+      --command-id <COMMAND_ID>
+          
+
+  -h, --help
+          Print help
+
+=== agentx work report ===
+Report a native AgentReport JSON value for your exact dispatched assignment
+
+Usage: agentx work report [OPTIONS] --scope <SCOPE> --project <PROJECT> --work <WORK> --generation <GENERATION> --revision <REVISION> --assignment <ASSIGNMENT> --brief <BRIEF> --command-id <COMMAND_ID> --payload <PAYLOAD>
+
+Options:
+      --scope <SCOPE>
+          
+
+      --project <PROJECT>
+          
+
+      --name <NAME>
+          Existing participant claim, checked by the native identity resolver
+
+      --work <WORK>
+          
+
+      --generation <GENERATION>
+          
+
+      --revision <REVISION>
+          
+
+      --assignment <ASSIGNMENT>
+          
+
+      --brief <BRIEF>
+          
+
+      --command-id <COMMAND_ID>
+          
+
+      --payload <PAYLOAD>
+          
+
+  -h, --help
+          Print help
+
+AgentReport payloads (ordinary JSON; do not infer completion from idle):
+  {"Progress":{"kind":"Acknowledged","summary":"Received assignment"}}
+  {"Progress":{"kind":"Started","summary":"Implementing the agreed brief"}}
+  {"Question":{"prompt":"Which overwrite policy?","suggestions":["Refuse","Replace"]}}
+  {"Result":{"summary":"Implemented change","source":{"reference":"git","revision":"FULL_IMMUTABLE_COMMIT_ID"},"artifacts":[{"Git":{"revision":"FULL_IMMUTABLE_COMMIT_ID","path":"src/export.rs"}}]}}
+  {"Check":{"request_id":"EXACT_ACTIVE_CHECK_REQUEST","result_id":"EXACT_CURRENT_RESULT","observed_fingerprint":"FULL_IMMUTABLE_COMMIT_ID","verdict":"Passed","criteria":[{"criterion_id":"EXACT_REQUIRED_CRITERION_ID","verdict":"Passed","evidence":"Concrete command/result or observation"}],"evidence":["Independent source/check evidence"]}}
+Progress kind is Acknowledged, Started or Progress. Check verdict is Passed, Failed or Unable; a pass requires matching immutable source and every required criterion passed with evidence. A Result never requests a check automatically. Only the explicitly requested independent checker may report Check. Read work show for current revision/assignment/brief/result/request/criterion IDs before reporting; retain one command ID per exact intent. On a lost reply, use work command with that ID before retrying; never generate a duplicate command for uncertain work. No merge, deployment or current working-tree certification is implied.
+
+=== agentx work apply ===
+Apply one finite operator command JSON value with durable command identity
+
+Usage: agentx work apply [OPTIONS] --scope <SCOPE> --project <PROJECT> --generation <GENERATION> --command-id <COMMAND_ID> --payload <PAYLOAD>
+
+Options:
+      --scope <SCOPE>
+          
+
+      --project <PROJECT>
+          
+
+      --name <NAME>
+          Existing participant claim, checked by the native identity resolver
+
+      --work <WORK>
+          
+
+      --generation <GENERATION>
+          
+
+      --revision <REVISION>
+          
+
+      --command-id <COMMAND_ID>
+          
+
+      --payload <PAYLOAD>
+          
+
+  -h, --help
+          Print help
+
+=== agentx config ===
+Usage:
+  agentx config                   Show effective config (with sources)
+  agentx config <key>             Get one key
+  agentx config <key> <value>     Set one key
+  agentx config <key> --info      Detailed help for a key
+    --json / --edit / --reset      JSON output / open in $EDITOR / archive + restore defaults
+  agentx config environment       Show selected environment-file sources/provenance without values
+    --json                         Output source/provenance metadata as JSON
+  agentx config env_files '[".env",".env.local"]'
+                                  Set ordered dotenv sources; [] disables
+  agentx config env_override true|false
+                                  Let selected files override inherited values (default false)
+
+Per-agent:
+  agentx config -i <name|self> [key] [val]
+                                  timeout, hints, subagent_timeout
+
+Bootstrap (the agentx context agents get):
+  agentx config bootstrap show [part]
+                                  Print each part, or one part
+  agentx config bootstrap render <name> <tool> [launched]
+                                  Print the full bootstrap an agent would get
+
+Keys:
+    terminal                       Where new agent windows open
+    hints                          Text appended to all messages agent receives
+    notes                          Notes appended to agent bootstrap
+    bootstrap_exclude              Bootstrap parts to leave out (see config bootstrap show)
+    subagent_timeout               Subagent keep-alive seconds after task
+    claude_args / gemini_args / codex_args / opencode_args / kilo_args / pi_args / omp_args / cursor_args / kimi_args / copilot_args / qoder_args / grok_args / hermes_args
+                                   Default launch args per tool
+    claude_delivery / copilot_delivery
+                                   Idle delivery: native (default; claude: mod, copilot: CLI extension) | inject (PTY)
+    gemini_system_prompt / codex_system_prompt
+                                   Default system prompt
+    auto_approve                   Auto-approve safe agentx commands
+    auto_subscribe                 Event auto-subscribe presets
+    auto_trust_workspace           Auto-trust launch dir (skip folder-trust prompt)
+    name_export                    Export agent name to custom env var
+    title_mode                     Terminal/tab title: combined, label, or off
+
+  agentx config <key> --info for details
+  Precedence: defaults < config.toml < env vars
+  Files: /home/long/works/longwork/agentx/.agentx/config.toml, /home/long/works/longwork/agentx/.agentx/config.env
+  AGENTX_DIR: isolate per project (see 'agentx reset --help')
+
+=== agentx config environment ===
+Usage:
+  agentx config environment       Show selected environment-file sources/provenance without values
+    --json                         Output source/provenance metadata as JSON
+
+=== agentx config env_files ===
+Usage:
+  agentx config env_files '[".env",".env.local"]'
+                                  Set ordered dotenv sources; [] disables
+
+=== agentx config env_override ===
+Usage:
+  agentx config env_override true|false
+                                  Let selected files override inherited values (default false)
+
+Per-agent:
+
+=== agentx config bootstrap ===
+Bootstrap (the agentx context agents get):
+  agentx config bootstrap show [part]
+                                  Print each part, or one part
+  agentx config bootstrap render <name> <tool> [launched]
+                                  Print the full bootstrap an agent would get
+
+=== agentx config bootstrap show ===
+Usage:
+  agentx config bootstrap show [part]
+                                  Print each part, or one part
+
+=== agentx config bootstrap render ===
+Usage:
+  agentx config bootstrap render <name> <tool> [launched]
+                                  Print the full bootstrap an agent would get
+
+=== agentx hooks ===
+Usage:
+  agentx hooks                    Show how each tool loads agentx's hooks
+  agentx hooks status [tool]      Same as above, for one tool
+    hermes: also asks Hermes whether the plugin is enabled (slow)
+  agentx hooks add [tool]         Install persistent hooks (gemini | hermes | antigravity | cursor | kimi | all)
+    No tool: auto-detect the current tool, or add all outside one.
+    Restart the tool after adding hooks to activate.
+  agentx hooks remove [tool]      Remove hooks and legacy installs (claude | gemini | codex | opencode | kilo | pi | omp | hermes | antigravity | cursor | kimi | copilot | qoder | all)
+    No tool: remove from all tools.
+    Cleans both global (~/) and AGENTX_DIR-local hooks if set.
+
+  Per-run: claude, codex, opencode, kilo, pi, omp, copilot, qoder
+    Hooks load only in sessions launched with `agentx launch --tool <tool>`. Nothing to
+    install; remove clears installs left by older agentx versions.
+  Persistent: gemini, hermes, antigravity, cursor, kimi
+    Hooks live in the tool's config; install them with `hooks add`.
+  No hooks: grok
+    `agentx launch --tool <tool>` gets status and messages over the tool's own connection.
+
+  Without hooks, run `agentx start` inside any AI tool (manual delivery).
+
+=== agentx hooks status ===
+Usage:
+  agentx hooks status [tool]      Same as above, for one tool
+    hermes: also asks Hermes whether the plugin is enabled (slow)
+
+=== agentx hooks add ===
+agentx hooks add [tool]         Install persistent hooks (gemini | hermes | antigravity | cursor | kimi | all)
+    No tool: auto-detect the current tool, or add all outside one.
+    Restart the tool after adding hooks to activate.
+
+=== agentx hooks remove ===
+agentx hooks remove [tool]      Remove hooks and legacy installs (claude | gemini | codex | opencode | kilo | pi | omp | hermes | antigravity | cursor | kimi | copilot | qoder | all)
+    No tool: remove from all tools.
+    Cleans both global (~/) and AGENTX_DIR-local hooks if set.
+
+=== agentx archive ===
+Usage:
+  agentx archive                  List archived sessions (numbered)
+  agentx archive <N>              Query events from archive (1 = most recent)
+  agentx archive <N> agents       Query agents from archive
+  agentx archive <name>           Query by stable name (prefix match)
+    --here                         Filter to archives from current directory
+    --sql "expr"                   SQL WHERE filter
+    --last N                       Max archives listed (default: all); events when one is selected (default: 20)
+    --json                         JSON output
+
+=== agentx reset ===
+Usage:
+  agentx reset                    Archive conversation, clear database
+  agentx reset all                Stop all + clear db + remove hooks + reset config
+
+Sandbox / local mode:
+  If you can't write to ~/.agentx, set:
+    export AGENTX_DIR="$PWD/.agentx"
+  Hooks install under the parent of AGENTX_DIR; state stays in AGENTX_DIR.
+    AGENTX_DIR=$PWD/.agentx -> $PWD/.claude, .gemini, .codex, .opencode, .kilo, .pi, .omp, .antigravity, .cursor, .kimi, .copilot, .grok
+
+  To remove local setup:
+    agentx hooks remove && rm -rf "$AGENTX_DIR"
+
+  Explicit location:
+    export AGENTX_DIR=/your/path/.agentx
+
+=== agentx reset all ===
+Usage:
+  agentx reset all                Stop all + clear db + remove hooks + reset config
+
+Sandbox / local mode:
+  If you can't write to ~/.agentx, set:
+    export AGENTX_DIR="$PWD/.agentx"
+  Hooks install under the parent of AGENTX_DIR; state stays in AGENTX_DIR.
+    AGENTX_DIR=$PWD/.agentx -> $PWD/.claude, .gemini, .codex, .opencode, .kilo, .pi, .omp, .antigravity, .cursor, .kimi, .copilot, .grok
+
+  To remove local setup:
+    agentx hooks remove && rm -rf "$AGENTX_DIR"
+
+  Explicit location:
+    export AGENTX_DIR=/your/path/.agentx
+
+=== agentx transcript ===
+Usage:
+  agentx transcript <name>        View agent's conversation (last 10)
+  agentx transcript <name> N      Show exchange N
+  agentx transcript <name> N-M    Show exchanges N through M (N- = to the end)
+  agentx transcript timeline      User prompts across all agents by time
+    --last N                       Show the last N exchanges (default: 10)
+    --full                         Show complete assistant responses
+    --detailed                     Show tool I/O, file edits, errors, token usage
+    --json                         JSON output
+
+  agentx transcript search "pattern"
+                                  Search agentx agents' conversations (regex), newest first
+    --live                         Only currently alive agents
+    --all                          Raw search of all transcripts on disk (needs rg)
+    --limit N                      Max matching exchanges shown (default: 20)
+    --agent TYPE                   Filter: claude | gemini | codex | opencode | kilo | pi | omp | hermes | antigravity | cursor | kimi | copilot | qoder | grok
+    --exclude-self                 Exclude the searching agent's own transcript
+    --json                         JSON output
+
+  Tip: Reference ranges in messages instead of copying:
+  "read my transcript range 7-10 --full"
+
+=== agentx transcript timeline ===
+Usage:
+  agentx transcript timeline      User prompts across all agents by time
+    --last N                       Show the last N exchanges (default: 10)
+    --full                         Show complete assistant responses
+    --detailed                     Show tool I/O, file edits, errors, token usage
+    --json                         JSON output
+
+=== agentx transcript search ===
+Usage:
+  agentx transcript search "pattern"
+                                  Search agentx agents' conversations (regex), newest first
+    --live                         Only currently alive agents
+    --all                          Raw search of all transcripts on disk (needs rg)
+    --limit N                      Max matching exchanges shown (default: 20)
+    --agent TYPE                   Filter: claude | gemini | codex | opencode | kilo | pi | omp | hermes | antigravity | cursor | kimi | copilot | qoder | grok
+    --exclude-self                 Exclude the searching agent's own transcript
+    --json                         JSON output
+
+  Tip: Reference ranges in messages instead of copying:
+  "read my transcript range 7-10 --full"
+
+=== agentx bundle ===
+Usage:
+  agentx bundle                   List recent bundles (same as bundle list)
+  agentx bundle list              List recent bundles
+    --last N                       Limit count (default: 20)
+    --json                         Output JSON
+
+  agentx bundle cat <id>          Expand full bundle content
+  Shows: metadata, files (metadata only), transcript (respects detail level), events
+
+  agentx bundle prepare           Show recent context, suggest template
+    --for <agent>                  Prepare for specific agent (default: self)
+    --last-transcript N            Transcript exchanges to suggest (default: 40)
+    --last-events N                Events to scan per category (default: 10)
+    --json                         Output JSON
+    --compact                      Hide how-to section
+  Shows suggested transcript ranges, relevant events, files
+  Outputs ready-to-use bundle create command
+  TIP: Skip 'bundle create' — use bundle flags directly in 'agentx send'
+
+  agentx bundle show <id>         Show bundle by id/prefix
+    --json                         Output JSON
+
+  agentx bundle create "title"    Create bundle (positional or --title)
+    --title <text>                 Bundle title (alternative to positional)
+    --description <text>           Bundle description (required)
+    --events 1,2,5-10              Event IDs/ranges, comma-separated (required)
+    --files a.py,b.py              Comma-separated file paths (required)
+    --transcript RANGES            Transcript with detail levels (required)
+      Format: range:detail (3-14:normal,6:full,22-30:detailed)
+      normal = truncated | full = complete text | detailed = tool I/O+edits+errors
+    --extends <id>                 Parent bundle for chaining
+    --bundle JSON                  Create from JSON payload (format below)
+    --bundle-file FILE             Create from JSON file (format below)
+    --json                         Output JSON
+
+  agentx bundle chain <id>        Show bundle lineage
+    --json                         Output JSON
+
+JSON format:
+  {
+    "title": "Bundle Title",
+    "description": "What happened, decisions, state, next steps",
+    "refs": {
+      "events": ["123", "124-130"],
+      "files": ["src/auth.py", "tests/test_auth.py"],
+      "transcript": ["10-15:normal", "20:full", "30-35:detailed"]
+    },
+    "extends": "bundle:abc123"
+  }
+
+=== agentx bundle list ===
+agentx bundle list              List recent bundles
+    --last N                       Limit count (default: 20)
+    --json                         Output JSON
+
+=== agentx bundle cat ===
+agentx bundle cat <id>          Expand full bundle content
+  Shows: metadata, files (metadata only), transcript (respects detail level), events
+
+=== agentx bundle prepare ===
+agentx bundle prepare           Show recent context, suggest template
+    --for <agent>                  Prepare for specific agent (default: self)
+    --last-transcript N            Transcript exchanges to suggest (default: 40)
+    --last-events N                Events to scan per category (default: 10)
+    --json                         Output JSON
+    --compact                      Hide how-to section
+  Shows suggested transcript ranges, relevant events, files
+  Outputs ready-to-use bundle create command
+  TIP: Skip 'bundle create' — use bundle flags directly in 'agentx send'
+
+=== agentx bundle show ===
+agentx bundle show <id>         Show bundle by id/prefix
+    --json                         Output JSON
+
+=== agentx bundle create ===
+agentx bundle create "title"    Create bundle (positional or --title)
+    --title <text>                 Bundle title (alternative to positional)
+    --description <text>           Bundle description (required)
+    --events 1,2,5-10              Event IDs/ranges, comma-separated (required)
+    --files a.py,b.py              Comma-separated file paths (required)
+    --transcript RANGES            Transcript with detail levels (required)
+      Format: range:detail (3-14:normal,6:full,22-30:detailed)
+      normal = truncated | full = complete text | detailed = tool I/O+edits+errors
+    --extends <id>                 Parent bundle for chaining
+    --bundle JSON                  Create from JSON payload (format below)
+    --bundle-file FILE             Create from JSON file (format below)
+    --json                         Output JSON
+
+JSON format:
+  {
+    "title": "Bundle Title",
+    "description": "What happened, decisions, state, next steps",
+    "refs": {
+      "events": ["123", "124-130"],
+      "files": ["src/auth.py", "tests/test_auth.py"],
+      "transcript": ["10-15:normal", "20:full", "30-35:detailed"]
+    },
+    "extends": "bundle:abc123"
+  }
+
+=== agentx bundle chain ===
+agentx bundle chain <id>        Show bundle lineage
+    --json                         Output JSON
+
+=== agentx kill ===
+Usage:
+  agentx kill <name>...           Kill one or more processes (+ close terminal panes)
+  agentx kill all                 Kill all with tracked PIDs
+    --json                         Print every outcome as one JSON object
+
+=== agentx kill all ===
+Usage:
+  agentx kill all                 Kill all with tracked PIDs
+    --json                         Print every outcome as one JSON object
+
+=== agentx term ===
+Usage:
+  agentx term                     Screen dump (all PTY instances)
+  agentx term [name]              Screen dump for specific agent
+    --json                         Raw JSON output
+      Fields: lines[], size[rows,cols], cursor[row,col], ready, prompt_empty, input_text
+      prompt_empty/input_text are null when no composer is read (not parsed for this tool)
+    --clean                        No status header or line numbers ([name] labels kept for all)
+
+  agentx term inject <name> [text]
+                                  Inject text into agent PTY
+    --enter                        Append \r (submit). Works alone or with text.
+
+  agentx term debug on            Enable PTY debug logging (all instances)
+  agentx term debug off           Disable PTY debug logging
+  agentx term debug logs          List debug log files
+  Instances pick up the toggle within ~10s.
+  Logs: ~/.agentx/.tmp/logs/pty_debug/
+
+=== agentx term inject ===
+agentx term inject <name> [text]
+                                  Inject text into agent PTY
+    --enter                        Append \r (submit). Works alone or with text.
+
+=== agentx term debug ===
+agentx term debug on            Enable PTY debug logging (all instances)
+  agentx term debug off           Disable PTY debug logging
+  agentx term debug logs          List debug log files
+  Instances pick up the toggle within ~10s.
+  Logs: ~/.agentx/.tmp/logs/pty_debug/
+
+=== agentx term debug on ===
+Usage:
+  agentx term debug on            Enable PTY debug logging (all instances)
+
+=== agentx term debug off ===
+Usage:
+  agentx term debug off           Disable PTY debug logging
+
+=== agentx term debug logs ===
+Usage:
+  agentx term debug logs          List debug log files
+  Instances pick up the toggle within ~10s.
+  Logs: ~/.agentx/.tmp/logs/pty_debug/
+
+=== agentx relay ===
+Usage:
+  agentx relay                    Show relay status
+  agentx relay status             Show relay status
+  agentx relay new                Create new relay group
+  agentx relay token              Show join token for other devices
+  agentx relay connect <token>    Join relay group
+  agentx relay on                 Re-enable sync
+  agentx relay off                Disable sync
+    --all                          Also disable on all known peers
+
+Setup:
+  1. 'relay new' to get token
+  2. 'relay connect <token>' on each device
+
+Custom broker:
+  agentx relay new --broker mqtts://host:port --password <broker-auth-secret>
+  agentx relay connect <token> --password <broker-auth-secret>
+
+Daemon:
+  agentx relay daemon             Show daemon status
+  agentx relay daemon start       Start the relay daemon
+  agentx relay daemon stop        Stop the daemon (SIGKILL after 5s)
+  agentx relay daemon restart     Restart the daemon
+
+=== agentx relay status ===
+Usage:
+  agentx relay status             Show relay status
+
+=== agentx relay new ===
+Usage:
+  agentx relay new                Create new relay group
+  agentx relay new --broker mqtts://host:port --password <broker-auth-secret>
+
+=== agentx relay token ===
+Usage:
+  agentx relay token              Show join token for other devices
+
+=== agentx relay connect ===
+Usage:
+  agentx relay connect <token>    Join relay group
+  agentx relay connect <token> --password <broker-auth-secret>
+
+Daemon:
+
+=== agentx relay on ===
+Usage:
+  agentx relay on                 Re-enable sync
+
+=== agentx relay off ===
+Usage:
+  agentx relay off                Disable sync
+    --all                          Also disable on all known peers
+
+Setup:
+  1. 'relay new' to get token
+  2. 'relay connect <token>' on each device
+
+Custom broker:
+
+=== agentx relay daemon ===
+agentx relay daemon             Show daemon status
+  agentx relay daemon start       Start the relay daemon
+  agentx relay daemon stop        Stop the daemon (SIGKILL after 5s)
+  agentx relay daemon restart     Restart the daemon
+
+=== agentx relay daemon start ===
+Usage:
+  agentx relay daemon start       Start the relay daemon
+
+=== agentx relay daemon stop ===
+Usage:
+  agentx relay daemon stop        Stop the daemon (SIGKILL after 5s)
+
+=== agentx relay daemon restart ===
+Usage:
+  agentx relay daemon restart     Restart the daemon
+
+=== agentx run ===
+Usage:
+  agentx run                      List available workflow/launch scripts and more info
+  agentx run <name> [args]        Execute script
+  agentx run <name> --help        Script options
+  agentx run docs                 CLI reference + config + script creation guide
+
+  Docs sections:
+    agentx run docs --cli          CLI reference only
+    agentx run docs --config       Config settings only
+    agentx run docs --scripts      Script creation guide
+
+  User scripts: ~/.agentx/scripts/
+
+=== agentx run docs ===
+Usage:
+  agentx run docs                 CLI reference + config + script creation guide
+
+  Docs sections:
+    agentx run docs --cli          CLI reference only
+    agentx run docs --config       Config settings only
+    agentx run docs --scripts      Script creation guide
+
+  User scripts: ~/.agentx/scripts/
+
+=== agentx update ===
+Usage:
+  agentx update                   Check for and apply updates
+  agentx update --check           Only check — print status without applying
+
+  Detects install method and runs the right update command:
+    brew install    → brew upgrade agentx
+    uv tool install → uv tool upgrade agentx
+    pip install     → pip install -U agentx
+    curl installer  → re-run agentx-installer.sh
+

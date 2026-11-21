@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="24" viewBox="0 0 64 24">
+<title>Brass ground reticle with four open corners</title>
+<defs>
+<radialGradient id="halo"><stop stop-color="#e4ab61" stop-opacity=".32"/><stop offset=".47" stop-color="#e4ab61" stop-opacity=".13"/><stop offset="1" stop-color="#e4ab61" stop-opacity="0"/></radialGradient>
+</defs>
+<g stroke-linecap="round" stroke-linejoin="round" color="#19151e">
+<path d="M2 12 11 5 31 2l21 3 10 6-9 7-21 4-20-3Z" fill="url(#halo)" stroke="#241926" stroke-width="1.55" stroke-opacity=".92"/>
+<path d="m3 12 9-7 7-1m7-1 6-1 6 1m7 1 7 1 9 6m-.2 2-9 5-7 1m-7 1-6 2-6-1m-7-1-7-1-9-6" fill="none" stroke="#f2be76" stroke-width="1.22"/>
+<path d="m14 8 4-.7m32 8-5 .8m-32 .6 4 .7M46 8l4 1" stroke="#ffdf9a" stroke-width=".75" opacity=".73"/>
+</g>
+</svg>

@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "AgentX 上下文侧栏",
+  "version": "1.2.1",
+  "description": "在完整 AgentX Space 中管理办公室和会话，把网页选区、正文或截图加入当前成员草稿。",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "sidePanel",
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "panel.html"
+  },
+  "action": {
+    "default_title": "打开 AgentX 上下文侧栏"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Shift+A"
+      },
+      "description": "打开 AgentX 侧栏并授权当前标签页"
+    }
+  },
+  "content_security_policy": {
+    "extension_pages": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src http: https:; frame-src http: https:; object-src 'none'; base-uri 'none'"
+  }
+}

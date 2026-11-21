@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lunar · Farside office</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --void: #0b132c;
+      --court: #101b32;
+      --edge: #50688d;
+      --hull: #395d95;
+      --rim: #81b2db;
+      --ice: #d9eeff;
+      --muted: #a1b9d8;
+      --panel: #192745;
+      --accent: #ffb578;
+      background: var(--void);
+      color: var(--ice);
+      font: 15px/1.5 system-ui, sans-serif;
+    }
+    body { margin: 0; }
+    main { max-width: 940px; margin: 0 auto; padding: clamp(20px, 5vw, 48px); }
+    header { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+    h1 { font-size: clamp(28px, 5vw, 42px); line-height: 1; margin: 0; }
+    header span { color: var(--accent); }
+    .scene { border: 1px solid var(--edge); display: block; width: 100%; height: auto; box-sizing: border-box; }
+    .courtyard { fill: var(--court); }
+    .hull-shadow { fill: #070f23; }
+    .hull-edge { fill: var(--hull); }
+    .hull-rim { fill: var(--rim); }
+    h2 { margin: 20px 0 9px; font-size: 14px; font-weight: 500; color: var(--muted); }
+    .cast { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+    figure { margin: 0; text-align: center; padding: 8px 0; background: var(--panel); border: 1px solid var(--edge); }
+    figure img { display: block; margin-inline: auto; }
+    figcaption { font-size: 12px; margin-top: 3px; }
+  </style>
+</head>
+<body>
+  <main>
+    <header><h1>Farside office</h1><span>Lunar</span></header>
+    <svg class="scene" viewBox="0 0 824 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Lunar robotics office with observation windows, an orange airlock, six crew members, work consoles, and a lounge">
+      <defs>
+        <pattern id="proof-deck" width="128" height="128" patternUnits="userSpaceOnUse"><image href="floor-oak.svg" width="128" height="128"/></pattern>
+        <pattern id="proof-wall" width="160" height="64" patternUnits="userSpaceOnUse"><image href="wall-plaster.svg" width="160" height="64"/></pattern>
+      </defs>
+      <path class="courtyard" d="M0 0h824v430H0z"/>
+      <image href="human-mailbox.svg" x="73" width="62" height="62"/>
+      <image href="envelope.svg" x="139" y="37" width="24" height="16"/>
+      <g transform="translate(24 60)">
+        <path class="hull-shadow" d="M6 6h776v352H6z"/>
+        <path fill="url(#proof-deck)" d="M0 0h776v352H0z"/>
+        <path fill="url(#proof-wall)" d="M0 0h776v64H0z"/>
+        <path class="hull-edge" d="M0 0h6v346h26v6H0zm770 0h6v352H96v-6h674z"/>
+        <path class="hull-rim" d="M1 0h2v346H1zm770 0h2v346h-2z"/>
+        <image href="rug.svg" x="416" y="144" width="192" height="112"/>
+        <image href="wall-window.svg" x="27" y="1" width="120" height="48"/>
+        <image href="wall-print.svg" x="361" y="1" width="54" height="48"/>
+        <image href="wall-window.svg" x="626" y="1" width="120" height="48"/>
+        <image href="door-threshold.svg" x="32" y="320" width="64" height="32"/>
+        <image href="sofa.svg" x="418" y="61" width="108" height="60"/>
+        <image href="plant.svg" x="732" y="23" width="32" height="46"/>
+        <image href="coffee.svg" x="686" y="60" width="54" height="62"/>
+        <image href="bookshelf.svg" x="626" y="264" width="56" height="64"/>
+        <image href="cabinet.svg" x="694" y="264" width="68" height="64"/>
+        <image href="desk.svg" x="49" y="46" width="86" height="68"/>
+        <image href="stool.svg" x="73" y="104" width="38" height="36"/>
+        <image href="desk.svg" x="169" y="46" width="86" height="68"/>
+        <image href="stool.svg" x="193" y="104" width="38" height="36"/>
+        <image href="desk.svg" x="289" y="46" width="86" height="68"/>
+        <image href="stool.svg" x="313" y="104" width="38" height="36"/>
+        <image href="desk.svg" x="49" y="166" width="86" height="68"/>
+        <image href="stool.svg" x="73" y="224" width="38" height="36"/>
+        <image href="desk.svg" x="169" y="166" width="86" height="68"/>
+        <image href="stool.svg" x="193" y="224" width="38" height="36"/>
+        <image href="desk.svg" x="289" y="166" width="86" height="68"/>
+        <image href="stool.svg" x="313" y="224" width="38" height="36"/>
+        <image href="actor-designer.svg" x="180" y="52" width="64" height="72"/>
+        <image href="glyph-work.svg" x="232" y="69" width="24" height="24"/>
+        <image href="glyph-select.svg" x="400" y="142" width="64" height="24"/>
+        <image href="actor-scout.svg" x="400" y="82" width="64" height="72"/>
+        <image href="glyph-available.svg" x="452" y="99" width="24" height="24"/>
+        <image href="actor-keeper.svg" x="408" y="164" width="64" height="72"/>
+        <image href="glyph-attention.svg" x="460" y="181" width="24" height="24"/>
+        <image href="actor-maker.svg" x="180" y="172" width="64" height="72"/>
+        <image href="glyph-work.svg" x="232" y="189" width="24" height="24"/>
+        <image href="actor-maker.svg" x="300" y="172" width="64" height="72"/>
+        <image href="glyph-work.svg" x="352" y="189" width="24" height="24"/>
+        <image href="actor-keeper.svg" x="474" y="182" width="64" height="72"/>
+        <image href="glyph-available.svg" x="526" y="199" width="24" height="24"/>
+      </g>
+    </svg>
+    <h2>Cast at 64 × 72</h2>
+    <div class="cast">
+      <figure>
+        <img src="actor-maker.svg" alt="Square orange repair robot with heavy boots" width="64" height="72">
+        <figcaption>Maker</figcaption>
+      </figure>
+      <figure>
+        <img src="actor-designer.svg" alt="Ivory robot with a satellite dish and slim legs" width="64" height="72">
+        <figcaption>Designer</figcaption>
+      </figure>
+      <figure>
+        <img src="actor-keeper.svg" alt="Wide violet archive robot with tank tracks" width="64" height="72">
+        <figcaption>Keeper</figcaption>
+      </figure>
+      <figure>
+        <img src="actor-scout.svg" alt="Round orange lander with a blue camera lens" width="64" height="72">
+        <figcaption>Scout</figcaption>
+      </figure>
+    </div>
+  </main>
+</body>
+</html>

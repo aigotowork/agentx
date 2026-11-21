@@ -1,0 +1,24 @@
+---
+schema: task
+status: verified-in-isolation
+description: Remove PTY snapshots and unrelated collision subscribers from the write queue hot path.
+links: ["foreground.task.md", "../pty-poll-pressure.task.md", "../../src/messaging/AGENTS.md"]
+---
+
+The retained project database was inspected read-only using `agentx_sub_kind_v1`: 16 delivery-only rows and 78 matchable unclassified subscriptions. Of the latter, 77 are collision rules (162,984 bytes), and one is another filter (604 bytes). This explains why one real lookup showed 78 candidates but only one predicate; it does not by itself attribute the full 2.20 s incident to SQLite computation.
+
+| Work | Design and completion condition |
+| --- | --- |
+| PTY snapshots | Route the existing `Delivery::Poll` request onto the daemon's read lane using the already covered mailbox route projection. Read actor, mailbox, endpoints and queued recovery from one WAL snapshot. An authenticated successful read records volatile progress only for its exact persistent process registration token. This is diagnostic evidence already consumed by recovery admission; no actor, output authority, or mailbox receipt can be constructed from it. Keep legacy persisted progress readable; existing fenced Heartbeat can carry forward a coarse snapshot timestamp for restart continuity. Old host binaries benefit from the same request routing without wire changes. |
+| Collision selector | For events that cannot trigger a file collision, use a partial index that omits collision subscriptions which need no legacy SQL maintenance, as well as delivery-only entries. Preserve fallback, row order, file-write semantics, old SQL upgrades and replay. Trace the exact new SQL against the observed mix and compare actual VM work separately from sample latency. |
+| Acceptance | Hold the SQLite writer while obtaining an exact read-lane snapshot; assert the journal is unchanged, no impostor or replaced registration can credit progress, and heartbeat can persist it. Exercise the native report/recovery consumers and subscription parity, including legacy upgrade and fallback. Retain exact-generation protection and durable mail effects. No live process changes in this batch. |
+
+The exact old and new candidate queries were run in memory using the subscription rows copied from the retained project database in read-only mode. For a non-file `status` event, candidate count fell from 78 to 1, payload from 163,588 to 604 bytes, and SQLite VM instructions from 2,775 to 48. For `message` and `life`, the same candidate and byte reduction took 41 instructions instead of 2,770. This isolates selection work; it does not measure index creation, WAL writes or live queue latency.
+
+The optional index is built once during daemon initialization. The retained project's database reports an approximately 85 MiB `kv` b-tree; allow for its initial scan and measure startup time as part of any rollout. The ordinary selector falls back to the previous selector if setup or lookup fails.
+
+Linux verification: 59 selected native tests passed, with one real-process acceptance fixture ignored because it requires a fixed standalone executable. Five additional cases passed on the same test binary, covering independent native dispatch, reader/writer generation admission and recover CLI parsing. The delivery fixture held a WAL write transaction while the reader returned only committed mail and recorded progress without changing the durable registration or mailbox cursor. It rejected progress attribution to a different peer and did not carry progress into a replacement token. The heartbeat checkpoint and indexed subscription plan, legacy upgrade, replay and fallback passed. No installed executable or running daemon was changed; real-process Provider recovery and live latency remain unverified for this candidate.
+
+Next, use per-lane queue wait, queue refusals and phase timings to decide whether PTY polling needs separate read capacity. Review ordinary CLI send as the next source of amplification: a claimed-identity session calls `Participants::Resolve`, then send loads full Agent records and calls `Preview` before `Submit`. Both preview and submit route the message and resolve sender identity. Keep the authoritative check in `Submit`. Audit where the preview's broadcast confirmation, workspace checks and feedback are needed before replacing unconditional roster and preview requests. Delivery reports can also be reviewed for read-lane admission after checking their large fan-out cost. Measure these paths before adding new cached identity state or more indexes.
+
+The follow-up [local release](send-release.task.md) supersedes this task's source-only rollout status. It verifies controlled Codex process delivery/recovery and adopts both changes with the directed-send optimization on the two selected local scopes.

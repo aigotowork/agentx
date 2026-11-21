@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>青禾 · 订单协作台</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/layouts/workspace.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="青禾订单协作台首页"><span class="brand-mark" aria-hidden="true">禾</span><span>青禾 <small>订单协作台</small></span></a>
+    <div class="header-tools"><span class="demo-tag">演示订单</span><a id="download-extension" class="download-link" aria-disabled="true">扩展包准备中</a></div>
+  </header>
+  <main class="workspace" id="workspace">
+    <aside class="order-queue" aria-label="售后订单">
+      <div class="section-heading"><h2>待处理</h2><span class="count">3</span></div>
+      <div id="order-list" class="order-list"></div>
+      <div class="queue-footnote">演示数据 · 2026 年 11 月 15 日</div>
+    </aside>
+    <article class="order-detail" aria-labelledby="order-issue">
+      <header class="order-heading">
+        <div><span id="order-id" class="eyebrow"></span><h1 id="order-issue"></h1><p id="customer" class="muted"></p></div>
+        <span id="order-due" class="due-label"></span>
+      </header>
+      <section class="request-block" aria-labelledby="request-title"><div class="section-heading"><h2 id="request-title">客户诉求</h2><span class="badge badge-warm">售后跟进</span></div><p id="customer-request"></p><div class="context-actions"><button id="ask-summary" type="button" class="primary">✦ 分析异常</button><button id="ask-reply" type="button">拟一份客户回复</button></div></section>
+      <section class="items-block" aria-labelledby="items-title"><div class="section-heading"><h2 id="items-title">订单商品</h2><span id="order-amount" class="amount"></span></div><div class="table-scroll"><table><thead><tr><th>商品</th><th>数量</th><th>金额</th><th>履约</th></tr></thead><tbody id="order-items"></tbody></table></div></section>
+      <div class="order-evidence-grid"><section class="events-block" aria-labelledby="events-title"><div class="section-heading"><h2 id="events-title">处理记录</h2><span class="muted">最新在前</span></div><ol id="order-events" class="event-list"></ol></section><section class="policy-block" aria-labelledby="policy-title"><h2 id="policy-title">适用规则</h2><p id="order-policy"></p><button id="ask-policy" type="button" class="text-action">结合规则列出下一步 ↗</button></section></div>
+    </article>
+  </main>
+  <button id="launcher" class="launcher" type="button" aria-controls="assistant" aria-expanded="false"><span aria-hidden="true">✦</span> Agent 协作 <span class="launcher-arrow" aria-hidden="true">↗</span></button>
+  <section id="assistant" class="assistant" role="dialog" aria-label="Agent 上下文协作" hidden>
+    <header class="assistant-heading"><strong>✦ Agent 协作</strong><div><button id="settings-toggle" type="button" aria-expanded="false" aria-controls="connection-details" title="连接信息">连接</button><button id="close-assistant" type="button" aria-label="收起对话" title="收起并保留草稿">×</button></div></header>
+    <div id="connection-details" class="connection-details" hidden><label>AgentX 服务<input id="service-origin" readonly></label><small>更换服务：用 AGENTX_ORIGIN 启动独立示例实例。</small><button id="reconnect" type="button">重新载入 Space（清空子页草稿）</button></div>
+    <div class="conversation-host"><div id="frame-empty" class="frame-empty"><span class="empty-symbol" aria-hidden="true">✦</span><strong>完整 Space 正在加载</strong><span>可在 Space 中切换办公室场景、列表和成员对话。</span></div><iframe id="agent-frame" title="真实 AgentX 对话" hidden></iframe></div>
+    <div class="context-intake" id="context-intake"><div class="capture-summary" id="capture-summary" hidden><span id="capture-title"></span><button id="clear-capture" type="button" aria-label="清除待添加上下文">×</button></div><div class="intake-actions"><button id="ask-selection" type="button" title="捕获订单页面选中文字">选中文字</button><button id="rebind-context" type="button" disabled>关联当前对话</button><button id="add-context" type="button" disabled>加入草稿</button></div><p id="bridge-status" role="status">正在连接 Space…</p></div>
+  </section>
+</body>
+</html>

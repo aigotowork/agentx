@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "system": "space",
+  "id": "space/scene-anchors",
+  "kind": "block",
+  "title": "场景对象锚点",
+  "summary": "场景对象锚点 · 与真实 Space 共享实现",
+  "maturity": "experimental",
+  "source": [
+    "./blocks/SceneObjectLayer.tsx"
+  ],
+  "design": "./anchors.design.md",
+  "useWhen": [
+    "操作和检查实际 Space 场景对象锚点"
+  ],
+  "avoidWhen": [
+    "不要把本地演示结果当作原生操作或最终验收"
+  ],
+  "dependencies": [
+    "space/controls"
+  ],
+  "events": [],
+  "states": [
+    {
+      "id": "default",
+      "title": "Canvas 上的真实锚点",
+      "description": "Canvas 上的真实锚点；真实组件，本地演示",
+      "scene": "default"
+    }
+  ],
+  "interactions": [],
+  "scenes": [
+    {
+      "id": "default",
+      "title": "Canvas 上的真实锚点",
+      "description": "Canvas 上的真实锚点；真实组件，本地演示",
+      "kind": "overview"
+    }
+  ],
+  "usage": {
+    "entry": "./space.web.ts",
+    "symbols": [
+      "SceneObjectLayer",
+      "ActorAnchor"
+    ]
+  }
+}

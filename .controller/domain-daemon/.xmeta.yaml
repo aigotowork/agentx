@@ -1,0 +1,33 @@
+---
+schema: package
+description: Planning and execution records for the AgentX domain-driven daemon outcome.
+artifacts:
+  - {kind: task, path: ./tasks/flow-atlas-experience.md, description: Scenario-led visual and interaction refinement with a separate usable prototype.}
+  - {kind: task, path: ./tasks/flow-atlas-experience-design.md, description: Specialist canvas product design and source-native interaction prototype.}
+  - {kind: delivery, path: ./flow-atlas-workbench-implementation.md, description: Domain-model workbench implementation and independent outcome acceptance.}
+  - {kind: task, path: ./tasks/flow-atlas-domain-core.md, description: Domain contracts/compiler/state/dataflow and source-bound examples.}
+  - {kind: task, path: ./tasks/flow-atlas-domain-ui.md, description: Offline domain design workspace and linked diagram interactions.}
+  - {kind: task, path: ./tasks/flow-atlas-domain-acceptance.md, description: Independent domain/native/offline/browser verification and demo.}
+  - {kind: task, path: ./tasks/flow-atlas-workbench.md, description: Domain design workbench model and product refinement.}
+  - {kind: task, path: ./tasks/flow-atlas-workbench-semantics.md, description: Isolated domain-model semantic analysis.}
+  - {kind: task, path: ./tasks/flow-atlas-viewport.md, description: Container-sized canvas navigation and explicit lint maintenance.}
+  - {kind: delivery, path: ./flow-atlas-implementation.md, description: Source-linked TS design lint and draggable offline layout implementation.}
+  - {kind: task, path: ./tasks/flow-atlas-ts-authoring.md, description: TS authoring and process-to-code correspondence.}
+  - {kind: task, path: ./tasks/flow-atlas-layout.md, description: Independent layout editing and explicit route feedback.}
+  - {kind: delivery, path: ./flow-atlas-design.md, description: General-purpose domain/process visualization design and typed contract outcome.}
+  - {kind: task, path: ./tasks/flow-atlas-platform-design.md, description: Product/architecture/contracts and spatial interaction design with official source evidence.}
+  - {kind: task, path: ./tasks/runtime-atlas-ports.md, description: Object ports and explicit call/outcome/effect demonstration.}
+  - {kind: task, path: ./tasks/runtime-atlas-ports-core.md, description: Optional generic port schema and pure call projections.}
+  - {kind: task, path: ./tasks/runtime-atlas-multiview.md, description: Readable pacing and synchronized diagrams over one reusable model.}
+  - {kind: task, path: ./tasks/runtime-atlas-tool.md, description: Generic finite trace model core and offline builder.}
+  - {kind: delivery, path: ./runtime-atlas.md, description: Interactive source-grounded process/module/communication and lifecycle atlas.}
+  - {kind: delivery, path: ./startup-usability.md, description: Bounded development cold-start, stale-build recovery and everyday workbench entry.}
+  - {kind: document, path: ./startup-evidence.md, description: Canonical independent fixed-input startup attempts, artifacts and cleanup.}
+  - {kind: guidance, path: ./AGENTS.md, description: Shared invariants and six professional role/method routes.}
+  - {kind: guidance, path: ./orchestration.md, description: User-selected Paseo team management and safe checkpoint/transfer protocol.}
+  - {kind: design, path: ./team-design.md, description: Professional split and workflow rationale from user and Agent perspectives.}
+  - {kind: feedback, path: ./feedback.md, description: Actual collaboration friction and its owned disposition.}
+  - {kind: delivery, path: ./delivery.md, description: Stages and acceptance boundary for design and implementation.}
+  - {kind: task, path: ./tasks/architecture.md, description: Current source-grounded architecture assessment and active next action.}
+  - {kind: controller, path: ./controller.md, description: Coordination scope and slice assignment rules for this Delivery.}
+  - {kind: task, path: ./tasks/runtime-atlas-motion-ui.md, description: Visible event flow and compact playback follow-up for the runtime atlas.}

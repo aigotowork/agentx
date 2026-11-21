@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="68" height="64" viewBox="0 0 68 64">
+  <defs>
+    <linearGradient id="ceramic" x2=".25" y2="1">
+      <stop stop-color="#afcae1"/>
+      <stop offset=".56" stop-color="#7793b6"/>
+      <stop offset="1" stop-color="#465d89"/>
+    </linearGradient>
+  </defs>
+  <path fill="#111d37" opacity=".6" d="M8 48h49l10 10-8 5H9l-8-5z"/>
+  <g stroke="#111e39" stroke-width="1.35" stroke-linejoin="round">
+    <path fill="#25385e" d="M9 44h50v13l-5 4H12l-6-5z"/>
+    <path fill="#3b5079" d="M5 16 14 7h42l9 10v31l-8 8H11l-8-8z"/>
+    <path fill="url(#ceramic)" d="M5 15 14 7h39l8 8v30l-9 8H12l-9-8z"/>
+    <path fill="#7997b5" d="m6 15 9-7h37l7 7-7 4H14z"/>
+    <path fill="#274163" d="M12 21h41v27H12z"/>
+    <path fill="#59769a" d="M14 23h37v10H14zm0 13h37v10H14z"/>
+    <path fill="#18233e" d="M23 26h19v4H23zm0 13h19v4H23z"/>
+  </g>
+  <path fill="#ffb76d" d="M25 27h15v2H25zm0 13h15v2H25zm29 13h3v4h-3zm-43 0h3v4h-3z"/>
+  <path d="M16 11h34M6 19v24m50-2v-17m-37 1h-3m3 13h-3m34 8h-8" stroke="#c7dfec" stroke-opacity=".74" fill="none"/>
+  <path fill="#97edd4" d="M47 27h3v2h-3z"/>
+</svg>

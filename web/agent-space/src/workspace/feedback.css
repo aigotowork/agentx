@@ -1,0 +1,58 @@
+.space-window-sound {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-inline-size: var(--touch);
+  min-block-size: var(--touch);
+  white-space: nowrap;
+}
+
+.space-window-sound[aria-pressed="true"] {
+  background: var(--surface-selected);
+  color: var(--accent);
+}
+
+.space-window-sound svg {
+  inline-size: var(--icon-size);
+  block-size: var(--icon-size);
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--focus-width);
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .space-window-pane,
+  .space-window-shelf {
+    --space-window-cue-enter: 200ms;
+    --space-window-cue-park: 120ms;
+    --space-window-cue-offset: var(--space-1, 4px);
+    --space-window-cue-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* The action marker is deliberate and exact; the reader and its scroller stay still. */
+  .space-window-pane[data-window-motion="open"] [data-window-motion-header] {
+    animation: space-window-settle-from-top var(--space-window-cue-enter) var(--space-window-cue-ease);
+  }
+
+  .space-window-pane[data-window-motion="restore"] [data-window-motion-header] {
+    animation: space-window-settle-from-shelf var(--space-window-cue-enter) var(--space-window-cue-ease);
+  }
+
+  .space-window-shelf [data-window-motion="minimize"] {
+    animation: space-window-settle-from-top var(--space-window-cue-park) var(--space-window-cue-ease);
+  }
+}
+
+@keyframes space-window-settle-from-top {
+  from { translate: 0 calc(-1 * var(--space-window-cue-offset)); }
+  to { translate: 0 0; }
+}
+
+@keyframes space-window-settle-from-shelf {
+  from { translate: 0 var(--space-window-cue-offset); }
+  to { translate: 0 0; }
+}

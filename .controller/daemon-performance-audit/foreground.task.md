@@ -1,0 +1,13 @@
+---
+schema: task
+status: verified-in-isolation
+description: Skip unchanged foreground views and remove automatic receipt writes from the writer queue.
+links: ["implementation.task.md", "../daemon-io-isolation.task.md"]
+---
+
+- Start with a server-side cache shared across clients and no new protocol. The daemon-owned read lane samples `PRAGMA data_version` before the read snapshot and drops cached database projections on any observed commit. It caches only successful exact-query roster, detail, mailbox and office-activity projections for up to eight seconds (status can age without a commit). Scope is implicit in the owning connection, the key includes generation and all request arguments, and generation is checked even on hits. File binding data is still read from its independent published projection after the database snapshot. Cached entry count and serialized size are bounded. Frequent writers can reduce hits; a finer HTTP invalidation hint is separate work.
+- Operation GET observes the retained journal under the read lane, projecting an expired/disappeared worker as Unknown without changing the journal. Submission/replay/claim retain durable reconciliation and exact worker ownership. Release the SQLite read snapshot before probing process liveness. A late legitimate completion can still supply its original result.
+
+Read-only project sample after the previous isolation adoption: 7,726 lifetime native admissions and 559 Busy refusals; both queues were idle at sampling. In the newest 1 MB of the scoped log, `ManagementList` still reached 2,550 ms application time; `DeliveryPoll` reached 1,020 ms application time and 2,210 ms queue wait. A 2,619 ms `ObserveModelRequest` included 2,198,977 µs of subscription candidate lookup, while another 1,595 ms call spent 932,599 µs committing. These are individual samples on the adopted binary; they cannot establish a steady-state rate or explain every refusal. Prioritize old PTY host cadence and splitting exact delivery reads from durable heartbeat/progress writes, then measure candidate selection against the exact `kv` population. Keep acceptance/receipt effects transactional.
+
+The focused native run passed 39 of 40 cases on first execution. The cache fixture demonstrated no second load for an unchanged version, immediate refresh after an actual WAL commit and expiry without a database commit. The receipt fixture observed Unknown without modifying the journal, rejected a stale Claim, and retained replay semantics; existing native IPC and generation cases passed. An existing worker supervision fixture exceeded its 500 ms budget in the combined run, then passed when run alone on the same binary. The source changes were not deployed or used to produce the live sample above.

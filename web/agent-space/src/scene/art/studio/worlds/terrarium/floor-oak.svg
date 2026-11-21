@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <pattern id="limestone" width="128" height="128" patternUnits="userSpaceOnUse">
+      <path fill="#decc9d" d="M0 0h128v128H0z"/>
+      <path fill="#e5d4a8" d="M1 1h62v29H1zm64 33h62v29H65zM33 66h62v29H33zM1 98h62v29H1z"/>
+      <path fill="#d5be8f" d="M65 1h62v29H65zM1 34h62v29H1zm96 32h31v29H97zM0 66h31v29H0zm65 32h62v29H65z" opacity=".55"/>
+      <path fill="none" stroke="#bda980" opacity=".66" d="M0 .5h128M0 32.5h128M0 64.5h128M0 96.5h128M.5 0v65m64 0V0m-32 65v32m64-32v32M.5 97v31m64-31v31"/>
+      <path fill="none" stroke="#fff1c7" opacity=".54" d="M2 2.5h60m4 32h60m-92 32h60m-92 32h60m5 0h58M2 34.5h60m4-32h60"/>
+      <path fill="#b8986d" opacity=".25" d="m17 13 16 1-12 1Zm66 7 29-3-5 3Zm-77 27 28 1-10 2Zm87 3 15-1 9 2Zm-38 31 23 1-6 2Zm-45-7 10 2-10 1Zm91 7 16 1-5 2ZM16 116l24-3-3 3Zm63-4 23 3-13 1Z"/>
+    </pattern>
+  </defs>
+  <path fill="url(#limestone)" d="M0 0h128v128H0z"/>
+</svg>

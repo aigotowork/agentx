@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "system": "recovery",
+  "id": "recovery/kit",
+  "kind": "component",
+  "title": "经典恢复控件",
+  "summary": "独立DOM系统的真实按钮、页签与状态组合。",
+  "maturity": "stable",
+  "source": [
+    "./kit.web.tsx",
+    "./kit.styles.css",
+    "./foundation.tokens.css"
+  ],
+  "design": "./kit.design.md",
+  "useWhen": [
+    "维护经典独立恢复界面的同一基础控件。"
+  ],
+  "avoidWhen": [
+    "不能据此推断恢复授权或合并原生kit。"
+  ],
+  "dependencies": [],
+  "events": [
+    {
+      "name": "press",
+      "description": "本地按钮点击"
+    },
+    {
+      "name": "change",
+      "description": "受控页签变化"
+    }
+  ],
+  "states": [
+    {
+      "id": "ready",
+      "title": "可操作",
+      "description": "接受明确的本地交互。",
+      "scene": "default"
+    }
+  ],
+  "interactions": [
+    {
+      "id": "press",
+      "title": "本地操作",
+      "trigger": "pointer / Enter / Space",
+      "from": "ready",
+      "to": "ready",
+      "events": [
+        "press"
+      ],
+      "scene": "default",
+      "result": "本地计数与事件更新。",
+      "interruption": "disabled / busy 不执行。"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "default",
+      "title": "经典控件搭配",
+      "description": "相同DOM组件，隔离主题。",
+      "kind": "interaction"
+    }
+  ],
+  "usage": {
+    "entry": "./recovery.web.ts",
+    "symbols": [
+      "Button",
+      "Tabs",
+      "Badge"
+    ]
+  }
+}

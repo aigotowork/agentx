@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "system": "inspector",
+  "id": "inspector/themes",
+  "kind": "theme",
+  "title": "语义主题",
+  "summary": "基础值到语义角色的一次解析，组件主题与 CSS 变量同源。",
+  "maturity": "stable",
+  "source": [
+    "./theme.tokens.json",
+    "./theme.resolve.ts"
+  ],
+  "design": "./themes.design.md",
+  "useWhen": [
+    "基础值到语义角色的一次解析，组件主题与 CSS 变量同源。"
+  ],
+  "avoidWhen": [
+    "不要将样例结果解释为业务事实或权限。"
+  ],
+  "dependencies": [
+    "inspector/foundations"
+  ],
+  "events": [],
+  "states": [],
+  "interactions": [],
+  "scenes": [
+    {
+      "id": "default",
+      "title": "真实资源预览",
+      "description": "基础值到语义角色的一次解析，组件主题与 CSS 变量同源。",
+      "kind": "overview"
+    }
+  ],
+  "usage": {
+    "entry": "../inspector.theme.ts",
+    "symbols": [
+      "resolveDesignSystem"
+    ]
+  }
+}

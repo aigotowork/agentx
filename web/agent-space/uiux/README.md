@@ -1,0 +1,20 @@
+# Space UIUX resources
+
+For Lunar, Terrarium and Newsprint, see [the full-world comparisons](../../../.controller/space-ui-styles/worlds/design.md#authored-resources-and-preview). Design Canvas renders the actual Studio world, contact selection and local reader. The same art packs and presentation rules are used by Space.
+
+For the two experimental Space styles, open [the candidate design and live comparison](systems/space/candidates.design.md). The [candidate catalogue](candidates.json) points to the same conversation and command components used by the application; the host workbench and default Space theme remain light.
+
+The [accepted local outcome](../../../.controller/office-details/space-uiux.task.md#accepted-local-outcome) and [independent evidence](../../../.controller/office-details/space-uiux-verification.task.md#final-independent-outcome-after-structural-repair-35570) establish actual product integration and UIUX scene loading within finite Linux Chrome/light-theme scope. API/receipt responses were simulated and IME checks synthetic; live LAN/native adoption is separate.
+
+Space keeps one presentation source for the product and UIUX workbench. The representative whole is the office shell: exact Agent identity and navigation, the existing Canvas world, the conversation reader, and its controlled composer. Product state and native effects remain in `src/App.tsx`, `src/offline/controller.ts`, and `src/live/controller.ts`; UIUX scenes use deterministic local fixtures and never send or mutate native state.
+
+Run `uiux check web/agent-space` from the repository root. The system entry is `uiux/uiux.config.tsx`; maintained resources live under `uiux/systems/space/`.
+
+
+The public runtime entry is `systems/space/space.web.ts`. Load `systems/space/styles/index.css` once and wrap the consumer in `SpaceTheme`. Existing `src/layouts`, `src/FactButton`, and `src/interactions/SpaceInteractions` entries are compatibility imports; they do not maintain a second implementation. `src/conversation/Conversation.tsx` adapts native capabilities/receipts into `ConversationBlock` and `ConversationComposer`. `HallScene` passes its exact keys, gesture handlers and frame-owned refs to `ActorAnchor`; `SceneSpace` consumes `SceneControls`, and `ExpandedObject` adapts its geometry into `ObjectWindow`. HumanMailbox supplies safe Markdown and native feed callbacks to `HumanMailboxBlock`.
+
+`styles/foundation.css` owns the supported light theme's foundation and semantic aliases. The scoped style families preserve the existing appearance; width rules use the actual `space-shell` container. Shared conversation target sizes, popup roles and composer constraints come from `styles/foundation.css` and `styles/conversation-layout.css`; skins map those roles, and the composer owns the runtime drag height. CSS `@scope` and container queries require a current browser. No dark theme or visual source-token editor is claimed.
+
+From the repository root, use `uiux dev web/agent-space --port 18973` on a free, task-owned port. The CLI reports actual reachable addresses. `uiux build web/agent-space` generates only `uiux/dist` for the independent static workbench check; it is not a Space product build or live adoption. The installed global UIUX loader resolves its own `@longwork/uiux` scene/config imports and the root's React 19 peers. The product runtime public entry has no UIUX-tool runtime import. Product TypeScript checks cover runtime resources; the independent UIUX build must compile scene/config imports.
+
+Start at the complete board, then inspect Composer success/failure/unknown/pending, conversation empty/unavailable/error, controls/facts, window return and mailbox handling. Outcome controls are explicit local simulations, never live operation evidence. The Canvas scene uses the actual runtime/debug facade. Reset is deliberate and clears only local fixtures. Independent verification must operate actual Space send success/failure/unknown, recovery, draft revision fencing, empty-draft attachment addition, IME and mixed text/file paste, narrow shell, overlay return and Canvas/debug continuity.

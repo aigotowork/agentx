@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="64" viewBox="0 0 160 64">
+  <defs><linearGradient id="plaster" x2="0%" y2="100%"><stop stop-color="#958abb"/><stop offset=".67" stop-color="#a79dc9"/><stop offset=".75" stop-color="#716990"/><stop offset="1" stop-color="#514a77" stop-opacity="0"/></linearGradient></defs>
+  <path d="M0 0h160v64H0z" fill="url(#plaster)"/>
+  <path d="M0 2h160M0 45h160" stroke="#deccd9" stroke-width="1" opacity=".65"/>
+  <path d="M0 48h160" stroke="#413b65" stroke-width="2" opacity=".7"/>
+  <path d="M7 16q19-11 38 0t40 0m24 14q21-11 45-1M29 35q14-7 28-1" fill="none" stroke="#d2bee2" opacity=".24" stroke-linecap="round"/>
+  <path d="m54 20 2 3-2 3-2-3zm43-8 1 2-1 2-1-2zm39 18 2 3-2 3-2-3z" fill="#f9dcbb" opacity=".49"/>
+</svg>

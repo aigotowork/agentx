@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="38" height="36" viewBox="0 0 38 36" stroke-linejoin="round" stroke-linecap="round">
+<title>Riveted dahlia stool</title>
+<defs>
+<linearGradient id="bronze" x2="1" y2="1"><stop offset="0" stop-color="#ffe2a1"/><stop offset="0.25" stop-color="#cc996e"/><stop offset="0.5" stop-color="#754353"/><stop offset="0.7" stop-color="#512f45"/><stop offset="1" stop-color="#a45e64"/></linearGradient><linearGradient id="lacquer" x2="1" y2="1"><stop offset="0" stop-color="#d38f77"/><stop offset="0.29" stop-color="#a45658"/><stop offset="0.58" stop-color="#593246"/><stop offset="1" stop-color="#30263a"/></linearGradient><linearGradient id="red" x2="1" y2="1"><stop offset="0" stop-color="#edac87"/><stop offset="0.25" stop-color="#b76665"/><stop offset="0.64" stop-color="#73374e"/><stop offset="1" stop-color="#37263a"/></linearGradient><radialGradient id="shadow" cx=".36" cy=".32" r=".77"><stop offset="0" stop-color="#090e1a" stop-opacity=".8"/><stop offset="0.5" stop-color="#141724" stop-opacity=".56"/><stop offset="1" stop-color="#0b1020" stop-opacity="0"/></radialGradient>
+
+</defs>
+<ellipse cx="19" cy="32" rx="17" ry="4" fill="url(#shadow)"/>
+<g transform="translate(9.5 16)">
+<path d="M-3 0H3L2.4 15 3.5 17 2.5 18H-2.7L-3.4 17-2.3 15Z" fill="url(#bronze)" stroke="#192332" stroke-width="1"/>
+<path d="M-1.7 1-1.1 14" fill="none" stroke="#e6bc9b" stroke-width="0.53"/>
+<path d="M-1.5 14H2.1" fill="none" stroke="#5f3d53" stroke-width="0.9"/></g>
+<g transform="translate(28.5 16)">
+<path d="M-3 0H3L2.4 15 3.5 17 2.5 18H-2.7L-3.4 17-2.3 15Z" fill="url(#bronze)" stroke="#192332" stroke-width="1"/>
+<path d="M-1.7 1-1.1 14" fill="none" stroke="#e6bc9b" stroke-width="0.53"/>
+<path d="M-1.5 14H2.1" fill="none" stroke="#5f3d53" stroke-width="0.9"/></g>
+<g transform="translate(19 16)">
+<path d="M-3 0H3L2.4 13 3.5 15 2.5 16H-2.7L-3.4 15-2.3 13Z" fill="url(#bronze)" stroke="#192332" stroke-width="1"/>
+<path d="M-1.7 1-1.1 12" fill="none" stroke="#e6bc9b" stroke-width="0.53"/>
+<path d="M-1.5 12H2.1" fill="none" stroke="#5f3d53" stroke-width="0.9"/></g>
+<path d="M10 25H28L26 29H12Z" fill="url(#lacquer)" stroke="#192332" stroke-width="1"/>
+<path d="M13 26H25" fill="none" stroke="#d4a080" stroke-width="0.8"/>
+<path d="M3 13q2-9 16-9t16 9v7q-16 8-32 0Z" fill="url(#bronze)" stroke="#192332" stroke-width="1"/>
+<path d="M3 13q1-8 16-8 13 0 16 8-4 7-16 7-13 0-16-7Z" fill="url(#red)" stroke="#192332" stroke-width="1"/>
+<path d="M6 12q2-5 13-5t13 5M5 17q15 8 28 0" fill="none" stroke="#e6a391" stroke-width="0.72"/>
+<g transform="translate(19 12) scale(0.6)">
+<path d="M0-5Q4-3 0 2Q-4-3 0-5ZM0 2Q-2-2-6-1Q-5 3 0 4Q5 3 6-1Q2-2 0 2Z" fill="#d6a387"/>
+<ellipse cx="0" cy="4" rx="0.65" ry="0.65" fill="#ffdf99"/></g>
+<ellipse cx="10" cy="21" rx="0.63" ry="0.63" fill="#ecd1a2" stroke="#192332" stroke-width="0.38"/>
+<ellipse cx="16" cy="21" rx="0.63" ry="0.63" fill="#ecd1a2" stroke="#192332" stroke-width="0.38"/>
+<ellipse cx="22" cy="21" rx="0.63" ry="0.63" fill="#ecd1a2" stroke="#192332" stroke-width="0.38"/>
+<ellipse cx="28" cy="21" rx="0.63" ry="0.63" fill="#ecd1a2" stroke="#192332" stroke-width="0.38"/>
+</svg>

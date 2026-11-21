@@ -1,0 +1,31 @@
+{
+  "source": ".docs/codex-activation/acceptance.md",
+  "clientRequests": [
+    {"id": 1, "method": "thread/read", "params": {"threadId": "root-a", "includeTurns": true}},
+    {"id": "1", "method": "thread/read", "params": {"threadId": "root-b", "includeTurns": true}},
+    {"id": -9223372036854775808, "method": "fixture/futureMethod", "params": {"id": 1, "nested": {"requestId": "1", "opaque": "保留\\n\"literal\""}}},
+    {"id": 9223372036854775807, "method": "turn/interrupt", "params": {"threadId": "root-a", "turnId": "turn-a"}},
+    {"id": "agentx:internal:1", "method": "thread/list", "params": {}},
+    {"id": "中文😀\"\\\n", "method": "fixture/futureMethod", "params": {"futureField": [null, false, {"id": "untouched"}]}},
+    {"id": "", "method": "thread/read", "params": {"threadId": "root-a"}}
+  ],
+  "serverRequests": [
+    {"id": 1, "method": "item/commandExecution/requestApproval", "params": {"threadId": "root-a", "turnId": "turn-a", "itemId": "tool-a", "command": "fixture-only"}},
+    {"id": "1", "method": "item/tool/requestUserInput", "params": {"threadId": "root-a", "turnId": "turn-a", "itemId": "tool-b", "questions": []}},
+    {"id": -9223372036854775808, "method": "item/tool/call", "params": {"threadId": "root-a", "turnId": "turn-a", "tool": "fixture_echo", "arguments": {}}},
+    {"id": "agentx:internal:1", "method": "fixture/futureServerRequest", "params": {"threadId": "root-b", "requestId": 1, "future": true}}
+  ],
+  "resolvedNotifications": [
+    {"method": "serverRequest/resolved", "params": {"threadId": "root-a", "requestId": 1}},
+    {"method": "serverRequest/resolved", "params": {"threadId": "root-a", "requestId": "1"}}
+  ],
+  "receiptCounterexamples": [
+    {"case": "rpc-success-only", "message": {"id": "internal", "result": {"turn": {"id": "turn-a", "status": "inProgress"}}}, "commits": false},
+    {"case": "empty-completion", "message": {"method": "turn/completed", "params": {"threadId": "root-a", "turn": {"id": "turn-a", "items": [], "status": "completed"}}}, "commits": false},
+    {"case": "wrong-thread", "message": {"method": "item/completed", "params": {"threadId": "root-b", "turnId": "turn-a", "item": {"type": "userMessage", "clientId": "batch-a", "content": [{"type": "text", "text": "frozen batch α"}]}}}, "commits": false},
+    {"case": "wrong-client-id", "message": {"method": "item/completed", "params": {"threadId": "root-a", "turnId": "turn-a", "item": {"type": "userMessage", "clientId": "batch-b", "content": [{"type": "text", "text": "frozen batch α"}]}}}, "commits": false},
+    {"case": "wrong-content", "message": {"method": "item/completed", "params": {"threadId": "root-a", "turnId": "turn-a", "item": {"type": "userMessage", "clientId": "batch-a", "content": [{"type": "text", "text": "partial batch"}]}}}, "commits": false},
+    {"case": "started-only", "message": {"method": "item/started", "params": {"threadId": "root-a", "turnId": "turn-a", "item": {"type": "userMessage", "clientId": "batch-a", "content": [{"type": "text", "text": "frozen batch α"}]}}}, "commits": false},
+    {"case": "exact-record", "message": {"method": "item/completed", "params": {"threadId": "root-a", "turnId": "turn-a", "item": {"type": "userMessage", "clientId": "batch-a", "content": [{"type": "text", "text": "frozen batch α"}]}}}, "commits": true}
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "format": 1,
+  "sections": [
+    "Common",
+    "Roadmap",
+    "Proposal",
+    "Task",
+    "Delivery",
+    "Controller",
+    "Task Meta",
+    "Package",
+    "Module",
+    "Other Types",
+    "Consumption Boundary"
+  ],
+  "adaptation": "Select documented sections, rewrite local reading routes, include entity declarations. Source paths are provenance, not consumer dependencies.",
+  "sources": [
+    {
+      "path": "../xschema/xschema/.docs/agent-guides/AGENTS.md",
+      "sha256": "c7efb7955a2b43d5ccedac3e21d7bdf8905c2b4d042c6c6740470da2e2da3777"
+    },
+    {
+      "path": "../xschema/xschema/.docs/agent-guides/controller.md",
+      "sha256": "ebf14da9a664cc27a84f75d2113da8a899ee5e155a34ad989d3395a08b6b8a25"
+    },
+    {
+      "path": "../xschema/xschema/schema/README.md",
+      "sha256": "cc46444a028be135596424458ac3cff70383575b7e50f7f7e43ad25531413c2d"
+    },
+    {
+      "path": "../xschema/xschema/.docs/designs/resource-scopes/sources.md",
+      "sha256": "00bbbf2d64f252de0777a10f88246596bc8e8d42f23847dae7d320a18ade3e25"
+    },
+    {
+      "path": "../xschema/xschema/schema/entities/common.schema.yaml",
+      "sha256": "fe9d1698c65c2bbf2171c53468876b4dec873571ba2be9f6405135cc7ff4515c"
+    },
+    {
+      "path": "../xschema/xschema/schema/entities/controller.schema.yaml",
+      "sha256": "2b5679149814477f1a20a699af83f09571c20223120c1ab2ee6e2a8a08306f2b"
+    },
+    {
+      "path": "../xschema/xschema/schema/entities/delivery.schema.yaml",
+      "sha256": "86ca15febd6c74eb398bd0e9a9a00b50d58e2b5f112751141155af192170e2a9"
+    },
+    {
+      "path": "../xschema/xschema/schema/entities/document.schema.yaml",
+      "sha256": "1ba7f72fc8acdaa76b8bc9520edf4fb7e15175146a398919e98cfaba75d17b10"
+    },
+    {
+      "path": "../xschema/xschema/schema/entities/example.schema.yaml",
+      "sha256": "7d9197c1af3f9e845d4d60c504fa3fdb97e7ee5b91c996eea4924119929c6f0a"
+    },
+    {
+      "path": "../xschema/xschema/schema/entities/module.schema.yaml",
+      "sha256": "8e266abc08c559127736142201ab03f5f9200b64a68bd0780c0970c73c6d8ba9"
+    },
+    {
+      "path": "../xschema/xschema/schema/entities/package.schema.yaml",
+      "sha256": "24df19e38e73abb39b49ab46d628e1dcae3167e74fe7294814aede39ddda0bd5"
+    },
+    {
+      "path": "../xschema/xschema/schema/entities/proposal.schema.yaml",
+      "sha256": "732d857a1d129f21c94883e6bd042252052bc60b50cda0db34586e86c3dd4efc"
+    },
+    {
+      "path": "../xschema/xschema/schema/entities/roadmap.schema.yaml",
+      "sha256": "108bbc439f500d47b316a119e4a0edd6ec3c423901d67e7eb25d3c5ab9af2156"
+    },
+    {
+      "path": "../xschema/xschema/schema/entities/role.schema.yaml",
+      "sha256": "6188f838db96ffbb1a1707e9542b9a872f8a998f12ba2ffd164a517dac86b1d7"
+    },
+    {
+      "path": "../xschema/xschema/schema/entities/scenario.schema.yaml",
+      "sha256": "b9be44b8747682f06aa315e50eb00445d085ca8cf78a738aec86971a857089fa"
+    },
+    {
+      "path": "../xschema/xschema/schema/entities/skill.schema.yaml",
+      "sha256": "dab6534b90deab57844b9b19e60710fcb01e78430f1d925a2d1c438788cfed8e"
+    },
+    {
+      "path": "../xschema/xschema/schema/entities/task-meta.schema.yaml",
+      "sha256": "530b12e9c471b48d2ea209d05b6682074ed41cd906e32849afd396cc9b4affa8"
+    },
+    {
+      "path": "../xschema/xschema/schema/entities/task.schema.yaml",
+      "sha256": "23faf382c43604d67335acd9153fe92304f7629f8dd16d9ff8e7d04e894361fc"
+    },
+    {
+      "path": "../xschema/xschema/schema/entity.schema.yaml",
+      "sha256": "0b76ce4618aef37b76c8da429b054a2fdebc406f0190d69091cd19bacb557be5"
+    },
+    {
+      "path": "../xschema/xschema/schema/protocol.schema.yaml",
+      "sha256": "0845a244b52b8f8ee2aaf15ba7f206080aaa27eba35b010c24ba8e313a4a754c"
+    }
+  ]
+}

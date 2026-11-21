@@ -1,0 +1,48 @@
+# Independent workbench outcome fixtures
+
+Owner: [acceptance Task](../../.controller/collaboration-workbench/tasks/acceptance.md). The [experience](../../.docs/collaboration-workbench/experience.md#唯一场景源与四张图) owns S1–S5; this file binds those nodes to a disposable actual repository and meaningful outcome checks. Native and Web authors own their unit/component/state cases. This is designed coverage, not executed evidence; the [canonical evidence](../../.controller/collaboration-workbench/evidence/acceptance.md) owns actual attempts.
+
+## Actual task and responsibility boundaries
+
+The operator creates a CSV export repair task in a new temporary Git repository. The repository contains three JSON orders with commas, double quotes, newlines and Chinese text, a deliberately deficient existing exporter, and an executable independent criterion probe. Both roles are actual product-launched Agents; the implementer owns exporter changes and immutable result publication, while the checker independently verifies the named revision and reports check evidence without modifying source. No development-team Paseo identity is reused as a product actor.
+
+Initial publication is an explicitly requested baseline diagnosis: preserve the existing exporter at an immutable Git commit, ask the operator which overwrite policy to implement, then publish that baseline truthfully after the answer. This baseline is expected to fail useful criteria. The operator answers that overwrite requires explicit `--force`; the checker establishes the baseline defects against that exact commit; the operator returns the result with those findings. The implementer repairs it and publishes a new immutable commit plus artifact fingerprints. The independent checker verifies the new result. Only the explicit operator action accepts that exact result/check/brief tuple. A baseline check failure is intentional fixture work, never a failed product check converted to a pass.
+
+Criteria, with stable IDs bound to the released native brief format:
+
+| Criterion | Independent effect expected |
+| --- | --- |
+| C1 Exact CSV | UTF-8 output round-trips all three fixture records, including punctuation/newlines/Chinese; header and row order are exact. |
+| C2 No silent overwrite | An existing destination remains byte-for-byte unchanged and the CLI returns nonzero without `--force`; explicit force writes the expected CSV. |
+| C3 Usable CLI | Fresh output succeeds from the documented invocation; input and source identities plus the named command/result are retained. |
+
+The supplied criterion probe is input to the checker, not a daemon test runner. Native reports remain attributed statements. Immutable result/check evidence is independently copied before the disposable repository is removed.
+
+## Meaningful cases and planned observation
+
+| Case / S node | Starting condition and event | Expected fact/effect and invariant | Evidence binding |
+| --- | --- | --- | --- |
+| O1 / S1 | Empty actual scope; invalid create then choose two distinct eligible participants and save. | Invalid draft has no native identity/count; valid save creates one work, two exact bindings and no dispatch. | Real browser DOM/ARIA/render + independent native read/count. |
+| O2 / S1 | Saved work; explicit assignment dispatch. | One command/message acceptance; acknowledgement is separate. Runtime idle or delivery cannot manufacture a result. | Browser pending/result + work read, command outcome and actual participant report. |
+| O3 / S2 | Current implementer asks overwrite Q1; operator reads and answers in task context. | Stable author/question/assignment; exact current recipient and receipt; answer does not alter b1 criteria. Reload retains answer; ordinary note does not answer another question. | Actual report, browser reply, native work/message references. |
+| O4 / S3 | Implementer publishes baseline result r1 at exact commit. | Result immutable, no automatic check; operator explicitly requests independent checker. Real checker identifies baseline criterion failures, preserving source/report refs. | Git commit/hash, actual checker reports, native exact result/check request linkage. |
+| O5 / S3–S4 | Operator requests changes on failed r1; implementer returns r2. | Return reason and old failure remain visible; new result needs a new check. Wrong source/missing criterion/old assignment cannot pass. | Real native/browser return and second publication; owner-authored invariant cases for rejected reports. |
+| O6 / S4 | Complete current passing check on r2, no unanswered Q. Open acceptance, cancel, then explicitly confirm. | Cancel has no effect. Confirmation stores exactly r2/check/b1, closes work, and does not merge/publish. | Browser exact confirmation + independent native read and immutable source/artifact checks. |
+| O7 / S4 | Acceptance view open; another operator changes basis or publishes a new result before confirmation. | Stale action conflicts; old exact tuple cannot become accepted. Selection/draft/evidence survive refresh. | Separate disposable conflict work, native CAS and actual browser feedback; no duplicate complete Provider workflow. |
+| O8 / S2–S4 | A write commits but the browser response is deliberately disconnected. | Unknown stays unknown; no automatic new command. Lookup/reload reconciles original stable command/generation, exactly one effect. | Driver records actual committed HTTP response before dropping browser delivery; native outcome/work comparison. |
+| O9 / S1–S3 | Exact collaborator stops after selection but before dispatch. | Unavailable role reported; saved work/history retained; no namesake substitution or inferred delivery. | Disposable participant lifecycle and native read + browser local recovery. |
+| O10 / S5 | Same real selected work at 390×844; keyboard then click/touch local controls. | Resource/role/result relationships and current question remain reachable; selection/drafts retained; Tooltip focus/click/Escape restores trigger; essential facts visible. | Same-run DOM/ARIA/focus/geometry/screenshots + local design criteria judgment. |
+| O11 / shared | Initial load, empty/filter-empty, refresh failure, retained-data unavailable/read-only. | Errors do not become empty data; historical facts/time remain distinguishable; writes disabled where contract disallows. | Actual reachable service conditions plus owner-authored state cases; controlled transport failures explicitly labelled. |
+| O12 / artifact | Copy packaged image to unrelated empty cwd; no checkout/assets available there. | Fresh embedded workbench and original passive diagnostics serve finite assets; numeric Host/Origin admission and precision remain intact. | Fixed input/artifact SHA, actual HTTP/browser and exact owned process cleanup. |
+
+O7/O9 use additional minimal work records or a disposable participant only when needed; they do not create an OS/Provider/state cross-product. State-only authored checks do not become actual-provider evidence. Native/component cases supply invalid report, duplicate command and unreachable state coverage without repeating the complete real workflow. Scope/read-only capabilities follow actual releases; an unavailable feature remains an explicit gap.
+
+## Execution and resource contract
+
+`drive.py` executes bounded real-product/browser phases from a retained harness version. `preserve_outcome.py` preserves exact accepted native history, immutable Git source/bundle, independent probe artifacts and visible role tool calls/output; private reasoning and authentication files are excluded. `finalize.py` verifies retained hashes, releases recorded fixture processes/ports, removes only the recorded disposable root and promotes the exact verified artifact to repository-local `.bin/agentx`. Installed/default programs and the persistent LAN demo remain outside its target set. The canonical evidence identifies which retained harness version actually ran each phase; a driver assertion failure remains a failure until its bounded correction executes.
+
+`preserve.py` only copies prior artifact/source/receipts and records protected process identity. Run it once before overwriting repository-local packaging output. It does not execute AgentX or read/copy the live database. The candidate freezer must include `web/`, build metadata and authored fixture inputs; the older general freezer currently omits `web/` and cannot alone identify this candidate.
+
+Before any candidate execution, consume named source/case releases and record exact bytes. Use task-local Node 22/npm 10 consistent with root manifest; preserve unrelated locked package versions/resolved/integrity. Reuse the cached Playwright package with system Chrome, not an added root browser dependency. Scoped formatting, strict lint, storage ownership, affected native/Web cases, actual outcome and standalone package follow the [Task sequence](../../.controller/collaboration-workbench/tasks/acceptance.md#proportional-verification-sequence).
+
+All runtime roots/ports/participant names and PID start ticks are recorded before effects. Use explicit `--iam` for product commands and exact report actors. Strip inherited AgentX/Paseo participant claims from operator subprocesses; keep only native Provider authentication needed for the real bounded task, without copying credentials to evidence. Never touch the persistent LAN scope, port 18731, `lan-demo-zori`, installed programs or default services. Cleanup targets only recorded exact owned identities, retains logs/outcomes first, reaps browser/HTTP/Provider/daemon processes, removes disposable state and records absence. Evidence and tooling remain retained independently.

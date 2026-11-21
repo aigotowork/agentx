@@ -1,0 +1,143 @@
+@scope (.space-system[data-space-game]) to (.space-system) {
+  :scope {
+    --game-lantern-target: 44px;
+    --game-lantern-offset: 25px;
+    --game-lantern-rim: 2px;
+    --game-hover-time: 165ms;
+    --game-portrait-size: 46px;
+    --game-portrait-frame: 2px;
+    --skin-frame-width: 494px;
+    --skin-command-width: 460px;
+    --skin-heading-height: 76px;
+    --skin-title-size: 25px;
+    --skin-rule-width: 3px;
+    --skin-record-radius: 9px;
+    --skin-pad: 18px;
+    --skin-window-gap: 22px;
+    --skin-conversation-shadow: var(--skin-shadow);
+    --space-conversation-trim-repeat: repeat-x;
+    --space-command-mark: radial-gradient(ellipse, var(--accent) 0 22%, transparent 26% 41%, var(--skin-edge) 44% 49%, transparent 52%);
+  }
+
+  .game-scene-lantern {
+    position: absolute;
+    inset: var(--object-y) auto auto var(--object-x);
+    z-index: 1;
+    translate: -50% calc(-100% + var(--game-lantern-offset) / 3);
+    width: var(--game-lantern-target);
+    height: var(--game-lantern-target);
+    padding: 0;
+    border: var(--game-lantern-rim) solid transparent;
+    border-radius: var(--radius-lg);
+    color: var(--ink);
+    background: transparent;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: box-shadow var(--game-hover-time), border-color var(--game-hover-time);
+  }
+  .game-scene-lantern:is(:hover, :focus-visible) {
+    border-color: var(--accent);
+    box-shadow: 0 0 var(--space-4) var(--game-light-glow);
+  }
+  .game-scene-lantern > span {
+    position: absolute;
+    inset: auto auto calc(100% + var(--space-1)) 50%;
+    translate: -50% 0;
+    opacity: 0;
+    pointer-events: none;
+    white-space: nowrap;
+    color: var(--ink);
+    background: var(--surface);
+    border: var(--border) solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--text-xs);
+  }
+  .game-scene-lantern:is(:hover, :focus-visible) > span,
+  .game-scene-lantern[aria-pressed="false"] > span { opacity: 1; }
+  .office-actor:is(:focus-visible, :hover) .office-actor-label {
+    border-color: var(--accent);
+    outline: var(--border) solid var(--accent);
+    box-shadow: 0 0 var(--space-3) var(--game-light-glow);
+  }
+  .agent-space .office-camera-controls {
+    padding: var(--space-1);
+    border-color: var(--skin-edge);
+    border-radius: var(--skin-form-radius);
+    background: var(--skin-rail);
+    box-shadow: 0 var(--space-1) var(--space-3) var(--skin-cast);
+  }
+  .agent-space .office-camera-controls button[aria-pressed="true"],
+  .agent-space .office-camera-controls button[aria-expanded="true"] {
+    background: var(--surface-selected);
+    border-color: var(--skin-edge);
+    color: var(--ink);
+  }
+  .hall-reader .reader-identity .studio-avatar {
+    width: var(--game-portrait-size);
+    height: var(--game-portrait-size);
+    border: var(--game-portrait-frame) solid var(--skin-edge);
+    border-radius: var(--skin-radius);
+    padding: var(--space-1);
+    object-fit: contain;
+    background: var(--game-portrait-paper);
+  }
+  .office-expanded-object[data-kind="conversation"] { box-shadow: var(--skin-conversation-shadow); }
+  .hall-reader .history-feed .history-standard-record.message { border-radius: var(--skin-record-radius); }
+  .hall-reader .history-standard-record .history-message-author { color: var(--skin-detail); }
+  @media (prefers-reduced-motion: reduce) {
+    .game-scene-lantern { transition: none; }
+  }
+  @container space-shell (max-width: 759px) {
+    .hall-reader { --game-portrait-size: 38px; --skin-pad: var(--space-3); --skin-heading-height: 64px; --skin-title-size: var(--text-lg); }
+  }
+}
+
+@scope (.space-system[data-space-game="inkpost"]) to (.space-system) {
+  :scope {
+    color-scheme: dark;
+    --canvas: #251a24; --surface: #2a2026; --surface-subtle: #38292d; --surface-selected: #513b38;
+    --ink: #f9e6c8; --muted: #dac3a5; --line: #79594e; --accent: #ffc077; --accent-hover: #ffdb9c;
+    --focus: #f6ba75; --skin-on-accent: #2b1d21; --skin-detail: #f4bb89; --skin-rail: #382629;
+    --skin-edge: #a27260; --skin-cast: #211423bd; --skin-shadow: 0 14px 54px #160d24cc, 5px 6px 0 #a2714f62;
+    --notice: #ffd79f; --notice-bg: #594024; --danger: #ffc2ad; --danger-bg: #613339;
+    --skin-radius: 14px 6px 16px 7px; --skin-form-radius: 7px; --skin-record-radius: 6px 12px 9px 4px;
+    --skin-font: Georgia, "Noto Serif CJK SC", serif; --world-tracking: .08em;
+    --skin-pattern: repeating-linear-gradient(119deg, #c69e7936 0 1px, transparent 1px 21px);
+    --space-conversation-trim: repeating-linear-gradient(113deg, #c69e7965 0 1px, transparent 1px 7px);
+    --game-light-glow: #f1bc7880; --game-portrait-paper: #543e37;
+  }
+  .hall-reader .conversation-composer { --space-trim-height: 5px; }
+}
+
+@scope (.space-system[data-space-game="windward"]) to (.space-system) {
+  :scope {
+    --canvas: #e5eee4; --surface: #fff6dc; --surface-subtle: #f1e6c8; --surface-selected: #d0e5d5;
+    --ink: #253b3d; --muted: #4c6163; --line: #a49373; --accent: #23605c; --accent-hover: #154c43;
+    --focus: #14516d; --skin-on-accent: #fff7dc; --skin-detail: #355d60; --skin-rail: #e4e9d5;
+    --skin-edge: #617e79; --skin-cast: #263d4d75; --skin-shadow: 0 16px 44px #284e5a79, 0 0 0 4px #f9eac6aa;
+    --skin-radius: 18px; --skin-form-radius: 9px;
+    --skin-font: Georgia, "Noto Serif CJK SC", serif; --world-tracking: .03em;
+    --skin-pattern: radial-gradient(ellipse at 80% 0%, #ffda975e, transparent 80%);
+    --space-conversation-trim: repeating-linear-gradient(90deg, #3a777059 0 1px, transparent 1px 9px);
+    --game-light-glow: #ffe4aab0; --game-portrait-paper: #e8e8c8;
+  }
+  .hall-reader .conversation-composer { --space-trim-height: 6px; }
+}
+
+@scope (.space-system[data-space-game="jadecourt"]) to (.space-system) {
+  :scope {
+    color-scheme: dark;
+    --canvas: #181d34; --surface: #1e293e; --surface-subtle: #22374a; --surface-selected: #28545a;
+    --ink: #e9f5e7; --muted: #bfd5ce; --line: #597682; --accent: #9ae5cb; --accent-hover: #d6f7e1;
+    --focus: #f4c994; --skin-on-accent: #163131; --skin-detail: #eed0a0; --skin-rail: #253046;
+    --skin-edge: #829da0; --skin-cast: #1b1731b3; --skin-shadow: 0 19px 55px #12172cd6, 0 0 0 3px #89d6b83d;
+    --notice: #ffddad; --notice-bg: #594024; --danger: #ffc2b6; --danger-bg: #612d41;
+    --skin-radius: 20px 9px; --skin-form-radius: 9px; --skin-record-radius: 7px 14px;
+    --skin-font: Georgia, "Noto Serif CJK SC", serif; --world-tracking: .06em;
+    --skin-pattern: linear-gradient(115deg, #5ce5b62d, transparent 34%, #cb795e22 100%);
+    --space-conversation-trim: repeating-linear-gradient(114deg, #58ae9b79 0 2px, transparent 2px 11px);
+    --game-light-glow: #68eac599; --game-portrait-paper: #264857;
+  }
+  .hall-reader .conversation-composer { --space-trim-height: 5px; }
+}

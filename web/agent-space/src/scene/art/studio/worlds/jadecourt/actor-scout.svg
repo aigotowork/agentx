@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="72" viewBox="0 0 64 72" stroke-linejoin="round" stroke-linecap="round">
+<title>Kestrel, twilight dispatch runner</title>
+<defs>
+<linearGradient id="auburn" x2="1" y2="1"><stop offset="0" stop-color="#dea274"/><stop offset="0.5" stop-color="#96556b"/><stop offset="1" stop-color="#4b3650"/></linearGradient><linearGradient id="bronze" x2="1" y2="1"><stop offset="0" stop-color="#ffe2a1"/><stop offset="0.25" stop-color="#cc996e"/><stop offset="0.5" stop-color="#754353"/><stop offset="0.7" stop-color="#512f45"/><stop offset="1" stop-color="#a45e64"/></linearGradient><linearGradient id="cinnabar" x2="1" y2="1"><stop offset="0" stop-color="#f7be91"/><stop offset="0.5" stop-color="#b47268"/><stop offset="1" stop-color="#5c344c"/></linearGradient><linearGradient id="glass" x2="1" y2="1"><stop offset="0" stop-color="#97e0da"/><stop offset="0.34" stop-color="#5c9aa7"/><stop offset="1" stop-color="#262942"/></linearGradient><linearGradient id="glaze" x2="1" y2="1"><stop offset="0" stop-color="#e0ffff"/><stop offset="0.18" stop-color="#a8eee0"/><stop offset="0.45" stop-color="#499d9e"/><stop offset="0.74" stop-color="#215864"/><stop offset="1" stop-color="#16303e"/></linearGradient><linearGradient id="jadeDark" x2="1" y2="1"><stop offset="0" stop-color="#578f86"/><stop offset="0.5" stop-color="#27525a"/><stop offset="1" stop-color="#132e38"/></linearGradient><linearGradient id="lacquer" x2="1" y2="1"><stop offset="0" stop-color="#d38f77"/><stop offset="0.29" stop-color="#a45658"/><stop offset="0.58" stop-color="#593246"/><stop offset="1" stop-color="#30263a"/></linearGradient><linearGradient id="linen" x2="1" y2="1"><stop offset="0" stop-color="#fef0bb"/><stop offset="0.5" stop-color="#c8ae8e"/><stop offset="1" stop-color="#827487"/></linearGradient><linearGradient id="mint" x2="1" y2="1"><stop offset="0" stop-color="#e5fff1"/><stop offset="0.5" stop-color="#7ed9c3"/><stop offset="1" stop-color="#368885"/></linearGradient><linearGradient id="paper" x2="1" y2="1"><stop offset="0" stop-color="#fff1bc"/><stop offset="0.5" stop-color="#ebc186"/><stop offset="1" stop-color="#ae776c"/></linearGradient><linearGradient id="red" x2="1" y2="1"><stop offset="0" stop-color="#edac87"/><stop offset="0.25" stop-color="#b76665"/><stop offset="0.64" stop-color="#73374e"/><stop offset="1" stop-color="#37263a"/></linearGradient><radialGradient id="shadow" cx=".36" cy=".32" r=".77"><stop offset="0" stop-color="#090e1a" stop-opacity=".8"/><stop offset="0.5" stop-color="#141724" stop-opacity=".56"/><stop offset="1" stop-color="#0b1020" stop-opacity="0"/></radialGradient><linearGradient id="skin" x2="1" y2="1"><stop offset="0" stop-color="#fbd6a9"/><stop offset="0.49" stop-color="#d49b85"/><stop offset="1" stop-color="#9c626c"/></linearGradient><linearGradient id="storm" x2="1" y2="1"><stop offset="0" stop-color="#92ced0"/><stop offset="0.5" stop-color="#406e80"/><stop offset="1" stop-color="#273046"/></linearGradient>
+
+</defs>
+<ellipse cx="32" cy="68.4" rx="26" ry="3.6" fill="url(#shadow)"/>
+<path d="M18 55l11 2-2 8-.7 4-7 2H9l-1-3 7-3Z" fill="url(#jadeDark)" stroke="#142035" stroke-width="1.24"/>
+<path d="M35 55l10 1 1 8 6 4-1 3H40l-3-2-1-7Z" fill="url(#jadeDark)" stroke="#142035" stroke-width="1.24"/>
+<path d="M11 68q4-2 13-2m16 0 8 2" fill="none" stroke="#9db6a5" stroke-width="0.82"/>
+<path d="M22 52l19-3 6 8-2 7-8 2-5-8-4 .5-4 7-9-1Z" fill="url(#storm)" stroke="#192332" stroke-width="1"/>
+<path d="M18 63l7 1m13 .7 6-2" fill="none" stroke="#c0d1b4" stroke-width="0.71"/>
+<path d="M16 35l10-8 10-2 10 7 4 10-5 4-4 1-1 9-9 3-14-5 3-10-4 3-5-6Z" fill="url(#cinnabar)" stroke="#192332" stroke-width="1"/>
+<path d="M24 33l6-1 8 12-1 10-6 3-9-4Z" fill="url(#lacquer)"/>
+<path d="M25 30l4-4 9 1 4 5-4 5-7 3Z" fill="url(#linen)" stroke="#192332" stroke-width="1"/>
+<path d="M19 54l4-2 7 3 9-2m-16-3 1-11m14-.4 2 5" fill="none" stroke="#f2c6a4" stroke-width="0.82"/>
+<path d="M18 36l-5-2-9 4v11l8 6 5-2 1-10Z" fill="url(#jadeDark)" stroke="#192332" stroke-width="1"/>
+<path d="M5 39l9-3 3 5-3 5-9-2Z" fill="url(#glaze)" stroke="#192332" stroke-width="1"/>
+<path d="M6 46l6 4 2-.6m-9-9 7-3 3 3" fill="none" stroke="#d1e5c6" stroke-width="0.7"/>
+<ellipse cx="12" cy="44" rx="1.64" ry="1.35" fill="url(#bronze)" stroke="#1e2936" stroke-width="0.55"/>
+<ellipse cx="11.9" cy="43.75" rx="0.6" ry="0.55" fill="#edd6a4"/>
+<path d="M24 36l3-5 15 17 1 5-5 .5Z" fill="url(#bronze)" stroke="#192332" stroke-width="1"/>
+<ellipse cx="33" cy="42" rx="1.64" ry="1.35" fill="url(#bronze)" stroke="#1e2936" stroke-width="0.55"/>
+<ellipse cx="32.9" cy="41.75" rx="0.6" ry="0.55" fill="#edd6a4"/>
+<path d="M38 47l11-4 6 5-2 12-10 3-7-4Z" fill="url(#lacquer)" stroke="#192332" stroke-width="1"/>
+<path d="M38 48l10-4 5 4-3 6-10 2-4-3Z" fill="url(#red)" stroke="#192332" stroke-width="1"/>
+<path d="M39 49l9-3 3 2m-12 9 1 3 10-2" fill="none" stroke="#f6b599" stroke-width="0.72"/>
+<g transform="translate(47 48) scale(0.38)">
+<path d="M-11-6Q-11-7-10.5-7H10.5Q11-7 11-6V6Q11 7 10 7H-10Q-11 7-11 6Z" fill="url(#paper)" stroke="#192332" stroke-width="1"/>
+<path d="M-10.2 5L-3-.5M10 5L3-.5" fill="none" stroke="#b57b70" stroke-width="0.65"/>
+<path d="M-10.5-6 0 2 10.5-6Z" fill="#fff0c0" stroke="#b87e6d" stroke-width="0.7"/>
+<path d="M-2-.2 0-1.6 2-.3 1.3 2.6-1.4 2.6Z" fill="url(#red)" stroke="#84404c" stroke-width="0.5"/>
+<path d="M-1 .3 0 1 1 .3" fill="none" stroke="#fbc887" stroke-width="0.45"/></g>
+<ellipse cx="46" cy="54" rx="1.06" ry="1.06" fill="#ffcc9a" stroke="#192332" stroke-width="0.38"/>
+<path d="M46 37q5 2 5 7l-5 5-4-4 1-5Z" fill="url(#skin)" stroke="#192332" stroke-width="1"/>
+<path d="M26 23q-10 2-17 1l-7 4 7 2-5 5q14 2 24-6l10 2 4-5-5-2Z" fill="url(#mint)" stroke="#263244" stroke-width="1.08"/>
+<path d="M5 28q11 .8 20-4m-13 8q7-.9 13-6" fill="none" stroke="#d9fae0" stroke-width="0.82"/>
+<path d="M28 26l8 2 5-4 2 3-4 6-9-.1-5-4Z" fill="url(#glaze)" stroke="#192332" stroke-width="1"/>
+<path d="M23 13q3-10 16-7l7 6 2 5 4 3-6 2-2 4-5 3-6-1-5-5-5-3Z" fill="url(#skin)" stroke="#3e344a" stroke-width="0.93"/>
+<path d="M22 9l6-5 9-1 7 3 4 6-4 .6-3-4-4 8-4-3-1 6-4 3-6-4Z" fill="url(#auburn)" stroke="#192332" stroke-width="1"/>
+<path d="M23 12l6-6 10-1-6 3-1 6-3-3-2 6Z" fill="#dea178" opacity=".77"/>
+<path d="M24 9q7-5 13-4m-6 9 2-4 4-2" fill="none" stroke="#edba93" stroke-width="0.82"/>
+<path d="M19 16q0-3 4-4l5 1 1 6-3 4-4-1Z" fill="url(#bronze)" stroke="#192332" stroke-width="1"/>
+<path d="M21 16l2-2 4 1v4l-3 2-3-1Z" fill="url(#jadeDark)" stroke="#192332" stroke-width="1"/>
+<ellipse cx="24" cy="17.4" rx="1.34" ry="1.64" fill="url(#glass)" stroke="#b6cbab" stroke-width="0.56"/>
+<path d="M26 13q8-3 18-5" fill="none" stroke="#d4bc9f" stroke-width="0.84"/>
+<path d="M41 15l3-.4m-4 9q2 1 3-.4" fill="none" stroke="#8a5265" stroke-width="0.66"/>
+<ellipse cx="42.8" cy="17.6" rx="0.92" ry="0.68" fill="#303043"/>
+<ellipse cx="42.5" cy="17.4" rx="0.42" ry="0.48" fill="#ffffda"/>
+<path d="M32 25l3 2 6-.2" fill="none" stroke="#e7ac8b" stroke-width="0.69"/>
+</svg>

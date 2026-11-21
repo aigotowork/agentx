@@ -1,0 +1,103 @@
+@scope (.space-system[data-space-world]) to (.space-system) {
+  :scope {
+    --skin-heading-height: 72px;
+    --skin-title-size: 23px;
+    --skin-record-gap: 10px;
+    --skin-draft-height: 66px;
+    --skin-pad: 20px;
+    --skin-window-gap: 18px;
+    --skin-frame-width: 550px;
+    --skin-command-width: 470px;
+    --skin-rule-width: 3px;
+    --space-command-mark-size: 24px;
+    --space-conversation-trim-repeat: repeat-x;
+    --studio-courtyard: var(--canvas);
+  }
+  [data-scene-art="studio"] :is(.office-actor-label, .office-human > span, .office-prop > span) {
+    color: var(--ink);
+    background: var(--surface);
+    border-color: var(--skin-edge);
+  }
+  [data-scene-art="studio"] .hall-room-name {
+    color: var(--ink);
+    font-family: var(--skin-font);
+    letter-spacing: var(--world-tracking);
+  }
+  .office-brand strong { font-family: var(--skin-font); letter-spacing: var(--world-tracking); }
+  .agent-space .office-hud { border-block-end: var(--skin-rule-width) solid var(--skin-edge); }
+  .hall-reader .history-standard-record.message-assistant { border-inline-start: var(--skin-rule-width) solid var(--skin-edge); }
+  .hall-reader .message-header time { font-variant-numeric: tabular-nums; }
+  .agent-command-dialog { box-shadow: var(--skin-shadow); }
+  .agent-command-dialog .command-heading { background-image: var(--skin-pattern); }
+  @container space-shell (min-width: 760px) {
+    .office-expanded-object[data-kind="conversation"][data-expanded="false"] {
+      inset: var(--skin-window-gap) var(--skin-window-gap) var(--skin-window-gap) auto;
+      width: min(var(--skin-frame-width), calc(100% - var(--skin-window-gap) * 2));
+      height: auto;
+    }
+  }
+}
+
+@scope (.space-system[data-space-world="lunar"]) to (.space-system) {
+  :scope {
+    color-scheme: dark;
+    --canvas: #101b32; --surface: #152746; --surface-subtle: #1c3356; --surface-selected: #294875;
+    --ink: #f0f7ff; --muted: #bccfe9; --line: #5273a0; --accent: #ffae67; --accent-hover: #ffcc9e;
+    --focus: #ffbd7a; --skin-on-accent: #191b2b; --skin-detail: #a9d4fc; --skin-rail: #111f38;
+    --skin-edge: #6389b4; --skin-cast: #030916ad; --skin-shadow: 0 16px 56px #040a19c7, 0 0 0 1px #7db0df24;
+    --notice: #ffdda1; --notice-bg: #52371d; --danger: #ffd0c8; --danger-bg: #5f2937;
+    --skin-radius: 6px; --skin-record-radius: 2px; --skin-form-radius: 4px;
+    --skin-font: ui-monospace, "Noto Sans CJK SC", monospace; --world-tracking: .05em;
+    --skin-pattern: repeating-linear-gradient(90deg, #9acefb15 0 1px, transparent 1px 36px);
+    --space-conversation-trim: repeating-linear-gradient(115deg, #ffae6780 0 3px, transparent 3px 12px);
+    --space-command-mark: radial-gradient(circle, #ffae67 0 23%, transparent 25% 39%, #86bae7 41% 47%, transparent 49%);
+  }
+  .hall-reader .history-standard-record.message-user { background: var(--surface); }
+  .hall-reader .conversation-composer { --space-trim-height: 4px; }
+}
+
+@scope (.space-system[data-space-world="terrarium"]) to (.space-system) {
+  :scope {
+    --canvas: #dae4cb; --surface: #fff7df; --surface-subtle: #eff0d5; --surface-selected: #dce8be;
+    --ink: #243c31; --muted: #4e6554; --line: #9aaa83; --accent: #346650; --accent-hover: #264e3c;
+    --focus: #8c491d; --skin-on-accent: #fff9e6; --skin-detail: #39624c; --skin-rail: #e5e8ca;
+    --skin-edge: #6f896b; --skin-cast: #203c2fb0; --skin-shadow: 0 18px 64px #26483454, 0 3px 0 #5c775842;
+    --skin-radius: 24px 9px 24px 9px; --skin-record-radius: 17px 5px 17px 5px; --skin-form-radius: 12px;
+    --skin-font: Georgia, "Noto Serif CJK SC", serif; --world-tracking: .01em;
+    --skin-pattern: radial-gradient(ellipse at 95% 0%, #b8c87738, transparent 45%), radial-gradient(ellipse at 0% 75%, #e1ae6633, transparent 40%);
+    --space-conversation-trim: radial-gradient(ellipse at 8px 0, #8093638a 0 34%, transparent 38%);
+    --space-command-mark: radial-gradient(ellipse at 65% 33%, #8eab6c 0 29%, transparent 32%), radial-gradient(ellipse at 36% 68%, #346650 0 31%, transparent 34%);
+    --skin-frame-width: 570px; --skin-window-gap: 28px;
+  }
+  .hall-reader .conversation-composer { --space-trim-width: 16px; --space-trim-height: 6px; }
+  .hall-reader .message-body { line-height: 1.8; }
+  @container space-shell (min-width: 760px) {
+    .office-expanded-object[data-kind="conversation"][data-expanded="false"] {
+      inset: auto auto var(--skin-window-gap) 50%;
+      transform: translateX(-50%);
+      height: min(550px, calc(100% - var(--skin-window-gap) * 2));
+    }
+  }
+}
+
+@scope (.space-system[data-space-world="newsprint"]) to (.space-system) {
+  :scope {
+    --canvas: #eddbc1; --surface: #fff3d6; --surface-subtle: #f9e5b8; --surface-selected: #ffd179;
+    --ink: #23202b; --muted: #59464b; --line: #675058; --accent: #a73124; --accent-hover: #81261e;
+    --focus: #1f5193; --skin-on-accent: #fff5e0; --skin-detail: #942e24; --skin-rail: #f1c974;
+    --skin-edge: #23202b; --skin-cast: #251728a3; --skin-shadow: 8px 8px 0 #23202b, 15px 15px 0 #a53b2d6b;
+    --skin-radius: 2px; --skin-record-radius: 2px; --skin-form-radius: 2px;
+    --skin-font: system-ui, "Noto Sans CJK SC", sans-serif; --world-tracking: -.02em;
+    --skin-pattern: radial-gradient(circle at 2px 2px, #9b572625 1px, transparent 1.4px) 0 0 / 8px 8px;
+    --space-conversation-trim: repeating-linear-gradient(90deg, #23202b 0 2px, #b33e2e 2px 5px, transparent 5px 10px);
+    --space-command-mark: conic-gradient(from 45deg, #a73124 25%, #252230 0 50%, #f1c974 0 75%, #252230 0);
+    --skin-frame-width: 570px; --skin-window-gap: 26px;
+  }
+  .office-expanded-object[data-kind="conversation"], .agent-command-dialog { border-width: var(--skin-rule-width); }
+  .hall-reader .history-standard-record.message { box-shadow: var(--space-1) var(--space-1) 0 #67505875; }
+  .hall-reader .history-standard-record.message-assistant { background: var(--surface); }
+  .hall-reader .conversation-composer { --space-trim-height: 4px; }
+  @container space-shell (max-width: 759px) {
+    .agent-space[data-studio-reader="scene"] .office-expanded-object[data-kind="conversation"] { border: none; box-shadow: none; }
+  }
+}

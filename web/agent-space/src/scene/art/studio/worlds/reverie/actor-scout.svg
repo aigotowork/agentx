@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="72" viewBox="0 0 64 72">
+  <defs><linearGradient id="linen" x2="48%" y2="100%"><stop stop-color="#e1f2d3"/><stop offset=".55" stop-color="#91cbbf"/><stop offset="1" stop-color="#538d9b"/></linearGradient></defs>
+  <g stroke="#29234b" stroke-width="1.5" stroke-linejoin="round">
+    <path d="m23 54 8 1-4 12-4 3H11l4-5 6-2zm11 0 7-1 4 10 8 4-1 3H38z" fill="#576989"/>
+    <path d="M34 32q12-1 16-9 4 3 12 2-7 8-3 13-11 5-23 3z" fill="#f6ac91"/>
+    <path d="M25 33q8-4 14-1 8 8 10 19-5 7-17 9-13-1-18-7 3-10 11-20z" fill="url(#linen)"/>
+    <path d="m23 37-9 1-5 8 4 4 9-6m20-9 6 5 5 2-2 5-9-4" fill="#83beb8"/>
+    <path d="M18 23Q10 16 12 2q12 7 15 15 3-7 9-14 7 7 1 17 9 4 7 11-3 8-15 9-12-2-13-9-1-4 2-8z" fill="url(#linen)"/>
+    <path d="M20 29q3-5 9-2 6-3 11 1l-2 7-7 3-7-3z" fill="#f4d3ae"/>
+    <path d="M18 47q6-6 16 0v10H18z" fill="#8d6d9f"/>
+  </g>
+  <path d="m16 9 5 8m14-7-3 8m14 17 11-5m-35 20 8 1" stroke="#fce7bc" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="M25 30v1m10-1v1m-7 3q2 2 4 0" fill="none" stroke="#413158" stroke-width="1.6" stroke-linecap="round"/>
+</svg>

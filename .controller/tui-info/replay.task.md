@@ -1,0 +1,10 @@
+---
+schema: task
+status: completed
+agents: [{"scope":"/home/long/works/longwork/agentx/.agentx","generation":"a6195a5b-1dd4-4a6d-87d4-1f18f1b664fb","participant":{"canonical_name":"pita","incarnation_bits":4745316797069154086}}]
+---
+Own replay and verification fixtures (src/tui/replay.rs, tests/tui_replay/, recipes if needed). Create isolated replay scenarios and tests for role->profile, Delivery->Task body, parent->sibling, draft and scroll retention, resize, stale reads, exact selection and i input. Coordinate offline fixture hook with fire and data agent; shared API in reads.task.md. Run meaningful verification on integrated build once available. No edits to other owners' files.
+
+The [replay harness](../../src/tui/replay.rs) sends keys and clicks through the dashboard handlers and resolves pointer targets from the preceding painted frame. The recorded Info worker captures exact Subject/Page requests; fixture completions enter the production result handler in an explicit order, including a late result for an earlier visit to the same page. Ordinary RPCs use the existing in-memory sink. The tests assert that Info requests keep the original checked incarnation even when a replacement appears before opening, and that parent and sibling relations keep their historical identities. The production read adapter's storage evidence belongs to [Reads](reads.task.md).
+
+Integrated `just tui-replay all` passed all eight native tests and the offline browser checks. The four Info scenarios produced HTML, plain text, JSON and 119 PNGs; the complete replay suite produced 192 PNGs. The [wide links](../../target/tui-replay/info_links/index.html), [exact selection and relations](../../target/tui-replay/info_identity/index.html), [draft and scroll context](../../target/tui-replay/info_context/index.html) and [compact resize and late reads](../../target/tui-replay/info_resize/index.html) can be regenerated with `just tui-replay info`. The revised compact trace checks a 62 × 17 terminal with the reader above the Agent strip, then restores the inline viewport. See the [replay guide](../../tests/tui_replay/README.md) for reproduction and evidence limits.

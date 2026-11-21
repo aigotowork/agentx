@@ -1,0 +1,6057 @@
+{
+  "components": {
+    "schemas": {
+      "AgentPage": {
+        "properties": {
+          "agents": {
+            "items": {
+              "$ref": "#/components/schemas/AgentView"
+            },
+            "type": "array"
+          },
+          "current_complete": {
+            "type": "boolean"
+          },
+          "generation": {
+            "type": "string"
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "current_complete",
+          "generation",
+          "agents"
+        ],
+        "type": "object"
+      },
+      "AgentRef": {
+        "additionalProperties": false,
+        "properties": {
+          "incarnation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "stopped_event": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "AgentView": {
+        "properties": {
+          "agent": {
+            "$ref": "#/components/schemas/AgentRef"
+          },
+          "can_fork": {
+            "type": "boolean"
+          },
+          "can_resume": {
+            "type": "boolean"
+          },
+          "can_send": {
+            "type": "boolean"
+          },
+          "can_stop": {
+            "type": "boolean"
+          },
+          "can_stop_participation": {
+            "type": "boolean"
+          },
+          "collaboration": {
+            "$ref": "#/components/schemas/CollaborationView"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "directory": {
+            "type": "string"
+          },
+          "file_bindings": {
+            "items": {
+              "$ref": "#/components/schemas/FileBindingView"
+            },
+            "type": "array"
+          },
+          "has_transcript": {
+            "type": "boolean"
+          },
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "None means historical labels were not recorded; never backfill from current state.",
+            "propertyNames": {
+              "type": "string"
+            },
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "labels_revision": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pending_messages": {
+            "description": "Pending native delivery cursor; not a model/human read acknowledgement.",
+            "format": "u-int64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "request_error": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RequestError"
+              }
+            ]
+          },
+          "session_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "status_context": {
+            "type": "string"
+          },
+          "stored_status": {
+            "type": "string"
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tool": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "agent",
+          "tool",
+          "status",
+          "stored_status",
+          "status_context",
+          "detail",
+          "directory",
+          "collaboration",
+          "can_send",
+          "can_stop",
+          "can_resume",
+          "has_transcript"
+        ],
+        "type": "object"
+      },
+      "AnalysisJob": {
+        "properties": {
+          "created_at": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "type": "string"
+          },
+          "input_coverage": {
+            "$ref": "#/components/schemas/Coverage"
+          },
+          "input_revision": {
+            "format": "u-int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "observation_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "report": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AnalysisReport"
+              }
+            ]
+          },
+          "status": {
+            "description": "queued | succeeded | cancelled; deterministic execution has no external unknown effect.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "input_revision",
+          "input_coverage",
+          "created_at",
+          "status",
+          "observation_ids"
+        ],
+        "type": "object"
+      },
+      "AnalysisReport": {
+        "properties": {
+          "algorithm": {
+            "type": "string"
+          },
+          "caveats": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "distinct_agents": {
+            "format": "u-int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "native_error_count": {
+            "format": "u-int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "observation_count": {
+            "format": "u-int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "observation_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "unknown_usage_count": {
+            "format": "u-int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "usage_sources": {
+            "format": "u-int32",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "algorithm",
+          "observation_ids",
+          "observation_count",
+          "native_error_count",
+          "distinct_agents",
+          "usage_sources",
+          "unknown_usage_count",
+          "caveats"
+        ],
+        "type": "object"
+      },
+      "AnalyzeBody": {
+        "oneOf": [
+          {
+            "properties": {
+              "Analyze": {
+                "$ref": "#/components/schemas/AnalyzeInput"
+              }
+            },
+            "required": [
+              "Analyze"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "AnalyzeInput": {
+        "additionalProperties": false,
+        "properties": {
+          "generation": {
+            "type": "string"
+          },
+          "observation_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "request_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "generation",
+          "request_id",
+          "observation_ids"
+        ],
+        "type": "object"
+      },
+      "Attachment": {
+        "description": "Durable host upload; browser URLs and native local paths are separate representations.",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "media_type": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "size": {
+            "format": "u-int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "media_type",
+          "size",
+          "url"
+        ],
+        "type": "object"
+      },
+      "BinaryBody": {
+        "description": "HTTP body is raw bytes, never a JSON array or a host filesystem path.",
+        "format": "binary",
+        "type": "string"
+      },
+      "CancelAnalysisBody": {
+        "oneOf": [
+          {
+            "properties": {
+              "CancelAnalysis": {
+                "$ref": "#/components/schemas/CancelAnalysisInput"
+              }
+            },
+            "required": [
+              "CancelAnalysis"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "CancelAnalysisInput": {
+        "additionalProperties": false,
+        "properties": {
+          "generation": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "generation",
+          "id"
+        ],
+        "type": "object"
+      },
+      "CollaborationView": {
+        "properties": {
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "role": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RoleView"
+              }
+            ]
+          },
+          "status": {
+            "description": "adopted | legacy | unavailable",
+            "type": "string"
+          },
+          "workspace": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "type": "object"
+      },
+      "CommandResult": {
+        "oneOf": [
+          {
+            "properties": {
+              "Launched": {
+                "$ref": "#/components/schemas/LaunchOutcome"
+              }
+            },
+            "required": [
+              "Launched"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "LabelsPatched": {
+                "$ref": "#/components/schemas/LabelsOutcome"
+              }
+            },
+            "required": [
+              "LabelsPatched"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "Sent": {
+                "$ref": "#/components/schemas/SendOutcome"
+              }
+            },
+            "required": [
+              "Sent"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "DirectorySent": {
+                "$ref": "#/components/schemas/DirectorySendOutcome"
+              }
+            },
+            "required": [
+              "DirectorySent"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "Stopped": {
+                "$ref": "#/components/schemas/StopOutcome"
+              }
+            },
+            "required": [
+              "Stopped"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "Transcript": {
+                "$ref": "#/components/schemas/TranscriptPage"
+              }
+            },
+            "required": [
+              "Transcript"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "ConfigureBody": {
+        "oneOf": [
+          {
+            "properties": {
+              "Configure": {
+                "$ref": "#/components/schemas/ConfigureInput"
+              }
+            },
+            "required": [
+              "Configure"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "ConfigureInput": {
+        "additionalProperties": false,
+        "description": "Public payloads are shared with native Request. Newtype variants retain the\nexisting externally tagged JSON; only this closed mutation enum is public.",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "expected_revision": {
+            "format": "u-int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "generation": {
+            "type": "string"
+          },
+          "recovery": {
+            "$ref": "#/components/schemas/RecoveryPolicy"
+          }
+        },
+        "required": [
+          "generation",
+          "expected_revision",
+          "enabled",
+          "recovery"
+        ],
+        "type": "object"
+      },
+      "ContinuationBody": {
+        "oneOf": [
+          {
+            "properties": {
+              "RequestContinuation": {
+                "$ref": "#/components/schemas/RequestContinuationInput"
+              }
+            },
+            "required": [
+              "RequestContinuation"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "Coverage": {
+        "properties": {
+          "basis": {
+            "type": "string"
+          },
+          "discovery_complete": {
+            "type": "boolean"
+          },
+          "dropped_observations": {
+            "format": "u-int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "gaps": {
+            "items": {
+              "$ref": "#/components/schemas/Gap"
+            },
+            "type": "array"
+          },
+          "observed_at": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "retained_from": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "discovery_complete",
+          "dropped_observations",
+          "gaps",
+          "basis"
+        ],
+        "type": "object"
+      },
+      "Descriptor": {
+        "properties": {
+          "generation": {
+            "type": "string"
+          },
+          "max_page": {
+            "format": "u-int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "max_text": {
+            "format": "u-int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "profiles": {
+            "items": {
+              "$ref": "#/components/schemas/ProfileView"
+            },
+            "type": "array"
+          },
+          "project": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "supports_labels": {
+            "description": "Missing on older services means unsupported, rather than an empty classification.",
+            "type": "boolean"
+          },
+          "supports_message_history": {
+            "description": "True when the selected native peer supports latest and older message pages.",
+            "type": "boolean"
+          },
+          "supports_workspace_members": {
+            "description": "True when the selected native peer supports workspace member paging.\nMissing on older listeners means unsupported.",
+            "type": "boolean"
+          },
+          "tools": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "generation",
+          "scope",
+          "project",
+          "tools",
+          "profiles",
+          "max_page",
+          "max_text"
+        ],
+        "type": "object"
+      },
+      "DirectoryEntry": {
+        "properties": {
+          "directory": {
+            "type": "string"
+          },
+          "endpoint": {
+            "$ref": "#/components/schemas/EndpointView"
+          },
+          "generation": {
+            "type": "string"
+          },
+          "requested_workspace": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "resolved_workspace": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "role": {
+            "$ref": "#/components/schemas/RoleView"
+          }
+        },
+        "required": [
+          "generation",
+          "directory",
+          "role",
+          "endpoint"
+        ],
+        "type": "object"
+      },
+      "DirectorySendOutcome": {
+        "properties": {
+          "created": {
+            "type": "boolean"
+          },
+          "entry": {
+            "$ref": "#/components/schemas/DirectoryEntry"
+          },
+          "recipient": {
+            "$ref": "#/components/schemas/AgentRef"
+          },
+          "sent": {
+            "$ref": "#/components/schemas/SendOutcome"
+          }
+        },
+        "required": [
+          "entry",
+          "recipient",
+          "sent",
+          "created"
+        ],
+        "type": "object"
+      },
+      "DiscoveryCoverage": {
+        "properties": {
+          "agent_limit_reached": {
+            "type": "boolean"
+          },
+          "agent_pages": {
+            "format": "u-int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "directories_examined": {
+            "format": "u-int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "scan_limit_reached": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "agent_pages",
+          "agent_limit_reached",
+          "directories_examined",
+          "scan_limit_reached",
+          "errors"
+        ],
+        "type": "object"
+      },
+      "EndpointView": {
+        "properties": {
+          "candidates": {
+            "format": "u-int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "participant": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AgentRef"
+              }
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "description": "bound | adoptable | absent | ambiguous | role_changed | stale | unknown",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "candidates"
+        ],
+        "type": "object"
+      },
+      "Episode": {
+        "additionalProperties": false,
+        "properties": {
+          "agent": {
+            "$ref": "#/components/schemas/AgentRef"
+          },
+          "error_since": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "failing_turn": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "agent",
+          "session_id",
+          "source",
+          "failing_turn",
+          "error_since"
+        ],
+        "type": "object"
+      },
+      "ErrorCode": {
+        "enum": [
+          "InvalidInput",
+          "Forbidden",
+          "NotFound",
+          "Conflict",
+          "StaleReference",
+          "Unsupported",
+          "Unavailable",
+          "OutcomeUnknown",
+          "Internal"
+        ],
+        "type": "string"
+      },
+      "ErrorEnvelope": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/PublicError"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "ExchangeView": {
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "assistant": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string"
+          },
+          "files": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "position": {
+            "type": "string"
+          },
+          "user": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "position",
+          "at",
+          "user",
+          "assistant",
+          "action",
+          "files"
+        ],
+        "type": "object"
+      },
+      "FileBindingView": {
+        "description": "File document state is independent of Agent runtime state; diagnostic marks retained data.",
+        "properties": {
+          "checked_at": {
+            "format": "double",
+            "type": "number"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "diagnostic": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_success_at": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "path": {
+            "type": "string"
+          },
+          "raw_status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "schema": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "path",
+          "checked_at"
+        ],
+        "type": "object"
+      },
+      "Gap": {
+        "properties": {
+          "from": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "through": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "from",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "HandleHumanMessages": {
+        "additionalProperties": false,
+        "description": "Idempotent, monotonic handling of explicitly displayed message IDs only.",
+        "properties": {
+          "generation": {
+            "type": "string"
+          },
+          "ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "generation",
+          "ids"
+        ],
+        "type": "object"
+      },
+      "HumanMailbox": {
+        "description": "A bounded descending page and the total unhandled count across the whole mailbox.",
+        "properties": {
+          "generation": {
+            "type": "string"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/HumanMessage"
+            },
+            "type": "array"
+          },
+          "next_before": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "unhandled_count": {
+            "format": "u-int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "generation",
+          "messages",
+          "unhandled_count"
+        ],
+        "type": "object"
+      },
+      "HumanMessage": {
+        "description": "Resolved human-addressed history. Handling is explicit, independent of reading/delivery.",
+        "properties": {
+          "at": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "handled_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "sender": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AgentRef",
+                "description": "Frozen accepted sender only; legacy display names never authorize navigation."
+              }
+            ]
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "from",
+          "text"
+        ],
+        "type": "object"
+      },
+      "LabelsOutcome": {
+        "properties": {
+          "changed": {
+            "type": "boolean"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/LabelsSnapshot"
+          }
+        },
+        "required": [
+          "snapshot",
+          "changed"
+        ],
+        "type": "object"
+      },
+      "LabelsSnapshot": {
+        "description": "Browser projection of the native snapshot; incarnation stays a decimal string.",
+        "properties": {
+          "agent": {
+            "$ref": "#/components/schemas/AgentRef"
+          },
+          "generation": {
+            "type": "string"
+          },
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "revision": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "generation",
+          "agent",
+          "labels",
+          "revision"
+        ],
+        "type": "object"
+      },
+      "LaunchInput": {
+        "additionalProperties": false,
+        "properties": {
+          "directory": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "profile": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "prompt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "role": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tool": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workspace": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "LaunchOutcome": {
+        "properties": {
+          "agent_refs": {
+            "description": "Exact launch reservations in agents order. Absent when no exact identities\nwere retained. The incarnation need not still be current when read.",
+            "items": {
+              "$ref": "#/components/schemas/AgentRef"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "agents": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "failed": {
+            "format": "u-int32",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "agents",
+          "failed",
+          "errors"
+        ],
+        "type": "object"
+      },
+      "LaunchRelations": {
+        "properties": {
+          "downstream": {
+            "items": {
+              "$ref": "#/components/schemas/RelatedAgent"
+            },
+            "type": "array"
+          },
+          "fork_source": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AgentRef",
+                "description": "Exact session used as the Fork input, independent of the creator."
+              }
+            ]
+          },
+          "generation": {
+            "type": "string"
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "origin": {
+            "description": "agent | external | unknown. Legacy and unsupported origin paths are unknown.",
+            "type": "string"
+          },
+          "upstream": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RelatedAgent"
+              }
+            ]
+          }
+        },
+        "required": [
+          "generation",
+          "origin",
+          "downstream"
+        ],
+        "type": "object"
+      },
+      "MessageHistoryPage": {
+        "properties": {
+          "generation": {
+            "type": "string"
+          },
+          "live_after": {
+            "description": "Event watermark captured before reading a latest page. Null on older pages.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "messages": {
+            "description": "Chronological order within this page.",
+            "items": {
+              "$ref": "#/components/schemas/MessageView"
+            },
+            "type": "array"
+          },
+          "next_before": {
+            "description": "Exclusive bound for the next older page. Null means history is exhausted.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "generation",
+          "messages",
+          "next_before",
+          "live_after"
+        ],
+        "type": "object"
+      },
+      "MessageInput": {
+        "additionalProperties": false,
+        "properties": {
+          "attachments": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "intent": {
+            "description": "Omit or null for no intent; otherwise request, inform or ack. Native validation rejects other strings.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reply_to": {
+            "description": "At most 512 UTF-8 bytes; NUL forbidden.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "text": {
+            "description": "At most 65536 UTF-8 bytes; blank text requires at least one valid attachment. Native validation enforces byte and attachment constraints.",
+            "type": "string"
+          },
+          "thread": {
+            "description": "At most 512 UTF-8 bytes; NUL forbidden.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "type": "object"
+      },
+      "MessagePage": {
+        "properties": {
+          "generation": {
+            "type": "string"
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/MessageView"
+            },
+            "type": "array"
+          },
+          "next_after": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "generation",
+          "messages",
+          "next_after",
+          "has_more"
+        ],
+        "type": "object"
+      },
+      "MessageView": {
+        "properties": {
+          "at": {
+            "type": "string"
+          },
+          "attachments": {
+            "items": {
+              "$ref": "#/components/schemas/Attachment"
+            },
+            "type": "array"
+          },
+          "from": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "intent": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recipients": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "reply_to": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "text": {
+            "type": "string"
+          },
+          "thread": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "from",
+          "text",
+          "recipients"
+        ],
+        "type": "object"
+      },
+      "ModelRequestState": {
+        "properties": {
+          "error": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RequestError"
+              }
+            ]
+          },
+          "last_progress_at": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "model": {
+            "type": "string"
+          },
+          "phase": {
+            "$ref": "#/components/schemas/RequestPhase"
+          },
+          "retired_turns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "turn_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "turn_id",
+          "model",
+          "phase",
+          "retired_turns"
+        ],
+        "type": "object"
+      },
+      "Observation": {
+        "properties": {
+          "agent": {
+            "$ref": "#/components/schemas/AgentRef"
+          },
+          "at": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "type": "string"
+          },
+          "model_request": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ModelRequestState"
+              }
+            ]
+          },
+          "sample": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UsageSample"
+              }
+            ]
+          },
+          "session_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "agent",
+          "status"
+        ],
+        "type": "object"
+      },
+      "OfficeActivity": {
+        "properties": {
+          "created": {
+            "items": {
+              "$ref": "#/components/schemas/AgentRef"
+            },
+            "type": "array"
+          },
+          "generation": {
+            "type": "string"
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "human_has_more": {
+            "type": "boolean"
+          },
+          "human_messages": {
+            "items": {
+              "$ref": "#/components/schemas/HumanMessage"
+            },
+            "type": "array"
+          },
+          "human_unhandled_count": {
+            "format": "u-int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/OfficeMessage"
+            },
+            "type": "array"
+          },
+          "next_after": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "human_messages",
+          "human_has_more",
+          "human_unhandled_count",
+          "generation",
+          "next_after",
+          "has_more",
+          "messages",
+          "created"
+        ],
+        "type": "object"
+      },
+      "OfficeMessage": {
+        "description": "Accepted message addressing, frozen at submission; does not establish delivery/read.",
+        "properties": {
+          "at": {
+            "type": "string"
+          },
+          "human_recipient": {
+            "type": "boolean"
+          },
+          "human_sender": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "recipients": {
+            "items": {
+              "$ref": "#/components/schemas/AgentRef"
+            },
+            "type": "array"
+          },
+          "sender": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AgentRef"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "human_sender",
+          "human_recipient",
+          "recipients"
+        ],
+        "type": "object"
+      },
+      "Operation": {
+        "properties": {
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "generation": {
+            "type": "string"
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "result": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CommandResult"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/OperationStatus"
+          }
+        },
+        "required": [
+          "request_id",
+          "generation",
+          "status"
+        ],
+        "type": "object"
+      },
+      "OperationStatus": {
+        "enum": [
+          "Accepted",
+          "Running",
+          "Succeeded",
+          "Failed",
+          "Unknown"
+        ],
+        "type": "string"
+      },
+      "ProfileView": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tool": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "tool",
+          "description"
+        ],
+        "type": "object"
+      },
+      "PublicError": {
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ErrorCode"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
+      "RecoveryAttempt": {
+        "properties": {
+          "at": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "episode": {
+            "$ref": "#/components/schemas/Episode"
+          },
+          "id": {
+            "type": "string"
+          },
+          "message_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "description": "queued: native mailbox accepted; never equate this with model execution/success.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "episode",
+          "at",
+          "status"
+        ],
+        "type": "object"
+      },
+      "RecoveryPolicy": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "error_duration_seconds": {
+            "format": "u-int32",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "enabled",
+          "error_duration_seconds"
+        ],
+        "type": "object"
+      },
+      "RelatedAgent": {
+        "description": "Direct immutable creation provenance; status and office facts are fresh observations.",
+        "properties": {
+          "agent": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AgentView"
+              }
+            ]
+          },
+          "availability": {
+            "description": "available | unavailable; unavailable never resolves by name.",
+            "type": "string"
+          },
+          "incarnation": {
+            "type": "string"
+          },
+          "launch_failure": {
+            "description": "Native failed-start observation, independently of retained conversation availability.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "incarnation",
+          "availability"
+        ],
+        "type": "object"
+      },
+      "RequestContinuationInput": {
+        "additionalProperties": false,
+        "properties": {
+          "episode": {
+            "$ref": "#/components/schemas/Episode"
+          },
+          "generation": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "generation",
+          "episode"
+        ],
+        "type": "object"
+      },
+      "RequestError": {
+        "properties": {
+          "consecutive_failures": {
+            "format": "u-int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "error_since": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "last_error_at": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "turn_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "turn_id",
+          "source",
+          "reason",
+          "error_since",
+          "last_error_at",
+          "consecutive_failures"
+        ],
+        "type": "object"
+      },
+      "RequestPhase": {
+        "enum": [
+          "started",
+          "completed",
+          "failed",
+          "cancelled"
+        ],
+        "type": "string"
+      },
+      "RoleCatalog": {
+        "properties": {
+          "generation": {
+            "type": "string"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/RoleDefinitionView"
+            },
+            "type": "array"
+          },
+          "workspace": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "generation",
+          "roles"
+        ],
+        "type": "object"
+      },
+      "RoleDefinitionView": {
+        "properties": {
+          "default": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "profile": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "path",
+          "namespace",
+          "default"
+        ],
+        "type": "object"
+      },
+      "RoleView": {
+        "description": "Safe adopted/current Role metadata; never includes its prompt or instructions.",
+        "properties": {
+          "default": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "profile": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "path",
+          "namespace",
+          "profile",
+          "default"
+        ],
+        "type": "object"
+      },
+      "SendOutcome": {
+        "properties": {
+          "message_id": {
+            "type": "string"
+          },
+          "recipients": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "message_id",
+          "recipients"
+        ],
+        "type": "object"
+      },
+      "Settings": {
+        "properties": {
+          "collected_from": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "recovery": {
+            "$ref": "#/components/schemas/RecoveryPolicy"
+          },
+          "revision": {
+            "format": "u-int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "enabled",
+          "revision",
+          "recovery"
+        ],
+        "type": "object"
+      },
+      "Snapshot": {
+        "properties": {
+          "attempts": {
+            "items": {
+              "$ref": "#/components/schemas/RecoveryAttempt"
+            },
+            "type": "array"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/Coverage"
+          },
+          "dropped_attempts": {
+            "format": "u-int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "generation": {
+            "type": "string"
+          },
+          "jobs": {
+            "items": {
+              "$ref": "#/components/schemas/AnalysisJob"
+            },
+            "type": "array"
+          },
+          "observation_revision": {
+            "format": "u-int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "observations": {
+            "items": {
+              "$ref": "#/components/schemas/Observation"
+            },
+            "type": "array"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/Settings"
+          }
+        },
+        "required": [
+          "generation",
+          "settings",
+          "coverage",
+          "observations",
+          "jobs",
+          "attempts",
+          "dropped_attempts",
+          "observation_revision"
+        ],
+        "type": "object"
+      },
+      "StopOutcome": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "outcome"
+        ],
+        "type": "object"
+      },
+      "SubmitDirectoryMessage": {
+        "additionalProperties": false,
+        "properties": {
+          "directory": {
+            "type": "string"
+          },
+          "generation": {
+            "type": "string"
+          },
+          "message": {
+            "$ref": "#/components/schemas/MessageInput"
+          },
+          "request_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "generation",
+          "directory",
+          "message"
+        ],
+        "type": "object"
+      },
+      "SubmitLabels": {
+        "additionalProperties": false,
+        "properties": {
+          "agent": {
+            "$ref": "#/components/schemas/AgentRef"
+          },
+          "generation": {
+            "type": "string"
+          },
+          "if_revision": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "remove": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "set": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "request_id",
+          "generation",
+          "agent"
+        ],
+        "type": "object"
+      },
+      "SubmitLaunch": {
+        "additionalProperties": false,
+        "properties": {
+          "generation": {
+            "type": "string"
+          },
+          "launch": {
+            "$ref": "#/components/schemas/LaunchInput"
+          },
+          "request_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "generation",
+          "launch"
+        ],
+        "type": "object"
+      },
+      "SubmitMessage": {
+        "additionalProperties": false,
+        "properties": {
+          "agent": {
+            "$ref": "#/components/schemas/AgentRef"
+          },
+          "generation": {
+            "type": "string"
+          },
+          "message": {
+            "$ref": "#/components/schemas/MessageInput"
+          },
+          "request_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "generation",
+          "agent",
+          "message"
+        ],
+        "type": "object"
+      },
+      "SubmitTarget": {
+        "additionalProperties": false,
+        "properties": {
+          "agent": {
+            "$ref": "#/components/schemas/AgentRef"
+          },
+          "generation": {
+            "type": "string"
+          },
+          "request_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "generation",
+          "agent"
+        ],
+        "type": "object"
+      },
+      "TranscriptPage": {
+        "properties": {
+          "agent": {
+            "$ref": "#/components/schemas/AgentRef"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "exchanges": {
+            "items": {
+              "$ref": "#/components/schemas/ExchangeView"
+            },
+            "type": "array"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "agent",
+          "available",
+          "exchanges"
+        ],
+        "type": "object"
+      },
+      "Usage": {
+        "description": "Parser-normalized cumulative snapshot. Zero does not establish field presence.",
+        "properties": {
+          "basis": {
+            "type": "string"
+          },
+          "cache_read": {
+            "type": "string"
+          },
+          "cache_write": {
+            "type": "string"
+          },
+          "context_tokens": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "context_usage_ratio": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "context_window": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "input": {
+            "type": "string"
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "output": {
+            "type": "string"
+          },
+          "reasoning": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "unit": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "input",
+          "output",
+          "cache_read",
+          "cache_write",
+          "unit",
+          "basis"
+        ],
+        "type": "object"
+      },
+      "UsageSample": {
+        "properties": {
+          "agent": {
+            "$ref": "#/components/schemas/AgentRef"
+          },
+          "availability": {
+            "description": "available | missing | read_failed; a missing sample must not reuse old usage as current.",
+            "type": "string"
+          },
+          "session_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_key": {
+            "description": "Opaque native tool/path/session correlation; no filesystem path is published.",
+            "type": "string"
+          },
+          "usage": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Usage"
+              }
+            ]
+          }
+        },
+        "required": [
+          "agent",
+          "source_key",
+          "availability"
+        ],
+        "type": "object"
+      },
+      "WorkspaceCatalog": {
+        "properties": {
+          "coverage": {
+            "$ref": "#/components/schemas/DiscoveryCoverage"
+          },
+          "generation": {
+            "type": "string"
+          },
+          "workspaces": {
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceView"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "generation",
+          "workspaces",
+          "coverage"
+        ],
+        "type": "object"
+      },
+      "WorkspaceView": {
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "path",
+          "sources"
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "contact": {
+      "name": "agentx"
+    },
+    "description": "Complete public management projection. Ordinary v1 JSON. Requests require the selected listener authority in Host; Origin, when present, must exactly match that authority. No cross-origin permission or arbitrary actor context. Integer widths/signs come from native types: u-int64/int64 must use lossless JSON parsing and exact bigint conversion; int32/u-int32 are safe numbers. Nullable fields preserve null; missing optional input fields retain native serde defaults. Query keys cannot repeat except label; selectors require current_only=true. AgentRef requires exactly one incarnation/stopped_event; semantic checks remain native. Attachment upload/download use raw bytes. Inspector mutations retain route-specific external tags; internal collection/execution variants are excluded.",
+    "license": {
+      "identifier": "MIT",
+      "name": "MIT"
+    },
+    "title": "AgentX Management",
+    "version": "1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/agents": {
+      "get": {
+        "operationId": "managementListAgents",
+        "parameters": [
+          {
+            "description": "Original descriptor generation; stale values are rejected",
+            "in": "query",
+            "name": "generation",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Native opaque selector-bound cursor",
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Defaults to 50",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "format": "u-int32",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Defaults to false; labels require true",
+            "in": "query",
+            "name": "current_only",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Repeated AND selectors, maximum 16; each at most 4096 bytes",
+            "explode": true,
+            "in": "query",
+            "name": "label",
+            "required": false,
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentPage"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Bounded list with coverage; first-page native maintenance can commit cleanup.",
+        "tags": [
+          "management"
+        ]
+      },
+      "post": {
+        "operationId": "managementSubmitLaunch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitLaunch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Durable acceptance, not successful process launch. Preserve original request identity for recovery.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/agents/{name}": {
+      "get": {
+        "operationId": "managementGetAgent",
+        "parameters": [
+          {
+            "description": "Name from the exact Agent reference",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Original descriptor generation; stale values are rejected",
+            "in": "query",
+            "name": "generation",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exactly one of incarnation or stopped_event is required",
+            "in": "query",
+            "name": "incarnation",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Historical identity; never resolves a same-name successor",
+            "in": "query",
+            "name": "stopped_event",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentView"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Read the exact current or historical Agent. Never fall back to a name lookup.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/agents/{name}/fork": {
+      "post": {
+        "operationId": "managementForkAgent",
+        "parameters": [
+          {
+            "description": "Name from exact Agent reference",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitTarget"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Returns durable operation; acceptance is not completion.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/agents/{name}/kill": {
+      "post": {
+        "operationId": "managementKillAgent",
+        "parameters": [
+          {
+            "description": "Name from exact Agent reference",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitTarget"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Returns durable operation; acceptance is not completion.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/agents/{name}/labels": {
+      "get": {
+        "operationId": "managementGetLabels",
+        "parameters": [
+          {
+            "description": "Name from exact Agent reference",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Original selected generation",
+            "in": "query",
+            "name": "generation",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exactly one incarnation or stopped_event required",
+            "in": "query",
+            "name": "incarnation",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exact historical reference, never name fallback",
+            "in": "query",
+            "name": "stopped_event",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabelsSnapshot"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Bind the native get_labels capability without duplicating domain rules.",
+        "tags": [
+          "management"
+        ]
+      },
+      "post": {
+        "operationId": "managementPatchLabels",
+        "parameters": [
+          {
+            "description": "Name from exact Agent reference",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitLabels"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Bind the native patch_labels capability without duplicating domain rules.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/agents/{name}/launch-relations": {
+      "get": {
+        "operationId": "managementListLaunchRelations",
+        "parameters": [
+          {
+            "description": "Name from exact Agent reference",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Original selected generation",
+            "in": "query",
+            "name": "generation",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exactly one incarnation or stopped_event required",
+            "in": "query",
+            "name": "incarnation",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exact historical reference, never name fallback",
+            "in": "query",
+            "name": "stopped_event",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Native resource-specific opaque cursor",
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Defaults to 50",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "format": "u-int32",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchRelations"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Bind the native list_launch_relations capability without duplicating domain rules.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/agents/{name}/message-history": {
+      "get": {
+        "operationId": "managementMessageHistory",
+        "parameters": [
+          {
+            "description": "Name from exact Agent reference",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Original selected generation",
+            "in": "query",
+            "name": "generation",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exactly one incarnation or stopped_event required",
+            "in": "query",
+            "name": "incarnation",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exact historical reference, never name fallback",
+            "in": "query",
+            "name": "stopped_event",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exclusive event bound from the preceding message history page",
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Defaults to 20",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "format": "u-int32",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageHistoryPage"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Bind the native message_history capability without duplicating domain rules.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/agents/{name}/messages": {
+      "get": {
+        "operationId": "managementListMessages",
+        "parameters": [
+          {
+            "description": "Name from exact Agent reference",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Original selected generation",
+            "in": "query",
+            "name": "generation",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exactly one incarnation or stopped_event required",
+            "in": "query",
+            "name": "incarnation",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exact historical reference, never name fallback",
+            "in": "query",
+            "name": "stopped_event",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Native resource-specific opaque cursor",
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Defaults to 50",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "format": "u-int32",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessagePage"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Bind the native list_messages capability without duplicating domain rules.",
+        "tags": [
+          "management"
+        ]
+      },
+      "post": {
+        "operationId": "managementSubmitMessage",
+        "parameters": [
+          {
+            "description": "Name from the exact Agent reference",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitMessage"
+              }
+            }
+          },
+          "description": "Path name must equal body agent.name. Exact reference required; no caller context or worker ticket.",
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Accept the original request identity and payload. Acceptance is not delivery. Retain generation/request_id and reconcile after response loss; do not generate a new ID for retry.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/agents/{name}/resume": {
+      "post": {
+        "operationId": "managementResumeAgent",
+        "parameters": [
+          {
+            "description": "Name from exact Agent reference",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitTarget"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Returns durable operation; acceptance is not completion.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/agents/{name}/stop": {
+      "post": {
+        "operationId": "managementStopAgent",
+        "parameters": [
+          {
+            "description": "Name from exact Agent reference",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitTarget"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Historical stop alias shares kill behavior. Returns durable operation; acceptance is not completion.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/agents/{name}/stop-participation": {
+      "post": {
+        "operationId": "managementStopParticipation",
+        "parameters": [
+          {
+            "description": "Name from exact Agent reference",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitTarget"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Returns durable operation; acceptance is not completion.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/agents/{name}/transcript": {
+      "post": {
+        "operationId": "managementRequestTranscript",
+        "parameters": [
+          {
+            "description": "Name from exact Agent reference",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitTarget"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Returns durable operation; acceptance is not completion.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/attachments": {
+      "post": {
+        "operationId": "managementUploadAttachment",
+        "parameters": [
+          {
+            "description": "Original selected generation",
+            "in": "query",
+            "name": "generation",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "media_type",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "$ref": "#/components/schemas/BinaryBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attachment"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Raw application/octet-stream up to 10 MiB; metadata is query-only and native generation is fenced.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/attachments/{id}": {
+      "get": {
+        "operationId": "managementDownloadAttachment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Original selected generation",
+            "in": "query",
+            "name": "generation",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/BinaryBody"
+                }
+              },
+              "image/gif": {
+                "schema": {
+                  "$ref": "#/components/schemas/BinaryBody"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "$ref": "#/components/schemas/BinaryBody"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "$ref": "#/components/schemas/BinaryBody"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/BinaryBody"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Raw retained bytes; private host paths are never returned.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/directory-entry": {
+      "get": {
+        "operationId": "managementInspectDirectory",
+        "parameters": [
+          {
+            "description": "Original selected generation",
+            "in": "query",
+            "name": "generation",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "directory",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectoryEntry"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Pure route/endpoint preview; never launch, adopt or reserve.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/directory-messages": {
+      "post": {
+        "operationId": "managementSubmitDirectoryMessage",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitDirectoryMessage"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Resolve and send through native directory policy; creation/adoption semantics stay native.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/human-mailbox": {
+      "get": {
+        "operationId": "managementListHumanMailbox",
+        "parameters": [
+          {
+            "description": "Original selected generation",
+            "in": "query",
+            "name": "generation",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Native descending mailbox cursor",
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Defaults to false",
+            "in": "query",
+            "name": "pending",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "format": "u-int32",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumanMailbox"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Bind the native list_human_mailbox capability without duplicating domain rules.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/human-mailbox/handle": {
+      "post": {
+        "operationId": "managementHandleHumanMessages",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HandleHumanMessages"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HumanMailbox"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Monotonic explicit handling; reading/opening a message does not handle it.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/inspection": {
+      "get": {
+        "operationId": "managementInspectionSnapshot",
+        "parameters": [
+          {
+            "description": "Original selected generation",
+            "in": "query",
+            "name": "generation",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Snapshot"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Bind the native inspection_snapshot capability without duplicating domain rules.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/inspection/analyze": {
+      "post": {
+        "operationId": "managementAnalyzeInspection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisJob"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Existing externally tagged body must match this action; no Collect/RunAnalysis authority.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/inspection/cancel-analysis": {
+      "post": {
+        "operationId": "managementCancelInspectionAnalysis",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelAnalysisBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisJob"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Existing externally tagged body must match this action; no Collect/RunAnalysis authority.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/inspection/configure": {
+      "post": {
+        "operationId": "managementConfigureInspection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigureBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Snapshot"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Existing externally tagged body must match this action; no Collect/RunAnalysis authority.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/inspection/continuation": {
+      "post": {
+        "operationId": "managementRequestContinuation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContinuationBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryAttempt"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Existing externally tagged body must match this action; no Collect/RunAnalysis authority.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/management": {
+      "get": {
+        "operationId": "managementDescribe",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Descriptor"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Describe the selected listener; does not acquire authority.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/office-activity": {
+      "get": {
+        "operationId": "managementListOfficeActivity",
+        "parameters": [
+          {
+            "description": "Original selected generation",
+            "in": "query",
+            "name": "generation",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Native resource-specific opaque cursor",
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Defaults to 50",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "format": "u-int32",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeActivity"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Bind the native list_office_activity capability without duplicating domain rules.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/operations/{request_id}": {
+      "get": {
+        "operationId": "managementGetOperation",
+        "parameters": [
+          {
+            "description": "Original retained request ID",
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Original descriptor generation; stale values are rejected",
+            "in": "query",
+            "name": "generation",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Observe/reconcile the original receipt. NotFound does not prove no effect. Unknown remains unknown; cancelling observation does not cancel work.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/roles": {
+      "get": {
+        "operationId": "managementListRoles",
+        "parameters": [
+          {
+            "description": "Original selected generation",
+            "in": "query",
+            "name": "generation",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleCatalog"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Bind the native list_roles capability without duplicating domain rules.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/workspaces": {
+      "get": {
+        "operationId": "managementListWorkspaces",
+        "parameters": [
+          {
+            "description": "Original selected generation",
+            "in": "query",
+            "name": "generation",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceCatalog"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Bind the native list_workspaces capability without duplicating domain rules.",
+        "tags": [
+          "management"
+        ]
+      }
+    },
+    "/api/v1/workspaces/members": {
+      "get": {
+        "operationId": "managementListWorkspaceMembers",
+        "parameters": [
+          {
+            "description": "Original selected generation",
+            "in": "query",
+            "name": "generation",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exact saved absolute workspace path, or global for explicitly adopted global membership",
+            "in": "query",
+            "name": "workspace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Opaque cursor bound to generation, workspace and current_only",
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Defaults to 50",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "format": "u-int32",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Defaults to false. True excludes stopped executions",
+            "in": "query",
+            "name": "current_only",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentPage"
+                }
+              }
+            },
+            "description": "Only matching local, adopted members. current_complete is scoped to this selection."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Page matching saved workspace members before projection. Current names sort\nascending, then exact stopped events sort descending by native event ID.",
+        "tags": [
+          "management"
+        ]
+      }
+    }
+  },
+  "x-agentx-codec": {
+    "decode": "Preserve numeric tokens before schema-based conversion; never JSON.parse then BigInt, and never convert digit strings globally.",
+    "encode": "Emit bigint as unquoted decimal integer tokens only at schema-declared integer fields. Reject fractional/out-of-range values.",
+    "identities": "Agent incarnation/stopped_event, generation, request_id, message_id and revisions remain opaque strings.",
+    "integerFormats": {
+      "int32": "number",
+      "int64": "bigint",
+      "u-int32": "number",
+      "u-int64": "bigint"
+    },
+    "wire": "ordinary-json-v1"
+  }
+}

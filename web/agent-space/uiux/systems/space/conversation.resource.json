@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "system": "space",
+  "id": "space/conversation-block",
+  "kind": "block",
+  "title": "Conversation 阅读 Block",
+  "summary": "Conversation 阅读 Block · 与真实 Space 共享实现",
+  "maturity": "experimental",
+  "source": [
+    "./blocks/ConversationBlock.tsx"
+  ],
+  "design": "./conversation.design.md",
+  "useWhen": [
+    "操作和检查实际 Space Conversation 阅读 Block"
+  ],
+  "avoidWhen": [
+    "不要把本地演示结果当作原生操作或最终验收"
+  ],
+  "dependencies": [
+    "space/layout",
+    "space/conversation-composer"
+  ],
+  "events": [],
+  "states": [
+    {
+      "id": "default",
+      "title": "完整阅读",
+      "description": "完整阅读；真实组件，本地演示",
+      "scene": "default"
+    },
+    {
+      "id": "empty",
+      "title": "空记录",
+      "description": "空记录；真实组件，本地演示",
+      "scene": "empty"
+    },
+    {"id":"folio","title":"工坊信笺","description":"纸面会话与草稿","scene":"folio"},
+    {"id":"signal","title":"夜班联络台","description":"深色会话与草稿","scene":"signal"}
+  ],
+  "interactions": [],
+  "scenes": [
+    {
+      "id": "default",
+      "title": "完整阅读",
+      "description": "完整阅读；真实组件，本地演示",
+      "kind": "overview",
+      "controls": [
+        {
+          "id": "narrow",
+          "label": "窄容器",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "id": "status",
+          "label": "记录状态",
+          "type": "select",
+          "default": "available",
+          "options": [
+            {
+              "label": "available",
+              "value": "available"
+            },
+            {
+              "label": "unavailable",
+              "value": "unavailable"
+            },
+            {
+              "label": "error",
+              "value": "error"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "empty",
+      "title": "空记录",
+      "description": "空记录；真实组件，本地演示",
+      "kind": "overview"
+    },
+    {"id":"folio","title":"工坊信笺","description":"纸面会话与草稿","kind":"overview"},
+    {"id":"signal","title":"夜班联络台","description":"深色会话与草稿","kind":"overview"}
+  ],
+  "usage": {
+    "entry": "./space.web.ts",
+    "symbols": [
+      "ConversationBlock"
+    ]
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "system": "space",
+  "id": "space/foundation",
+  "kind": "foundation",
+  "title": "Space 浅色基础与语义角色",
+  "summary": "Space 浅色基础与语义角色 · 与真实 Space 共享实现",
+  "maturity": "experimental",
+  "source": [
+    "./styles/foundation.css",
+    "./styles/index.css"
+  ],
+  "design": "./foundation.design.md",
+  "useWhen": [
+    "操作和检查实际 Space Space 浅色基础与语义角色"
+  ],
+  "avoidWhen": [
+    "不要把本地演示结果当作原生操作或最终验收"
+  ],
+  "dependencies": [],
+  "events": [],
+  "states": [
+    {
+      "id": "default",
+      "title": "真实控件映射",
+      "description": "真实控件映射；真实组件，本地演示",
+      "scene": "default"
+    }
+  ],
+  "interactions": [],
+  "scenes": [
+    {
+      "id": "default",
+      "title": "真实控件映射",
+      "description": "真实控件映射；真实组件，本地演示",
+      "kind": "overview"
+    }
+  ],
+  "usage": {
+    "entry": "./space.web.ts",
+    "symbols": []
+  }
+}

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="48" viewBox="0 0 120 48">
+  <defs>
+    <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#d8d9a6"/><stop offset="1" stop-color="#769b88"/></linearGradient>
+    <linearGradient id="wood" x2="0" y2="1"><stop stop-color="#748167"/><stop offset="1" stop-color="#324d45"/></linearGradient>
+    <clipPath id="glass"><path d="M11 10h28v22H11zm35 0h28v22H46zm35 0h27v22H81z"/></clipPath>
+  </defs>
+  <path fill="#795133" opacity=".22" d="M8 7h106l3 33-6 5H7Z"/>
+  <path fill="#2e443c" stroke="#433c2a" d="M6 4h108v36H6z"/>
+  <path fill="url(#wood)" d="M8 6h104v30H8z"/>
+  <path fill="url(#sky)" d="M11 10h28v22H11zm35 0h28v22H46zm35 0h27v22H81z"/>
+  <g clip-path="url(#glass)">
+    <circle cx="92" cy="16" r="5" fill="#f2dfa6" opacity=".87"/>
+    <path fill="#739484" d="m7 29 10-8 9 4 11-9 16 12 7-4 11 4 12-8 10 6 17-7v16H7z"/>
+    <path fill="#54796a" d="m7 32 9-5 9 2 12-3 13 4 14-4 15 4 13-4 17 4v7H7z"/>
+    <path fill="#f6eac5" opacity=".33" d="M12 8h9L9 28v-6zm13 0h4L14 31h-4zm25 0h8L45 28v-7zm37 0h10L81 31v-12z"/>
+  </g>
+  <path fill="none" stroke="#ccd0a1" opacity=".65" d="M9 34V8h32v26m3 0V8h32v26m3 0V8h31v26"/>
+  <path stroke="#496458" d="M11 22h28m7 0h28m7 0h27"/>
+  <path fill="#b4ac7d" d="M4 36h112v3H4z"/>
+  <path fill="#4a5847" d="M2 39h116v2l-4 2H6l-4-2z"/>
+</svg>

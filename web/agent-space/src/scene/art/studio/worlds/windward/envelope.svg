@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="16" viewBox="0 0 24 16">
+  <title>Sealed cloud post</title>
+  <defs>
+<linearGradient id="linen" x2=".9" y2="1"><stop offset="0.000" stop-color="#fff0c7"/><stop offset="0.500" stop-color="#ead1a0"/><stop offset="1.000" stop-color="#b88d65"/></linearGradient>
+  </defs>
+<path d="m2 4 19-2 2 12-19 2z" fill="#34414a" opacity=".31"/>
+<path d="M1 3 21 1 23 13 3 15z" fill="url(#linen)" stroke="#7a604d" stroke-width=".85"/>
+<path d="m3.5 14 7-7m4.8-.5 6.7 6.1" fill="none" stroke="#bd9770" stroke-width=".72"/>
+<path d="m2 3.6 10.6 6.3 8-8.3" fill="#f5dfa9" stroke="#a68159" stroke-width=".7"/>
+<circle cx="12.7" cy="9.3" r="2" fill="#ad6046" stroke="#81523d" stroke-width=".65"/>
+<path d="M12 9.3l.7-.7.7.6m-9-4 2-.1" fill="none" stroke="#efb586" stroke-width=".6"/>
+</svg>

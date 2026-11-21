@@ -1,0 +1,1178 @@
+[
+  {
+    "from": "src/bootstrap.rs",
+    "to": "src/runtime/bootstrap.rs",
+    "action": "relocated",
+    "sha256": "6721de70cc01ba6160e3eaf8993773f736c85b763642cfce90ea7d8a1a8cfa4c"
+  },
+  {
+    "from": "src/claude_actor.rs",
+    "to": "src/integrations/hooks/claude/actor.rs",
+    "action": "relocated",
+    "sha256": "462592eed4844a28d86c54eeedc958542f529fe8b993edc13d717b1ab14e3673"
+  },
+  {
+    "from": "src/claude_mod/.claude-plugin/plugin.json",
+    "to": "src/integrations/plugins/claude/.claude-plugin/plugin.json",
+    "action": "relocated",
+    "sha256": "d475d1bf49b92f84b2965c729fd4271139c56b7e1f2e536597a8940c7ae847cb"
+  },
+  {
+    "from": "src/claude_mod/hooks/hooks.json",
+    "to": "src/integrations/plugins/claude/hooks/hooks.json",
+    "action": "relocated",
+    "sha256": "b6e8720c937b1a4ee1ee389fa5d9b5a22df25298241f701bb484d28f431f5153"
+  },
+  {
+    "from": "src/claude_mod/hooks/register.js",
+    "to": "src/integrations/plugins/claude/hooks/register.js",
+    "action": "relocated",
+    "sha256": "9ce1c7e0dd3eb1f8906d9e48f3bfd33bb18e4786652ff9ea7ad1c3be6dd74f58"
+  },
+  {
+    "from": "src/claude_mod/tests/register.test.ts",
+    "to": "src/integrations/plugins/claude/tests/register.test.ts",
+    "action": "relocated",
+    "sha256": "16bba20c8821b5ce7552fcc0988b7cfd13d58d2f8b1d832ea5fd116f560ac710"
+  },
+  {
+    "from": "src/cli_context.rs",
+    "to": "src/cli/context.rs",
+    "action": "relocated",
+    "sha256": "f98f27ed7b1c9884c0feb58cc330b99bf871c15624597fa632bba0b034fc0e1d"
+  },
+  {
+    "from": "src/commands/archive.rs",
+    "to": "src/cli/commands/archive.rs",
+    "action": "relocated",
+    "sha256": "7186071b810eefa9e81f53085b6d55dc006b69b6e85cbabd1d29b325985b4664"
+  },
+  {
+    "from": "src/commands/bundle.rs",
+    "to": "src/cli/commands/bundle.rs",
+    "action": "relocated",
+    "sha256": "15ddb0933ffdca0dc5eb3eb00947755d8812a9175c0515172917e4651a721c9c"
+  },
+  {
+    "from": "src/commands/config.rs",
+    "to": "src/cli/commands/config.rs",
+    "action": "relocated",
+    "sha256": "74631699d8887293c798bee79c3950c7ee8821213d5e022da4f4d55b179f3fcd"
+  },
+  {
+    "from": "src/commands/daemon.rs",
+    "to": "src/cli/commands/daemon.rs",
+    "action": "relocated",
+    "sha256": "1b8a8cfe37c6d595d020e60f94d08252fd5bf520a414cf93bf1996b7d880d1a5"
+  },
+  {
+    "from": "src/commands/events.rs",
+    "to": "src/cli/commands/events.rs",
+    "action": "relocated",
+    "sha256": "1f77faba39b403823a9fb2915b9bb259d97a14c3073a197c93f99637d44b384c"
+  },
+  {
+    "from": "src/commands/fork.rs",
+    "to": "src/cli/commands/fork.rs",
+    "action": "relocated",
+    "sha256": "282a9d0fa85884bc34344659769fb5306c8435b4ab2a261617c451bd8761c7d5"
+  },
+  {
+    "from": "src/commands/help.rs",
+    "to": "src/cli/commands/help.rs",
+    "action": "relocated",
+    "sha256": "55fe40add8860a7fd973ad80a457a85e8414aa5ad6a89a1dd9f4788fcebf3300"
+  },
+  {
+    "from": "src/commands/hooks.rs",
+    "to": "src/cli/commands/hooks.rs",
+    "action": "relocated",
+    "sha256": "119bf794769210712e37f80dd6c587dcead1846cf325153d74d744e40b932891"
+  },
+  {
+    "from": "src/commands/kill.rs",
+    "to": "src/cli/commands/kill.rs",
+    "action": "relocated",
+    "sha256": "77ced320be3c1e368f717c70651c41b9859bbaf89a32922056a87fa46408bb27"
+  },
+  {
+    "from": "src/commands/launch.rs",
+    "to": "src/cli/commands/launch.rs",
+    "action": "relocated",
+    "sha256": "95bf137238622616d79a73746e4eb82f1a803b2bfe6779f50025e3838ab60d58"
+  },
+  {
+    "from": "src/commands/list.rs",
+    "to": "src/cli/commands/list.rs",
+    "action": "relocated",
+    "sha256": "fb3ca5bef6759f71622fe5a74be8eef01a3bac3f9e361c9b24d078e30b6cf41d"
+  },
+  {
+    "from": "src/commands/listen.rs",
+    "to": "src/cli/commands/listen.rs",
+    "action": "relocated",
+    "sha256": "3cea0f2d261ec601014ff99a6a7d6077fc341ce77ceb50650431bcfaa1c54337"
+  },
+  {
+    "from": "src/commands/mod.rs",
+    "to": "src/cli/commands/mod.rs",
+    "action": "relocated",
+    "sha256": "e55304b99d7b14de64462a0977b34361b6e1e66c0a3ce5a835b6f649c70874ad"
+  },
+  {
+    "from": "src/commands/relay.rs",
+    "to": "src/cli/commands/relay.rs",
+    "action": "relocated",
+    "sha256": "f78fba1348123022ef71e773379ee4a801cfc85944ee583dd862bd6153dc2307"
+  },
+  {
+    "from": "src/commands/reset.rs",
+    "to": "src/cli/commands/reset/mod.rs",
+    "action": "relocated",
+    "sha256": "24064f3cd00aaeedc77395fe09e383b0b030cafa040daf35aef9b569612f1e38"
+  },
+  {
+    "from": "src/commands/reset_ops.rs",
+    "to": "src/cli/commands/reset/operations.rs",
+    "action": "relocated",
+    "sha256": "fc5d991a8babe946f431afd3a2e6e2a2e15d4b1435b168ceca6e970c5f63b89f"
+  },
+  {
+    "from": "src/commands/reset_preview.rs",
+    "to": "src/cli/commands/reset/preview.rs",
+    "action": "relocated",
+    "sha256": "3ca792be8684d89dd5ee742d4ceca83caa6b6ba3142d27f9b7d111f42bc41704"
+  },
+  {
+    "from": "src/commands/resume.rs",
+    "to": "src/cli/commands/resume.rs",
+    "action": "relocated",
+    "sha256": "0d164a13af10963a8ea861da46e71e65cca9a9583a9419fbd4e5b214edcd2dcc"
+  },
+  {
+    "from": "src/commands/run.rs",
+    "to": "src/cli/commands/run.rs",
+    "action": "relocated",
+    "sha256": "dd2db84d21a4b1f1dc4d1f6fc2861b91ba1d0b7d3b5e9cc39af3d8f526e04692"
+  },
+  {
+    "from": "src/commands/send.rs",
+    "to": "src/cli/commands/send.rs",
+    "action": "relocated",
+    "sha256": "44c48224f3a0048c5adbb41b3c771d28aba835b4a40cf331ba22dfa62aa2c59d"
+  },
+  {
+    "from": "src/commands/start.rs",
+    "to": "src/cli/commands/start.rs",
+    "action": "relocated",
+    "sha256": "3422c146b3657bed0bf5b9f149e138b72806d770a39f374904c91a75f5586b10"
+  },
+  {
+    "from": "src/commands/status.rs",
+    "to": "src/cli/commands/status.rs",
+    "action": "relocated",
+    "sha256": "fdaffd59a58607673df02c7c530d3c45f323f959586757bf0720b8b235130fd8"
+  },
+  {
+    "from": "src/commands/stop.rs",
+    "to": "src/cli/commands/stop.rs",
+    "action": "relocated",
+    "sha256": "9df54785fc8cbb44f9c2daf459661156dfdd2af096eca5d4f1cf5a0e8187b766"
+  },
+  {
+    "from": "src/commands/term.rs",
+    "to": "src/cli/commands/term.rs",
+    "action": "relocated",
+    "sha256": "d3adc77b3a2248d94bfbc46636203cf8af2660500dcabb668ee529c0e6c435bf"
+  },
+  {
+    "from": "src/commands/transcript.rs",
+    "to": "src/cli/commands/transcript.rs",
+    "action": "relocated",
+    "sha256": "47659881d27295c1e371a8a4397d73672cb1f703d01d21dbee0ac1721bfbc0e7"
+  },
+  {
+    "from": "src/commands/update.rs",
+    "to": "src/cli/commands/update.rs",
+    "action": "relocated",
+    "sha256": "187f0e441aecb76b927d8fdaa6eb162ddcb327103ff26c13c0be858c18cbaacf"
+  },
+  {
+    "from": "src/config.rs",
+    "to": "src/config.rs",
+    "action": "unchanged",
+    "sha256": "f5a94b634f04f1e6bb6d2926d7961ddbbfee8f0a5a11c476cb67c61f0d2a73aa"
+  },
+  {
+    "from": "src/copilot_plugin/extension.mjs",
+    "to": "src/integrations/plugins/copilot/extension.mjs",
+    "action": "relocated",
+    "sha256": "4ff109784c3e507d134a56486ad9844cbb7fca350fe6bc23535715a9b9c2d40b"
+  },
+  {
+    "from": "src/core/bundles.rs",
+    "to": "src/messaging/bundles.rs",
+    "action": "relocated",
+    "sha256": "0dd552e093614f0270e6ffabb14a5f5bff8351307addd53fb117447904e12b3e"
+  },
+  {
+    "from": "src/core/detail_levels.rs",
+    "to": "src/transcript/detail_levels.rs",
+    "action": "relocated",
+    "sha256": "057cb714e1eca7465b2104ce1c1dd56db415410963a7069946584042015c02af"
+  },
+  {
+    "from": "src/core/filters.rs",
+    "to": "src/events/filters.rs",
+    "action": "relocated",
+    "sha256": "097e7fc414b485d6c0406539b5ceb21e8510d2e2a0519d82ebf5d1f577f1509d"
+  },
+  {
+    "from": "src/core/helpers.rs",
+    "to": "src/messaging/validation.rs",
+    "action": "relocated",
+    "sha256": "bc978cff30ca23fa4a34f2a0597e9a1b8422a9010bd510f957ddc133251663e7"
+  },
+  {
+    "from": "src/core/launch_status.rs",
+    "to": "src/runtime/launch_status.rs",
+    "action": "relocated",
+    "sha256": "019d73897380b5e453a2a97e2d318400192709bd7c3c6f43eb54ef533ad119e6"
+  },
+  {
+    "from": "src/core/mod.rs",
+    "to": null,
+    "action": "removed-empty-module",
+    "sha256": "7bf27a5173af85b58a5812e912d51b2c254f7589c291aa6424c8bcc8eb06b8d8"
+  },
+  {
+    "from": "src/core/tips.rs",
+    "to": "src/cli/tips.rs",
+    "action": "relocated",
+    "sha256": "a34ec20cab54a353c786b87b3f3f4baa4e9e6773750bfa5d9f5edeb5ff4f378a"
+  },
+  {
+    "from": "src/db/claude_actors.rs",
+    "to": "src/db/claude_actors.rs",
+    "action": "unchanged",
+    "sha256": "ff1f65b0fc05d2dfe4f5bec5838b6737e0f46b93fbae756b0a9668481e157b67"
+  },
+  {
+    "from": "src/db/events.rs",
+    "to": "src/db/events.rs",
+    "action": "unchanged",
+    "sha256": "c0c014cef940f8bcbf76875e940fe2155b20f01d06b0f48b3032518d0d2fdbab"
+  },
+  {
+    "from": "src/db/instances.rs",
+    "to": "src/db/instances.rs",
+    "action": "unchanged",
+    "sha256": "7c6ae5928554cf12552239858fef42817df74caf62fc96bc3e19f97761554a29"
+  },
+  {
+    "from": "src/db/kv.rs",
+    "to": "src/db/kv.rs",
+    "action": "unchanged",
+    "sha256": "832845de3d1087879cc5139cbea56801aa7cf93ce51b60f5d560bf117905ab1a"
+  },
+  {
+    "from": "src/db/mod.rs",
+    "to": "src/db/mod.rs",
+    "action": "unchanged",
+    "sha256": "9da7e778b865804a8cf5124339a2544203207571aa52eca9c6613334ae90e02f"
+  },
+  {
+    "from": "src/db/notify.rs",
+    "to": "src/db/notify.rs",
+    "action": "unchanged",
+    "sha256": "695a2d935754e932725b5f55c803781799e4a42c41d0a7f51099d75e9595b4d4"
+  },
+  {
+    "from": "src/db/reqwatch_policy.rs",
+    "to": "src/db/reqwatch_policy.rs",
+    "action": "unchanged",
+    "sha256": "1a85dc859dd099ae019697ece53df9113dbd02bdecc87fd2412f43899e3b9321"
+  },
+  {
+    "from": "src/db/sessions.rs",
+    "to": "src/db/sessions.rs",
+    "action": "unchanged",
+    "sha256": "ae7d074504ed31948f3564531e40b72adfa44cdfa5d9acb82cd9e6e0e843effb"
+  },
+  {
+    "from": "src/db/subscriptions.rs",
+    "to": "src/db/subscriptions.rs",
+    "action": "unchanged",
+    "sha256": "30cde9557d05153736cbaebd7127daa5299b7d0b7a39cb3af25443fc93418a0a"
+  },
+  {
+    "from": "src/delivery/antigravity.rs",
+    "to": "src/messaging/delivery/antigravity.rs",
+    "action": "relocated",
+    "sha256": "618f1ee62c43ac3e4c6418b54e430c2b2409878c3f0b0bce79cdea7933e6299c"
+  },
+  {
+    "from": "src/delivery/grok.rs",
+    "to": "src/messaging/delivery/grok.rs",
+    "action": "relocated",
+    "sha256": "6fdb83e6dc35410609ff058ccb1f25d15e3fde25711a3c197b132c575e449646"
+  },
+  {
+    "from": "src/delivery.rs",
+    "to": "src/messaging/delivery/mod.rs",
+    "action": "relocated",
+    "sha256": "a34ad38156f1b1f2c7c0256909f04187893d920478a814935446b41909ece193"
+  },
+  {
+    "from": "src/hermes_plugin/__init__.py",
+    "to": "src/integrations/plugins/hermes/__init__.py",
+    "action": "relocated",
+    "sha256": "37994105cac3739d76aa215fdc25ec959d36d481a57d4f7d3de2bc98adf21df0"
+  },
+  {
+    "from": "src/hermes_plugin/plugin.yaml",
+    "to": "src/integrations/plugins/hermes/plugin.yaml",
+    "action": "relocated",
+    "sha256": "5ca6e9075ea8664e751c0117239096ecbb56acd10e4fcfc813a1003ed7935720"
+  },
+  {
+    "from": "src/hooks/antigravity.rs",
+    "to": "src/integrations/hooks/antigravity.rs",
+    "action": "relocated",
+    "sha256": "12cafe26ff3fed21db5bc38629b93ad23f729eae0ee7107c92880c12de438d82"
+  },
+  {
+    "from": "src/hooks/claude.rs",
+    "to": "src/integrations/hooks/claude/mod.rs",
+    "action": "relocated",
+    "sha256": "5d25c8821f5c2d4b8d661203d1ea6e41d5b2e45ce5b870c03276dbb26172cd87"
+  },
+  {
+    "from": "src/hooks/claude_mod.rs",
+    "to": "src/integrations/hooks/claude/native.rs",
+    "action": "relocated",
+    "sha256": "c966e262a49a784a7c5d969b2038d69fefdaecaca2f78bff1460be92f616971e"
+  },
+  {
+    "from": "src/hooks/codex.rs",
+    "to": "src/integrations/hooks/codex.rs",
+    "action": "relocated",
+    "sha256": "a950fc13a7118c1ed4622fa04fafbd744f0b04a0aba3ad10a996dd7384ea5b08"
+  },
+  {
+    "from": "src/hooks/common.rs",
+    "to": "src/integrations/hooks/common.rs",
+    "action": "relocated",
+    "sha256": "d13146bac092c90c439334e99b46f4c3868f01184dae7a21f0e2b662ff7fedc3"
+  },
+  {
+    "from": "src/hooks/copilot.rs",
+    "to": "src/integrations/hooks/copilot.rs",
+    "action": "relocated",
+    "sha256": "b3d249e764e1e3f22f4af2366131ced17d1fcb5c922b27159a5888ed82ed1fa4"
+  },
+  {
+    "from": "src/hooks/cursor.rs",
+    "to": "src/integrations/hooks/cursor.rs",
+    "action": "relocated",
+    "sha256": "da603158b9eab131f11bc6c5427ed2e13a786e753a56e605023cb935757e5bc0"
+  },
+  {
+    "from": "src/hooks/family.rs",
+    "to": "src/integrations/hooks/tool_status.rs",
+    "action": "relocated",
+    "sha256": "073786baaba77393c060f9f81d34bca390480faefbdfbb1476c78d822f9d371d"
+  },
+  {
+    "from": "src/hooks/gemini.rs",
+    "to": "src/integrations/hooks/gemini.rs",
+    "action": "relocated",
+    "sha256": "7d283b0c38a16a4e493d7d73cb15c149c58a924527e7e32296add7c84bb73c58"
+  },
+  {
+    "from": "src/hooks/hermes.rs",
+    "to": "src/integrations/hooks/hermes/mod.rs",
+    "action": "relocated",
+    "sha256": "c8b22085d92d2203576443c7925603d767a475a3a0b3384ccdcef00cc53b9292"
+  },
+  {
+    "from": "src/hooks/hermes_bridge.rs",
+    "to": "src/integrations/hooks/hermes/bridge.rs",
+    "action": "relocated",
+    "sha256": "ee92435b3ceaf793c78aaa2750ae5cac1e02c35f85d95697b0b65ffa6ce8582c"
+  },
+  {
+    "from": "src/hooks/kimi/config.rs",
+    "to": "src/integrations/hooks/kimi/config.rs",
+    "action": "relocated",
+    "sha256": "983054145059fb725513b798e707611f408adab5d9b276d7dce5e12c54ff2d56"
+  },
+  {
+    "from": "src/hooks/kimi/handlers.rs",
+    "to": "src/integrations/hooks/kimi/handlers.rs",
+    "action": "relocated",
+    "sha256": "430a6f6e4ff9c6d6000ebf4f17f05937d530695ff279ecd4f4216d2386395a97"
+  },
+  {
+    "from": "src/hooks/kimi/mod.rs",
+    "to": "src/integrations/hooks/kimi/mod.rs",
+    "action": "relocated",
+    "sha256": "ec655f737e5cb866f4ce64192f033209bbd170c83eb453cb2c4d4de84928b06e"
+  },
+  {
+    "from": "src/hooks/kimi/tests.rs",
+    "to": "src/integrations/hooks/kimi/tests.rs",
+    "action": "relocated",
+    "sha256": "25d2cb0fd2b094840c26e287f29c47cb9da6bebedf76f1c46f126ed4ab549c86"
+  },
+  {
+    "from": "src/hooks/mod.rs",
+    "to": "src/integrations/hooks/mod.rs",
+    "action": "relocated",
+    "sha256": "2b410e3e17dcb904ee8d62dd914c821c63bcc5c8896a228414759de5fa085721"
+  },
+  {
+    "from": "src/hooks/omp/mod.rs",
+    "to": "src/integrations/hooks/omp/mod.rs",
+    "action": "relocated",
+    "sha256": "869ae12b5fdb54c5e441a4ecd178d84bd7d6247bf5fccba65b45c2b2d5abe206"
+  },
+  {
+    "from": "src/hooks/omp/plugin.rs",
+    "to": "src/integrations/hooks/omp/plugin.rs",
+    "action": "relocated",
+    "sha256": "3d11cc80c483ebde99137a14ac1b2ed7cc3a5ab07b13e79c081b78d6b1eac8e9"
+  },
+  {
+    "from": "src/hooks/omp/tests.rs",
+    "to": "src/integrations/hooks/omp/tests.rs",
+    "action": "relocated",
+    "sha256": "f8f368982726e54f5785df12b4f1cefe3795f19bc6d5f89e0776919ea2693ecc"
+  },
+  {
+    "from": "src/hooks/opencode.rs",
+    "to": "src/integrations/hooks/opencode.rs",
+    "action": "relocated",
+    "sha256": "de0caf433c3da9ce3545ff7b340355ac11e81350dad3288385595755e147b731"
+  },
+  {
+    "from": "src/hooks/pi.rs",
+    "to": "src/integrations/hooks/pi.rs",
+    "action": "relocated",
+    "sha256": "bcf477ce912ed1d70503c965fcf1021af33ca92f12ef79cb6e909282c34e3c20"
+  },
+  {
+    "from": "src/hooks/pi_family.rs",
+    "to": "src/integrations/hooks/pi_family.rs",
+    "action": "relocated",
+    "sha256": "b7ee4e24d87a4f9331297191fce49f99e470f39d5ab77597475f7de9571b1877"
+  },
+  {
+    "from": "src/hooks/plugin_rpc.rs",
+    "to": "src/integrations/hooks/plugin_rpc.rs",
+    "action": "relocated",
+    "sha256": "6f6155d3653af3c12787c01eaa2ed2e9b1fe32a5972d99aad8b261d58ef7adfb"
+  },
+  {
+    "from": "src/hooks/qoder.rs",
+    "to": "src/integrations/hooks/qoder.rs",
+    "action": "relocated",
+    "sha256": "12f564cbf76f1c879d380530428cd8bd1bab72c09000731460133c50d52d1038"
+  },
+  {
+    "from": "src/hooks/runtime.rs",
+    "to": "src/integrations/hooks/runtime.rs",
+    "action": "relocated",
+    "sha256": "63375eadef95444e4e535034d945688be7641b734da7938c7be83e06a080ad93"
+  },
+  {
+    "from": "src/hooks/utils.rs",
+    "to": "src/integrations/hooks/registry.rs",
+    "action": "relocated",
+    "sha256": "dc65d070e0e2f2e3f54d95ee61db3bc2c82bba577b669d735cf690fd388b7d3f"
+  },
+  {
+    "from": "src/identity.rs",
+    "to": "src/agents/identity.rs",
+    "action": "relocated",
+    "sha256": "aec7b98c9ac9d78facf2f5f7ffab1e98e3b237b5b6bb4defc905e017f438c53b"
+  },
+  {
+    "from": "src/instance_binding.rs",
+    "to": "src/agents/binding.rs",
+    "action": "relocated",
+    "sha256": "3ec045cea09a8e2cbddf774de1e720ae4ec311bb4c14647958545991ea72cd37"
+  },
+  {
+    "from": "src/instance_lifecycle.rs",
+    "to": "src/agents/lifecycle.rs",
+    "action": "relocated",
+    "sha256": "083f21c988205cb13183bdac9c9a0c94a799dca6a555942afb7563e2e8ae4ad1"
+  },
+  {
+    "from": "src/instance_names.rs",
+    "to": "src/agents/names.rs",
+    "action": "relocated",
+    "sha256": "4d129cb5e20a3a97a99cb7f5f158ffdc921d7ebeffc24f9f290fb4a98fb6f429"
+  },
+  {
+    "from": "src/instances.rs",
+    "to": "src/agents/records.rs",
+    "action": "relocated",
+    "sha256": "00e40d9de6ddde5614b0114b73c8c3d94294064d183737b04d2729bd92468a34"
+  },
+  {
+    "from": "src/integration_spec.rs",
+    "to": "src/integrations/registry.rs",
+    "action": "relocated",
+    "sha256": "2b4b9b7602218abceab4e88eeedde4c6e6da7078ddd6a7015315ceb0e04456b1"
+  },
+  {
+    "from": "src/launcher.rs",
+    "to": "src/runtime/launcher.rs",
+    "action": "relocated",
+    "sha256": "58181a3f8f1b619b5109f85e98643949d74f692ad68bd622a9396ba080a3c755"
+  },
+  {
+    "from": "src/log.rs",
+    "to": "src/log.rs",
+    "action": "unchanged",
+    "sha256": "a119ecec3db478c35c30dabe077271ee88f375322f7b99eda3e58d12adb57aaf"
+  },
+  {
+    "from": "src/main.rs",
+    "to": "src/main.rs",
+    "action": "unchanged",
+    "sha256": "a86e4cd3e1f1444aff9096c84496f1c7eda7283ea2383f50c2c96940a5b3e6d9"
+  },
+  {
+    "from": "src/messages.rs",
+    "to": "src/messaging/routing.rs",
+    "action": "relocated",
+    "sha256": "e9436e09be7cbb576500a6f1d57957d6b2596959c0b58ea40b10166ee3cb0b27"
+  },
+  {
+    "from": "src/notify/mod.rs",
+    "to": "src/runtime/notify/mod.rs",
+    "action": "relocated",
+    "sha256": "2e39b6821252ca90318201d6a1c7ce9f1596415b18ad7422768f20217e760130"
+  },
+  {
+    "from": "src/notify/server.rs",
+    "to": "src/runtime/notify/server.rs",
+    "action": "relocated",
+    "sha256": "50eff3e044d18fc1ad4f11dd0d4c6bc8327dd700f5398334bdd25f485c86095b"
+  },
+  {
+    "from": "src/notify/wake.rs",
+    "to": "src/runtime/notify/wake.rs",
+    "action": "relocated",
+    "sha256": "e4188be1138ff97425e2ded0c7942134e85401c2044a6bf6d8b5af0704ed8b1b"
+  },
+  {
+    "from": "src/omp_plugin/agentx.ts",
+    "to": "src/integrations/plugins/omp/agentx.ts",
+    "action": "relocated",
+    "sha256": "71ee81cede1bbc284148535b75331271abe21d8862d8f9249cc463ba9009052a"
+  },
+  {
+    "from": "src/opencode_plugin/agentx.ts",
+    "to": "src/integrations/plugins/opencode/agentx.ts",
+    "action": "relocated",
+    "sha256": "acd1a17c5975681fbf856c092acbdb38a62d123d405dc5f4100e72a12d574f70"
+  },
+  {
+    "from": "src/paths.rs",
+    "to": "src/paths.rs",
+    "action": "unchanged",
+    "sha256": "73dac77b53c79a081fdf06f6eba567dd0436a5a0dcd3d75f86ec22458a67971c"
+  },
+  {
+    "from": "src/pi_plugin/agentx.ts",
+    "to": "src/integrations/plugins/pi/agentx.ts",
+    "action": "relocated",
+    "sha256": "a7abd5ee3745822e6ef8b8496e96ffd55ca13ecbe16ccc074860727bda85dd32"
+  },
+  {
+    "from": "src/pidtrack.rs",
+    "to": "src/runtime/process_tracking.rs",
+    "action": "relocated",
+    "sha256": "e7a9723a78237b2d0df1786018034a81047aae7db59cf06820b804f123561762"
+  },
+  {
+    "from": "src/pty/conpty.rs",
+    "to": "src/runtime/pty/conpty.rs",
+    "action": "relocated",
+    "sha256": "3713a5df83cfc8b2646f6538e601c665499896fe88d6fa3dcf8d230fd9c6c3c1"
+  },
+  {
+    "from": "src/pty/console_input.rs",
+    "to": "src/runtime/pty/console_input.rs",
+    "action": "relocated",
+    "sha256": "bd0450505ffd1df91da216ba42893d404d0b1c1cac76efbded908116c8a15ad9"
+  },
+  {
+    "from": "src/pty/forward.rs",
+    "to": "src/runtime/pty/forward.rs",
+    "action": "relocated",
+    "sha256": "2c0ad4cda2310793fcc0e92f219a8c3727bdaef4fa8ea2f1ded343905cc79b66"
+  },
+  {
+    "from": "src/pty/inject.rs",
+    "to": "src/runtime/pty/inject.rs",
+    "action": "relocated",
+    "sha256": "f3197e4e8a1ffde2c52f43c5f393f803d15ce6463f03892ed6319579ec872fca"
+  },
+  {
+    "from": "src/pty/mod.rs",
+    "to": "src/runtime/pty/mod.rs",
+    "action": "relocated",
+    "sha256": "b410517e4ba71d202d7a976b81f655d12b453d64145727c87279f5fa3965ed58"
+  },
+  {
+    "from": "src/pty/screen.rs",
+    "to": "src/runtime/pty/screen.rs",
+    "action": "relocated",
+    "sha256": "16fd93b3f59ffb7a90382912301e6ec3de6bca029f8866a9a52cd35bdabdd695"
+  },
+  {
+    "from": "src/pty/shared.rs",
+    "to": "src/runtime/pty/shared.rs",
+    "action": "relocated",
+    "sha256": "2dde902df1661a7fc70066abefa8774df4b01c3e6c51b8176c9a99367077b54f"
+  },
+  {
+    "from": "src/pty/stdout_queue.rs",
+    "to": "src/runtime/pty/stdout_queue.rs",
+    "action": "relocated",
+    "sha256": "193ae77fa956969280932b732a836c34b0a0aa69aeeab3b4003919f5abe3056c"
+  },
+  {
+    "from": "src/pty/terminal.rs",
+    "to": "src/runtime/pty/terminal.rs",
+    "action": "relocated",
+    "sha256": "13728405df19a08fb15bd6cc82e9b711fe7ce450729fd5a6632176fe2a0e22dd"
+  },
+  {
+    "from": "src/pty/trace.rs",
+    "to": "src/runtime/pty/trace.rs",
+    "action": "relocated",
+    "sha256": "4bb752e600eb20b01d303195352a898e926e6bc21326f520c55c6b693e3d8d9b"
+  },
+  {
+    "from": "src/pty/vt_compat.rs",
+    "to": "src/runtime/pty/vt_compat.rs",
+    "action": "relocated",
+    "sha256": "130bdfcd17ec43070130f2a599466f298aa42bf8ca2927efc71c76d80631116f"
+  },
+  {
+    "from": "src/pty/win.rs",
+    "to": "src/runtime/pty/win.rs",
+    "action": "relocated",
+    "sha256": "fb38b8b787c6a9946818b56911c674450c6c21de99e0b68e248bfd7a574d6037"
+  },
+  {
+    "from": "src/relay/backfill.rs",
+    "to": "src/relay/backfill.rs",
+    "action": "unchanged",
+    "sha256": "09a168758d215ef9ac7f68df6ad6310d17dfd5bb60cf37208fbd12b2bd3aae81"
+  },
+  {
+    "from": "src/relay/broker.rs",
+    "to": "src/relay/broker.rs",
+    "action": "unchanged",
+    "sha256": "e8d8e9c882cdc7b16c26e7a3e64461e30e85e136c2f58f2b622cec01e975a014"
+  },
+  {
+    "from": "src/relay/client.rs",
+    "to": "src/relay/client.rs",
+    "action": "unchanged",
+    "sha256": "1c3979259dba8e9609c3128a2ba236535fb4dedaa936540ed3c1055a8118f4d8"
+  },
+  {
+    "from": "src/relay/control.rs",
+    "to": "src/relay/control.rs",
+    "action": "unchanged",
+    "sha256": "fd319363b7130346a44869de875fd469aaa15d236c4b567aad32678ab2c30f73"
+  },
+  {
+    "from": "src/relay/crypto.rs",
+    "to": "src/relay/crypto.rs",
+    "action": "unchanged",
+    "sha256": "c64250358379b09eb959e2fce1c8ec32cd948163424ed9066f40e436928fb232"
+  },
+  {
+    "from": "src/relay/mod.rs",
+    "to": "src/relay/mod.rs",
+    "action": "unchanged",
+    "sha256": "3545d7ef16ea913fd1184c39d5a828739b13f6cc155b02926abe58b31d9cf492"
+  },
+  {
+    "from": "src/relay/pull.rs",
+    "to": "src/relay/pull.rs",
+    "action": "unchanged",
+    "sha256": "12bee0746de15b0c8c43f50048e588f44821ef34e1564ddf6829ca07a6090cf6"
+  },
+  {
+    "from": "src/relay/push.rs",
+    "to": "src/relay/push.rs",
+    "action": "unchanged",
+    "sha256": "038ef0d359151f6b5031bbfa6af175f0473c48a32f5f67305d0083ba8fca039a"
+  },
+  {
+    "from": "src/relay/replay.rs",
+    "to": "src/relay/replay.rs",
+    "action": "unchanged",
+    "sha256": "93dca8173e6ca045f5a5077bb816b672e466fe84783d045d2e76274661750783"
+  },
+  {
+    "from": "src/relay/token.rs",
+    "to": "src/relay/token.rs",
+    "action": "unchanged",
+    "sha256": "285d630930d71d0579101f95cd85031afc10955943038ba2c82c4f5ad07343ae"
+  },
+  {
+    "from": "src/relay/worker.rs",
+    "to": "src/relay/worker.rs",
+    "action": "unchanged",
+    "sha256": "425a6763086d3e1b803180aac22bf63bc7ee6dfa37e67b8fdeeb13f1e8755157"
+  },
+  {
+    "from": "src/router.rs",
+    "to": "src/cli/router.rs",
+    "action": "relocated",
+    "sha256": "a1f58235265df7acd57e7549984d6870143a8531a7464ab05fab1ff0093d1e02"
+  },
+  {
+    "from": "src/runtime_env.rs",
+    "to": "src/runtime/env.rs",
+    "action": "relocated",
+    "sha256": "c6776db3144501c5b38645aee569d87ce3fdac11ef61d1e91ee198dd73964a4a"
+  },
+  {
+    "from": "src/scripts/bundled/confess.sh",
+    "to": "src/workflows/bundled/confess.sh",
+    "action": "relocated",
+    "sha256": "493f2e836adcb6738190fc5e2891944690ba205d57493aa2a02b9982931c5865"
+  },
+  {
+    "from": "src/scripts/bundled/debate.sh",
+    "to": "src/workflows/bundled/debate.sh",
+    "action": "relocated",
+    "sha256": "bfcde2c70d221c0467ba6aecdf1459c4e5a5a787d6eb32d9f198709fb7a4e504"
+  },
+  {
+    "from": "src/scripts/bundled/fatcow.sh",
+    "to": "src/workflows/bundled/fatcow.sh",
+    "action": "relocated",
+    "sha256": "42b0f6ab3a2c87e84505cc773328f2cce4118a0ab06d201a377050872d53a99e"
+  },
+  {
+    "from": "src/scripts/bundled/onidle.sh",
+    "to": "src/workflows/bundled/onidle.sh",
+    "action": "relocated",
+    "sha256": "99a444f66c20f7dbe740833180bd979d52d455e8416f61c67c87bc0b882567b9"
+  },
+  {
+    "from": "src/scripts.rs",
+    "to": "src/workflows/mod.rs",
+    "action": "relocated",
+    "sha256": "1b91b0f6d207b2bba65a8ff2c33ae3138b4a33f0794bc9c9e9f3ee6f121388e2"
+  },
+  {
+    "from": "src/shared/ansi.rs",
+    "to": "src/shared/ansi.rs",
+    "action": "unchanged",
+    "sha256": "112c7c692932c95539c2e6020a780b7be579ca945fd56a70488682647cf74e3e"
+  },
+  {
+    "from": "src/shared/constants.rs",
+    "to": "src/shared/constants.rs",
+    "action": "unchanged",
+    "sha256": "c31a6d04ca544c724768d42d79dd4e578cc14a601fe3ce4c72497a6f10ce96ad"
+  },
+  {
+    "from": "src/shared/context.rs",
+    "to": "src/runtime/context.rs",
+    "action": "relocated",
+    "sha256": "45658fa9db3e917d1c39e6faed87a586bf4883bcfc1c3dff0fce9b67f40900a8"
+  },
+  {
+    "from": "src/shared/errors.rs",
+    "to": "src/shared/errors.rs",
+    "action": "unchanged",
+    "sha256": "ce92d6b5e5ad33d22248ca5d19ac6895e732086eb2acf8a1fbf42f6bf3ce131a"
+  },
+  {
+    "from": "src/shared/identity.rs",
+    "to": "src/shared/identity.rs",
+    "action": "unchanged",
+    "sha256": "9d84b09a07bb9fdd04ed00b4eb2c01063410f8e400194b27ef93327da2830b50"
+  },
+  {
+    "from": "src/shared/mod.rs",
+    "to": "src/shared/mod.rs",
+    "action": "unchanged",
+    "sha256": "4231f2677809b32f8026894ea4875b81741b64bf01651f292a1061dd321cf623"
+  },
+  {
+    "from": "src/shared/nested.rs",
+    "to": "src/integrations/nested_env.rs",
+    "action": "relocated",
+    "sha256": "bc87a63ae941ac86f2e6b45b6d8658fef93b11acad047682a3ebdd7a590ff115"
+  },
+  {
+    "from": "src/shared/platform.rs",
+    "to": "src/shared/platform.rs",
+    "action": "unchanged",
+    "sha256": "251a2cdbcf0900d2a1c9e539815d5fdb7f9299dfd471ed1ce336bfe3339b41c1"
+  },
+  {
+    "from": "src/shared/suggest.rs",
+    "to": "src/shared/suggest.rs",
+    "action": "unchanged",
+    "sha256": "f5ff15ae1d3405555f63ec821fab4f4ae8d666ac922a567132178bd3c9837a97"
+  },
+  {
+    "from": "src/shared/terminal_presets.rs",
+    "to": "src/runtime/terminal/presets.rs",
+    "action": "relocated",
+    "sha256": "5d63cc07a50c1ab5badf5c02c28999406e58e5e3295d21462f5549ddde409792"
+  },
+  {
+    "from": "src/shared/time.rs",
+    "to": "src/shared/time.rs",
+    "action": "unchanged",
+    "sha256": "1a7a6016b6518b745807aacc449a06079e9241482799d49faee9169446e1279c"
+  },
+  {
+    "from": "src/shared/tool_detection.rs",
+    "to": "src/integrations/detection.rs",
+    "action": "relocated",
+    "sha256": "b558ce8a3eb615e8ccb5b1c8e8558b6f82c9d0cefbb9ef1b974a1550a536fd71"
+  },
+  {
+    "from": "src/shell_env.rs",
+    "to": "src/runtime/shell_env.rs",
+    "action": "relocated",
+    "sha256": "87fbea95546e4e3694de31536ddae21d248fe2e04d1d2090d7599fc74d01c0c6"
+  },
+  {
+    "from": "src/sys/fs.rs",
+    "to": "src/sys/fs.rs",
+    "action": "unchanged",
+    "sha256": "9a59478a28977ead6e0d36e79ccf3a86bc8bf287a8c68c4126ab07118b191288"
+  },
+  {
+    "from": "src/sys/io.rs",
+    "to": "src/sys/io.rs",
+    "action": "unchanged",
+    "sha256": "60bd1f9cb07e30ef8ade7261ad00155b00eff11bf833a33d316c1d3ceed60cfb"
+  },
+  {
+    "from": "src/sys/mod.rs",
+    "to": "src/sys/mod.rs",
+    "action": "unchanged",
+    "sha256": "b634f3b3121e3932f33298a9a3558a338e9f86f51e2637e6637e5c146a2a5066"
+  },
+  {
+    "from": "src/sys/net.rs",
+    "to": "src/sys/net.rs",
+    "action": "unchanged",
+    "sha256": "fe1e84f8a17440167ec32bfa0a5e027363c1bfb35b5220c44ce88f5bf415de9e"
+  },
+  {
+    "from": "src/sys/process.rs",
+    "to": "src/sys/process.rs",
+    "action": "unchanged",
+    "sha256": "4861ec674552b7109006913f76be14a376e5c74d5b2989046da2305ee80212a9"
+  },
+  {
+    "from": "src/sys/signal.rs",
+    "to": "src/sys/signal.rs",
+    "action": "unchanged",
+    "sha256": "ab1ef128ffc9a7d16c279893c26c8447dda9960e4dd06ef0ce9d23f58cfd4171"
+  },
+  {
+    "from": "src/terminal.rs",
+    "to": "src/runtime/terminal/mod.rs",
+    "action": "relocated",
+    "sha256": "9d9a932f05349e115c2051151f859338f01d8df8a766b1c13dd604fe36e3a1cd"
+  },
+  {
+    "from": "src/tool.rs",
+    "to": "src/integrations/tool.rs",
+    "action": "relocated",
+    "sha256": "025850201b5e62708a32daa4d7216891b1085f80893f29de8fbd2a3615618209"
+  },
+  {
+    "from": "src/tools/args_common.rs",
+    "to": "src/integrations/launch_args/shell.rs",
+    "action": "relocated",
+    "sha256": "c07dfcafc0ddb2223baeca47945e72ae763188574a14001e6b502f65bdb91118"
+  },
+  {
+    "from": "src/tools/argument_overrides.rs",
+    "to": "src/integrations/launch_args/overrides.rs",
+    "action": "relocated",
+    "sha256": "f7ef6af090e1942d6518ee9fae85705061bbfd34c949b9fe333c4123d59c9a22"
+  },
+  {
+    "from": "src/tools/codex_preprocessing.rs",
+    "to": "src/integrations/launch_args/codex.rs",
+    "action": "relocated",
+    "sha256": "9a06ec24886ef32216ff5389d1b8ca7b810804ebc716a23967379e6dab77f2aa"
+  },
+  {
+    "from": "src/tools/copilot_preprocessing.rs",
+    "to": "src/integrations/launch_args/copilot.rs",
+    "action": "relocated",
+    "sha256": "2208b7b02e9c516d9b6b9098de65862513f5b5c277c07925de95a55ed0c91291"
+  },
+  {
+    "from": "src/tools/cursor_preprocessing.rs",
+    "to": "src/integrations/launch_args/cursor.rs",
+    "action": "relocated",
+    "sha256": "6afc0a454cea6f338632cc10541d7eefda0e547f558606a6625eaf0b8f0cd81f"
+  },
+  {
+    "from": "src/tools/hermes_preprocessing.rs",
+    "to": "src/integrations/launch_args/hermes.rs",
+    "action": "relocated",
+    "sha256": "3b84add6dfbe94fdbad3adfd3f3841153fe70fc6287f865621ad6894e2d36c83"
+  },
+  {
+    "from": "src/tools/launch_arg_validation.rs",
+    "to": "src/integrations/launch_args/validation.rs",
+    "action": "relocated",
+    "sha256": "1f21e6a65ecf2fe54508dba5ccc3b2c0a2d387e0adbec99e261722358b3d52a7"
+  },
+  {
+    "from": "src/tools/mod.rs",
+    "to": "src/integrations/launch_args/mod.rs",
+    "action": "relocated",
+    "sha256": "e5f7e34ba22f62cb5c4ea2dcd95163ca7196c6e1227c16786272d34c0f08686f"
+  },
+  {
+    "from": "src/tools/opencode_preprocessing.rs",
+    "to": "src/integrations/launch_args/opencode.rs",
+    "action": "relocated",
+    "sha256": "336b8d3a59d113a46b4520316bd06b0b66b4bf98a79613975d4c6ce8590f5863"
+  },
+  {
+    "from": "src/tools/qoder_preprocessing.rs",
+    "to": "src/integrations/launch_args/qoder.rs",
+    "action": "relocated",
+    "sha256": "82a1cdbef64d7b544156266a5d8bc7567aa3096baac95376d21fa4d3feda1b0c"
+  },
+  {
+    "from": "src/transcript/claude.rs",
+    "to": "src/transcript/claude.rs",
+    "action": "unchanged",
+    "sha256": "1398ca6bfc4572be1cfa6031bbb255753fd607b9a34e03e4083c71bdf7910002"
+  },
+  {
+    "from": "src/transcript/codex.rs",
+    "to": "src/transcript/codex.rs",
+    "action": "unchanged",
+    "sha256": "7e1a8020d979e8ffe3d4fb062b5f8eed199fc7c7db1b7a6fc3b851d92d9b7553"
+  },
+  {
+    "from": "src/transcript/copilot.rs",
+    "to": "src/transcript/copilot.rs",
+    "action": "unchanged",
+    "sha256": "1ab25821435277e539be590b15765cc74ebbaecb7e889fe4b72c393046a93848"
+  },
+  {
+    "from": "src/transcript/cursor.rs",
+    "to": "src/transcript/cursor.rs",
+    "action": "unchanged",
+    "sha256": "1652196b1c1a970f46bcba8f4123085a1ea23217cbca012dca4b0bb4c0bd49ea"
+  },
+  {
+    "from": "src/transcript/gemini.rs",
+    "to": "src/transcript/gemini.rs",
+    "action": "unchanged",
+    "sha256": "1cdbb971fc0a3f39096173320448ccbc18877d11ea80e7a0a89e9bba6f1e776b"
+  },
+  {
+    "from": "src/transcript/grok.rs",
+    "to": "src/transcript/grok.rs",
+    "action": "unchanged",
+    "sha256": "dce4bd0064585a84e3271726a8e3a7cb734f50a4e053402efd07a61f58bc1bb8"
+  },
+  {
+    "from": "src/transcript/hermes.rs",
+    "to": "src/transcript/hermes.rs",
+    "action": "unchanged",
+    "sha256": "2b9ba8247fa18eac773c5ae8eeee32cded98a1a7c90b460088f2c85bb1494992"
+  },
+  {
+    "from": "src/transcript/kimi.rs",
+    "to": "src/transcript/kimi.rs",
+    "action": "unchanged",
+    "sha256": "72002c3fa0de409a8356f7806f40059a0bb26e238b8f01d11bec3e9b8b1c7dd4"
+  },
+  {
+    "from": "src/transcript/mod.rs",
+    "to": "src/transcript/mod.rs",
+    "action": "unchanged",
+    "sha256": "da01b2e270167d94afdd9fa760446469101cd37ad24755d1b7d42e87111b7005"
+  },
+  {
+    "from": "src/transcript/opencode.rs",
+    "to": "src/transcript/opencode.rs",
+    "action": "unchanged",
+    "sha256": "20d65c47757812e36eb2ab4a101aca8b8a48874efb10b62a1b643d84eaa24d81"
+  },
+  {
+    "from": "src/transcript/pi.rs",
+    "to": "src/transcript/pi.rs",
+    "action": "unchanged",
+    "sha256": "6ae8b0af05462ce3c562e1dc5633ad8427e727049ad4f0b7dbd8007ef323c2c3"
+  },
+  {
+    "from": "src/transcript/shared.rs",
+    "to": "src/transcript/shared.rs",
+    "action": "unchanged",
+    "sha256": "e11f378ea8d0f3eb5c13ee322cc2a41461ac7f333d979422261759dfaae8a6e8"
+  },
+  {
+    "from": "src/tui/actions.rs",
+    "to": "src/tui/actions.rs",
+    "action": "unchanged",
+    "sha256": "5cb8ca81702bcf81d595e656ff73fc0de5c72a742c7120b9abdd4cc4034e50b0"
+  },
+  {
+    "from": "src/tui/app.rs",
+    "to": "src/tui/app.rs",
+    "action": "unchanged",
+    "sha256": "ec189950d17d93bd019aa677f0b6f3e56d5d6302ffd9e533b7da3516fb0f3fbc"
+  },
+  {
+    "from": "src/tui/commands.rs",
+    "to": "src/tui/commands.rs",
+    "action": "unchanged",
+    "sha256": "f973ea79eae9b2a66b39449adc7d6a2187fa376628f4a869aa6ae5f2c1e7361c"
+  },
+  {
+    "from": "src/tui/data.rs",
+    "to": "src/tui/data.rs",
+    "action": "unchanged",
+    "sha256": "152a2143c2cc2d5bb78f788a162a2cf5ac5de592ef4acc550cdeeec2ead9a7ae"
+  },
+  {
+    "from": "src/tui/db.rs",
+    "to": "src/tui/db.rs",
+    "action": "unchanged",
+    "sha256": "8b3c7863d5044b56e67b9cb86b24b059e548a06b8896058dcce9d7573324be46"
+  },
+  {
+    "from": "src/tui/inline/eject.rs",
+    "to": "src/tui/inline/eject.rs",
+    "action": "unchanged",
+    "sha256": "321db390a9f48e7475295afd81e7b287a9e8af9b167e76d0147d17fe41de7a07"
+  },
+  {
+    "from": "src/tui/inline/mod.rs",
+    "to": "src/tui/inline/mod.rs",
+    "action": "unchanged",
+    "sha256": "199f3a933e225c6b9289fa1170a057d9ab8cb146b4c03139455036bdcd629b39"
+  },
+  {
+    "from": "src/tui/input/compose.rs",
+    "to": "src/tui/input/compose.rs",
+    "action": "unchanged",
+    "sha256": "e7b2b1944f6460a4e9b2c22c97800a76ee5e1a80b4999d5fea9dc11ae32de8d2"
+  },
+  {
+    "from": "src/tui/input.rs",
+    "to": "src/tui/input/mod.rs",
+    "action": "relocated",
+    "sha256": "b838d0feb077a1720311d712a0c3bad7e4ec3b17ea542e5b8346d5472bb726be"
+  },
+  {
+    "from": "src/tui/mod.rs",
+    "to": "src/tui/mod.rs",
+    "action": "unchanged",
+    "sha256": "58f26b4d330335b4db9abc6c1c24a16703955a9cd48b896827d9527ef145d65e"
+  },
+  {
+    "from": "src/tui/model.rs",
+    "to": "src/tui/model.rs",
+    "action": "unchanged",
+    "sha256": "d37a8e73167b77a9381b6190ee610f25cb8336d7a1030090885f4447578bdb68"
+  },
+  {
+    "from": "src/tui/render/agents.rs",
+    "to": "src/tui/render/agents.rs",
+    "action": "unchanged",
+    "sha256": "5659fc7a0eb20f5b066c3872eed7f661b2084703617321fafffc562e76f2169a"
+  },
+  {
+    "from": "src/tui/render/launch.rs",
+    "to": "src/tui/render/launch.rs",
+    "action": "unchanged",
+    "sha256": "4ea0805ed8add9f60c8dc3ca57960ad2613a22a4c0576d6de4d1577abedb20bf"
+  },
+  {
+    "from": "src/tui/render/messages.rs",
+    "to": "src/tui/render/messages.rs",
+    "action": "unchanged",
+    "sha256": "7523183ff3d0f7c734c7a1af44a2c2296e830ee0426a25892ed55b0e026d7942"
+  },
+  {
+    "from": "src/tui/render/mod.rs",
+    "to": "src/tui/render/mod.rs",
+    "action": "unchanged",
+    "sha256": "e6a1a7d2799950c33a42cb03d921c427e820639dec1fb9c84d4abb229041064a"
+  },
+  {
+    "from": "src/tui/render/text.rs",
+    "to": "src/tui/render/text.rs",
+    "action": "unchanged",
+    "sha256": "503349c08a553f3c1bdccd208c726e3caadb7218517a70d127d280675904d9c1"
+  },
+  {
+    "from": "src/tui/rpc.rs",
+    "to": "src/tui/rpc/mod.rs",
+    "action": "relocated",
+    "sha256": "7d32f1f30ed25bf4f16dc7c76d8b784f69cf42c21086fd7b176131d0177406ad"
+  },
+  {
+    "from": "src/tui/rpc_async.rs",
+    "to": "src/tui/rpc/client.rs",
+    "action": "relocated",
+    "sha256": "08205ecd03ff17e7432915c74d5f5a36591af5e38849c4f4cafa599b772ef6d1"
+  },
+  {
+    "from": "src/tui/state.rs",
+    "to": "src/tui/state.rs",
+    "action": "unchanged",
+    "sha256": "48de20881d97cfa6961db3ac8c0c8056998662b9434ba2b1dcdc0fcbfefa566b"
+  },
+  {
+    "from": "src/tui/status.rs",
+    "to": "src/tui/status.rs",
+    "action": "unchanged",
+    "sha256": "a91b85a99d422f713700de5514912e3544791a23775ceefe652195e31401e65d"
+  },
+  {
+    "from": "src/tui/theme.rs",
+    "to": "src/tui/theme.rs",
+    "action": "unchanged",
+    "sha256": "4be680faadf7126b0b84f3483b25f1712a5cdd0bc74f08fba0a62526ab7ef455"
+  },
+  {
+    "from": "src/tui/usage.rs",
+    "to": "src/tui/usage.rs",
+    "action": "unchanged",
+    "sha256": "7913416a93339bb35eecc9fae1fd1c4ae739289093826b26bd34b87c9f0a1d70"
+  },
+  {
+    "from": "src/update.rs",
+    "to": "src/cli/update.rs",
+    "action": "relocated",
+    "sha256": "5d31ebb02d0da9276b529b6b5ac97ce1ab4b4380fbf61bce9f114824039c133b"
+  }
+]

@@ -1,0 +1,3 @@
+# Runtime read and failure repair
+
+Read [accepted selected :38000 outcome](implementation.task.md#accepted-selected-service-outcome), [Web maintenance](web.task.md), [independent verification](verification.task.md) and [operational diagnostics](../../.docs/architecture/runtime-diagnostics.md). The human-authorized correction after [diagnosis](../web-sdk-adoption/runtime-diagnosis.task.md) is implemented, independently verified and adopted on the selected home service. Preserve unrelated dirty source, exact current runtime references and the retained rollback artifact. Earlier assignments are closed; do not revive them or infer support beyond the documented evidence.

@@ -1,0 +1,746 @@
+{
+  "id": "technical-playback-design",
+  "label": "技术领域：拖动前暂停",
+  "format": "flow-atlas/workbench-1",
+  "definition": {
+    "id": "technical-playback-design",
+    "label": "技术领域：拖动前暂停",
+    "sources": [],
+    "contexts": [
+      {
+        "id": "tech.context",
+        "label": "Presentation",
+        "responsibility": "Illustrative playback lifecycle"
+      }
+    ],
+    "modules": [
+      {
+        "id": "tech.module",
+        "label": "Playback control",
+        "contextId": "tech.context",
+        "responsibility": "Pause illustration before independent layout changes",
+        "dependencies": []
+      }
+    ],
+    "rules": [
+      {
+        "id": "tech.rule.layout",
+        "label": "Layout does not mutate semantic facts",
+        "ownerId": "tech.playback",
+        "description": "Layout and model have independent ownership; this text is not executable proof.",
+        "basis": "declared",
+        "sourceIds": []
+      }
+    ],
+    "relationships": [
+      {
+        "id": "tech.relation.pause",
+        "label": "Requests pause",
+        "fromObjectId": "tech.pointer",
+        "toObjectId": "tech.playback",
+        "kind": "uses"
+      }
+    ],
+    "schemas": [
+      {
+        "id": "tech.schema.reason:output",
+        "label": "Pause reason",
+        "jsonSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      {
+        "id": "tech.schema.playback:output",
+        "label": "Playback state",
+        "jsonSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "phase": {
+              "type": "string",
+              "enum": [
+                "playing",
+                "paused"
+              ]
+            }
+          },
+          "required": [
+            "phase"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "id": "tech.schema.empty:output",
+        "label": "Actor state",
+        "jsonSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      {
+        "id": "tech.schema.pause-input:input",
+        "label": "Pause input",
+        "jsonSchema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "reason"
+          ]
+        }
+      }
+    ],
+    "values": [
+      {
+        "id": "tech.value.reason",
+        "label": "Reason",
+        "meaning": "A local interaction reason",
+        "schemaId": "tech.schema.reason:output"
+      }
+    ],
+    "objects": [
+      {
+        "id": "tech.playback",
+        "label": "Playback",
+        "moduleId": "tech.module",
+        "kind": "technical",
+        "responsibility": "Own presentation clock state",
+        "fields": [
+          {
+            "id": "tech.field.phase",
+            "label": "Phase",
+            "path": [
+              "phase"
+            ]
+          }
+        ],
+        "lifecycle": {
+          "path": [
+            "phase"
+          ],
+          "transitions": [
+            {
+              "id": "tech.transition.pause",
+              "label": "Pause",
+              "from": "playing",
+              "to": "paused",
+              "operationId": "tech.pause",
+              "outcomeId": "paused"
+            }
+          ]
+        },
+        "stateSchemaId": "tech.schema.playback:output"
+      },
+      {
+        "id": "tech.pointer",
+        "label": "Pointer interaction",
+        "moduleId": "tech.module",
+        "kind": "actor",
+        "responsibility": "Request pause before moving layout",
+        "fields": [],
+        "stateSchemaId": "tech.schema.empty:output"
+      }
+    ],
+    "operations": [
+      {
+        "id": "tech.pause",
+        "label": "pause",
+        "ownerId": "tech.playback",
+        "kind": "command",
+        "inputFields": [
+          {
+            "id": "tech.input.reason",
+            "label": "Reason",
+            "path": [
+              "reason"
+            ],
+            "valueId": "tech.value.reason"
+          }
+        ],
+        "effects": [
+          {
+            "outcomeId": "paused",
+            "fieldPaths": [
+              [
+                "phase"
+              ]
+            ]
+          }
+        ],
+        "ruleIds": [],
+        "binding": {
+          "status": "declared",
+          "sourceIds": []
+        },
+        "inputSchemaId": "tech.schema.pause-input:input",
+        "outcomes": [
+          {
+            "id": "paused",
+            "label": "Paused",
+            "meaning": "returned"
+          }
+        ]
+      }
+    ],
+    "processes": [
+      {
+        "id": "tech.process",
+        "label": "Pause before drag",
+        "inputFields": [
+          {
+            "id": "tech.process.reason",
+            "label": "Reason",
+            "path": [
+              "reason"
+            ],
+            "valueId": "tech.value.reason"
+          }
+        ],
+        "roles": [
+          {
+            "id": "tech.role.pointer",
+            "label": "Interaction",
+            "objectId": "tech.pointer"
+          },
+          {
+            "id": "tech.role.playback",
+            "label": "Player",
+            "objectId": "tech.playback"
+          }
+        ],
+        "startId": "tech.start",
+        "steps": [
+          {
+            "id": "tech.start",
+            "label": "Drag begins",
+            "kind": "start"
+          },
+          {
+            "id": "tech.step.pause",
+            "label": "Pause",
+            "kind": "operation",
+            "roleId": "tech.role.playback",
+            "callerRoleId": "tech.role.pointer",
+            "operationId": "tech.pause",
+            "bindings": [
+              {
+                "id": "tech.binding.reason",
+                "label": "Interaction input",
+                "targetPath": [],
+                "source": {
+                  "kind": "input",
+                  "path": []
+                }
+              }
+            ]
+          },
+          {
+            "id": "tech.end",
+            "label": "Layout may move",
+            "kind": "end",
+            "outcome": "completed"
+          }
+        ],
+        "flows": [
+          {
+            "id": "tech.flow.start",
+            "label": "Pause request",
+            "from": "tech.start",
+            "to": "tech.step.pause"
+          },
+          {
+            "id": "tech.flow.paused",
+            "label": "Paused",
+            "from": "tech.step.pause",
+            "to": "tech.end",
+            "outcomeId": "paused"
+          }
+        ],
+        "inputSchemaId": "tech.schema.pause-input:input"
+      }
+    ]
+  },
+  "scenarios": [
+    {
+      "id": "tech.scenario",
+      "label": "Drag pauses playback",
+      "processId": "tech.process",
+      "input": {
+        "reason": "pointer-drag"
+      },
+      "instances": [
+        {
+          "id": "tech.player-1",
+          "label": "Player one",
+          "objectId": "tech.playback",
+          "initial": {
+            "phase": "playing"
+          }
+        },
+        {
+          "id": "tech.player-2",
+          "label": "Player two",
+          "objectId": "tech.playback",
+          "initial": {
+            "phase": "playing"
+          }
+        },
+        {
+          "id": "tech.pointer-1",
+          "label": "Pointer",
+          "objectId": "tech.pointer",
+          "initial": {}
+        }
+      ],
+      "roles": {
+        "tech.role.playback": "tech.player-1",
+        "tech.role.pointer": "tech.pointer-1"
+      },
+      "visits": [
+        {
+          "id": "tech.visit.pause",
+          "label": "Pause for drag",
+          "stepId": "tech.step.pause",
+          "callId": "tech.call.pause",
+          "input": {
+            "reason": "pointer-drag"
+          },
+          "completion": "reply",
+          "outcomeId": "paused",
+          "evidence": {
+            "kind": "authored"
+          },
+          "effect": {
+            "outcomeId": "paused",
+            "evidence": {
+              "kind": "authored"
+            },
+            "writes": [
+              {
+                "instanceId": "tech.player-1",
+                "path": [
+                  "phase"
+                ],
+                "value": "paused",
+                "transitionId": "tech.transition.pause"
+              }
+            ]
+          }
+        }
+      ],
+      "terminalStepId": "tech.end",
+      "expectations": [
+        {
+          "id": "tech.expect.paused",
+          "label": "Target paused",
+          "kind": "state",
+          "instanceId": "tech.player-1",
+          "path": [
+            "phase"
+          ],
+          "equals": "paused"
+        },
+        {
+          "id": "tech.expect.other",
+          "label": "Other player unchanged",
+          "kind": "state",
+          "instanceId": "tech.player-2",
+          "path": [
+            "phase"
+          ],
+          "equals": "playing"
+        },
+        {
+          "id": "tech.expect.end",
+          "label": "Completed",
+          "kind": "terminal",
+          "outcome": "completed"
+        }
+      ],
+      "checkpoints": [
+        {
+          "id": "tech.scenario:checkpoint:0",
+          "label": "Initial state",
+          "index": 0,
+          "phase": "initial",
+          "states": {
+            "tech.player-1": {
+              "phase": "playing"
+            },
+            "tech.player-2": {
+              "phase": "playing"
+            },
+            "tech.pointer-1": {}
+          },
+          "derived": {},
+          "calls": [],
+          "parameters": [],
+          "differences": [],
+          "assertions": [
+            {
+              "id": "initial:tech.player-1:tech.rule.layout",
+              "label": "Layout does not mutate semantic facts",
+              "subjectId": "tech.rule.layout",
+              "status": "declared",
+              "basis": "declared",
+              "message": "Declared/source-linked rule; no business predicate executed."
+            },
+            {
+              "id": "initial:tech.player-2:tech.rule.layout",
+              "label": "Layout does not mutate semantic facts",
+              "subjectId": "tech.rule.layout",
+              "status": "declared",
+              "basis": "declared",
+              "message": "Declared/source-linked rule; no business predicate executed."
+            }
+          ],
+          "diagnostics": []
+        },
+        {
+          "id": "tech.scenario:checkpoint:1",
+          "label": "Pause for drag · call",
+          "index": 1,
+          "phase": "call",
+          "stepId": "tech.step.pause",
+          "visitId": "tech.visit.pause",
+          "callId": "tech.call.pause",
+          "states": {
+            "tech.player-1": {
+              "phase": "playing"
+            },
+            "tech.player-2": {
+              "phase": "playing"
+            },
+            "tech.pointer-1": {}
+          },
+          "derived": {},
+          "calls": [
+            {
+              "callId": "tech.call.pause",
+              "visitId": "tech.visit.pause",
+              "stepId": "tech.step.pause",
+              "operationId": "tech.pause",
+              "fromInstanceId": "tech.pointer-1",
+              "targetInstanceId": "tech.player-1",
+              "input": {
+                "reason": "pointer-drag"
+              },
+              "phase": "pending",
+              "evidence": {
+                "kind": "authored"
+              }
+            }
+          ],
+          "parameters": [
+            {
+              "id": "tech.binding.reason",
+              "label": "Interaction input",
+              "targetPath": [],
+              "source": {
+                "kind": "input",
+                "path": []
+              },
+              "status": "resolved",
+              "value": {
+                "reason": "pointer-drag"
+              },
+              "actual": {
+                "reason": "pointer-drag"
+              }
+            }
+          ],
+          "differences": [],
+          "assertions": [],
+          "diagnostics": []
+        },
+        {
+          "id": "tech.scenario:checkpoint:2",
+          "label": "Pause for drag · effect",
+          "index": 2,
+          "phase": "effect",
+          "stepId": "tech.step.pause",
+          "visitId": "tech.visit.pause",
+          "callId": "tech.call.pause",
+          "states": {
+            "tech.player-1": {
+              "phase": "paused"
+            },
+            "tech.player-2": {
+              "phase": "playing"
+            },
+            "tech.pointer-1": {}
+          },
+          "derived": {},
+          "calls": [
+            {
+              "callId": "tech.call.pause",
+              "visitId": "tech.visit.pause",
+              "stepId": "tech.step.pause",
+              "operationId": "tech.pause",
+              "fromInstanceId": "tech.pointer-1",
+              "targetInstanceId": "tech.player-1",
+              "input": {
+                "reason": "pointer-drag"
+              },
+              "phase": "pending",
+              "evidence": {
+                "kind": "authored"
+              },
+              "effectOutcomeId": "paused"
+            }
+          ],
+          "parameters": [
+            {
+              "id": "tech.binding.reason",
+              "label": "Interaction input",
+              "targetPath": [],
+              "source": {
+                "kind": "input",
+                "path": []
+              },
+              "status": "resolved",
+              "value": {
+                "reason": "pointer-drag"
+              },
+              "actual": {
+                "reason": "pointer-drag"
+              }
+            }
+          ],
+          "differences": [
+            {
+              "instanceId": "tech.player-1",
+              "path": [
+                "phase"
+              ],
+              "before": "playing",
+              "after": "paused",
+              "causeVisitId": "tech.visit.pause",
+              "operationId": "tech.pause",
+              "transitionId": "tech.transition.pause",
+              "evidence": {
+                "kind": "authored"
+              }
+            }
+          ],
+          "assertions": [
+            {
+              "id": "tech.visit.pause:tech.player-1:tech.rule.layout",
+              "label": "Layout does not mutate semantic facts",
+              "subjectId": "tech.rule.layout",
+              "status": "declared",
+              "basis": "declared",
+              "message": "Declared/source-linked rule; no business predicate executed."
+            }
+          ],
+          "diagnostics": []
+        },
+        {
+          "id": "tech.scenario:checkpoint:3",
+          "label": "Pause for drag · reply",
+          "index": 3,
+          "phase": "reply",
+          "stepId": "tech.step.pause",
+          "visitId": "tech.visit.pause",
+          "callId": "tech.call.pause",
+          "outcomeId": "paused",
+          "states": {
+            "tech.player-1": {
+              "phase": "paused"
+            },
+            "tech.player-2": {
+              "phase": "playing"
+            },
+            "tech.pointer-1": {}
+          },
+          "derived": {},
+          "calls": [
+            {
+              "callId": "tech.call.pause",
+              "visitId": "tech.visit.pause",
+              "stepId": "tech.step.pause",
+              "operationId": "tech.pause",
+              "fromInstanceId": "tech.pointer-1",
+              "targetInstanceId": "tech.player-1",
+              "input": {
+                "reason": "pointer-drag"
+              },
+              "phase": "returned",
+              "evidence": {
+                "kind": "authored"
+              },
+              "effectOutcomeId": "paused",
+              "outcomeId": "paused",
+              "completion": "reply"
+            }
+          ],
+          "parameters": [
+            {
+              "id": "tech.binding.reason",
+              "label": "Interaction input",
+              "targetPath": [],
+              "source": {
+                "kind": "input",
+                "path": []
+              },
+              "status": "resolved",
+              "value": {
+                "reason": "pointer-drag"
+              },
+              "actual": {
+                "reason": "pointer-drag"
+              }
+            }
+          ],
+          "differences": [],
+          "assertions": [],
+          "diagnostics": []
+        },
+        {
+          "id": "tech.scenario:checkpoint:4",
+          "label": "Expected outcome",
+          "index": 4,
+          "phase": "terminal",
+          "states": {
+            "tech.player-1": {
+              "phase": "paused"
+            },
+            "tech.player-2": {
+              "phase": "playing"
+            },
+            "tech.pointer-1": {}
+          },
+          "derived": {},
+          "calls": [
+            {
+              "callId": "tech.call.pause",
+              "visitId": "tech.visit.pause",
+              "stepId": "tech.step.pause",
+              "operationId": "tech.pause",
+              "fromInstanceId": "tech.pointer-1",
+              "targetInstanceId": "tech.player-1",
+              "input": {
+                "reason": "pointer-drag"
+              },
+              "phase": "returned",
+              "evidence": {
+                "kind": "authored"
+              },
+              "effectOutcomeId": "paused",
+              "outcomeId": "paused",
+              "completion": "reply"
+            }
+          ],
+          "parameters": [],
+          "differences": [],
+          "assertions": [
+            {
+              "id": "tech.expect.paused",
+              "label": "Target paused",
+              "subjectId": "tech.player-1",
+              "status": "passed",
+              "basis": "authored",
+              "message": "Expected value matches this witness."
+            },
+            {
+              "id": "tech.expect.other",
+              "label": "Other player unchanged",
+              "subjectId": "tech.player-2",
+              "status": "passed",
+              "basis": "authored",
+              "message": "Expected value matches this witness."
+            },
+            {
+              "id": "tech.expect.end",
+              "label": "Completed",
+              "subjectId": "tech.end",
+              "status": "passed",
+              "basis": "authored",
+              "message": "Expected value matches this witness."
+            }
+          ],
+          "diagnostics": []
+        }
+      ],
+      "diagnostics": [],
+      "assertions": [
+        {
+          "id": "initial:tech.player-1:tech.rule.layout",
+          "label": "Layout does not mutate semantic facts",
+          "subjectId": "tech.rule.layout",
+          "status": "declared",
+          "basis": "declared",
+          "message": "Declared/source-linked rule; no business predicate executed."
+        },
+        {
+          "id": "initial:tech.player-2:tech.rule.layout",
+          "label": "Layout does not mutate semantic facts",
+          "subjectId": "tech.rule.layout",
+          "status": "declared",
+          "basis": "declared",
+          "message": "Declared/source-linked rule; no business predicate executed."
+        },
+        {
+          "id": "tech.visit.pause:tech.player-1:tech.rule.layout",
+          "label": "Layout does not mutate semantic facts",
+          "subjectId": "tech.rule.layout",
+          "status": "declared",
+          "basis": "declared",
+          "message": "Declared/source-linked rule; no business predicate executed."
+        },
+        {
+          "id": "tech.expect.paused",
+          "label": "Target paused",
+          "subjectId": "tech.player-1",
+          "status": "passed",
+          "basis": "authored",
+          "message": "Expected value matches this witness."
+        },
+        {
+          "id": "tech.expect.other",
+          "label": "Other player unchanged",
+          "subjectId": "tech.player-2",
+          "status": "passed",
+          "basis": "authored",
+          "message": "Expected value matches this witness."
+        },
+        {
+          "id": "tech.expect.end",
+          "label": "Completed",
+          "subjectId": "tech.end",
+          "status": "passed",
+          "basis": "authored",
+          "message": "Expected value matches this witness."
+        }
+      ]
+    }
+  ],
+  "diagnostics": [],
+  "coverage": [
+    {
+      "subjectId": "tech.rule.layout",
+      "status": "declared",
+      "detail": "Text/source correspondence only; no predicate or handler was executed."
+    },
+    {
+      "subjectId": "tech.pause",
+      "status": "declared",
+      "detail": "Explicit source mapping; arbitrary source bodies and implementation conformance are not inferred."
+    },
+    {
+      "subjectId": "technical-playback-design",
+      "status": "declared",
+      "detail": "Sequential acyclic process/dataflow only. No scheduler, arbitrary code inference, callbacks, concurrency, loop values, recovery protocol or universal invariant proof."
+    }
+  ]
+}

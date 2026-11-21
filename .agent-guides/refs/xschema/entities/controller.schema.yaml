@@ -1,0 +1,14 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: xschema controller
+type: object
+required: [ schema, scope ]
+properties:
+  schema: { const: controller }
+  scope: { $ref: common.schema.yaml#/$defs/scopePath }
+  agent: { $ref: common.schema.yaml#/$defs/text }
+  tasks: { $ref: common.schema.yaml#/$defs/paths }
+  deliveries: { $ref: common.schema.yaml#/$defs/paths }
+  controllers: { $ref: common.schema.yaml#/$defs/paths }
+allOf:
+  - { $ref: common.schema.yaml#/$defs/base }
+additionalProperties: true

@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+"""Serve one explicit generated design artifact; never expose its containing directory."""
+import argparse
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+
+
+def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('artifact',type=Path)
+    parser.add_argument('--host',default='127.0.0.1')
+    parser.add_argument('--port',type=int,default=18958)
+    args=parser.parse_args();artifact=args.artifact.resolve()
+    if not artifact.is_file():parser.error('Build the HTML artifact first')
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path.split('?',1)[0] not in {'/','/index.html'}:
+                self.send_error(404);return
+            body=artifact.read_bytes();self.send_response(200)
+            self.send_header('Content-Type','text/html; charset=utf-8')
+            self.send_header('Content-Length',str(len(body)))
+            self.send_header('Cache-Control','no-store')
+            self.send_header('X-Content-Type-Options','nosniff')
+            self.send_header('Content-Security-Policy',"default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
+            self.end_headers();self.wfile.write(body)
+
+    server=ThreadingHTTPServer((args.host,args.port),Handler)
+    print(f'Flow Atlas design: http://{args.host}:{server.server_port}/',flush=True)
+    try:server.serve_forever()
+    except KeyboardInterrupt:pass
+    finally:server.server_close()
+
+
+if __name__=='__main__':main()

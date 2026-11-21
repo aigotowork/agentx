@@ -1,0 +1,21 @@
+{
+  "$schema": "https://www.schemastore.org/claude-code-marketplace.json",
+  "name": "agentx",
+  "version": "1.0.0",
+  "description": "Let AI agents message, watch, and spawn each other across terminals. Claude Code, Gemini CLI, Codex, OpenCode, Kilo Code, Pi, Oh My Pi, Antigravity, Cursor, Kimi, Copilot, Qoder CLI, Grok Build.",
+  "metadata": {
+    "description": "Let AI agents message, watch, and spawn each other across terminals. Claude Code, Gemini CLI, Codex, OpenCode, Kilo Code, Pi, Oh My Pi, Antigravity, Cursor, Kimi, Copilot, Qoder CLI, Grok Build."
+  },
+  "owner": {
+    "name": "aigotowork"
+  },
+  "plugins": [
+    {
+      "name": "agentx",
+      "source": "./plugin/agentx",
+      "description": "Let AI agents message, watch, and spawn each other across terminals. Claude Code, Gemini CLI, Codex, OpenCode, Kilo Code, Pi, Oh My Pi, Antigravity, Cursor, Kimi, Copilot, Qoder CLI, Grok Build.",
+      "category": "productivity",
+      "homepage": "https://github.com/aigotowork/agentx"
+    }
+  ]
+}

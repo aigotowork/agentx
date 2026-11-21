@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "title": "Agent Inspector · 鲜彩像素换肤",
+  "kind": "prototype",
+  "description": "SVG 视觉评审候选。沿用完整 Inspector 的八页签、恢复分组、会话双栏与看板信息层级，仅探索配色、轮廓、像素图标和控件样式；不改变产品实现。所有数字均为固定设计样例。",
+  "artboards": [
+    {
+      "id": "recovery-light",
+      "title": "01 恢复 · 鲜彩像素 / 保留原版结构",
+      "file": "recovery-light.html",
+      "width": 1440,
+      "height": 1000,
+      "group": "恢复 / 相同结构与内容",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "recovery-dark",
+      "title": "02 恢复 · 深色街机 / 相同结构与内容",
+      "file": "recovery-dark.html",
+      "width": 1440,
+      "height": 1000,
+      "group": "恢复 / 相同结构与内容",
+      "x": 1520,
+      "y": 0
+    },
+    {
+      "id": "sessions-light",
+      "title": "03 会话 · 原有列表与详情双栏",
+      "file": "sessions-light.html",
+      "width": 1440,
+      "height": 1000,
+      "group": "应用到现有页面",
+      "x": 0,
+      "y": 1100
+    },
+    {
+      "id": "dashboard-light",
+      "title": "04 看板 · 保留摘要、八指标与热力图",
+      "file": "dashboard-light.html",
+      "width": 1440,
+      "height": 1000,
+      "group": "应用到现有页面",
+      "x": 1520,
+      "y": 1100
+    },
+    {
+      "id": "visual-system",
+      "title": "05 色板与控件 · 像素细节 / 状态比较",
+      "file": "visual-system.html",
+      "width": 1440,
+      "height": 1000,
+      "group": "视觉语言",
+      "x": 3040,
+      "y": 0
+    },
+    {
+      "id": "recovery-mobile",
+      "title": "06 手机恢复 · 原有分组顺序",
+      "file": "recovery-mobile.html",
+      "width": 390,
+      "height": 844,
+      "group": "应用到现有页面",
+      "x": 3040,
+      "y": 1100
+    }
+  ]
+}

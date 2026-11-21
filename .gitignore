@@ -1,0 +1,111 @@
+# Local AgentX, provider and editor state. Keep .agent-guides and the
+# .harness manifest versioned; harness backups live under .harness/.local.
+.agentx/
+.codex/
+/.agents/
+/.aws/
+/.daemon/
+/.harness/.local/
+/.docs-for-user/
+/.vscode/
+/.git.bak/
+/.mcp.json
+
+# Local environment and credentials; keep examples visible.
+.env
+.env.*
+!.env.example
+!.env.*.example
+.envrc
+*.local.env
+*.pem
+*.key
+
+# Build and dependency output.
+target/
+/bin/
+/.bin/
+node_modules/
+dist/
+*.tsbuildinfo
+.venv/
+__pycache__/
+*.py[cod]
+
+# Local caches, browser runs, logs and runtime databases.
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+coverage/
+playwright-report/
+playwright/.cache/
+test-results/
+screenshots/
+evidence/
+/.artifacts/
+/.tmp/
+/.ui-craft-backups/
+*.log
+*.log.*
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+*.har
+
+# Working material; retain the contract principles cited by the source docs.
+**/.inbox/*
+!/.inbox/rust-contract-design/
+/.inbox/rust-contract-design/*
+!/.inbox/rust-contract-design/domain/
+/.inbox/rust-contract-design/domain/*
+!/.inbox/rust-contract-design/domain/principles.md
+/tools/rust-module-migration/
+/.ui-craft/state.json
+/.sketches/agent-session-push/results.json
+
+# Controller reports and captures. Keep top-level verification scripts and
+# their guides so checks can be rerun without archiving the output.
+/.controller/**/verification/*
+!/.controller/**/verification/*.cjs
+!/.controller/**/verification/*.mjs
+!/.controller/**/verification/*.py
+!/.controller/**/verification/*.sh
+!/.controller/**/verification/README.md
+/.controller/**/artifacts/
+/.controller/**/*-evidence/
+/.controller/**/*-evidence.json
+/.controller/**/evidence.md
+/.controller/**/preview/*check.json
+/.controller/domain-daemon/*-server.json
+/.controller/environment-loading/native-*.json
+/.controller/daemon-performance-audit/workload.json
+/.controller/**/*.png
+/.controller/**/*.jpg
+/.controller/**/*.jpeg
+/.controller/**/*.webp
+/.controller/**/*.gif
+/.controller/**/*.zip
+/.controller/**/*.tgz
+
+# Rendered design previews. The SVG masters, proof pages, and runtime art
+# remain checked in; do not ignore image formats repo-wide.
+/.docs/architecture/runtime-atlas/build-receipt.json
+/.docs/collaboration-workbench/visuals/previews/
+/tools/flow-atlas/examples/*.receipt.json
+/web/agent-space/src/scene/art/studio/refined/proof-*.png
+/web/agent-space/src/scene/art/studio/worlds/**/proof*.png
+/web/agent-space/src/scene/art/studio/worlds/jadecourt/*.png
+/web/agent-space/src/scene/art/studio/worlds/reverie/*.png
+/web/agent-space/src/scene/art/studio/worlds/windward/proof/*.png
+
+# Editor and filesystem leftovers.
+.DS_Store
+Thumbs.db
+.!*!*
+*.swp
+*.swo
+*~

@@ -1,0 +1,33 @@
+// Generated from actual emitted components. Do not edit.
+import type * as Types from './types.gen.js';
+export type SchemaTypes = {
+  "AgentPage": Types.AgentPage;
+  "AgentRegistration": Types.AgentRegistration;
+  "AgentView": Types.AgentView;
+  "ClaimInbox": Types.ClaimInbox;
+  "ConfirmInbox": Types.ConfirmInbox;
+  "ControlCommand": Types.ControlCommand;
+  "ControlOutcome": Types.ControlOutcome;
+  "ControlPoll": Types.ControlPoll;
+  "ControlReceipt": Types.ControlReceipt;
+  "ControlStatus": Types.ControlStatus;
+  "Descriptor": Types.Descriptor;
+  "HostCapabilities": Types.HostCapabilities;
+  "HostPage": Types.HostPage;
+  "HostRegistration": Types.HostRegistration;
+  "HostView": Types.HostView;
+  "InboxBatch": Types.InboxBatch;
+  "InboxConfirmation": Types.InboxConfirmation;
+  "Intent": Types.Intent;
+  "MessageOperation": Types.MessageOperation;
+  "MessageView": Types.MessageView;
+  "OperationStatus": Types.OperationStatus;
+  "PollControlOperation": Types.PollControlOperation;
+  "RecoverInbox": Types.RecoverInbox;
+  "RenewControlLease": Types.RenewControlLease;
+  "ReportControlOperation": Types.ReportControlOperation;
+  "RoleCapability": Types.RoleCapability;
+  "ScopeError": Types.ScopeError;
+  "SendMessage": Types.SendMessage;
+  "WorkspaceCapability": Types.WorkspaceCapability;
+};

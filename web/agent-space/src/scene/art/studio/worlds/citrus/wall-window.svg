@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="48" viewBox="0 0 120 48">
+<defs>
+  <clipPath id="opening"><path d="M13 43V25C13 13 33 6 60 6s47 7 47 19v18z"/></clipPath>
+  <linearGradient id="sea" x2="0" y2="1"><stop stop-color="#b8e5df"/><stop offset="1" stop-color="#e7f4dc"/></linearGradient>
+</defs>
+<path d="M5 44V25C5 10 28 2 60 2s55 8 55 23v19z" fill="#ded5c1"/>
+<path d="M8 43V25C8 11 30 3 60 3s52 8 52 22v18z" fill="#fffcf0"/>
+<g clip-path="url(#opening)">
+  <path d="M13 6h94v37H13z" fill="url(#sea)"/>
+  <path d="M13 28c20-8 33 1 47-3s28 1 47-6v24H13z" fill="#88bcac"/>
+  <path d="M13 38c18-5 31 2 48-2s30 2 46-3v10H13z" fill="#b8d3a9"/>
+  <path d="M22 11c11-4 23-5 33-2m12 25 23-1" fill="none" stroke="#fffceb" stroke-opacity=".71" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M59 6v37M13 29h94" stroke="#faf3df" stroke-width="3"/>
+  <path d="M61 6v37M15 31h90" stroke="#a9b9a5" stroke-width=".8"/>
+</g>
+<path d="M6 43h108l3 3H3z" fill="#f8efd9"/><path d="M3 46h114v2H3z" fill="#b9ab8e"/>
+<path d="M10 37c6 2 9 5 10 9m-6-8c3-4 8-4 10-3-1 4-5 5-10 3zm3 5c4-1 8 1 9 4-5 1-8-1-9-4z" fill="#7f9f76" stroke="#7f9f76" stroke-width=".7"/>
+</svg>

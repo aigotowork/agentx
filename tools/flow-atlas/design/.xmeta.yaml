@@ -1,0 +1,10 @@
+---
+schema: package
+description: Proposed typed domain/process visualization contracts and product design; not implemented runtime support.
+artifacts:
+  - {kind: design, path: ./README.md, description: Product model and semantic/spatial interaction promises.}
+  - {kind: document, path: ./technology.md, description: Official technology sources and unresolved implementation probes.}
+  - {kind: document, path: ./contracts.ts, description: Canonical design-only domain/process/trace/layout data shapes.}
+  - {kind: document, path: ./api.ts, description: Canonical design-only module methods and ownership boundaries.}
+  - {kind: document, path: ./example.ts, description: Typed authored success/unknown inventory reservation scenarios.}
+  - {kind: document, path: ./self-example.ts, description: The same model describes Flow Atlas's own drag responsibilities.}

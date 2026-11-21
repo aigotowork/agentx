@@ -1,0 +1,5 @@
+[
+  {"id": "A-001", "customer": "青禾,商店", "note": "say \"hello\"", "total": 1200},
+  {"id": "A-002", "customer": "Lin", "note": "first line\nsecond line", "total": 750},
+  {"id": "A-003", "customer": "Moss", "note": "普通订单", "total": 850}
+]

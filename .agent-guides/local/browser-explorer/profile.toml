@@ -1,0 +1,8 @@
+[launch.profiles.codex-browser-explorer]
+tool = "codex"
+args = [
+  "--model", "gpt-6.1-sol",
+  "--sandbox", "workspace-write",
+  "-c", 'model_reasoning_effort="high"',
+  "-c", 'mcp_servers.playwright={ command = "npx", args = ["-y", "@playwright/mcp@0.0.85", "--headless", "--isolated", "--caps", "devtools", "--codegen", "typescript", "--output-dir", "artifacts/browser-explorer"] }',
+]

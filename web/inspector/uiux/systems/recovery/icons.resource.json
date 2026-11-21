@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "system": "recovery",
+  "id": "recovery/icons",
+  "kind": "asset",
+  "title": "经典恢复图标",
+  "summary": "独立DOM系统的原创整数网格图标。",
+  "maturity": "stable",
+  "source": [
+    "./icons.web.tsx"
+  ],
+  "design": "./icons.design.md",
+  "useWhen": [
+    "维护经典独立恢复界面的同一基础控件。"
+  ],
+  "avoidWhen": [
+    "不能据此推断恢复授权或合并原生kit。"
+  ],
+  "dependencies": [],
+  "events": [],
+  "states": [],
+  "interactions": [],
+  "scenes": [
+    {
+      "id": "default",
+      "title": "经典控件搭配",
+      "description": "相同DOM组件，隔离主题。",
+      "kind": "interaction"
+    }
+  ],
+  "usage": {
+    "entry": "./recovery.web.ts",
+    "symbols": [
+      "Icon",
+      "iconNames"
+    ]
+  },
+  "roles": [
+    "action.search",
+    "action.run",
+    "status.unknown"
+  ],
+  "provenance": {
+    "origin": "原创整数网格SVG",
+    "license": "MIT"
+  }
+}

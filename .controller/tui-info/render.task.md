@@ -1,0 +1,10 @@
+---
+schema: task
+status: completed
+agents: [{"scope":"/home/long/works/longwork/agentx/.agentx","generation":"a6195a5b-1dd4-4a6d-87d4-1f18f1b664fb","participant":{"canonical_name":"koda","incarnation_bits":4745316797066057243}}]
+---
+Implement Info rendering, placement and shortcuts in render files and inline layout as needed. Keep agent list visible, including inline narrow. Own all render and inline files. Add mouse Target::InfoBack, InfoOpen, InfoRow(usize) and InfoPane enum variants via fire (fire owns mouse.rs). app.ui.info: Option<Info>. info.title()->String breadcrumb, info.rows()->&[Row] (fields label:String,value:String,status:Option<AgentStatus>,link:Option<Link>), info.cursor:usize, info.scroll:usize. Info may have long wrapped rows; coordinate viewport scrolling API with fire. app.has_info_target()->bool. Add clickable i Info to existing action strip (and overflow, notify fire needed changes); keyboard info active i exits/Esc back. Keep mouse inputs from leaking. Use existing styles. No edits outside your ownership except coordinated. 
+
+The renderer owns pane layout and painted regions. Vertical Info replaces the right reader; ordinary inline Info replaces the detail under the agent strip without changing viewport; stacked transcript Info replaces only the reader and keeps the transcript state. Render reports logical row starts, total wrapped lines and viewport height through `Info::layout`; hit regions retain logical indices even when only a continuation is visible. The active Info reader and its controls own mouse input while the dashboard remains visible.
+
+[Pane renderer](../../src/tui/render/info.rs) caches normalized text and wrapped byte ranges per visit and width. Navigation clears the cache on page or data changes. Breadcrumbs retain the current visit when clipped; only actionable rows display focus. [Dashboard integration](../../src/tui/render/mod.rs) exposes the direct action and uses the existing More menu when space runs out. See [Replay](replay.task.md) for integrated viewport and input evidence.

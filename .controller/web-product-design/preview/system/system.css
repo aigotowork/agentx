@@ -1,0 +1,214 @@
+/* Public foundation. A style boundary owns local mappings; brightness alone inherits style. */
+:where(:root, [data-ax-style], [data-ax-brightness]) {
+  --ax-font-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --ax-font-mono: ui-monospace, "SF Mono", Consolas, monospace;
+  --ax-space-1: .25rem;
+  --ax-space-2: .5rem;
+  --ax-space-3: .75rem;
+  --ax-space-4: 1rem;
+  --ax-space-5: 1.25rem;
+  --ax-space-6: 1.5rem;
+  --ax-space-7: 1.75rem;
+  --ax-space-8: 2rem;
+  --ax-text-xs: .75rem;
+  --ax-text-sm: .8125rem;
+  --ax-text-lg: 1.125rem;
+  --ax-text-xl: 1.5rem;
+  --ax-line: 1.5;
+  --ax-rule: 1px;
+  --ax-focus-size: 2px;
+  --ax-icon-size: 1rem;
+  --ax-control-touch: 2.75rem;
+  --ax-pane: 28rem;
+  --ax-drawer: 30rem;
+  --ax-flyout: 21rem;
+  --ax-alpha-backdrop: 54%;
+  --ax-page: light-dark(var(--ax-page-light), var(--ax-page-dark));
+  --ax-surface: light-dark(var(--ax-surface-light), var(--ax-surface-dark));
+  --ax-surface-subtle: light-dark(var(--ax-subtle-light), var(--ax-subtle-dark));
+  --ax-text: light-dark(var(--ax-text-light), var(--ax-text-dark));
+  --ax-muted: light-dark(var(--ax-muted-light), var(--ax-muted-dark));
+  --ax-border: light-dark(var(--ax-border-light), var(--ax-border-dark));
+  --ax-input-border: light-dark(var(--ax-input-border-light), var(--ax-input-border-dark));
+  --ax-accent: light-dark(var(--ax-accent-light), var(--ax-accent-dark));
+  --ax-accent-soft: color-mix(in srgb, var(--ax-accent) 11%, var(--ax-surface));
+  --ax-on-accent: light-dark(#fff, #111a23);
+  --ax-focus: light-dark(var(--ax-focus-light), var(--ax-focus-dark));
+  --ax-success: light-dark(#215f43, #90d9ae);
+  --ax-warning: light-dark(#775008, #ffcf78);
+  --ax-danger: light-dark(#a12d39, #ff9ca6);
+  --ax-info: var(--ax-accent);
+  --ax-neutral: var(--ax-muted);
+  --ax-shadow: 0 .75rem 2rem #0d182c24;
+  --ax-backdrop: color-mix(in srgb, #101725 var(--ax-alpha-backdrop), transparent);
+}
+:where(:root, [data-ax-style="management"]) {
+  --ax-page-light: #eef2f7; --ax-page-dark: #101622;
+  --ax-surface-light: #fff; --ax-surface-dark: #171f2d;
+  --ax-subtle-light: #f4f6fa; --ax-subtle-dark: #202b3c;
+  --ax-text-light: #1e2a3c; --ax-text-dark: #edf3fc;
+  --ax-muted-light: #53637a; --ax-muted-dark: #adbbce;
+  --ax-border-light: #ccd6e2; --ax-border-dark: #3e4d63;
+  --ax-input-border-light: #77869b; --ax-input-border-dark: #7789a5;
+  --ax-accent-light: #234ea7; --ax-accent-dark: #a0baff;
+  --ax-focus-light: #245bbc; --ax-focus-dark: #b6cdff;
+  --ax-text-base: .875rem;
+  --ax-radius: .375rem;
+  --ax-panel-radius: .5rem;
+  --ax-control: 2.125rem;
+}
+:where([data-ax-style="space"]) {
+  --ax-page-light: #f5f1e7; --ax-page-dark: #171c17;
+  --ax-surface-light: #fffbf3; --ax-surface-dark: #212820;
+  --ax-subtle-light: #eee9dc; --ax-subtle-dark: #2a3429;
+  --ax-text-light: #2c3026; --ax-text-dark: #f0efe2;
+  --ax-muted-light: #5c6252; --ax-muted-dark: #b0bba7;
+  --ax-border-light: #d5ceba; --ax-border-dark: #495744;
+  --ax-input-border-light: #837b67; --ax-input-border-dark: #829078;
+  --ax-accent-light: #286044; --ax-accent-dark: #a2d5aa;
+  --ax-focus-light: #286746; --ax-focus-dark: #b7e4ba;
+  --ax-text-base: .9375rem;
+  --ax-radius: .625rem;
+  --ax-panel-radius: .875rem;
+  --ax-control: 2.375rem;
+}
+:where(:root, [data-ax-style], [data-ax-brightness="light"]) { color-scheme: light; }
+:where([data-ax-brightness="dark"]) { color-scheme: dark; }
+@media (pointer: coarse) {
+  :where(:root, [data-ax-style], [data-ax-brightness]) { --ax-control: var(--ax-control-touch); }
+}
+:where([data-ax-style], [data-ax-brightness]) :focus-visible,
+:where(.ax-button, .ax-input, .ax-details summary):focus-visible {
+  outline: var(--ax-focus-size) solid var(--ax-focus);
+  outline-offset: var(--ax-focus-size);
+}
+.ax-button, .ax-input {
+  box-sizing: border-box;
+  min-block-size: var(--ax-control);
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  border: var(--ax-rule) solid var(--ax-border);
+  border-radius: var(--ax-radius);
+  background: var(--ax-surface);
+  color: var(--ax-text);
+  font: inherit;
+  line-height: 1.25;
+}
+.ax-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ax-space-2);
+  padding: var(--ax-space-1) var(--ax-space-3);
+  font-weight: 600;
+  text-decoration: none;
+  text-align: center;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.ax-icon-button { min-inline-size: var(--ax-control); padding-inline: var(--ax-space-2); }
+.ax-icon { inline-size: var(--ax-icon-size); block-size: var(--ax-icon-size); flex: none; }
+.ax-button[data-variant="quiet"] { background: transparent; border-color: transparent; }
+.ax-button[data-variant="primary"] { color: var(--ax-on-accent); background: var(--ax-accent); border-color: var(--ax-accent); }
+.ax-button[data-variant="danger"] { color: var(--ax-danger); }
+.ax-button:is([aria-pressed="true"], [aria-current]:not([aria-current="false"])) {
+  color: var(--ax-accent);
+  background: var(--ax-accent-soft);
+  border-color: var(--ax-accent);
+}
+.ax-button:hover:not(:disabled, [aria-disabled="true"]) { box-shadow: inset 0 0 0 var(--ax-rule) currentColor; }
+.ax-button:is(:disabled, [aria-disabled="true"]), .ax-input:disabled {
+  color: var(--ax-muted);
+  background: var(--ax-surface-subtle);
+  border-color: var(--ax-border);
+  cursor: not-allowed;
+}
+.ax-input { padding: var(--ax-space-2) var(--ax-space-3); border-color: var(--ax-input-border); }
+.ax-input:where(textarea) { resize: vertical; }
+.ax-input[aria-invalid="true"] { border-color: var(--ax-danger); }
+.ax-input::placeholder { color: var(--ax-muted); opacity: 1; }
+.ax-panel {
+  box-sizing: border-box; min-inline-size: 0; min-block-size: 0;
+  background: var(--ax-surface); color: var(--ax-text);
+  border: var(--ax-rule) solid var(--ax-border);
+  border-radius: var(--ax-panel-radius);
+  overflow-wrap: anywhere;
+}
+.ax-row { min-inline-size: 0; overflow-wrap: anywhere; padding: var(--ax-space-2) var(--ax-space-3); }
+.ax-row + .ax-row { border-block-start: var(--ax-rule) solid var(--ax-border); }
+.ax-cluster { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ax-space-2); }
+.ax-stack { display: grid; gap: var(--ax-space-3); min-inline-size: 0; }
+.ax-badge, .ax-notice {
+  --ax-tone: var(--ax-neutral);
+  box-sizing: border-box;
+  color: var(--ax-tone);
+  background: color-mix(in srgb, var(--ax-tone) 9%, var(--ax-surface));
+  border: var(--ax-rule) solid color-mix(in srgb, var(--ax-tone) 36%, var(--ax-surface));
+  overflow-wrap: anywhere;
+}
+:is(.ax-badge, .ax-notice)[data-tone="info"] { --ax-tone: var(--ax-info); }
+:is(.ax-badge, .ax-notice)[data-tone="success"] { --ax-tone: var(--ax-success); }
+:is(.ax-badge, .ax-notice)[data-tone="warning"] { --ax-tone: var(--ax-warning); }
+:is(.ax-badge, .ax-notice)[data-tone="danger"] { --ax-tone: var(--ax-danger); }
+.ax-badge {
+  display: inline-block; inline-size: fit-content;
+  padding: 0 var(--ax-space-2); border-radius: var(--ax-radius);
+  font-size: var(--ax-text-xs); font-weight: 650;
+}
+.ax-notice { padding: var(--ax-space-2) var(--ax-space-3); border-radius: var(--ax-radius); }
+.ax-details > summary { cursor: pointer; color: var(--ax-accent); }
+.ax-split { container: ax-split / inline-size; display: grid; gap: var(--ax-space-3); grid-template-columns: minmax(0, min(17rem, 36%)) minmax(0, 1fr); }
+.ax-split > :is(.ax-split-index, .ax-split-detail) { min-inline-size: 0; min-block-size: 0; }
+@container ax-split (width < 44rem) {
+  .ax-split > :is(.ax-split-index, .ax-split-detail) { grid-column: 1 / -1; }
+  .ax-split[data-view="index"] > .ax-split-detail,
+  .ax-split[data-view="detail"] > .ax-split-index { display: none; }
+}
+@container ax-split (width >= 44rem) {
+  .ax-split .ax-split-back { display: none; }
+}
+.ax-reader { min-block-size: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+.ax-reader-body { min-block-size: 0; overflow: auto; overscroll-behavior: contain; }
+
+.ax-popover, .ax-dialog {
+  box-sizing: border-box; color: var(--ax-text); background: var(--ax-surface);
+  border: var(--ax-rule) solid var(--ax-border); border-radius: var(--ax-panel-radius);
+  box-shadow: var(--ax-shadow); overflow-wrap: anywhere;
+}
+.ax-popover {
+  inset: var(--ax-space-3) var(--ax-space-3) auto auto;
+  margin: 0; padding: var(--ax-space-4);
+  inline-size: min(var(--ax-flyout), calc(100vw - 2 * var(--ax-space-3)));
+  max-block-size: min(70dvh, 28rem); overflow: auto;
+}
+@supports (position-area: block-end span-inline-start) {
+  .ax-popover:where(:popover-open) {
+    inset: auto;
+    position-area: block-end span-inline-start;
+    position-try-fallbacks: flip-inline, flip-block, flip-block flip-inline;
+    margin: var(--ax-space-2);
+  }
+}
+/* Programmatically triggered panels without a source use the fixed fallback. */
+.ax-popover[data-ax-unanchored] { position-area: none; inset: var(--ax-space-3) var(--ax-space-3) auto auto; }
+.ax-dialog {
+  inline-size: min(var(--ax-pane), calc(100vw - 2 * var(--ax-space-3)));
+  max-block-size: min(92dvh, calc(100dvh - 2 * var(--ax-space-3)));
+  padding: 0;
+}
+.ax-dialog[open]:has(> .ax-dialog-body) { display: flex; flex-direction: column; overflow: hidden; }
+.ax-dialog::backdrop { background: var(--ax-backdrop); }
+.ax-dialog[data-placement="drawer"] {
+  inset: 0 0 0 auto; margin: 0; inline-size: min(var(--ax-drawer), 100%);
+  block-size: 100dvh; max-inline-size: 100%; max-block-size: 100dvh;
+  border-radius: var(--ax-panel-radius) 0 0 var(--ax-panel-radius);
+}
+.ax-dialog-head, .ax-dialog-actions, .ax-dialog-body { padding: var(--ax-space-4); }
+.ax-dialog-head { border-block-end: var(--ax-rule) solid var(--ax-border); }
+.ax-dialog-head :is(h1, h2, h3) { margin: 0; }
+.ax-dialog-body { min-block-size: 0; flex: 1; overflow: auto; overscroll-behavior: contain; }
+.ax-dialog-actions { border-block-start: var(--ax-rule) solid var(--ax-border); display: flex; flex-wrap: wrap; justify-content: end; gap: var(--ax-space-2); }
+@media (forced-colors: active) {
+  .ax-button:is([aria-pressed="true"], [aria-current]:not([aria-current="false"])) { border-color: Highlight; }
+}
+.ax-popover:not(:popover-open) { display: none; }

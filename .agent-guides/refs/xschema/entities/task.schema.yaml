@@ -1,0 +1,34 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: xschema task
+type: object
+required: [ schema, status ]
+properties:
+  schema: { const: task }
+  agent: { $ref: common.schema.yaml#/$defs/text }
+  tasks: { $ref: common.schema.yaml#/$defs/paths }
+  blocking_reason: { $ref: common.schema.yaml#/$defs/text }
+  dependencies:
+    type: array
+    items: { $ref: "#/$defs/dependency" }
+    uniqueItems: true
+allOf:
+  - { $ref: common.schema.yaml#/$defs/base }
+additionalProperties: true
+if:
+  properties:
+    status: { const: blocked }
+  required: [ status ]
+then:
+  required: [ blocking_reason ]
+else:
+  not:
+    required: [ blocking_reason ]
+$defs:
+  dependency:
+    type: object
+    required: [ before, after ]
+    properties:
+      before: { $ref: common.schema.yaml#/$defs/path }
+      after: { $ref: common.schema.yaml#/$defs/path }
+      condition: { $ref: common.schema.yaml#/$defs/text }
+    additionalProperties: true

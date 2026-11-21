@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="72" viewBox="0 0 64 72">
+<title>Vesper, the route illustrator</title>
+<defs>
+<linearGradient id="boot" x2="31%" y2="100%"><stop offset="0.000" stop-color="#69504b"/><stop offset="0.500" stop-color="#3c2b36"/><stop offset="1.000" stop-color="#27212b"/></linearGradient><linearGradient id="face" x2="31%" y2="100%"><stop offset="0.000" stop-color="#f5d2a7"/><stop offset="0.500" stop-color="#d29d78"/><stop offset="1.000" stop-color="#9c665d"/></linearGradient><linearGradient id="brass" x2="31%" y2="100%"><stop offset="0.000" stop-color="#ebc180"/><stop offset="0.500" stop-color="#b47a4c"/><stop offset="1.000" stop-color="#5e4346"/></linearGradient><linearGradient id="hair" x2="31%" y2="100%"><stop offset="0.000" stop-color="#bc835f"/><stop offset="0.500" stop-color="#6d4944"/><stop offset="1.000" stop-color="#2e2833"/></linearGradient><linearGradient id="coat" x2="31%" y2="100%"><stop offset="0.000" stop-color="#bd8168"/><stop offset="0.500" stop-color="#9b5252"/><stop offset="1.000" stop-color="#5a3545"/></linearGradient><linearGradient id="collar" x2="31%" y2="100%"><stop offset="0.000" stop-color="#e3ad79"/><stop offset="0.500" stop-color="#b8715d"/><stop offset="1.000" stop-color="#7b4149"/></linearGradient><pattern id="seam" width="3.3" height="3.3" patternUnits="userSpaceOnUse"><path d="M-1 1l2-2m-1 3.3l3.3-3.3m-1 4.3l2-2" stroke="#34232b" stroke-width=".6" opacity=".48"/></pattern>
+</defs>
+<g stroke-linecap="round" stroke-linejoin="round" color="#19151e">
+<ellipse cx="32" cy="69.4" rx="21" ry="2.15" fill="#130f19" opacity=".42"/><ellipse cx="29" cy="69.60000000000001" rx="14.5" ry="1.3" fill="#160e14" opacity=".55"/>
+
+<g stroke="currentColor" stroke-width="1.37">
+<path d="m24 56 10 .9-.9 8-2 5-11 1-3-2 1-3 5-3Zm12 1 9-2 .1 9 5 3-.4 3-11 1-3-3Z" fill="url(#boot)"/>
+<path d="m26 30 12 .1 7 6 9 6 4 9-5 6-7-.8-2 6-15 2-12-2-7-4 4-10-2-9Z" fill="url(#coat)"/>
+<path d="m20 41 4-4 9 4 7-5 6 4-1 8-7 2-1 11-10 1v-11l-8-5Z" fill="#6d3c46" stroke-width=".85"/>
+<path d="M21 14q4-8 15-7l9 3 5 8-2 8-5 3-2 5-7 4-7-1-6-4-3-7-3-1-1-5Z" fill="url(#face)"/>
+<path d="m12 19-3-5 7-2-3-4 9 1 1-4 9 2 8-5 12 4 3 6-3 4 1 6-5 6-4 1 1-7-5-6-6 3-9 .2-6 6-4-1Z" fill="url(#hair)"/>
+<path d="m18 27 8 5 8 3 9-4 4 3-7 7-9 1-7-2-8-9Z" fill="url(#collar)"/>
+<path d="m14 37 10 2-5 10 3 4-4 7-9-1-5-4 2-8Z" fill="url(#coat)"/>
+<path d="m47 39 7 4 3 7-4 6-7-1-5-4 2-5 4 1Z" fill="url(#coat)"/>
+<path d="m15 48 6-2 5 3-1 5-6 1-4-3Z" fill="url(#face)" stroke-width=".87"/>
+<path d="m13 31 1 11 5 7 2-.7-3-9-2-10Z" fill="url(#brass)" stroke-width=".67"/>
+<path d="m11 33-1-8 2-3 2 4 2 7Z" fill="#4b5c67" stroke-width=".77"/>
+<path d="m44 49 8-5 2 10-8 5-2-1Z" fill="#d7ad79" stroke-width=".79"/>
+</g>
+<path d="m26 23 3-.6m9-.5 2 .1m-12.6 2.5.1 1m11.6-1.6.1 .8m-5.6 .4-1.5 4 2.1 .5m-4.5 1.2 2.7 .9 4.3-1.2" stroke="#392431" fill="none" stroke-width=".95"/>
+<path d="m16 15 8-1 7-5m-6 8 9-1 7-7m-5 5 5-4 7-2m-3 6 3 4 1 3m-.1-11 2 2m-30 23 8 3 6 .1m5-3 4-2m-33 18 5-7m1 15 4 1.5m1 3 7 1m10-19-4 9-2 9" fill="none" stroke="#f4b388" stroke-opacity=".68" stroke-width=".75"/>
+<path d="m52 14 1 7-5 8-4 1 2-7zm-6 23 8 7 4 8-6 5-8-2 2-5 4 1 2-3Z" fill="url(#seam)"/>
+<path d="m46 52 5-3m-4 6 5-3m-37 12 7 1m18 1 5 .1" stroke="#996950" fill="none" stroke-width=".66"/>
+<path d="m31 43 2.2 3.5-2.4 3.2-2.3-2.9Z" fill="url(#brass)" stroke="#563039" stroke-width=".77"/>
+</g>
+</svg>

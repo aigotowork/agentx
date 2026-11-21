@@ -1,0 +1,54 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: xschema task-meta
+type: object
+required: [ schema, task, state ]
+properties:
+  schema: { const: task-meta }
+  task: { $ref: common.schema.yaml#/$defs/path }
+  state: { $ref: common.schema.yaml#/$defs/text }
+  scenarios:
+    type: array
+    items: { $ref: "#/$defs/recommendation" }
+    uniqueItems: true
+  roles:
+    type: array
+    items: { $ref: "#/$defs/recommendation" }
+    uniqueItems: true
+  skills:
+    type: array
+    items: { $ref: "#/$defs/recommendation" }
+    uniqueItems: true
+  tools:
+    type: array
+    items: { $ref: "#/$defs/recommendation" }
+    uniqueItems: true
+  status: false
+allOf:
+  - { $ref: common.schema.yaml#/$defs/base }
+additionalProperties: true
+$defs:
+  recommendation:
+    type: object
+    required: [ name, description, source ]
+    properties:
+      name: { $ref: common.schema.yaml#/$defs/text }
+      description: { $ref: common.schema.yaml#/$defs/text }
+      source: { $ref: common.schema.yaml#/$defs/text }
+      ref: { $ref: common.schema.yaml#/$defs/reference }
+      reason: { $ref: common.schema.yaml#/$defs/text }
+      gap: { $ref: common.schema.yaml#/$defs/text }
+      confidence: { $ref: common.schema.yaml#/$defs/text }
+      fit: { $ref: common.schema.yaml#/$defs/text }
+      need: { $ref: common.schema.yaml#/$defs/text }
+    allOf:
+      - if:
+          properties:
+            source: { const: map }
+        then:
+          required: [ ref ]
+      - if:
+          properties:
+            source: { const: candidate }
+        then:
+          required: [ reason ]
+    additionalProperties: true

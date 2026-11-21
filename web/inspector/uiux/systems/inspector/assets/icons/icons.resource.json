@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "system": "inspector",
+  "id": "inspector/icons",
+  "kind": "asset",
+  "title": "图标资源",
+  "summary": "整数网格 SVG 与原版 Lucide 通过同一 Icon 语义名称选择。",
+  "maturity": "stable",
+  "source": [
+    "./icons.paths.ts"
+  ],
+  "design": "./icons.design.md",
+  "useWhen": [
+    "整数网格 SVG 与原版 Lucide 通过同一 Icon 语义名称选择。"
+  ],
+  "avoidWhen": [
+    "不要将样例结果解释为业务事实或权限。"
+  ],
+  "dependencies": [
+    "inspector/themes"
+  ],
+  "events": [],
+  "states": [],
+  "interactions": [],
+  "scenes": [
+    {
+      "id": "compact",
+      "title": "常用图标",
+      "description": "同一主题下的常用语义图标。",
+      "kind": "overview"
+    },
+    {
+      "id": "default",
+      "title": "真实资源预览",
+      "description": "整数网格 SVG 与原版 Lucide 通过同一 Icon 语义名称选择。",
+      "kind": "overview"
+    }
+  ],
+  "usage": {
+    "entry": "../../inspector.web.ts",
+    "symbols": [
+      "Icon"
+    ]
+  },
+  "roles": [
+    "action.search",
+    "action.settings",
+    "status.unknown",
+    "status.confirmed"
+  ],
+  "provenance": {
+    "origin": "原创系统资源；原版图标使用 Lucide",
+    "license": "原创图标 MIT；原版 Lucide 为 ISC"
+  }
+}

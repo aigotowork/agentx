@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="72" viewBox="0 0 64 72">
+  <defs><linearGradient id="felt" x2="24%" y2="100%"><stop stop-color="#ffe2b5"/><stop offset=".56" stop-color="#f5a88f"/><stop offset="1" stop-color="#ad5b80"/></linearGradient><linearGradient id="hide" x2="100%" y2="100%"><stop stop-color="#627590"/><stop offset="1" stop-color="#333459"/></linearGradient></defs>
+  <g stroke="#2b234b" stroke-width="1.6" stroke-linejoin="round">
+    <path d="M19 51h12v14l-5 5H11l1-6 6-3zm15 0h12l2 11 5 3v5H37l-3-4z" fill="#49354e"/>
+    <path d="M20 29q10-4 23 0l7 9 7 15-7 6H13L7 50l5-14z" fill="url(#felt)"/>
+    <path d="m18 30 5-3 1 10h16l1-10 5 4 3 24q-16 9-34 0z" fill="url(#hide)"/>
+    <path d="M22 47h19l-3 8H25z" fill="#a6cfbf"/>
+    <path d="m47 42 9-12-3-5 4-4 5 5-3 7-7 13z" fill="#ffe8b7"/>
+    <path d="m11 45 7-3 5 5-6 7-8-1zM46 43l5-4 5 5-3 7-7-2" fill="#b96e59"/>
+    <path d="M18 16q15-9 27 2l-1 10q-3 9-12 9-9 0-14-9z" fill="#c17a64"/>
+    <path d="M7 20q0-6 7-7-1-7 8-9 6-2 10 3 6-5 13-1 5 3 5 8 7 0 7 6-2 5-9 5-9-6-19-5-8 1-14 5-8-1-8-5z" fill="url(#felt)"/>
+  </g>
+  <path d="M16 14q2-7 10-7m11 1q6-1 9 5M20 51h4m15 0h5" fill="none" stroke="#ffe4bd" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="M25 25v2m13-2v2m-9 4q3 3 6 0" fill="none" stroke="#35244b" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="m32 41 2 2-2 2-2-2z" fill="#f4d98f"/>
+</svg>

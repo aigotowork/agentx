@@ -1,0 +1,33 @@
+// Original Inspector glyphs, 16×16 integer grid; no third-party artwork.
+export const glyphs = {
+ inspector:'M2 3h10v2h2v7h-2v2H2v-2H0V5h2V3Zm1 2v7h8V5H3Zm2 1h4v2H5V6Zm0 3h2v2H5V9Zm6 3h2v2h2v2h-2v-2h-2v-2Z',
+ queue:'M1 2h14v3H1V2Zm0 5h10v3H1V7Zm0 5h7v3H1v-3Zm12-5h2v8h-2V7Zm-3 4h6v2h-6v-2Z',
+ terminal:'M1 2h14v11H9v2H7v-2H1V2Zm2 2v7h10V4H3Zm1 1h2v2h2v2H6V7H4V5Zm5 4h3v1H9V9Z',
+ recovery:'M5 1h6v2H5V1ZM3 3h2v2H3V3ZM1 5h2v6H1V5Zm2 6h2v2H3v-2Zm2 2h6v2H5v-2Zm6-2h2v2h-2v-2Zm2-4h2v4h-2V7ZM11 1h2v4h-4V3h2V1ZM7 6h2v3h3v2H7V6Z',
+ usage:'M1 13h14v2H1v-2Zm1-6h3v5H2V7Zm5-5h3v10H7V2Zm5 3h3v7h-3V5Z',
+ archive:'M1 1h14v4H1V1Zm1 5h12v9H2V6Zm3 2v2h6V8H5Z',
+ settings:'M2 2h2v12H2V2Zm5 0h2v12H7V2Zm5 0h2v12h-2V2ZM0 5h6v3H0V5Zm5 5h6v3H5v-3Zm5-7h6v3h-6V3Z',
+ search:'M3 1h6v2H3V1ZM1 3h2v6H1V3Zm8 0h2v6H9V3ZM3 9h6v2H3V9Zm7 1h2v2h-2v-2Zm2 2h2v2h-2v-2Zm2 2h2v2h-2v-2Z',
+ filter:'M1 2h14v2H1V2Zm2 4h10v2H3V6Zm3 4h4v5H6v-5Z',
+ arrow:'M1 7h10V5H9V3h2v2h2v2h2v2h-2v2h-2v2H9v-2h2V9H1V7Z',
+ back:'M15 7H5V5h2V3H5v2H3v2H1v2h2v2h2v2h2v-2H5V9h10V7Z',
+ down:'M2 5h2v2h2v2h4V7h2V5h2v2h-2v2h-2v2H6V9H4V7H2V5Z',
+ close:'M2 2h2v2h2v2h4V4h2V2h2v2h-2v2h-2v4h2v2h2v2h-2v-2h-2v-2H6v2H4v2H2v-2h2v-2h2V6H4V4H2V2Z',
+ more:'M1 7h3v3H1V7Zm5 0h3v3H6V7Zm5 0h3v3h-3V7Z',
+ check:'M1 7h2v2h2v2h2V9h2V7h2V5h2V3h2v4h-2v2h-2v2H9v2H7v2H5v-2H3v-2H1V7Z',
+ warning:'M7 1h2v2h2v3h2v3h2v5H1V9h2V6h2V3h2V1Zm0 4v5h2V5H7Zm0 6v2h2v-2H7Z',
+ unknown:'M4 1h8v2H4V1ZM2 3h2v3H2V3Zm10 0h2v4h-2V3Zm-2 4h2v2h-2V7ZM7 9h3v2H7V9Zm0 4h3v2H7v-2Z',
+ run:'M3 1h2v2h3v2h3v2h3v2h-3v2H8v2H5v2H3V1Z',
+ pause:'M3 2h4v12H3V2Zm6 0h4v12H9V2Z',
+ clock:'M4 1h8v2H4V1ZM2 3h2v10H2V3Zm10 0h2v10h-2V3ZM4 13h8v2H4v-2Zm3-9h2v4h3v2H7V4Z',
+ document:'M3 1h7v2h3v12H3V1Zm2 3v9h6V5H9V3H5v1Zm1 3h4v1H6V7Zm0 3h4v1H6v-1Z',
+ folder:'M1 2h6v2h8v10H1V2Zm2 4v6h10V6H3Z',
+ host:'M1 1h14v10H9v2h3v2H4v-2h3v-2H1V1Zm2 2v6h10V3H3Zm2 3h2v2H5V6Zm4 0h2v2H9V6Z',
+ bolt:'M8 0h5l-3 6h4L5 16l2-7H2l6-9Z',
+ copy:'M1 1h10v2H3v8H1V1Zm4 4h10v10H5V5Zm2 2v6h6V7H7Z',
+ info:'M4 1h8v2H4V1ZM2 3h2v10H2V3Zm10 0h2v10h-2V3ZM4 13h8v2H4v-2Zm3-9h2v2H7V4Zm0 4h2v4H7V8Z',
+ signal:'M1 11h3v4H1v-4Zm4-4h3v8H5V7Zm4-4h3v12H9V3Zm4-3h3v15h-3V0Z',
+ sun:'M7 0h2v3H7V0Zm0 13h2v3H7v-3ZM0 7h3v2H0V7Zm13 0h3v2h-3V7ZM4 4h8v8H4V4Z',
+ moon:'M7 1h5v2H9v2H7v4h2v2h4v2h-2v2H5v-2H3v-2H1V5h2V3h4V1Z'
+};
+export function icon(name,cls='') {return `<svg class="icon ${cls}" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="${glyphs[name]||glyphs.document}"/></svg>`;}

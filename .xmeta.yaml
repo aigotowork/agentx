@@ -1,0 +1,37 @@
+schema: package
+description: Project resources and governance entry points; maintain for this project.
+artifacts:
+  - {kind: proposal, path: ./.docs/proposals/live-ui-integration.md, description: Selected real data integration of both existing UI systems.}
+  - {kind: delivery, path: ./.controller/live-ui-integration/delivery.md, description: Real API and collection support for both existing Inspector and office conversation UIs.}
+  - {kind: design, path: ./.controller/live-ui-integration/design.md, description: Native supply and consumer boundaries for live UI integration.}
+  - {kind: proposal, path: ./.docs/proposals/office-management.md, description: Unified office management selection and native read/action scope.}
+  - {kind: design, path: ./.docs/agent-management/offices.md, description: Adopted metadata, office/post discovery, pure route inspection and native actions.}
+  - {kind: delivery, path: ./.controller/office-management/delivery.md, description: Holistic office API and usable Web implementation and evidence.}
+  - {kind: model, path: ./.docs/inspector/data-foundation.md, description: Source-linked Inspector capability supply and native API/data/workflow gaps.}
+  - {kind: delivery, path: ./.controller/inspector-migration/delivery.md, description: Complete Inspector UI migration with local mock supply and AgentX data foundation assessment.}
+  - {kind: proposal, path: ./.docs/proposals/agent-management-http.md, description: Accepted daemon-managed HTTP API and Web counterpart of the Agent management TUI.}
+  - {kind: design, path: ./.docs/agent-management/design.md, description: Agent management contracts and isolated daemon-hosted execution.}
+  - {kind: delivery, path: ./.controller/agent-management/delivery.md, description: Management HTTP and embedded Web implementation and bounded acceptance.}
+  - {kind: design, path: ./.docs/architecture/environment.md, description: Native caller environment loading, usage, precedence and source diagnostics.}
+  - {kind: proposal, path: ./.docs/proposals/environment-loading.md, description: Selected ordered environment files and caller environment guarantees.}
+  - {kind: delivery, path: ./.controller/environment-loading/delivery.md, description: Bounded local environment implementation and independent acceptance.}
+  - {kind: guidance, path: ./.agent-guides, description: Shared guidance and project-owned local additions.}
+  - {kind: design, path: ./.docs/source-layout/README.md, description: Source ownership, exact relocation map and migration evidence.}
+  - {kind: design, path: ./.docs/codex-activation/README.md, description: Autonomous Codex activation contracts, flows and technical feasibility.}
+  - {kind: task, path: ./.controller/codex-activation-design/task.md, description: Design work state, evidence gaps and completion criteria.}
+  - {kind: roadmap, path: ./.docs/roadmap.md, description: Selected project capability direction.}
+  - {kind: proposal, path: ./.docs/proposals/codex-shared-runtime.md, description: Accepted shared-native-runtime change and retained provider guarantees.}
+  - {kind: proposal, path: ./.docs/proposals/domain-driven-agentx-daemon.md, description: Proposed domain model, single-binary client/daemon contracts and migration decision.}
+  - {kind: model, path: ./.docs/model/README.md, description: Current and target AgentX domain and process ownership map.}
+  - {kind: delivery, path: ./.controller/domain-daemon/delivery.md, description: Staged design and implementation outcome for the AgentX domain daemon direction.}
+  - {kind: controller, path: ./.controller/domain-daemon/controller.md, description: Coordination scope and slice assignment rules for the AgentX domain daemon Delivery.}
+  - {kind: task, path: ./.controller/domain-daemon/tasks/architecture.md, description: Source-grounded architecture assessment and next design action.}
+  - {kind: delivery, path: ./.controller/codex-shared-runtime/delivery.md, description: Shared Codex runtime implementation and independent acceptance.}
+  - {kind: controller, path: ./.controller/codex-shared-runtime/controller.md, description: Domain assignments, resources and actionable coordination.}
+  - {kind: design, path: ./.docs/observability/README.md, description: Observation data/domain contracts and engineering maintenance entry.}
+  - {kind: delivery, path: ./.controller/observability/implementation.md, description: Active backend-first observation and local management consumer implementation.}
+  - {kind: controller, path: ./.controller/observability/controller.md, description: Current observability assignments and original Task state routes.}
+  - {kind: proposal, path: ./.docs/proposals/collaboration-workbench.md, description: Selected task-centered workbench change and retained native guarantees.}
+  - {kind: design, path: ./.docs/collaboration-workbench/README.md, description: Scenario-first SVG experience and capability design entry.}
+  - {kind: delivery, path: ./.controller/collaboration-workbench/delivery.md, description: Design-first collaboration workbench through real task acceptance.}
+  - {kind: controller, path: ./.controller/collaboration-workbench/controller.md, description: New professional assignments and actual runtime bindings.}

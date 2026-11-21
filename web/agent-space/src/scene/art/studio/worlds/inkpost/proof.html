@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inkpost · Art plate</title>
+<style>
+  :root { color-scheme: dark; --paper:#211a25; --ink:#221b27; --card:#312633; --text:#f2d3a3; --faint:#bda098; --line:#684d4f; --plate:800px; }
+  * { box-sizing:border-box }
+  body { margin:0; background:#17141e; color:var(--text); font:14px Georgia, serif }
+  main { max-width:852px; margin:0 auto; padding:22px clamp(12px,3vw,26px); background:var(--paper) }
+  header, footer { display:flex; align-items:baseline; justify-content:space-between; gap:10px; border-block:1px solid var(--line); padding:9px 0 }
+  h1 { font-size:30px; font-weight:400; letter-spacing:.12em; margin:0 }
+  h2 { margin:0; font:600 10px system-ui,sans-serif; letter-spacing:.16em; text-transform:uppercase }
+  small, figcaption { color:var(--faint); font:11px system-ui,sans-serif; letter-spacing:.065em }
+  section { margin-block:16px }
+  canvas { display:block; max-width:100%; height:auto; background:var(--ink) }
+  .scene { margin:10px 0 0 }
+  .studies { display:grid; grid-template-columns:240px minmax(0,1fr); gap:16px }
+  .cast { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px }
+  figure { margin:0 }
+  .cast figure { display:flex; flex-direction:column; justify-content:center; align-items:center; padding:12px 2px 9px; background:var(--card); min-height:156px; border-bottom:1px solid var(--line) }
+  .cast img { display:block; flex:none; width:64px; height:72px }
+  .cast figcaption { text-align:center; line-height:1.42; margin-top:10px }
+  .cast strong { display:block; color:var(--text); font:normal 17px Georgia,serif; letter-spacing:.045em }
+  .thumb { margin-block-start:8px }
+  .studies h2 { margin-bottom:8px }
+  @media(max-width:650px) {
+    .studies { grid-template-columns:1fr }
+    .studies > div:first-child { order:2 }
+    .cast figure { min-height:130px }
+  }
+  @media(max-width:360px) {
+    .cast { grid-template-columns:repeat(2,minmax(0,1fr)) }
+  }
+</style>
+<main>
+  <header><h1>INKPOST</h1><small>01 &nbsp;/&nbsp; At the last light</small></header>
+  <section aria-labelledby="room-title">
+    <h2 id="room-title">The night office · 1:1 at plate width</h2>
+    <canvas class="scene" id="office" width="800" height="450" role="img" aria-label="A four-person post office cutaway above a dusky river valley."></canvas>
+  </section>
+  <section class="studies" aria-label="Scale studies">
+    <div>
+      <h2>Composition · 30%</h2>
+      <canvas class="thumb" id="thumbnail" width="240" height="135" role="img" aria-label="Reduced thumbnail of the same room."></canvas>
+    </div>
+    <div>
+      <h2>Cast · native 64 × 72</h2>
+      <div class="cast">
+        <figure><img src="actor-maker.svg" width="64" height="72" alt="Pale apron and wide purple cap"><figcaption><strong>Orla</strong>Packet binder</figcaption></figure>
+        <figure><img src="actor-designer.svg" width="64" height="72" alt="Swept hair and rust collar"><figcaption><strong>Vesper</strong>Route illustrator</figcaption></figure>
+        <figure><img src="actor-keeper.svg" width="64" height="72" alt="Square cap, glasses and teal coat"><figcaption><strong>Edda</strong>Archivist</figcaption></figure>
+        <figure><img src="actor-scout.svg" width="64" height="72" alt="Saffron hood and travel satchel"><figcaption><strong>Pip</strong>Ferry courier</figcaption></figure>
+      </div>
+    </div>
+  </section>
+  <footer><small>Cinder Etching</small><small>25 original vector masters</small></footer>
+</main>
+<script>
+  // Static art proof with a curated four-person composition. Source SVGs are loaded directly, never recreated here.
+  const base = [
+    ["scene-vista", 0, 0],
+    ["rug", 464, 250],
+    ["wall-window", 172, 88], ["wall-print", 366, 87], ["wall-window", 526, 88],
+    ["door-threshold", 177, 378, .5, 1],
+  ];
+  const props = [
+    ["bookshelf", 414, 179], ["sofa", 533, 206], ["coffee", 631, 208], ["plant", 635, 152],
+    ["desk", 227, 195], ["stool", 227, 221], ["desk", 349, 195], ["stool", 349, 221],
+    ["desk", 227, 305], ["stool", 227, 331], ["desk", 349, 305], ["stool", 349, 331],
+    ["cabinet", 620, 355], ["human-mailbox", 106, 391], ["scene-lantern", 149, 360],
+  ];
+  const cast = [
+    ["actor-maker", 226, 204], ["actor-designer", 344, 206],
+    ["actor-keeper", 528, 291], ["actor-scout", 394, 336],
+  ];
+  const feedback = [
+    ["glyph-work", 256, 161, .5, .5], ["glyph-available", 561, 248, .5, .5],
+    ["glyph-attention", 428, 291, .5, .5], ["envelope", 173, 283, .5, .5],
+  ];
+  const ctx = document.querySelector("#office").getContext("2d");
+  const images = new Map();
+  function stamp([id, x, y, ax=0, ay=0]) {
+    const img = images.get(id);
+    ctx.drawImage(img, x-img.naturalWidth*ax, y-img.naturalHeight*ay);
+  }
+  function foot([id, x, y]) { stamp([id, x, y, .5, 1]); }
+  function pool(x, y, w, h, color, rim) {
+    ctx.save();
+    ctx.translate(x, y); ctx.scale(w, h);
+    const light = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+    light.addColorStop(0, color); light.addColorStop(.5, rim); light.addColorStop(1, "transparent");
+    ctx.fillStyle = light; ctx.fillRect(-1, -1, 2, 2);
+    ctx.restore();
+  }
+  async function render() {
+    const ids = new Set([...base, ...props, ...cast, ...feedback].map(([id]) => id));
+    ["floor-oak","wall-plaster","glyph-select"].forEach(id => ids.add(id));
+    await Promise.all([...ids].map(async id => {
+      const img = new Image();
+      img.src = id + ".svg"; await img.decode();
+      images.set(id, img);
+    }));
+    stamp(base[0]);
+    const room = { x:120, y:86, w:558, h:293 };
+    const { x, y, w, h } = room;
+    ctx.fillStyle = "#181420bb"; ctx.fillRect(x+7,y+11,w,h);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+    ctx.fillStyle = ctx.createPattern(images.get("floor-oak"), "repeat");
+    ctx.save(); ctx.translate(x,y); ctx.fillRect(0,0,w,h); ctx.restore();
+    stamp(base[1]);
+    for (let dx=0; dx<w; dx+=160) stamp(["wall-plaster", x+dx, y]);
+    base.slice(2,-1).forEach(stamp);
+    pool(202, 178, 148, 115, "#eeb46d49", "#d8875930");
+    pool(159, 334, 139, 95, "#f4b66e52", "#d5834d26");
+    pool(586, 202, 141, 114, "#b0ad911c", "#9696aa13");
+    ctx.fillStyle = "#3d2c36";
+    ctx.fillRect(x,y,6,h); ctx.fillRect(x+w-6,y,6,h);
+    ctx.fillRect(x,y+h-6,25,6); ctx.fillRect(x+89,y+h-6,w-89,6);
+    ctx.fillStyle = "#83604d";
+    ctx.fillRect(x+1,y+3,1,h-9); ctx.fillRect(x+w-5,y+3,1,h-9);
+    stamp(base.at(-1));
+    ctx.restore();
+    props.forEach(foot);
+    stamp(["glyph-select", 528, 291, .5, .5]);
+    cast.forEach(foot);
+    feedback.forEach(stamp);
+    const small = document.querySelector("#thumbnail").getContext("2d");
+    small.imageSmoothingQuality = "high";
+    small.drawImage(ctx.canvas, 0, 0, 240, 135);
+    await Promise.all([...document.images].map(img => img.decode()));
+    document.documentElement.dataset.inkpostReady = String(images.size);
+  }
+  render().catch(error => { document.documentElement.dataset.inkpostError = error.message; throw error });
+</script>
+</html>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" stroke-linejoin="round" stroke-linecap="round">
+<title>Open voice bubble: available</title>
+<defs>
+<linearGradient id="mint" x2="1" y2="1"><stop offset="0" stop-color="#e5fff1"/><stop offset="0.5" stop-color="#7ed9c3"/><stop offset="1" stop-color="#368885"/></linearGradient><radialGradient id="shadow" cx=".36" cy=".32" r=".77"><stop offset="0" stop-color="#090e1a" stop-opacity=".8"/><stop offset="0.5" stop-color="#141724" stop-opacity=".56"/><stop offset="1" stop-color="#0b1020" stop-opacity="0"/></radialGradient>
+
+</defs>
+<ellipse cx="12" cy="19" rx="11" ry="4.8" fill="url(#shadow)"/>
+<path d="M2 8q0-4 4-5h12q4 1 4 5v9q0 4-4 4H6q-4 0-4-4Z" fill="#212c3c" stroke="url(#mint)" stroke-width="1.05"/>
+<path d="M3.5 15V8q1-3 4-3h9" fill="none" stroke="#e8d2aa" stroke-width="0.59" opacity=".76"/>
+<ellipse cx="19" cy="18" rx="0.75" ry="0.75" fill="#ce9f8d" stroke="#192332" stroke-width="0.38"/>
+<path d="M5 11q0-4 4-4h6q4 0 4 4v2q0 3-4 3h-4l-4 2 1-3q-3-1-3-4Z" fill="url(#mint)" stroke="#193842" stroke-width="1"/>
+<ellipse cx="9.0" cy="11.6" rx="0.63" ry="0.63" fill="#253b49" stroke="#192332" stroke-width="0.38"/>
+<ellipse cx="12.1" cy="11.6" rx="0.63" ry="0.63" fill="#253b49" stroke="#192332" stroke-width="0.38"/>
+<ellipse cx="15.2" cy="11.6" rx="0.63" ry="0.63" fill="#253b49" stroke="#192332" stroke-width="0.38"/>
+</svg>

@@ -1,0 +1,5 @@
+{
+  "name": "@agentx/space",
+  "private": true,
+  "description": "UIUX project boundary for Space; dependencies are managed by the repository root."
+}

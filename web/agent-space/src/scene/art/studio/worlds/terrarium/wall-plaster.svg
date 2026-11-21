@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="64" viewBox="0 0 160 64">
+  <defs>
+    <linearGradient id="apron" x2="0" y2="1">
+      <stop stop-color="#274238" stop-opacity=".41"/>
+      <stop offset="1" stop-color="#274238" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="glass" x2="0" y2="1">
+      <stop stop-color="#417b6c"/><stop offset="1" stop-color="#9cbc86"/>
+    </linearGradient>
+    <pattern id="iron-bay" width="80" height="48" patternUnits="userSpaceOnUse">
+      <path fill="#1c3f34" d="M0 0h80v48H0z"/>
+      <path fill="url(#glass)" d="M5 39V22Q18 3 40 3t35 19v17Z"/>
+      <path fill="#b2c38c" opacity=".5" d="M7 34 26 6l13-3-8 34ZM39 37l20-29 8 6-14 23Z"/>
+      <path fill="#326450" d="M5 24q10 5 12 15H5Zm18 15Q13 27 20 20q8 3 9 19Zm31 0q1-16 12-18 1 9-6 18Zm7 0q4-11 14-13v13Z"/>
+      <path fill="none" stroke="#24483d" stroke-width="2.5" d="M40 3v36M5 22h70M20 10v29m40-29v29"/>
+      <path fill="none" stroke="#c5bd80" stroke-width=".7" opacity=".75" d="M6 37V23Q18 5 40 5q21 0 34 18v14"/>
+      <path fill="#316052" d="M0 40h80v5H0z"/>
+      <path fill="#a2895a" d="M0 40h80v1.4H0z"/>
+      <path fill="#173932" d="M0 45h80v3H0z"/>
+      <path fill="#e6bc72" d="M2 43h2v1H2zm75 0h2v1h-2z"/>
+    </pattern>
+  </defs>
+  <path fill="url(#iron-bay)" d="M0 0h160v48H0z"/>
+  <path fill="url(#apron)" d="M0 48h160v16H0z"/>
+</svg>

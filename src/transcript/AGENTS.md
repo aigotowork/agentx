@@ -1,0 +1,5 @@
+# Transcript references and originating readers
+
+Native [service](service.rs) owns stored source projections. [Store](store.rs) is the daemon-only SQL adapter for exact live/stopped selection, live-first inventory and path-plus-session correlations. Required database read failures propagate. A live identity without a transcript is authoritative; do not revive its prior session. A missing persisted tool remains unknown here; host reader inference may use the originating Provider environment.
+
+[Client](client.rs) obtains those references through Queries and reads Provider files locally. [CLI transcript](../cli/commands/transcript.rs) owns search tools, timestamp interpretation, view/search/timeline presentation and remote dispatch using the same Client. Relay shares the canonical renderer. Provider-owned SQLite readers remain external inputs, never an excuse to open managed AgentX storage. Follow [client Task](../../.controller/domain-daemon/tasks/clients.md) for remaining cutover and [integration](../../.controller/domain-daemon/tasks/integration.md) for actual execution; source-authored tests alone are not support evidence.

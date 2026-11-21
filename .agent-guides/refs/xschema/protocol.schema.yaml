@@ -1,0 +1,35 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: xschema protocol primitives
+description: Domain-neutral identifiers, text and authored path/reference vocabulary.
+$defs:
+  schemaId: { type: string, pattern: "^[a-z][a-z0-9-]*$" }
+  text: { type: string, minLength: 1, pattern: \S }
+  rootPath:
+    type: string
+    pattern: ^(?!\s)(?!.*\s$)(?!\.{1,2}(?:/|#|$))[^/\\:#?\x00-\x1F\x7F]+(?:/(?!\.{1,2}(?:/|#|$))[^/\\:#?\x00-\x1F\x7F]+)*$
+  rootScopePath:
+    anyOf:
+      - { const: . }
+      - { $ref: "#/$defs/rootPath" }
+  path:
+    type: string
+    pattern: ^(?!\s)(?!.*\s$)(?:(?:\./|(?:\.\./)+)(?=$)|(?:\./|(?:\.\./)+)?(?!\.{1,2}(?:/|#|$))[^/\\:#?\x00-\x1F\x7F]+(?:/(?!\.{1,2}(?:/|#|$))[^/\\:#?\x00-\x1F\x7F]+)*)$
+  reference:
+    type: string
+    pattern: ^(?!\s)(?![^#]*\s(?:#|$))(?:(?:\./|(?:\.\./)+)(?=#|$)|(?:\./|(?:\.\./)+)?(?!\.{1,2}(?:/|#|$))[^/\\:#?\x00-\x1F\x7F]+(?:/(?!\.{1,2}(?:/|#|$))[^/\\:#?\x00-\x1F\x7F]+)*)(?:#[^\s#]+)?$
+  scopePath:
+    anyOf:
+      - { const: . }
+      - { $ref: "#/$defs/path" }
+  paths:
+    type: array
+    items: { $ref: "#/$defs/path" }
+    uniqueItems: true
+  references:
+    type: array
+    items: { $ref: "#/$defs/reference" }
+    uniqueItems: true
+  strings:
+    type: array
+    items: { $ref: "#/$defs/text" }
+    uniqueItems: true

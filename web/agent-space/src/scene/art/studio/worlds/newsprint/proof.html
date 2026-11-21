@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Newsprint | After-hours comics studio</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #211a26; color: #f7e7bf; font: 14px/1.4 system-ui, sans-serif; }
+  main { width: min(100%, 1040px); margin: auto; padding: 24px; }
+  header { display:flex; justify-content:space-between; align-items:baseline; gap:16px; border-bottom:2px solid #d9463d; padding-bottom:12px; }
+  h1 { margin:0; font: 700 19px/1.1 system-ui,sans-serif; text-transform:uppercase; }
+  header span { color:#cbbca5; }
+  .room { display:block; width:100%; height:auto; margin:18px 0; background:#ead5ae; }
+  .cast { display:flex; justify-content:space-around; align-items:end; gap:16px; flex-wrap:wrap; padding:14px; background:#f7e7bf; color:#211a26; border-bottom:5px solid #d9463d; }
+  figure { width:96px; margin:0; text-align:center; }
+  figure img { display:block; width:64px; height:72px; margin:auto; }
+  figcaption { margin-top:5px; font-weight:700; }
+  @media(max-width:560px) { main {padding:14px;} header {align-items:start; flex-direction:column;} .room {margin:12px 0;} }
+</style>
+<main>
+  <header><h1>After-hours comics studio</h1><span>Newsprint · 漫画社</span></header>
+  <svg class="room" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 464" role="img" aria-label="A moonlit comics print studio with proof sheets, workbench, lounge, mail post and four distinct workers">
+    <defs>
+      <pattern id="floor" width="128" height="128" patternUnits="userSpaceOnUse"><image href="floor-oak.svg" width="128" height="128"/></pattern>
+      <pattern id="wall" x="30" y="34" width="160" height="64" patternUnits="userSpaceOnUse"><image href="wall-plaster.svg" width="160" height="64"/></pattern>
+    </defs>
+    <path fill="#315696" d="M18 22h884v425H18z"/>
+    <path fill="url(#floor)" d="M30 34h860v399H30z"/>
+    <path fill="url(#wall)" d="M30 34h860v64H30z"/>
+    <image href="wall-window.svg" x="50" y="40" width="240" height="96"/><image href="wall-print.svg" x="355" y="40" width="108" height="96"/><image href="wall-window.svg" x="625" y="40" width="240" height="96"/>
+    <image href="rug.svg" x="298" y="235" width="307" height="179.08"/>
+    <image href="bookshelf.svg" x="52" y="122" width="112" height="128"/><image href="plant.svg" x="835" y="114" width="64" height="92"/>
+    <image href="desk.svg" x="402" y="132" width="172" height="136"/><image href="stool.svg" x="466" y="248" width="76" height="72"/><image href="coffee.svg" x="724" y="150" width="108" height="124"/>
+    <image href="sofa.svg" x="278" y="282" width="216" height="120"/><image href="tea-table.svg" x="544" y="294" width="140" height="96"/><image href="cabinet.svg" x="747" y="291" width="136" height="128"/>
+    <image href="human-mailbox.svg" x="75" y="276" width="124" height="124"/>
+    <image href="glyph-select.svg" x="687" y="354" width="64" height="24"/>
+    <image href="actor-maker.svg" x="420" y="188" width="64" height="72"/><image href="actor-designer.svg" x="580" y="211" width="64" height="72"/><image href="actor-keeper.svg" x="687" y="294" width="64" height="72"/><image href="actor-scout.svg" x="190" y="300" width="64" height="72"/>
+    <image href="glyph-work.svg" x="472" y="196" width="24" height="24"/><image href="glyph-available.svg" x="632" y="228" width="24" height="24"/><image href="glyph-attention.svg" x="739" y="301" width="24" height="24"/>
+    <image href="envelope.svg" x="235" y="275" width="24" height="16"/>
+    <path fill="#211a26" d="M30 421h20v12H30zm148 0h712v12H178z"/>
+    <path fill="#d9463d" d="M30 419h20v3H30zm148 0h712v3H178z"/>
+    <image href="door-threshold.svg" x="50" y="371" width="128" height="64"/>
+  </svg>
+  <section class="cast" aria-label="Character masters at native display size">
+    <figure><img src="actor-maker.svg" alt=""><figcaption>Maker · brayer</figcaption></figure>
+    <figure><img src="actor-designer.svg" alt=""><figcaption>Designer · proof</figcaption></figure>
+    <figure><img src="actor-keeper.svg" alt=""><figcaption>Keeper · folio</figcaption></figure>
+    <figure><img src="actor-scout.svg" alt=""><figcaption>Scout · courier</figcaption></figure>
+  </section>
+</main>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="112" viewBox="0 0 192 112">
+  <defs><linearGradient id="weave" x2="80%" y2="100%"><stop stop-color="#877eab"/><stop offset=".6" stop-color="#6d6492"/><stop offset="1" stop-color="#8e769e"/></linearGradient><pattern id="stitch" width="4" height="4" patternUnits="userSpaceOnUse"><path d="M0 1h2m0 2h2" stroke="#f3cbd8" opacity=".14" stroke-width=".7"/></pattern></defs>
+  <path d="M7 52Q1 25 20 16 45 1 96 5q51-4 76 11 19 9 13 36 5 26-15 39-24 15-74 15-50 0-74-15Q2 78 7 52Z" fill="#343259"/>
+  <path d="M11 52Q5 26 23 18 48 5 96 8q48-3 73 10 18 8 12 34 5 25-14 37-24 14-71 14-47 0-71-14Q6 77 11 52Z" fill="url(#weave)" stroke="#bc97ad" stroke-width="1.4"/>
+  <path d="M11 52Q5 26 23 18 48 5 96 8q48-3 73 10 18 8 12 34 5 25-14 37-24 14-71 14-47 0-71-14Q6 77 11 52Z" fill="url(#stitch)"/>
+  <path d="M22 51C41 22 78 26 99 52s54 30 71 4M24 59C38 81 72 78 99 51s54-29 69-7" fill="none" stroke="#e1b2b6" opacity=".59" stroke-width="2"/>
+  <path d="M22 34q22-20 55-16m93 15q-23-19-50-17m-96 61q23 18 48 18m95-16q-22 16-45 16" fill="none" stroke="#c6bddb" opacity=".7" stroke-width="1.2" stroke-dasharray="2 3"/>
+  <path d="m96 41 3 11 11 3-11 3-3 11-4-11-11-3 11-3z" fill="#ebc1a8" opacity=".72"/>
+</svg>

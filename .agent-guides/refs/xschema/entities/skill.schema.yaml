@@ -1,0 +1,9 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: xschema skill
+type: object
+required: [ schema ]
+properties:
+  schema: { const: skill }
+allOf:
+  - { $ref: common.schema.yaml#/$defs/base }
+additionalProperties: true

@@ -1,0 +1,10 @@
+---
+schema: package
+description: Offline authored-trace viewer and native TS source-design authoring with explicit coverage.
+artifacts:
+  - {kind: document, path: ./README.md, description: Current usage and actual implementation routes.}
+  - {kind: document, path: ./contracts.md, description: Implemented finite trace and independent layout contracts.}
+  - {kind: document, path: ./authoring/README.md, description: Native Schema/method reuse and observed process conformance.}
+  - {kind: document, path: ./inspector/README.md, description: Offline module/operation/process design projection.}
+  - {kind: design, path: ./design/README.md, description: Broader target contracts and explicit remaining capabilities.}
+---

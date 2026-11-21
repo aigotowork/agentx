@@ -1,0 +1,17 @@
+:root {
+  --surface-main: #fff; --surface-nav: #f3f5f7; --surface-subtle: #f8fafb; --surface-canvas: #f5f7f9;
+  --text-main: #253542; --text-muted: #697a88; --border-default: #ced8df; --border-subtle: #e0e6eb;
+  --action-primary: #176b5b; --action-hover: #115548; --selection-bg: #eaf3f0; --selection-edge: var(--action-primary);
+  --warning-text: #8e610d; --warning-bg: #fff5df; --danger-text: #b04c45; --danger-bg: #fbeeed; --info-text: #45649a; --info-bg: #edf1f9;
+  --focus-ring: #316fd0; --focus-width: 2px; --focus-offset: 2px;
+  --font-family: system-ui, -apple-system, 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif; --font-mono: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  --font-body: 14px; --font-table: 13px; --font-meta: 12px; --font-section: 16px; --font-title: 21px; --font-brand: 18px;
+  --line-body: 1.5; --weight-regular: 400; --weight-strong: 600; --weight-brand: 750;
+  --space-xs: 4px; --space-sm: 8px; --space-md: 12px; --space-lg: 16px; --space-xl: 24px; --space-section: 32px;
+  --size-control: 32px; --size-touch: 44px; --size-icon: 16px; --size-brand: 24px; --row-work: 48px; --radius-control: 5px; --radius-panel: 8px;
+  --border-width: 1px; --selection-width: 3px; --header-height: 48px; --nav-width: 216px; --nav-compact: 184px;
+  --detail-height: 328px; --detail-min: 240px; --matrix-min: 180px; --table-min: 820px; --field-min: 140px; --form-wide: 560px;
+  --dialog-width: 620px; --popover-width: 300px; --popover-max: 80vw; --tooltip-width: 260px; --icon-stroke: 1.5;
+  --layer-tooltip: 40; --layer-popover: 30; --layer-sticky: 2; --overlay: #25354255; --shadow: 0 5px 20px #25354220;
+  --opacity-disabled: .52; --motion-fast: 140ms; --viewport-height: 100dvh; --viewport-width: 100vw;
+}

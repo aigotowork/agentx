@@ -1,0 +1,7 @@
+# Independent embedded-context acceptance
+
+Read the [consumer case map](README.md), assigned [Task](../../.controller/web-context/acceptance.md), [feature entry](../../.controller/web-context/AGENTS.md) and [Delivery](../../.controller/web-context/delivery.md). The [canonical design](../../.docs/agent-management/web-context.md) owns exact contracts when available. This directory owns independent tests and evidence links only; product repairs belong to `tuli`, coordination to `nube`.
+
+Reuse disposable [management fixtures](../agent_management/AGENTS.md), finite local Provider hooks and the existing [Web checkpoint helper](../collaboration_workbench/browser_checkpoint.mjs). Adapt by composition within this directory. Never edit those fixtures or product source. Do not execute native/browser acceptance before usable design and an integrated candidate handoff. Pin candidate path/hash, use fresh private scopes and dynamic loopback ports, reject protected ports 18959, 18967, 18971 and 38023, retain each attempt separately and clean up only exact owned processes. No installed binary replacement, user-service restart, managed database client, paid model or recursive delegation.
+
+Authored cases are not executed evidence. Record effect receipts independently of UI success; attachment path delivery proves neither Provider image ingestion nor model comprehension. Keep failure/unknown outcomes and untested behavior explicit. Avoid repeating passed cases unless a relevant candidate/contract change affects their guarantee.

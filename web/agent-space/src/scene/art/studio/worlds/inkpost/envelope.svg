@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="16" viewBox="0 0 24 16">
+<title>Folded vellum letter with madder seal</title>
+<defs>
+<linearGradient id="stock" x2="31%" y2="100%"><stop offset="0.000" stop-color="#fff1be"/><stop offset="0.500" stop-color="#dcc18b"/><stop offset="1.000" stop-color="#a87b57"/></linearGradient>
+</defs>
+<g stroke-linecap="round" stroke-linejoin="round" color="#19151e">
+<path d="m2 4 18-2 2 2-.5 9-3 1-16 1-1-2Z" fill="#171520" opacity=".56"/>
+<path d="m2 3 17-1.9 2 1.5-.1 10-18.4 1.7L1.1 12Z" fill="url(#stock)" stroke="currentColor" stroke-width=".97"/>
+<path d="m2 4 9.6 4.7L20 2.8M3 12l5-4.5m6-.4 6 4.8" fill="none" stroke="#875f4f" stroke-width=".73"/>
+<path d="m3 3.8 12-1.2M4 12.8l7.4-.7" stroke="#fff1c4" stroke-width=".66"/>
+<path d="m10 7.1 1.6-.8 1.7 1 .06 1.8-1.8.9-1.6-.9Z" fill="#a65450" stroke="#673940" stroke-width=".57"/>
+</g>
+</svg>

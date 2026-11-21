@@ -1,0 +1,13 @@
+schema: package
+description: Delivery and coordination for the AgentX observability foundation design and implementation handoff.
+artifacts:
+  - {kind: guidance, path: ./AGENTS.md, description: Team authority and professional responsibility routes.}
+  - {kind: delivery, path: ./delivery.md, description: Current bounded design outcome and acceptance conditions.}
+  - {kind: delivery, path: ./implementation.md, description: Planned backend-first implementation and later browser consumer handoff.}
+  - {kind: controller, path: ./controller.md, description: Actual team bindings and dependency coordination.}
+  - {kind: guidance, path: ./implementation-team.md, description: Current implementation authority and source/execution resources.}
+  - {kind: tool, path: ./status.py, description: Read-only task and stage view derived from original metadata.}
+  - {kind: task, path: ./tasks, description: Original design work items and scoped evidence.}
+  - {kind: task, path: ./implementation-tasks, description: Planned implementation results with original acceptance and dependency ownership.}
+  - {kind: feedback, path: ./feedback.md, description: Observed design or workflow friction and owned resolutions.}
+  - {kind: task, path: ./lan-usability.md, description: Direct credential-free LAN access and standalone resources with real scoped activity.}

@@ -1,0 +1,9 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: xschema document
+type: object
+required: [ schema ]
+properties:
+  schema: { const: document }
+allOf:
+  - { $ref: common.schema.yaml#/$defs/base }
+additionalProperties: true

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs><linearGradient id="wood" x2="0" y2="1"><stop stop-color="#f1e1b8"/><stop offset=".48" stop-color="#ead6a9"/><stop offset="1" stop-color="#dfc59b"/></linearGradient></defs>
+  <path fill="url(#wood)" d="M0 0h128v128H0z"/>
+  <path fill="#a87445" opacity=".10" d="M68 0h60v32H68zM0 32h28v32H0zM19 64h88v32H19zM0 96h83v32H0z"/>
+  <g fill="none" stroke="#755139" opacity=".28">
+    <path d="M0 31.5h128m-128 32h128m-128 32h128m-128 32h128M68.5 0v31m-40 1v31m-9 1v31m88-31v31m-24 1v31"/>
+    <path opacity=".58" d="M7 12c15-2 26 3 43 0m30 5c12 0 23-5 43-3m-67 39c13-1 18 5 38 1h20m-86 21c20 0 28-5 48 0m-68 41c31 4 34-7 66-4m17-6c10 4 18 2 26 1"/>
+    <path opacity=".64" d="M38 16c4-3 10-4 16-1-4 3-11 4-16 1Zm29 41c6-2 11-2 16 0-6 3-10 2-16 0Zm34 53c3-2 8-2 12 0-3 2-8 2-12 0Z"/>
+  </g>
+  <path stroke="#fff3ce" opacity=".66" d="M0 .5h128m-128 32h128m-128 32h128m-128 32h128"/>
+  <path stroke="#7c5c42" stroke-linecap="round" opacity=".38" d="M65 4h.4m0 23h.4m7-23h.4m0 23h.4M25 36h.4m0 23h.4m7-23h.4m0 23h.4m46 41h.4m0 23h.4m7-23h.4m0 23h.4"/>
+</svg>

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Citrus · Studio art proof</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #eae9dd; color: #41564b; font: 14px/1.4 system-ui, sans-serif; }
+  main { max-width: 844px; margin: auto; padding: 25px 22px 24px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 4px 16px; border-bottom: 1px solid #bcc8b5; padding: 0 1px 11px; margin: 0 0 15px; }
+  h1 { margin: 0; font: 500 25px Georgia, serif; }
+  h1 span { color: #65796e; }
+  header p { margin: 0; color: #52695e; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+  .room { display: block; width: 100%; height: auto; background: #c7e3db; box-shadow: 0 8px 22px #536b5426; }
+  .cast { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; margin: 16px 0 0; }
+  figure { display: flex; align-items: center; gap: 5px; margin: 0; padding: 8px 7px; background: #f7f2e5; border: 1px solid #d3d4bf; }
+  figure img { flex: 0 0 64px; }
+  figcaption { color: #4e685a; font: 17px Georgia, serif; }
+  figcaption span { display: block; color: #53665b; font: 11px/1.35 system-ui, sans-serif; margin-top: 4px; }
+  @media (max-width: 670px) { main { padding: 14px; } .cast { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+</style>
+<main>
+  <header><h1>Citrus <span lang="zh-Hans">/ 柚风小筑</span></h1><p>Coastal workroom · 25 editable vectors</p></header>
+  <svg class="room" width="800" height="450" viewBox="0 0 800 450" role="img" aria-labelledby="room-title">
+    <title id="room-title">Sunlit Citrus office with four inhabitants, oak desks and a linen lounge</title>
+    <defs>
+      <pattern id="floor" x="136" y="92" width="128" height="128" patternUnits="userSpaceOnUse"><image href="./floor-oak.svg" width="128" height="128"/></pattern>
+      <pattern id="wall" x="136" y="92" width="160" height="64" patternUnits="userSpaceOnUse"><image href="./wall-plaster.svg" width="160" height="64"/></pattern>
+      <clipPath id="room"><rect x="136" y="92" width="528" height="306"/></clipPath>
+      <radialGradient id="daylight"><stop stop-color="#fff4c3" stop-opacity=".58"/><stop offset="1" stop-color="#fff4c3" stop-opacity="0"/></radialGradient>
+      <linearGradient id="window-light" x2=".75" y2="1"><stop stop-color="#fff2c0" stop-opacity=".43"/><stop offset=".9" stop-color="#fff2c0" stop-opacity="0"/></linearGradient>
+      <linearGradient id="grade" x2=".8" y2="1"><stop stop-color="#54776d" stop-opacity=".27"/><stop offset=".44" stop-color="#54776d" stop-opacity="0"/><stop offset="1" stop-color="#54776d" stop-opacity=".34"/></linearGradient>
+    </defs>
+    <image href="./scene-vista.svg" width="800" height="450"/>
+    <rect x="142" y="98" width="528" height="306" fill="#496a65" opacity=".29"/>
+    <g clip-path="url(#room)">
+      <rect x="136" y="92" width="528" height="306" fill="url(#floor)"/>
+      <image href="./rug.svg" x="449" y="234" width="192" height="112"/>
+      <rect x="136" y="140" width="528" height="258" fill="url(#grade)"/>
+      <ellipse cx="238" cy="194" rx="200" ry="130" fill="url(#daylight)"/>
+      <ellipse cx="542" cy="173" rx="137" ry="93" fill="url(#daylight)" opacity=".75"/>
+      <path d="M171 140h92l133 177-145 0zM524 140h89l44 79-61 28z" fill="url(#window-light)"/>
+      <rect x="136" y="92" width="528" height="64" fill="url(#wall)"/>
+      <image href="./wall-window.svg" x="163" y="93" width="120" height="48"/>
+      <image href="./wall-print.svg" x="373" y="93" width="54" height="48"/>
+      <image href="./wall-window.svg" x="514" y="93" width="120" height="48"/>
+      <path d="M136 92h6v306h-6zm522 0h6v306h-6zM142 392h26v6h-26zm90 0h426v6H232z" fill="#71978e"/>
+      <path d="M138 93v300m522-300v300" stroke="#f9e7ad" stroke-width="1.4"/>
+      <image href="./door-threshold.svg" x="168" y="366" width="64" height="32"/>
+      <image href="./plant.svg" x="620" y="115" width="32" height="46"/>
+      <image href="./bookshelf.svg" x="314" y="104" width="56" height="64"/>
+      <image href="./sofa.svg" x="450" y="151" width="108" height="60"/>
+      <image href="./coffee.svg" x="599" y="150" width="54" height="62"/>
+      <image href="./scene-lantern.svg" x="128" y="153" width="64" height="62"/>
+      <image href="./cabinet.svg" x="582" y="310" width="68" height="64"/>
+    </g>
+    <image href="./human-mailbox.svg" x="174" y="18" width="62" height="62"/>
+    <image href="./desk.svg" x="211" y="158" width="86" height="68"/>
+    <image href="./stool.svg" x="235" y="216" width="38" height="36"/>
+    <image href="./desk.svg" x="331" y="158" width="86" height="68"/>
+    <image href="./stool.svg" x="355" y="216" width="38" height="36"/>
+    <image href="./desk.svg" x="211" y="278" width="86" height="68"/>
+    <image href="./stool.svg" x="235" y="336" width="38" height="36"/>
+    <image href="./desk.svg" x="331" y="278" width="86" height="68"/>
+    <image href="./stool.svg" x="355" y="336" width="38" height="36"/>
+    <g fill="#496a65" opacity=".22">
+      <ellipse cx="206" cy="263" rx="18" ry="4"/>
+      <ellipse cx="538" cy="276" rx="17" ry="4"/>
+      <ellipse cx="555" cy="353" rx="17" ry="4"/>
+    </g>
+    <image href="./glyph-select.svg" x="386" y="349" width="64" height="24"/>
+    <image href="./actor-maker.svg" x="174" y="191" width="64" height="72"/>
+    <image href="./actor-designer.svg" x="386" y="289" width="64" height="72"/>
+    <image href="./actor-keeper.svg" x="523" y="281" width="64" height="72"/>
+    <image href="./actor-scout.svg" x="506" y="204" width="64" height="72"/>
+    <image href="./glyph-work.svg" x="226" y="208" width="24" height="24"/>
+    <image href="./glyph-available.svg" x="558" y="221" width="24" height="24"/>
+    <image href="./glyph-attention.svg" x="575" y="298" width="24" height="24"/>
+    <image href="./envelope.svg" x="274" y="87" width="24" height="16" transform="rotate(9 286 95)"/>
+  </svg>
+  <section class="cast" aria-label="Character designs at native image size">
+    <figure><img src="./actor-maker.svg" width="64" height="72" alt=""><figcaption>Maker<span>Canvas cap, teal tool apron</span></figcaption></figure>
+    <figure><img src="./actor-designer.svg" width="64" height="72" alt=""><figcaption>Designer<span>Copper bob, swatch folio</span></figcaption></figure>
+    <figure><img src="./actor-keeper.svg" width="64" height="72" alt=""><figcaption>Keeper<span>Silver hair, sage coat, keys</span></figcaption></figure>
+    <figure><img src="./actor-scout.svg" width="64" height="72" alt=""><figcaption>Scout<span>Sun hat, neckerchief, chart</span></figcaption></figure>
+  </section>
+</main>
+</html>

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>流程全景图</title>
+    <style>__ATLAS_STYLES__</style>
+  </head>
+  <body>
+    <div class="atlas-shell">
+      <header class="atlas-header">
+        <div class="atlas-heading">
+          <div class="atlas-kicker"><span class="status-dot" aria-hidden="true"></span>行为演示</div>
+          <h1 id="atlas-title">流程全景图</h1>
+          <p id="atlas-scope" class="atlas-scope">加载源模型…</p>
+        </div>
+        <div class="atlas-toolbar" role="toolbar" aria-label="地图与场景控制">
+          <label class="control-field">
+            <span>运行方式</span>
+            <select id="mode-select" data-testid="mode-select" aria-label="选择运行方式"></select>
+          </label>
+          <label class="control-field control-field--scenario">
+            <span>行为场景</span>
+            <select id="scenario-select" data-testid="scenario-select" aria-label="选择行为场景"></select>
+          </label>
+          <div class="step-controls" aria-label="步骤控制">
+            <button class="icon-button" id="step-prev" data-testid="step-prev" type="button" aria-label="上一步" title="上一步">
+              <span aria-hidden="true">←</span><span class="sr-only">上一步</span>
+            </button>
+            <button class="icon-button" id="step-next" data-testid="step-next" type="button" aria-label="下一步" title="下一步">
+              <span aria-hidden="true">→</span><span class="sr-only">下一步</span>
+            </button>
+            <button class="icon-button" id="step-reset" data-testid="step-reset" type="button" aria-label="重置步骤" title="重置步骤">
+              <span aria-hidden="true">↺</span><span class="sr-only">重置步骤</span>
+            </button>
+            <button class="play-button" id="step-play" data-testid="step-play" type="button" aria-label="自动播放步骤" aria-pressed="false">
+              <span class="play-button__icon" aria-hidden="true">▶</span><span class="play-button__label">播放</span>
+            </button>
+            <label class="speed-control" title="仅调节演示节奏">
+              <span class="sr-only">演示速度</span>
+              <select id="speed-select" data-testid="speed-select" aria-label="演示速度">
+                <option value="0.25">0.25×</option><option value="0.5" selected>0.5×</option><option value="1">1×</option><option value="2">2×</option>
+              </select>
+            </label>
+          </div>
+        </div>
+      </header>
+
+      <main class="atlas-main">
+        <section class="atlas-workspace" aria-label="运行关系与对象检查">
+          <section class="panel map-panel" aria-labelledby="map-heading">
+            <div class="panel-heading">
+              <div>
+                <div class="panel-eyebrow">RELATION MAP</div>
+                <h2 id="map-heading">进程、模块与通道</h2>
+              </div>
+              <div id="view-controls" class="view-controls" role="group" aria-label="图形视图">
+                <button type="button" data-view="relations" data-testid="view-relations" aria-pressed="true" title="对象、模块与连接结构">关系</button>
+                <button type="button" data-view="flow" data-testid="view-flow" aria-pressed="false" title="当前场景的完整步骤链">流程</button>
+                <button type="button" data-view="sequence" data-testid="view-sequence" aria-pressed="false" title="按顺序展开各参与方的动作与交互">时序</button>
+              </div>
+              <div class="map-legend" aria-label="地图图例">
+                <span><i class="legend-swatch legend-swatch--process" aria-hidden="true"></i>进程</span>
+                <span><i class="legend-swatch legend-swatch--logical" aria-hidden="true"></i>逻辑对象</span>
+                <span><i class="legend-swatch legend-swatch--store" aria-hidden="true"></i>存储</span>
+              </div>
+            </div>
+            <div class="map-meta">
+              <span id="map-summary">当前模式</span>
+              <span class="map-meta__hint">点击节点、模块或通道查看局部事实</span>
+            </div>
+            <div id="atlas-map" class="atlas-map" data-testid="atlas-map" tabindex="0" role="region" aria-label="运行关系图"></div>
+          </section>
+
+          <aside class="panel inspector-panel" id="inspector" data-testid="inspector" aria-labelledby="inspector-heading">
+            <div class="panel-heading panel-heading--compact">
+              <div>
+                <div class="panel-eyebrow">LOCAL INSPECTOR</div>
+                <h2 id="inspector-heading">对象检查</h2>
+              </div>
+              <span class="inspector-context" id="inspector-context">未选择</span>
+            </div>
+            <div id="inspector-content" class="inspector-content"></div>
+          </aside>
+        </section>
+
+        <section class="atlas-lower" aria-label="行为步骤与状态事实">
+          <article class="panel step-panel" id="step-detail" data-testid="step-detail" aria-labelledby="step-heading">
+            <div class="panel-heading panel-heading--compact">
+              <div>
+                <div class="panel-eyebrow">EVENT TRACE</div>
+                <h2 id="step-heading">步骤详情</h2>
+              </div>
+              <span class="step-counter" id="step-counter" data-testid="step-counter">准备中</span>
+            </div>
+            <div id="step-content" class="step-content"></div>
+          </article>
+
+          <section class="panel facts-panel" id="facts" data-testid="facts" aria-labelledby="facts-heading">
+            <div class="panel-heading panel-heading--compact">
+              <div>
+                <div class="panel-eyebrow">STATE SNAPSHOT</div>
+                <h2 id="facts-heading">状态事实</h2>
+              </div>
+              <span class="facts-badge">当前步骤</span>
+            </div>
+            <div id="facts-content" class="facts-grid"></div>
+          </section>
+        </section>
+      </main>
+
+      <footer class="atlas-footer">
+        <span id="source-summary">源模型加载中</span>
+        <span>行为演示 · 非实时状态</span>
+      </footer>
+    </div>
+
+    <script id="atlas-model" type="application/json">__ATLAS_MODEL__</script>
+    <script>__ATLAS_SCRIPT__</script>
+  </body>
+</html>

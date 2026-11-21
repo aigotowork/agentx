@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="62" height="62" viewBox="0 0 62 62">
+  <defs><linearGradient id="ceramic" x2="33%" y2="100%"><stop stop-color="#f7c6ae"/><stop offset=".45" stop-color="#c98fae"/><stop offset="1" stop-color="#72668e"/></linearGradient></defs>
+  <g stroke="#32264d" stroke-width="1.6" stroke-linejoin="round">
+    <path d="M26 28h8v25l7 6-3 2H21l-2-2 7-6z" fill="#b87d9a"/>
+    <path d="M12 28q-5-4-4-13L7 4q9-1 15 9 9-3 17 0 4-8 14-8l-1 13q4 14-8 22-6 4-15 4-12 0-17-7-2-4 0-9z" fill="url(#ceramic)"/>
+    <path d="M20 20h21v6H20z" fill="#342850"/>
+    <path d="M41 35q19 1 16-14-2-4-5 0" fill="none" stroke="#edaab2" stroke-width="3" stroke-linecap="round"/>
+    <path d="M21 25h20v11H21z" fill="#f5dfbb"/>
+    <path d="m22 27 9 5 9-5" fill="none" stroke="#ab6d8c" stroke-width="1.2"/>
+  </g>
+  <path d="M14 10q4 2 5 6m26 0 4-5m-23 48h9m-20-37 1 1m30-1 1-1" fill="none" stroke="#ffe4bc" stroke-width="1.4" stroke-linecap="round"/>
+</svg>

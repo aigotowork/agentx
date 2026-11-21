@@ -1,0 +1,15 @@
+/* Theme variables resolve from design-system/theme.ts; component rules only consume semantic roles. */
+:root[data-experience="inspector"] {
+  --ds-mosaic-x: 1px; --ds-mosaic-y: 1px;
+  .inspector-pixel-icon { overflow: visible; }
+  .inspector-mosaic-tile { opacity: 0; --tile-x: 0px; --tile-y: 0px; }
+  .inspector-mosaic-0 { --tile-x: calc(-1 * var(--ds-mosaic-x)); --tile-y: calc(-1 * var(--ds-mosaic-y)); }
+  .inspector-mosaic-1 { --tile-x: var(--ds-mosaic-x); }
+  .inspector-mosaic-2 { --tile-y: var(--ds-mosaic-y); }
+  &[data-style="pixel"][data-motion="full"] :is([data-inspector-ui="button"], [data-inspector-ui="icon-button"], [data-inspector-ui="chip"]):not([aria-disabled="true"]):not([aria-busy="true"]):is(:hover,:focus-visible) .inspector-mosaic-tile {
+    animation: inspector-mosaic var(--inspector-motion-icon,240ms) steps(2,end) 1;
+  }
+  &[data-motion="reduced"] .inspector-mosaic-tile { animation: none !important; }
+}
+@keyframes inspector-mosaic { 0% { opacity:0; transform:translate(0,0) } 20%,60% { opacity:1; transform:translate(var(--tile-x),var(--tile-y)) } 100% { opacity:0; transform:translate(0,0) } }
+@media(prefers-reduced-motion:reduce) { .inspector-mosaic-tile { animation:none!important; } }

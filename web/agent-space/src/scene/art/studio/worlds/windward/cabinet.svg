@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="68" height="64" viewBox="0 0 68 64">
+  <title>Enamel dispatch cabinet with brass pigeonholes</title>
+  <defs>
+<linearGradient id="teal" x2=".9" y2="1"><stop offset="0.000" stop-color="#91b5a2"/><stop offset="0.500" stop-color="#56847b"/><stop offset="1.000" stop-color="#30595c"/></linearGradient><linearGradient id="brass" x2=".9" y2="1"><stop offset="0.000" stop-color="#fff0b1"/><stop offset="0.500" stop-color="#d29e4f"/><stop offset="1.000" stop-color="#825331"/></linearGradient>
+  </defs>
+<ellipse cx="36" cy="60" rx="30" ry="4" fill="#213c40" opacity=".18"/><ellipse cx="33" cy="59.3" rx="23.7" ry="2.3" fill="#283737" opacity=".14"/>
+<path d="M4 10 10 6h51l5 4v48l-4 4-6-3H11l-3 4-5-3z" fill="#31464a" stroke="#344346"/>
+<path d="M6 12h52v45H6z" fill="url(#teal)"/>
+<path d="M59 12l5-2v47l-5 3z" fill="#3b6260"/>
+<path d="m5 11 6-5h50l4 4-7 3H6z" fill="#9ba98c" stroke="#577773" stroke-width=".75"/>
+<path d="M9 15h46v39H9z" fill="#355e5c" stroke="#294e4d" stroke-width=".8"/>
+<path d="M10 16h21v17H10zm23 0h21v17H33zm-23 19h21v18H10zm23 0h21v18H33z" fill="url(#teal)"/>
+<path d="M11 17h18m5 0h18m-41 19h18m5 0h18M7 14v42m52-41v40" stroke="#b7c9a9" opacity=".64" stroke-width=".7"/>
+<path d="M15 21h12v7H15zm23 0h12v7H38zm-23 19h12v7H15zm23 0h12v7H38z" fill="#5e583f" stroke="#486360" stroke-width=".9"/>
+<path d="M16 22h10v5H16zm23 0h10v5H39zm-23 19h10v5H16zm23 0h10v5H39z" fill="url(#brass)"/>
+<path d="M18 23h6v2h-6zm23 0h6v2h-6zm-23 19h6v2h-6zm23 0h6v2h-6z" fill="#f6e5b7"/>
+<path d="M19 24h4m19 0h4m-27 19h4m19 0h4" stroke="#a18459" stroke-width=".48"/>
+<path d="M18 29h6m17 0h6m-29 19h6m17 0h6" stroke="#284a4b" stroke-width="1.15" stroke-linecap="round"/>
+<path d="M8 14h13m32 0h4m-49 40 1 2h4m40 0h4l1-3M62 13v3m-5 12v2m-49 8v3" fill="none" stroke="#e4cc96" stroke-opacity=".82" stroke-width=".7"/>
+<path d="m13 7 3-3h11l2 2-1 1zm28 0 3-5 11 2 3 3z" fill="#c09d71"/>
+<path d="M45 3l10 2 2 2-13-1z" fill="#f3dcad"/>
+</svg>

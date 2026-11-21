@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "title": "Agent Inspector · 像素案头 01",
+  "kind": "prototype",
+  "description": "参考 bots 画布内部的轻像素语言，转译为高密度 Agent 管理工作区。6 张中文离线画板，含搜索/筛选、调查、确认、未知反馈与用量下钻。所有动作只改本地状态。",
+  "artboards": [
+    {
+      "id": "visual-language",
+      "title": "01 像素案头 · 视觉与组件",
+      "width": 1440,
+      "height": 1040,
+      "x": 0,
+      "y": 0,
+      "group": "视觉体系 / 推荐",
+      "file": "visual-language.html"
+    },
+    {
+      "id": "work-overview",
+      "title": "02 工作巡检 · 找到需要你的 Agent",
+      "width": 1440,
+      "height": 960,
+      "x": 1520,
+      "y": 0,
+      "group": "工作路径 / 调查",
+      "file": "work-overview.html"
+    },
+    {
+      "id": "recovery-investigation",
+      "title": "03 恢复调查 · 原因、证据与局部操作",
+      "width": 1440,
+      "height": 960,
+      "x": 3040,
+      "y": 0,
+      "group": "工作路径 / 调查",
+      "file": "recovery-investigation.html"
+    },
+    {
+      "id": "delivery-unknown",
+      "title": "04 投递未知 · 保留操作、不补发",
+      "width": 1280,
+      "height": 900,
+      "x": 0,
+      "y": 1160,
+      "group": "结果 / 覆盖 / 窄屏",
+      "file": "delivery-unknown.html"
+    },
+    {
+      "id": "usage-coverage",
+      "title": "05 用量与覆盖 · 保留日志的边界",
+      "width": 1440,
+      "height": 1040,
+      "x": 1360,
+      "y": 1160,
+      "group": "结果 / 覆盖 / 窄屏",
+      "file": "usage-coverage.html"
+    },
+    {
+      "id": "mobile-workspace",
+      "title": "06 窄屏 · 同一对象与调查工作区",
+      "width": 390,
+      "height": 844,
+      "x": 2880,
+      "y": 1160,
+      "group": "结果 / 覆盖 / 窄屏",
+      "file": "mobile-workspace.html"
+    }
+  ]
+}

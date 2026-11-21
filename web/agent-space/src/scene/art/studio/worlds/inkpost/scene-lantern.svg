@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="62" viewBox="0 0 64 62">
+<title>Brass towpath lantern with a vermilion switch</title>
+<defs>
+<linearGradient id="brass" x2="31%" y2="100%"><stop offset="0.000" stop-color="#ebc180"/><stop offset="0.500" stop-color="#b47a4c"/><stop offset="1.000" stop-color="#5e4346"/></linearGradient><linearGradient id="roof" x2="31%" y2="100%"><stop offset="0.000" stop-color="#d6a46d"/><stop offset="0.500" stop-color="#8c5c48"/><stop offset="1.000" stop-color="#563742"/></linearGradient><linearGradient id="glass" x2="31%" y2="100%"><stop offset="0.000" stop-color="#db9b62"/><stop offset="0.500" stop-color="#a95a46"/><stop offset="1.000" stop-color="#6e3c42"/></linearGradient><radialGradient id="aureole"><stop stop-color="#eeb46d" stop-opacity=".34"/><stop offset=".47" stop-color="#eeb46d" stop-opacity=".13"/><stop offset="1" stop-color="#eeb46d" stop-opacity="0"/></radialGradient><pattern id="etch" width="4" height="4" patternUnits="userSpaceOnUse"><path d="M-1 1l2-2m-1 4l4-4m-1 5l2-2" stroke="#201923" stroke-width=".6" opacity=".38"/></pattern>
+</defs>
+<g stroke-linecap="round" stroke-linejoin="round" color="#19151e">
+<ellipse cx="32" cy="60" rx="23" ry="1.65" fill="#130f19" opacity=".42"/><ellipse cx="29" cy="60.2" rx="15.9" ry="1.0" fill="#160e14" opacity=".55"/>
+
+<ellipse cx="31" cy="30" rx="29" ry="29" fill="url(#aureole)"/>
+<g stroke="currentColor" stroke-width="1.27">
+<path d="m17 55 9-4 12-.6 10 5 2 4-8 1-23-.1-5-2Z" fill="url(#brass)"/>
+<path d="m27 42 10-.2-.6 11 4 3-5 2-12-1 4-4Z" fill="url(#brass)"/>
+<path d="M19 19q1-9 5-13l6-2 4 .1 8 4q3 4 4 10l-3 2-4-9-6-3-5 1-4 8Z" fill="url(#brass)"/>
+<path d="m25 15 1-4 4-2h5l3 3 1 3Z" fill="#63414a"/>
+<path d="M14 23 19 18l6-2 7-2 9 2 7 3 3 4-5 4-29 .5Z" fill="url(#roof)"/>
+<path d="m18 26 27-1-2 14-4 6-17 .1-4-5Z" fill="url(#glass)"/>
+<path d="m19 26 4-.1.5 15-2.4 2.7-3-4Zm18-.6 3.5-.8-.5 16-3 3.7-2-.7Zm7.3.7 2-2.2-1.7 16.4-3.6 3.4 2.3-7Z" fill="url(#brass)" stroke-width=".82"/>
+<path d="m17 41 8 2 14-1.1 5-2.4 1 3.8-7 6-13 1-7-3Z" fill="url(#roof)"/>
+<path d="m38 51 9 2 1.5 3-4 1-8-3Z" fill="#b17158" stroke-width=".85"/>
+<path d="m47 51 4-.8 3 2.4-.4 2.4-4 1.2-3-2Z" fill="#c16a55" stroke-width=".8"/>
+</g>
+<path d="M28 40q-5-2-2-6l4-5 1.1 3.2 2.4 2.1q2 3.7-1.7 5.5Z" fill="#ffe68f"/>
+<path d="M29 39q-1.4-1.1.2-3.4l1.7 3.2Z" fill="#fff4d0"/>
+<path d="m17 22 7-4 6-1.3m7 0 9 4m-26 5 1 12m18-11-.3 10m-18 7 7 2 10-1.2m-11 8-3 2m-5 3 9 1m6-11-.5 5" fill="none" stroke="#f1c07d" stroke-width=".74" opacity=".82"/>
+<path d="M22 19l7-3 3 5-14 2zM37 49l3-.2-.5 6-4 1z" fill="url(#etch)"/>
+<path d="m47.7 52 2-.6 2 .7" stroke="#fdab74" stroke-width=".67"/>
+</g>
+</svg>

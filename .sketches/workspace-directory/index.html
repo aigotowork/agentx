@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgentX · Workspace 解析</title>
+<style>
+:root{--ink:#21323b;--muted:#64757e;--line:#d9e2e5;--paper:#fff;--bg:#f3f6f5;--green:#176b58;--green-bg:#e7f3ef;--blue:#2456a0;--blue-bg:#edf3ff;--gold:#895512;--gold-bg:#fff5df;--red:#a23838;font:15px/1.55 system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+*{box-sizing:border-box}body{margin:0}main{max-width:1120px;margin:26px auto;padding:0 22px}header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}h1{font-size:26px;margin:0}h2{font-size:17px;margin:0 0 10px}p{margin:8px 0}small,.muted{color:var(--muted)}code,pre{font:13px/1.7 ui-monospace,monospace;overflow-wrap:anywhere}pre{white-space:pre-wrap;margin:0}button,select{font:inherit;color:inherit;background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:8px;max-width:100%}button{cursor:pointer}button:hover{border-color:var(--green)}:focus-visible{outline:3px solid var(--blue);outline-offset:3px}label{display:grid;gap:4px;margin:9px 0}.check{display:flex;align-items:center;gap:8px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}.panel{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:18px;min-width:0}.wide{grid-column:1/-1}.controls{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px}.command{margin-top:12px;background:var(--bg);padding:10px;border-radius:7px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.primary{background:var(--green);color:white;border-color:var(--green)}.tree{background:var(--bg);padding:12px;border-radius:7px}.legend{display:flex;gap:14px;flex-wrap:wrap;margin:9px 0;color:var(--muted)}.legend b{color:var(--green)}.outcome{margin-top:10px;padding:10px;background:var(--green-bg);border-radius:7px}.sequence{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.step{padding:10px;background:var(--bg);border-top:3px solid var(--line);min-width:0}.step.active{border-color:var(--green);background:var(--green-bg)}.step b{display:block;font-size:13px}.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}.present{padding:12px;background:var(--gold-bg);border-radius:7px}.proposed{padding:12px;background:var(--green-bg);border-radius:7px}table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;vertical-align:top;padding:8px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-size:12px}details{margin-top:12px}summary{cursor:pointer}a{color:var(--blue)}output{display:block}#reason{color:var(--muted)}@media(max-width:680px){main{margin:16px auto;padding:0 13px}.grid,.two{grid-template-columns:1fr}.wide{grid-column:auto}.controls{grid-template-columns:1fr}.sequence{grid-template-columns:1fr 1fr}.panel{padding:14px}h1{font-size:23px}table{font-size:13px}th,td{padding:6px}}
+</style>
+<main>
+  <header><h1>Workspace 怎么确定</h1><small>已选定设计与原规则对照 · 固定示例，不启动 Agent</small></header>
+  <p><strong>Workspace 是协作归属；dir 是工作位置；Git / AgentX 项目根是推导归属的线索。</strong></p>
+  <div class="grid">
+    <section class="panel" aria-labelledby="case-title">
+      <h2 id="case-title">试一个 Agent 启动</h2>
+      <div class="controls">
+        <label>调用者<select id="caller"><option value="agent-a">已属于 workspace A 的 Agent</option><option value="shell">普通终端，没有 Agent 身份</option></select></label>
+        <label>调用 cwd<select id="origin"><option value="same">/work/app/web</option><option value="other">/work/other/src</option><option value="plain">/tmp/notes（无项目）</option></select></label>
+        <label>--dir<select id="directory"><option value="none">未指定</option><option value="same">/work/app/web（A 的 Git）</option><option value="other">/work/other/src（另一个 Git）</option><option value="worktree">/work/app-feature（同仓库的另一 worktree）</option><option value="plain">/tmp/notes（无项目边界）</option></select></label>
+        <label>--workspace<select id="explicit"><option value="none">未指定</option><option value="A">/work/app</option><option value="manual">/teams/platform（手动指定）</option><option value="global">global（明确不加入）</option></select></label>
+        <label>现有 workspace 标记<select id="roles"><option value="none">无 .agentx/roles 标记</option><option value="/work/app">/work/app/.agentx/roles</option><option value="/work/app/web">/work/app/web/.agentx/roles</option><option value="/work/other">/work/other/.agentx/roles</option><option value="/work/other/src">/work/other/src/.agentx/roles</option><option value="/work/app-feature">/work/app-feature/.agentx/roles</option><option value="/tmp/notes">/tmp/notes/.agentx/roles</option></select></label>
+        <label>项目级 .agentx/ 配置<select id="project"><option value="none">无</option><option value="/work/app">/work/app/.agentx/</option><option value="/work/app/web">/work/app/web/.agentx/</option><option value="/work/other">/work/other/.agentx/</option><option value="/work/other/src">/work/other/src/.agentx/</option><option value="/work/app-feature">/work/app-feature/.agentx/</option><option value="/tmp/notes">/tmp/notes/.agentx/（无 Git）</option></select></label>
+        <label>隐式 AGENTX_WORKSPACE<select id="inherited"><option value="none">未设置</option><option value="/work/app">/work/app</option><option value="/teams/platform">/teams/platform</option><option value="global">global</option></select></label>
+      </div>
+      <label class="check"><input id="proposed" type="checkbox" checked>按已选定规则模拟（Task 记录实现状态）</label>
+      <pre class="command" id="command"></pre>
+      <div class="actions"><button class="primary" id="launch">解析并启动示例</button><button id="reset">重置</button></div>
+    </section>
+    <section class="panel" aria-labelledby="tree-title">
+      <h2 id="tree-title">目录线索与推导结果</h2>
+      <pre class="tree" id="tree"></pre>
+      <div class="legend"><span><b>● Workspace</b> · 协作成员</span><span><b style="color:var(--blue)">◆ dir</b> · Provider cwd</span></div>
+      <output class="outcome" id="outcome"></output>
+      <p id="reason"></p>
+    </section>
+    <section class="panel wide" aria-labelledby="flow-title">
+      <h2 id="flow-title">已选定的解析顺序</h2>
+      <div class="sequence" aria-label="Workspace 解析顺序">
+        <div class="step" data-step="1"><b>1 · 显式 --workspace</b><small>路径或 global，用户明确指定</small></div>
+        <div class="step" data-step="2"><b>2 · 显式 --dir 的项目根</b><small>先找最近 Git 根；没有 Git 才找 AgentX 根</small></div>
+        <div class="step" data-step="3"><b>3 · AGENTX_WORKSPACE</b><small>已绑定 Agent 用原生归属校准；global 也生效</small></div>
+        <div class="step" data-step="4"><b>4 · 调用 cwd 的项目根</b><small>普通终端的当前目录</small></div>
+        <div class="step" data-step="5"><b>5 · 个人 workspace</b><small>~/.agentx；与 AGENTX_DIR 的作用不同</small></div>
+      </div>
+      <p><strong>cwd 单独解析：</strong>显式 `--dir` 用指定目录；未指定时，建议保留调用者当前目录。选 workspace 只改归属，不应顺带把 Provider 移到 workspace 根。</p>
+      <p><strong>找不到项目边界：</strong>继续继承环境、查调用 cwd；最后使用个人 workspace `~/.agentx`。显式或继承的 `global` 表示明确无目录归属。</p>
+      <div class="two">
+        <div class="present"><b>变更前</b><p>显式 workspace → 显式 dir 的 AgentX roles 边界 → 环境继承 → cwd 的 roles 边界。Git 不参与发现；dir 无边界时会成为 global。未指定 dir 时还会把 workspace 根作为 cwd。</p></div>
+        <div class="proposed"><b>已选定设计</b><p>显式 workspace → 显式目标目录的 Git / AgentX 根 → 隐式归属 → cwd 的 Git / AgentX 根 → ~/.agentx。cwd 独立：显式 dir 或调用 cwd。</p></div>
+      </div>
+    </section>
+    <section class="panel wide" aria-labelledby="env-title">
+      <h2 id="env-title">环境变量负责传递，持久记录负责身份</h2>
+      <table>
+        <thead><tr><th>层</th><th>值</th><th>责任</th></tr></thead>
+        <tbody>
+          <tr><td>AgentX 原生记录</td><td>adopted workspace</td><td>已绑定 Agent 的权威归属；cwd 或可改环境变量不改它</td></tr>
+          <tr><td>Agent 进程环境</td><td>AGENTX_WORKSPACE=路径 或 global</td><td>向子进程传递默认值，帮助没有原生绑定的调用继承</td></tr>
+          <tr><td>AgentX scope</td><td>AGENTX_DIR</td><td>选择 daemon / 数据库；与 workspace 无关</td></tr>
+        </tbody>
+      </table>
+      <details><summary>已选定规则下的几个结果</summary>
+        <table><thead><tr><th>调用方式</th><th>默认 workspace</th><th>结果</th></tr></thead><tbody>
+          <tr><td>Agent A，不指定 dir</td><td>A</td><td>归属 A；cwd 仍是调用者 cwd</td></tr>
+          <tr><td>Agent A，dir 在 A 的 Git 中</td><td>A 的 Git 根</td><td>仍在同一团队；cwd 是指定目录</td></tr>
+          <tr><td>Agent A，dir 在 Git 项目 B 中</td><td>B 的 Git 根</td><td>新 Agent 加入 B；父 Agent 仍属于 A</td></tr>
+          <tr><td>Agent A，dir 在无边界的 /tmp</td><td>A</td><td>归属继承 A；cwd 是 /tmp/notes</td></tr>
+          <tr><td>Agent A，指定 --workspace A 和 dir B</td><td>A</td><td>归属 A；cwd 是 B</td></tr>
+          <tr><td>普通终端在 Git 项目子目录启动</td><td>Git worktree 根</td><td>归属在仓库根；cwd 保持当前子目录</td></tr>
+        </tbody></table>
+      </details>
+      <details><summary>Git、AgentX 项目根与个人锚点</summary>
+        <p>建议把 Git worktree 根作为 Git 项目的 workspace：同一 worktree 下的子目录属于一个空间，不同 linked worktree 默认是不同空间；明确指定 `--workspace` 可以跨目录共享团队。</p>
+        <p>沿目标目录向上先找最近 `.git` 目录或有效 `gitdir:` 文件；没有 Git 时再找最近项目 `.agentx/` 或已有 `.agent-guides/roles` 边界。仓库中的嵌套 `.agentx/` 不会默认拆分 Git 团队，显式 workspace 仍可选择它。</p>
+        <p>项目 `.agentx/` 标记其父目录。个人 `~/.agentx` 是兜底锚点，其存在不会把整个 HOME 标记为项目；`$AGENTX_DIR` 继续选择 daemon / 数据库。设计位于 <code>.docs/proposals/workspace-discovery.md</code>；实际支持由 <code>.controller/roles-workspaces/tasks/workspace-discovery.task.md</code> 记录。</p>
+        <p>源码依据：<code>src/config/roles.rs</code>、<code>src/cli/commands/launch.rs</code>、<code>src/runtime/launch_profile.rs</code>、<code>src/runtime/launcher.rs</code>、<code>src/agents/workspaces.rs</code>。本页全部使用固定教学数据。</p>
+      </details>
+    </section>
+  </div>
+  <p class="muted"><a href="README.md">讨论记录与运行方式</a> · 页面更新后手动刷新</p>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const caller = $('caller'), directory = $('directory'), explicit = $('explicit'), roles = $('roles'), project = $('project'), proposed = $('proposed'), origin = $('origin'), inherited = $('inherited');
+const directories = {same:'/work/app/web',other:'/work/other/src',worktree:'/work/app-feature',plain:'/tmp/notes'};
+const gitRoots = {same:'/work/app',other:'/work/other',worktree:'/work/app-feature',plain:null};
+function markerRoot(target, marker) { return marker !== 'none' && (target === marker || target.startsWith(`${marker}/`)) ? marker : null; }
+function inferredRoot(targetKey) {
+  const target = directories[targetKey];
+  const boundaries = [
+    {root:project.value,kind:'AgentX project boundary'},
+    {root:roles.value,kind:'existing AgentX workspace marker'},
+  ].filter(item => markerRoot(target, item.root)).sort((a,b) => b.root.length - a.root.length);
+  const boundary = boundaries[0];
+  const root = gitRoots[targetKey] || boundary?.root || null;
+  return {root, kind:gitRoots[targetKey] ? 'Git worktree root' : boundary?.kind};
+}
+function resolve() {
+  if (explicit.value === 'global') return {workspace:'global', step:1, why:'显式 global 是用户要求退出 workspace。'};
+  if (explicit.value !== 'none') return {workspace:explicit.value === 'A' ? '/work/app' : '/teams/platform', step:1, why:'显式 workspace 优先于目录发现和继承。'};
+  if (!proposed.checked) {
+    if (directory.value !== 'none') {
+      const discovered = markerRoot(directories[directory.value], roles.value);
+      return {workspace:discovered, step:2, why:discovered ? '当前源码只识别最近的 .agentx/roles 或 .agent-guides/roles 边界。' : '当前源码不把 Git 或普通 .agentx/ 配置识别为 workspace；没有 roles 边界时是 global。'};
+    }
+    if (caller.value === 'agent-a') return {workspace:'/work/app', step:3, why:'已绑定调用者的持久 workspace 注入环境，并优先于 cwd 发现。'};
+    if (inherited.value !== 'none') return {workspace:inherited.value,step:3,why:'隐式环境继承早于调用 cwd 的目录发现。'};
+    const discovered = markerRoot(directories[origin.value], roles.value);
+    return {workspace:discovered, step:4, why:discovered ? '普通 shell 当前 cwd 命中 AgentX roles 边界。' : '普通 shell 当前目录没有 AgentX roles 边界，因此当前结果为 global。'};
+  }
+  if (directory.value !== 'none') {
+    const inferred = inferredRoot(directory.value);
+    if (inferred.root) return {workspace:inferred.root, step:2, why:`目标目录命中 ${inferred.kind}：${inferred.root}。`};
+  }
+  if (caller.value === 'agent-a') return {workspace:'/work/app', step:3, why:'已绑定调用者以原生成员记录覆盖隐式环境，继承 workspace A。'};
+  if (inherited.value !== 'none') return {workspace:inherited.value,step:3,why:'未绑定调用者继承 AGENTX_WORKSPACE；global 也是明确选择。'};
+  const inferred = inferredRoot(origin.value);
+  if (inferred.root) return {workspace:inferred.root, step:4, why:`调用 cwd 命中 ${inferred.kind}：${inferred.root}。`};
+  return {workspace:'/home/me/.agentx', step:5, why:'都未命中，使用个人 workspace ~/.agentx；发现过程不创建目录。'};
+}
+function pathForDir() {
+  return ({none:'（继承调用 cwd）',same:'/work/app/web',other:'/work/other/src',worktree:'/work/app-feature',plain:'/tmp/notes'})[directory.value];
+}
+function effectiveCwd(value) {
+  if (directory.value !== 'none') return directories[directory.value];
+  if (proposed.checked) return `${directories[origin.value]}（调用 cwd）`;
+  return value.workspace && value.workspace !== 'global' ? `${value.workspace}（变更前默认 cwd）` : `${directories[origin.value]}（调用 cwd）`;
+}
+function render() {
+  const value = resolve();
+  const dirArg = directory.value === 'none' ? '' : ` --dir ${pathForDir()}`;
+  const workspaceArg = explicit.value === 'none' ? '' : ` --workspace ${value.workspace}`;
+  $('command').textContent = `agentx launch${dirArg}${workspaceArg} --role coder`;
+  $('outcome').textContent = `新 Agent → workspace: ${value.workspace ?? 'global'}；cwd: ${effectiveCwd(value)}`;
+  $('reason').textContent = value.why;
+  document.querySelectorAll('.step').forEach(step => step.classList.toggle('active', Number(step.dataset.step) === value.step));
+  $('tree').textContent = `/work/app/                  [Git worktree root · workspace A]\n  .agentx/                 [optional project config]\n  web/                     [ordinary child directory]\n/work/other/               [Git worktree root · workspace B]\n  src/                     ◆ selected dir\n/work/app-feature/         [linked worktree · separate root]\n/tmp/notes/                [plain directory; optional AgentX root]`;
+}
+for (const el of [caller,directory,explicit,roles,project,proposed,origin,inherited]) el.addEventListener('change', render);
+$('launch').addEventListener('click', render);
+$('reset').addEventListener('click', () => {caller.selectedIndex=0;directory.selectedIndex=0;explicit.selectedIndex=0;roles.selectedIndex=0;project.selectedIndex=0;origin.selectedIndex=0;inherited.selectedIndex=0;proposed.checked=true;render();});
+render();
+</script>
+</html>

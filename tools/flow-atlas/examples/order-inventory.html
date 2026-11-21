@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>Flow Atlas · 契约设计</title>
+<style>:root {
+  color-scheme: light;
+  --background: #f1f5fa; --surface: #fff; --ink: #233248; --muted: #63738a;
+  --line: #d9e2ee; --accent: #235ed5; --accent-light: #edf3ff; --warning: #94621b;
+  --radius: 9px; --gap: 12px; --space: 8px; --pad: 16px;
+  --title: 18px; --text: 13px; --small: 11px; --details-width: 390px;
+  --node-width: 260px; --port-height: 32px; --node-title: 14px;
+  --shadow: 0 12px 38px #23324830;
+  font-family: system-ui, sans-serif; font-size: var(--text); color: var(--ink);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--background); }
+button, select { font: inherit; color: inherit; border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); padding: var(--space); cursor: pointer; }
+button:focus-visible,select:focus-visible,[tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button[aria-pressed="true"] { color: var(--accent); background: var(--accent-light); border-color: var(--accent); }
+.workspace { height: 100vh; height: 100dvh; display: grid; grid-template-rows: auto minmax(0,1fr) auto; grid-template-columns: minmax(0,1fr); padding: var(--gap); gap: var(--gap); }
+.toolbar,nav,.graph-heading,.details-heading,footer { display: flex; align-items: center; gap: var(--space); }
+.toolbar { flex-wrap: wrap; }
+h1 { font-size: var(--title); margin: 0 auto 0 0; }
+h2 { font-size: var(--node-title); margin: 0; }
+h3 { font-size: var(--text); margin: var(--pad) 0 var(--space); }
+.process-choice { display: flex; gap: var(--space); align-items: center; }
+.design-main { min-width: 0; min-height: 0; position: relative; }
+.graph-panel { height: 100%; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.graph-heading { justify-content: space-between; flex: 0 0 auto; padding: var(--space) var(--pad); border-bottom: 1px solid var(--line); }
+.graph-scroll { min-width: 0; min-height: 0; flex: 1; overflow: auto; overscroll-behavior: contain; }
+.graph-scroll svg { display: block; margin: auto; }
+.muted,footer { color: var(--muted); font-size: var(--small); }
+footer { justify-content: space-between; min-width: 0; }
+footer button { font-size: var(--small); }
+.details { position: absolute; right: var(--space); top: var(--space); bottom: var(--space); width: min(var(--details-width),calc(100% - 16px)); display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); background: var(--surface); }
+[hidden] { display: none !important; }
+.details-heading { justify-content: space-between; padding: var(--space) var(--pad); border-bottom: 1px solid var(--line); }
+.details-body { min-height: 0; overflow: auto; padding: var(--pad); overflow-wrap: anywhere; }
+.details-body p { margin: 0 0 var(--space); line-height: 1.65; }
+.details-body pre { font-size: var(--small); white-space: pre-wrap; overflow-wrap: anywhere; background: var(--background); padding: var(--space); border-radius: var(--radius); }
+.details-body dl { display: grid; grid-template-columns: auto minmax(0,1fr); gap: var(--space); }
+.details-body dt { color: var(--muted); } .details-body dd { margin: 0; }
+.details-body a { color: var(--accent); }
+.details-body button { display: block; margin: var(--space) 0; text-align: left; width: 100%; }
+.diagnostic { border-left: 3px solid var(--warning); padding: var(--space); background: var(--background); margin-bottom: var(--space); }
+.design-card { fill: var(--surface); stroke: var(--line); }
+.design-node.is-selected .design-card { stroke: var(--accent); stroke-width: 2; }
+.design-node { cursor: pointer; }
+.design-title { font-size: var(--node-title); font-weight: 650; fill: var(--ink); }
+.design-meta { font-size: var(--small); fill: var(--muted); }
+.design-port__body { fill: var(--accent-light); }
+.design-port__pin { fill: var(--accent); }
+.design-port__label { font-size: var(--text); fill: var(--ink); }
+.design-wire { fill: none; stroke: var(--accent); stroke-width: 1.6; }
+.design-arrow { fill: var(--accent); }
+.design-outcome { font-size: var(--small); fill: var(--muted); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; }
+.design-module { fill: var(--background); stroke: var(--line); stroke-dasharray: 5 4; }
+.design-module__label { fill: var(--muted); font-size: var(--small); }
+@media(max-width:600px) {
+  :root { --gap: 8px; --pad: 12px; --title: 16px; }
+  h1 { width: 100%; }
+  .toolbar nav { flex: 1; }
+  .process-choice { width: 100%; order: 1; }
+  .process-choice select { min-width: 0; flex: 1; }
+  .details { top: auto; bottom: 0; left: 0; width: 100%; max-height: 72%; }
+  footer { flex-wrap: wrap; }
+}
+
+:root {
+  --spatial-surface: #f6f8fc;
+  --spatial-dot: #d3dce9;
+  --spatial-control-surface: #fff;
+  --spatial-control-line: #d9e2ee;
+  --spatial-control-ink: #425875;
+  --spatial-control-size: 30px;
+  --spatial-control-offset: 10px;
+  --spatial-control-radius: 7px;
+  --spatial-control-shadow: 0 2px 8px #23324815;
+  --spatial-help-width: 260px;
+  --spatial-font-size: 12px;
+}
+.map-panel, .graph-panel { position: relative; }
+.spatial-viewport.spatial-viewport {
+  position: relative; display: block; min-width: 0; min-height: 0; overflow: hidden;
+  padding: 0; border: 0; outline-offset: -2px; touch-action: none; cursor: grab;
+  background-color: var(--spatial-surface);
+  background-image: radial-gradient(circle, var(--spatial-dot) 1px, transparent 1px);
+  background-size: var(--spatial-grid-step,24px) var(--spatial-grid-step,24px);
+  background-position: var(--spatial-grid-x,0px) var(--spatial-grid-y,0px);
+}
+.spatial-viewport[data-panning="true"] { cursor: grabbing; }
+.spatial-viewport.spatial-viewport > svg.spatial-scene {
+  position: absolute; inset: 0; display: block; width: 100%; height: 100%; min-width: 0;
+  min-height: 0; max-width: none; margin: 0; overflow: hidden; background: transparent;
+}
+.spatial-controls {
+  position: absolute; z-index: 3; bottom: var(--spatial-control-offset); left: var(--spatial-control-offset);
+  display: flex; align-items: center; background: var(--spatial-control-surface);
+  border: 1px solid var(--spatial-control-line); border-radius: var(--spatial-control-radius);
+  box-shadow: var(--spatial-control-shadow); color: var(--spatial-control-ink);
+}
+.spatial-button.spatial-button, .spatial-help > summary {
+  display: grid; place-items: center; min-width: var(--spatial-control-size); height: var(--spatial-control-size);
+  border: 0; border-radius: var(--spatial-control-radius); margin: 0; padding: 0 7px;
+  background: transparent; color: inherit; font: inherit; font-size: var(--spatial-font-size); cursor: pointer;
+}
+.spatial-button:disabled { opacity: 0.4; cursor: default; }
+.spatial-help > summary { list-style: none; }
+.spatial-help > summary::-webkit-details-marker { display: none; }
+.spatial-help > span {
+  position: absolute; bottom: calc(var(--spatial-control-size) + 6px); left: 0;
+  width: var(--spatial-help-width); padding: 10px; line-height: 1.7;
+  font-size: var(--spatial-font-size); border: 1px solid var(--spatial-control-line);
+  border-radius: var(--spatial-control-radius); background: var(--spatial-control-surface);
+}
+</style>
+<body>
+<div class="workspace">
+  <header class="toolbar">
+    <h1 id="model-title">契约设计</h1>
+    <nav aria-label="设计视图">
+      <button data-view="modules" aria-pressed="true" data-testid="design-modules">模块与方法</button>
+      <button data-view="process" aria-pressed="false" data-testid="design-process">流程设计</button>
+    </nav>
+    <label class="process-choice">流程 <select id="process" aria-label="选择流程" data-testid="design-process-select"></select></label>
+    <button id="lint" data-testid="design-lint" title="结构检查和覆盖边界">检查</button>
+  </header>
+  <main class="design-main">
+    <section class="graph-panel" aria-label="契约与流程画板">
+      <div class="graph-heading"><span id="graph-title"></span><span class="muted" id="graph-count"></span></div>
+      <div class="graph-scroll" id="graph" data-testid="design-graph"></div>
+    </section>
+    <aside class="details" id="details" hidden aria-labelledby="details-title" data-testid="design-details">
+      <div class="details-heading"><h2 id="details-title">详情</h2><button id="close" aria-label="关闭详情">×</button></div>
+      <div id="details-body" class="details-body"></div>
+    </aside>
+  </main>
+  <footer><span id="design-summary"></span><button id="coverage" data-testid="design-coverage">来源与检查范围 ⓘ</button></footer>
+</div>
+<script id="design-model" type="application/json">{"id":"order-inventory","label":"Order / inventory source design","metadata":{"summary":"Schemas and handlers are imported by identity; no business method runs during export."},"format":"flow-atlas/inspector-1","domains":[{"id":"commerce","label":"Commerce"}],"modules":[{"id":"orders","label":"Orders","metadata":{"responsibility":"Prepare order requests and ask inventory to reserve stock.","tags":["application"]},"domainId":"commerce","dependencies":["inventory"]},{"id":"inventory","label":"Inventory","metadata":{"responsibility":"Own available stock and reservation results.","tags":["domain"]},"domainId":"commerce","dependencies":[]}],"objects":[{"id":"order-service","label":"Order service","kind":"service","moduleId":"orders","domainId":"commerce"},{"id":"inventory-service","label":"Inventory service","kind":"service","moduleId":"inventory","domainId":"commerce"}],"schemas":[{"id":"order-request:input","label":"Order request","jsonSchema":{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"orderId":{"type":"string","minLength":1},"sku":{"type":"string","minLength":1},"quantity":{"type":"integer","minimum":1,"maximum":9007199254740991}},"required":["orderId","sku","quantity"]}},{"id":"reservation-request:output","label":"Reservation request","jsonSchema":{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"orderId":{"type":"string","minLength":1},"sku":{"type":"string","minLength":1},"quantity":{"type":"integer","minimum":1,"maximum":9007199254740991}},"required":["orderId","sku","quantity"],"additionalProperties":false}},{"id":"reservation-request:input","label":"Reservation request","jsonSchema":{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"orderId":{"type":"string","minLength":1},"sku":{"type":"string","minLength":1},"quantity":{"type":"integer","minimum":1,"maximum":9007199254740991}},"required":["orderId","sku","quantity"]}},{"id":"reservation-result:output","label":"Reservation result","jsonSchema":{"$schema":"https://json-schema.org/draft/2020-12/schema","oneOf":[{"type":"object","properties":{"kind":{"type":"string","const":"reserved"},"reservationId":{"type":"string"},"remaining":{"type":"integer","minimum":0,"maximum":9007199254740991}},"required":["kind","reservationId","remaining"],"additionalProperties":false},{"type":"object","properties":{"kind":{"type":"string","const":"rejected"},"reason":{"type":"string"}},"required":["kind","reason"],"additionalProperties":false},{"type":"object","properties":{"kind":{"type":"string","const":"unknown"},"reason":{"type":"string"}},"required":["kind","reason"],"additionalProperties":false}]}}],"operations":[{"id":"orders.prepare","label":"prepareOrder","metadata":{"summary":"Prepare an order using the native request contract.","sourceLinks":[{"label":"Native methods","uri":"tools/flow-atlas/authoring/examples/native-contracts.ts"}]},"ownerId":"order-service","moduleId":"orders","kind":"command","inputSchemaId":"order-request:input","outputSchemaId":"reservation-request:output","outcomes":[{"id":"ready","label":"Prepared","meaning":"returned"},{"id":"failed","label":"Preparation failed","meaning":"failed"}]},{"id":"inventory.reserve","label":"reserveInventory","metadata":{"responsibility":"Return an authoritative result or preserve uncertainty.","sourceLinks":[{"label":"Native schemas and method","uri":"tools/flow-atlas/authoring/examples/native-contracts.ts"}],"documents":[{"id":"source-binding","label":"Design/code correspondence","uri":"tools/flow-atlas/design/source-binding.md"}],"extensions":{"example:scope":{"storage":"native in-memory inventory","concurrency":"sequential"}}},"ownerId":"inventory-service","moduleId":"inventory","kind":"command","inputSchemaId":"reservation-request:input","outputSchemaId":"reservation-result:output","outcomes":[{"id":"reserved","label":"Reserved","meaning":"returned"},{"id":"rejected","label":"Insufficient stock","meaning":"rejected"},{"id":"unknown","label":"Result unknown","meaning":"unknown"},{"id":"failed","label":"Invocation failed","meaning":"failed"},{"id":"no-response","label":"No response observed","meaning":"no-response"}]}],"processes":[{"id":"place-order","label":"Place order and reserve inventory","metadata":{"summary":"Explicit order/inventory boundary, including rejection and uncertain results."},"startId":"start","steps":[{"id":"start","label":"Order requested","kind":"start"},{"id":"prepare-order","label":"Prepare order","kind":"operation","callerId":"order-service","operationId":"orders.prepare","bound":true},{"id":"reserve-stock","label":"Reserve stock","kind":"operation","callerId":"order-service","operationId":"inventory.reserve","bound":true},{"id":"reserved","label":"Reservation confirmed","kind":"end","outcome":"completed"},{"id":"rejected","label":"Reservation rejected","kind":"end","outcome":"rejected"},{"id":"unknown","label":"Reservation result unknown","kind":"end","outcome":"unknown"},{"id":"failed","label":"Invocation failed","kind":"end","outcome":"failed"}],"flows":[{"id":"begin","label":"Begin","from":"start","to":"prepare-order"},{"id":"prepared","label":"Ready","from":"prepare-order","to":"reserve-stock","outcomeId":"ready"},{"id":"prepare-failed","label":"Preparation failed","from":"prepare-order","to":"failed","outcomeId":"failed"},{"id":"reserved","label":"Confirmed","from":"reserve-stock","to":"reserved","outcomeId":"reserved"},{"id":"rejected","label":"Rejected","from":"reserve-stock","to":"rejected","outcomeId":"rejected"},{"id":"unknown","label":"Unknown","from":"reserve-stock","to":"unknown","outcomeId":"unknown"},{"id":"failed","label":"Failed","from":"reserve-stock","to":"failed","outcomeId":"failed"},{"id":"no-response","label":"No response","from":"reserve-stock","to":"unknown","outcomeId":"no-response"}]}],"diagnostics":[],"coverage":["Explicit authoring handles and direct declared module calls only; arbitrary source is not inspected.","Sequential observed operation paths only; no workflow scheduler, concurrent traces or automatic retries.","Native schema conversion exports structure; business refinements and arbitrary implementation correctness are not proved.","Full Definition/Scenario/state/event/layout compilation and oRPC import are not implemented by this slice."]}</script>
+<script>/* Shared camera/navigation for SVG projections. No domain reducer, layout editor or clock. */
+(function (global) {
+  'use strict';
+  var MIN_ZOOM = 0.1, MAX_ZOOM = 4, NARROW_WIDTH = 600, READABLE_ZOOM = 0.85;
+  function clamp(zoom) { return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom)); }
+  function zoomAt(camera, zoom, point) {
+    zoom = clamp(zoom);
+    return { x: camera.x + point.x / camera.zoom - point.x / zoom, y: camera.y + point.y / camera.zoom - point.y / zoom, zoom: zoom };
+  }
+  function fit(bounds, size) {
+    var zoom = Math.min(1, clamp(Math.min(Math.max(1, size.width - 48) / Math.max(1, bounds.width), Math.max(1, size.height - 48) / Math.max(1, bounds.height))));
+    return { x: bounds.x + bounds.width / 2 - size.width / zoom / 2, y: bounds.y + bounds.height / 2 - size.height / zoom / 2, zoom: zoom };
+  }
+  function initial(bounds, size) {
+    var fitted = fit(bounds, size);
+    // A phone starts with readable objects, not an illegible miniature overview.
+    // Explicit fit remains a full overview; subsequent mounts retain the user's camera.
+    if (size.width < NARROW_WIDTH && fitted.zoom < READABLE_ZOOM) {
+      return { x: bounds.x - 24 / READABLE_ZOOM, y: bounds.y - 24 / READABLE_ZOOM, zoom: READABLE_ZOOM };
+    }
+    return fitted;
+  }
+
+  /** create({host,controls,beforeNavigate?}) -> {mount(svg,scope),fit,reveal,state,dispose}.
+   * Borrows host/controls. Camera is per scope, transient, never written into domain/layout data.
+   * beforeNavigate cancels a host-owned node gesture before changing its coordinate frame.
+   */
+  function create(options) {
+    var host = options.host, root = null, scope = null, states = new Map(), content = null;
+    function measure() { var rect = host.getBoundingClientRect(); return { width: rect.width, height: rect.height }; }
+    var size = measure(), gesture = null;
+    var pointers = new Map(), space = false, suppressClick = false, listeners = [];
+    var panel = document.createElement('div'); panel.className = 'spatial-controls';
+    panel.setAttribute('role', 'group'); panel.setAttribute('aria-label', '画布视口'); panel.dataset.testid = 'viewport-controls';
+    host.classList.add('spatial-viewport'); host.tabIndex = 0;
+    host.setAttribute('aria-keyshortcuts', 'ArrowUp ArrowDown ArrowLeft ArrowRight + - 0 F');
+    var help = '空白处拖动平移；滚轮缩放；空格或鼠标中键拖动；双指缩放；F 适应内容，0 原始比例';
+    host.setAttribute('title', help);
+    function camera() { return states.get(scope); }
+    function notify() {
+      if (!root || !camera()) return;
+      var value = camera();
+      root.setAttribute('viewBox', [value.x, value.y, Math.max(1, size.width) / value.zoom, Math.max(1, size.height) / value.zoom].join(' '));
+      root.setAttribute('preserveAspectRatio', 'none');
+      host.style.setProperty('--spatial-grid-step', (24 * value.zoom) + 'px');
+      host.style.setProperty('--spatial-grid-x', (-value.x * value.zoom % (24 * value.zoom)) + 'px');
+      host.style.setProperty('--spatial-grid-y', (-value.y * value.zoom % (24 * value.zoom)) + 'px');
+      host.dataset.cameraX = String(value.x); host.dataset.cameraY = String(value.y); host.dataset.cameraZoom = String(value.zoom);
+      percentage.textContent = Math.round(value.zoom * 100) + '%';
+      percentage.setAttribute('aria-label', '当前缩放 ' + Math.round(value.zoom * 100) + '%，恢复100%');
+      minus.disabled = value.zoom <= MIN_ZOOM; plus.disabled = value.zoom >= MAX_ZOOM;
+    }
+    function set(value) { states.set(scope, value); notify(); }
+    function before() { if (options.beforeNavigate) options.beforeNavigate(); }
+    function button(id, name, text, action) {
+      var item = document.createElement('button'); item.type = 'button'; item.className = 'spatial-button';
+      item.dataset.testid = id; item.textContent = text; item.setAttribute('aria-label', name); item.title = name;
+      item.addEventListener('click', action); panel.appendChild(item); return item;
+    }
+    function zoom(factor, point) { if (!camera()) return; before(); set(zoomAt(camera(), camera().zoom * factor, point || { x: size.width / 2, y: size.height / 2 })); }
+    function fitContent() { if (!content) return; cancel(); before(); set(fit(content, size)); }
+    var minus = button('viewport-zoom-out', '缩小画布', '−', function () { zoom(1 / 1.2); });
+    var percentage = button('viewport-actual', '恢复100%', '100%', function () { if (camera()) zoom(1 / camera().zoom); });
+    var plus = button('viewport-zoom-in', '放大画布', '+', function () { zoom(1.2); });
+    button('viewport-fit', '适应全部内容', '⛶', fitContent);
+    var info = document.createElement('details'); info.className = 'spatial-help';
+    var summary = document.createElement('summary'); summary.textContent = 'ⓘ'; summary.setAttribute('aria-label', '画布操作说明'); summary.title = '画布操作说明';
+    var explanation = document.createElement('span'); explanation.textContent = help;
+    info.append(summary, explanation); panel.append(info); options.controls.appendChild(panel);
+    function on(target, type, handler, config) { target.addEventListener(type, handler, config); listeners.push(function () { target.removeEventListener(type, handler, config); }); }
+    function point(event) { var rect = host.getBoundingClientRect(); return { x: event.clientX - rect.left, y: event.clientY - rect.top }; }
+    function interactive(target) { return target.closest && target.closest('[role="button"],a,button,input,select,textarea,[data-layout-handle]'); }
+    function endCapture(id) { if (host.hasPointerCapture(id)) host.releasePointerCapture(id); }
+    function cancel() {
+      if (!gesture) return;
+      var previous = gesture; gesture = null; pointers.clear();
+      set(previous.camera); previous.ids.forEach(endCapture); host.dataset.panning = 'false';
+    }
+    function down(event) {
+      if (!root || event.button > 1) return;
+      if (!gesture) suppressClick = false;
+      if (event.pointerType === 'touch') pointers.set(event.pointerId, point(event));
+      var forced = event.button === 1 || space;
+      var allowed = forced || !interactive(event.target);
+      if (event.pointerType === 'touch' && pointers.size === 2) {
+        before();
+        var pair = Array.from(pointers.values()), current = camera();
+        var center = { x: (pair[0].x + pair[1].x) / 2, y: (pair[0].y + pair[1].y) / 2 };
+        gesture = { kind: 'pinch', camera: current, center: center, distance: Math.max(1, Math.hypot(pair[0].x - pair[1].x, pair[0].y - pair[1].y)), ids: Array.from(pointers.keys()), moved: true };
+      } else if (allowed && !gesture) {
+        before(); gesture = { kind: 'pan', camera: camera(), origin: point(event), ids: [event.pointerId], moved: false };
+        suppressClick = false;
+      } else return;
+      host.focus({ preventScroll: true });
+      gesture.ids.forEach(function (id) { host.setPointerCapture(id); });
+      event.preventDefault(); event.stopImmediatePropagation();
+    }
+    function move(event) {
+      if (event.pointerType === 'touch' && pointers.has(event.pointerId)) pointers.set(event.pointerId, point(event));
+      if (!gesture || gesture.ids.indexOf(event.pointerId) < 0) return;
+      var value;
+      if (gesture.kind === 'pinch') {
+        var pair = gesture.ids.map(function (id) { return pointers.get(id); }); if (!pair[0] || !pair[1]) return;
+        var center = { x: (pair[0].x + pair[1].x) / 2, y: (pair[0].y + pair[1].y) / 2 };
+        var distance = Math.hypot(pair[0].x - pair[1].x, pair[0].y - pair[1].y);
+        value = zoomAt(gesture.camera, gesture.camera.zoom * distance / gesture.distance, gesture.center);
+        value.x -= (center.x - gesture.center.x) / value.zoom; value.y -= (center.y - gesture.center.y) / value.zoom;
+      } else {
+        var p = point(event), dx = p.x - gesture.origin.x, dy = p.y - gesture.origin.y;
+        if (!gesture.moved && Math.hypot(dx, dy) < 3) return;
+        gesture.moved = true;
+        value = { x: gesture.camera.x - dx / gesture.camera.zoom, y: gesture.camera.y - dy / gesture.camera.zoom, zoom: gesture.camera.zoom };
+      }
+      host.dataset.panning = 'true'; set(value); event.preventDefault(); event.stopImmediatePropagation();
+    }
+    function up(event) {
+      pointers.delete(event.pointerId);
+      if (!gesture || gesture.ids.indexOf(event.pointerId) < 0) return;
+      var previous = gesture; gesture = null; pointers.clear(); suppressClick = previous.moved;
+      previous.ids.forEach(endCapture); host.dataset.panning = 'false';
+      event.preventDefault(); event.stopImmediatePropagation();
+    }
+    on(host, 'pointerdown', down, true); on(host, 'pointermove', move, true); on(host, 'pointerup', up, true);
+    on(host, 'pointercancel', function (event) { pointers.delete(event.pointerId); if (gesture && gesture.ids.includes(event.pointerId)) { cancel(); event.stopImmediatePropagation(); } }, true);
+    on(host, 'lostpointercapture', function (event) { if (gesture && gesture.ids.includes(event.pointerId)) cancel(); });
+    on(host, 'click', function (event) { if (suppressClick) { suppressClick = false; event.preventDefault(); event.stopImmediatePropagation(); } }, true);
+    on(host, 'wheel', function (event) { if (!root) return; cancel(); zoom(Math.exp(-Math.max(-500, Math.min(500, event.deltaY)) * 0.002), point(event)); event.preventDefault(); }, { passive: false });
+    on(host, 'dblclick', function (event) { if (!interactive(event.target)) { event.preventDefault(); fitContent(); } });
+    on(host, 'keydown', function (event) {
+      if (event.key === 'Escape' && gesture) { cancel(); event.preventDefault(); event.stopImmediatePropagation(); return; }
+      if (event.key === ' ' && event.target === host) { space = true; event.preventDefault(); return; }
+      if (event.target !== host || !camera()) return;
+      var directions = { ArrowLeft: [-60, 0], ArrowRight: [60, 0], ArrowUp: [0, -60], ArrowDown: [0, 60] };
+      if (directions[event.key]) { before(); var delta = directions[event.key], value = camera(); set({ x: value.x + delta[0] / value.zoom, y: value.y + delta[1] / value.zoom, zoom: value.zoom }); }
+      else if (event.key === '+' || event.key === '=') zoom(1.2);
+      else if (event.key === '-') zoom(1 / 1.2);
+      else if (event.key === '0') zoom(1 / camera().zoom);
+      else if (event.key.toLowerCase() === 'f') fitContent();
+      else return;
+      event.preventDefault(); event.stopImmediatePropagation();
+    }, true);
+    on(window, 'keyup', function (event) { if (event.key === ' ') space = false; });
+    on(window, 'blur', function () { space = false; cancel(); pointers.clear(); });
+    function resize() {
+      var next = measure();
+      if (size.width === next.width && size.height === next.height) return;
+      cancel(); before();
+      if (camera()) { var value = camera(); states.set(scope, { x: value.x + (size.width - next.width) / value.zoom / 2, y: value.y + (size.height - next.height) / value.zoom / 2, zoom: value.zoom }); }
+      size = next; notify();
+    }
+    var observer = new ResizeObserver(resize); observer.observe(host);
+    function mount(next, key) {
+      if (scope !== key) { cancel(); pointers.clear(); }
+      resize();
+      root = next; scope = key; host.scrollLeft = 0; host.scrollTop = 0;
+      root.classList.add('spatial-scene'); root.removeAttribute('width'); root.removeAttribute('height');
+      var bounds = root.getBBox(); content = { x: bounds.x, y: bounds.y, width: bounds.width || 1, height: bounds.height || 1 };
+      if (!states.has(scope)) states.set(scope, initial(content, size));
+      notify();
+    }
+    function reveal(target) {
+      if (!root || !target || !camera()) return;
+      var b = target.getBBox(), c = camera(), height = size.height / c.zoom, width = size.width / c.zoom;
+      var x = c.x, y = c.y, padding = 24 / c.zoom;
+      if (b.y < y || b.y + b.height > y + height) y = b.y - padding;
+      if (b.x + b.width < x || b.x > x + width) x = b.x + b.width / 2 - width / 2;
+      set({ x: x, y: y, zoom: c.zoom });
+    }
+    return Object.freeze({ mount: mount, fit: fitContent, reveal: reveal, state: function () { return camera() ? Object.assign({}, camera()) : null; }, dispose: function () { cancel(); observer.disconnect(); listeners.forEach(function (remove) { remove(); }); panel.remove(); host.classList.remove('spatial-viewport'); } });
+  }
+  global.FlowAtlasViewport = Object.freeze({ create: create, zoomAt: zoomAt, fit: fit });
+}(globalThis));
+
+;
+/* Design-only projections. No business execution, source importing or trace inference. */
+(function () {
+  'use strict';
+  const model = JSON.parse(document.getElementById('design-model').textContent);
+  const byId = items => new Map(items.map(item => [item.id, item]));
+  const modules = byId(model.modules), objects = byId(model.objects), operations = byId(model.operations), schemas = byId(model.schemas);
+  const graph = document.getElementById('graph'), details = document.getElementById('details'), body = document.getElementById('details-body');
+  const choice = document.getElementById('process');
+  const viewport = FlowAtlasViewport.create({host:graph,controls:graph.parentNode});
+  let view = 'modules', selected, returnTarget;
+  const el = (tag, text, className) => { const node = document.createElement(tag); if (text !== undefined) node.textContent = text; if (className) node.className = className; return node; };
+  const svg = (tag, attrs = {}, text) => { const node = document.createElementNS('http://www.w3.org/2000/svg', tag); for (const [key,value] of Object.entries(attrs)) node.setAttribute(key, String(value)); if (text !== undefined) node.textContent = text; return node; };
+  const short = (text, limit = 30) => { text = String(text ?? ''); return text.length > limit ? text.slice(0,limit - 1) + '…' : text; };
+  const label = (map, id) => map.get(id)?.label ?? id;
+  function text(parent, value, x, y, className = 'design-meta') { parent.append(svg('text', {x, y, class: className}, value)); }
+  function activeLink(uri) { return typeof uri === 'string' && /^https?:\/\/[^\s]+$/i.test(uri); }
+  function link(ref) {
+    const row = el('p');
+    if (activeLink(ref.uri)) { const a = el('a', ref.label); a.href = ref.uri; a.target = '_blank'; a.rel = 'noopener noreferrer'; row.append(a); }
+    else row.append(el('span', ref.label));
+    row.append(el('span', ' · ' + ref.uri, 'muted')); body.append(row);
+  }
+  function metadata(item) {
+    const meta = item.metadata ?? {};
+    for (const key of ['summary','responsibility']) if (meta[key]) body.append(el('p',meta[key]));
+    if (meta.tags?.length) body.append(el('p',meta.tags.join(' · '),'muted'));
+    for (const [field,title] of [['sourceLinks','源码'],['documents','设计文档']]) if (meta[field]?.length) {
+      body.append(el('h3',title)); meta[field].forEach(link);
+    }
+    if (meta.extensions) { body.append(el('h3','扩展元信息')); body.append(el('pre',JSON.stringify(meta.extensions,null,2))); }
+    if (item.explanation) body.append(el('p',item.explanation.summary));
+  }
+  function open(title, target) {
+    returnTarget = target;
+    document.getElementById('details-title').textContent = title;
+    body.replaceChildren(); details.hidden = false;
+    selected = target; paint();
+    document.getElementById('close').focus({preventScroll:true});
+  }
+  function close() { details.hidden = true; selected = undefined; paint(); const target = Array.from(graph.querySelectorAll('[data-testid]')).find(node=>node.dataset.testid===returnTarget); if (target) target.focus({preventScroll:true}); }
+  function button(title, fn) { const node = el('button',title); node.addEventListener('click',fn); body.append(node); return node; }
+  function schemaSection(title, id) { body.append(el('h3',title + ' · ' + label(schemas,id))); body.append(el('pre',JSON.stringify(schemas.get(id)?.jsonSchema ?? {error:'Schema unavailable'},null,2))); }
+  function operationDetail(item) {
+    open(item.label, 'operation:' + item.id);
+    body.append(el('p',label(objects,item.ownerId) + ' · ' + item.kind)); metadata(item);
+    schemaSection('输入',item.inputSchemaId); schemaSection('输出',item.outputSchemaId);
+    body.append(el('h3','声明结果')); item.outcomes.forEach(outcome => { body.append(el('p',outcome.label + ' · ' + outcome.meaning)); metadata(outcome); });
+  }
+  function objectDetail(item) {
+    open(item.label,'object:' + item.id); body.append(el('p',label(modules,item.moduleId) + ' · ' + item.kind)); metadata(item);
+    const owner = modules.get(item.moduleId); if (owner) { body.append(el('h3','模块职责')); metadata(owner); }
+    body.append(el('h3','公开方法')); model.operations.filter(op=>op.ownerId === item.id).forEach(op=>button(op.label,()=>operationDetail(op)));
+  }
+  function stepDetail(item, process) {
+    open(item.label, 'step:' + item.id); metadata(item);
+    body.append(el('p',item.kind === 'operation' ? (item.bound ? '实现步骤已绑定' : '缺少实现绑定') : item.kind === 'end' ? '终点 · ' + item.outcome : '入口'));
+    if (item.operationId && operations.has(item.operationId)) button(label(operations,item.operationId) + ' · 查看方法契约',()=>operationDetail(operations.get(item.operationId)));
+    const outgoing = process.flows.filter(flow=>flow.from===item.id);
+    if (outgoing.length) { body.append(el('h3','可能的下一步')); outgoing.forEach(flow=>body.append(el('p',flow.label + ' → ' + (process.steps.find(s=>s.id===flow.to)?.label ?? flow.to)))); }
+  }
+  function diagnostics() {
+    open('设计检查','diagnostics');
+    if (!model.diagnostics.length) body.append(el('p','当前定义没有结构诊断。'));
+    model.diagnostics.forEach(item=>{ const row=el('div',undefined,'diagnostic'); row.dataset.testid='design-diagnostic'; row.append(el('strong',item.code+' · '+item.severity),el('p',item.message),el('code',item.path.join('.'))); body.append(row); });
+    body.append(el('h3','检查范围')); model.coverage.forEach(value=>body.append(el('p',value)));
+  }
+  function selectable(group, key, name, action) {
+    group.setAttribute('role','button'); group.setAttribute('tabindex','0'); group.setAttribute('aria-label',name); group.dataset.testid = key;
+    group.addEventListener('click',event=>{event.stopPropagation();action();}); group.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();action();}});
+    group.append(svg('title',{},name)); return group;
+  }
+  function base(width,height) {
+    const root = svg('svg',{viewBox:`0 0 ${width} ${height}`,width,height,role:'group','aria-label':view === 'modules'?'模块、对象及原生方法':'声明的流程及结果分支'});
+    const defs=svg('defs'),marker=svg('marker',{id:'design-arrow',viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:6,markerHeight:6,orient:'auto'}); marker.append(svg('path',{d:'M0 0 L10 5 L0 10z',class:'design-arrow'})); defs.append(marker);root.append(defs); return root;
+  }
+  function card(parent,item,p,rows,key,action) {
+    const group=selectable(svg('g',{class:'design-node'+(selected===key?' is-selected':'')}),key,item.label,action);
+    group.append(svg('rect',{x:p.x,y:p.y,width:260,height:p.height,rx:9,class:'design-card'}));
+    text(group,short(item.label),p.x+14,p.y+25,'design-title'); rows.forEach((row,i)=>text(group,short(row,36),p.x+14,p.y+46+i*18)); parent.append(group); return group;
+  }
+  function modulesView() {
+    const width=Math.max(650,model.modules.length*360+32),positions=new Map();
+    const heights=model.modules.map(module=>model.objects.filter(obj=>obj.moduleId===module.id).reduce((h,obj)=>h+model.operations.filter(op=>op.ownerId===obj.id).length*32+94,0)+64);
+    const root=base(width,Math.max(360,...heights)+32);
+    model.modules.forEach((module,index)=>{
+      const x=32+index*360; let y=68;
+      root.append(svg('rect',{x:x-12,y:18,width:310,height:Math.max(286,heights[index]),rx:9,class:'design-module'}));
+      const heading=selectable(svg('g'),'module:'+module.id,module.label,()=>{open(module.label,'module:'+module.id);metadata(module);body.append(el('h3','允许的直接依赖'));body.append(el('p',module.dependencies.map(id=>label(modules,id)).join(' · ')||'无'));});
+      text(heading,module.label,x,42,'design-title');root.append(heading);
+      model.objects.filter(obj=>obj.moduleId===module.id).forEach(obj=>{
+        const ops=model.operations.filter(op=>op.ownerId===obj.id),p={x,y,height:58+ops.length*32};positions.set(obj.id,p);
+        const group=card(root,obj,p,[obj.kind],'object:'+obj.id,()=>objectDetail(obj));
+        ops.forEach((op,opIndex)=>{
+          const py=y+64+opIndex*32;
+          const port=selectable(svg('g',{class:'design-port'}),'operation:'+op.id,op.label+' · '+op.kind,()=>operationDetail(op));
+          port.append(svg('rect',{x:x+6,y:py-11,width:248,height:28,rx:4,class:'design-port__body'}));port.append(svg('circle',{cx:x,cy:py+3,r:5,class:'design-port__pin'}));
+          text(port,short(op.label,26),x+14,py+7,'design-port__label'); group.append(port);
+        }); y+=p.height+36;
+      });
+    });
+    // Module dependencies are declarations, not recorded runtime calls.
+    model.modules.forEach((module,index)=>module.dependencies.forEach(id=>{
+      const target=model.modules.findIndex(m=>m.id===id);if(target<0)return;
+      const x1=32+index*360+310-12,x2=32+target*360-12;
+      root.append(svg('path',{d:`M${x1} 50 H${x2}`,class:'design-wire','marker-end':'url(#design-arrow)'}));
+    }));
+    return root;
+  }
+  function processView() {
+    const process=model.processes.find(item=>item.id===choice.value);if(!process)return base(650,360);
+    // Compute bounded graph depth from references, independently of input array order.
+    const depth=new Map([[process.startId,0]]),queue=[process.startId];
+    for(let i=0;i<queue.length;i++)for(const flow of process.flows.filter(f=>f.from===queue[i]))if(!depth.has(flow.to)){depth.set(flow.to,depth.get(flow.from)+1);queue.push(flow.to);}
+    const layers=new Map();process.steps.forEach(step=>{const d=depth.get(step.id)??Math.max(0,...depth.values())+1;if(!layers.has(d))layers.set(d,[]);layers.get(d).push(step);});
+    const outgoing = id => process.flows.filter(flow=>flow.from===id);
+    const positions=new Map();for(const [d,steps]of layers){let y=36;steps.forEach(step=>{const height=step.kind==='end'?86:96+outgoing(step.id).length*24;positions.set(step.id,{x:32+d*332,y,height});y+=height+44;});}
+    const root=base(Math.max(650,...Array.from(positions.values(),p=>p.x+292)),Math.max(360,...Array.from(positions.values(),p=>p.y+p.height+32)));
+    process.flows.forEach((flow,index)=>{
+      const a=positions.get(flow.from),b=positions.get(flow.to);if(!a||!b)return;
+      const row=outgoing(flow.from).indexOf(flow),incoming=process.flows.filter(f=>f.to===flow.to),entry=incoming.indexOf(flow);
+      const forward=b.x>a.x,x1=a.x+260,x2=forward?b.x:b.x+260,y1=a.y+88+row*24,y2=b.y+24+(entry+1)*Math.min(14,(b.height-48)/(incoming.length+1)),middle=forward?x1+38+row*16:Math.max(x1,x2)+30+(index%3)*16;
+      const wire=svg('path',{d:`M${x1} ${y1} H${middle} V${y2} H${x2}`,class:'design-wire','marker-end':'url(#design-arrow)'});wire.append(svg('title',{},flow.label));root.append(wire);
+    });
+    process.steps.forEach(step=>{
+      const rows=step.kind==='operation'?[label(objects,step.callerId)+' → '+label(operations,step.operationId),step.bound?'已绑定实现步骤':'未绑定实现步骤']:step.kind==='end'?['终点 · '+step.outcome]:['入口'];
+      const p=positions.get(step.id),group=card(root,step,p,rows,'step:'+step.id,()=>stepDetail(step,process));
+      outgoing(step.id).forEach((flow,index)=>{
+        const y=p.y+88+index*24;
+        text(group,short(flow.label,32),p.x+16,y+4,'design-port__label');group.append(svg('circle',{cx:p.x+260,cy:y,r:4,class:'design-port__pin'}));
+      });
+    });return root;
+  }
+  function paint() {
+    const scene=view==='modules'?modulesView():processView();
+    graph.replaceChildren(scene);viewport.mount(scene,view==='modules'?'modules':'process/'+choice.value);
+    document.getElementById('graph-title').textContent=view==='modules'?'模块边界 → 所属对象 → 原生公开方法':'可能的流程路径 · 结果分支';
+    document.getElementById('graph-count').textContent=view==='modules'?`${model.modules.length} 模块 · ${model.operations.length} 方法`:'声明图 · 非执行轨迹';
+  }
+  model.processes.forEach(process=>{const option=el('option',process.label);option.value=process.id;choice.append(option);});choice.disabled=!model.processes.length;
+  document.getElementById('model-title').textContent=model.label;document.title=model.label+' · Flow Atlas';
+  document.getElementById('design-summary').textContent=`${model.objects.length} 对象 · ${model.operations.length} 原生方法 · ${model.processes.length} 流程`;
+  const errors=model.diagnostics.filter(d=>d.severity==='error').length;
+  document.getElementById('lint').textContent=`检查 ${errors} 错误 / ${model.diagnostics.length-errors} 警告`;
+  document.querySelectorAll('[data-view]').forEach(button=>button.addEventListener('click',()=>{view=button.dataset.view;document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));close();paint();}));
+  choice.addEventListener('change',()=>{view='process';document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===view)));close();paint();});
+  document.getElementById('lint').addEventListener('click',diagnostics);document.getElementById('coverage').addEventListener('click',diagnostics);
+  document.getElementById('close').addEventListener('click',close);document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!details.hidden)close();});
+  paint();
+}());
+</script>
+</body>
+</html>

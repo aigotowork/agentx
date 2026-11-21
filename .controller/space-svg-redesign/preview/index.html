@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#171a18">
+<title>SPACE / 灯塔站</title>
+<link rel="stylesheet" href="./space.css">
+<script type="module" src="./space.js"></script>
+</head>
+<body>
+<svg class="svg-library" aria-hidden="true">
+<defs>
+  <symbol id="i-station" viewBox="0 0 32 32"><path d="M16 2 29 9v14l-13 7L3 23V9Z M16 2v28M3 9l13 7 13-7M3 23l13-7 13 7"/><path d="M12 11h8v10h-8z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-workshop" viewBox="0 0 24 24"><path d="M3 19h18M6 18V9h12v9M8 9V5l4-2 4 2v4M9 13h6v5"/></symbol>
+  <symbol id="i-glass" viewBox="0 0 24 24"><path d="M3 20h18M5 20V9l7-6 7 6v11M12 19v-8m0 5C8 16 8 13 8 13s4 0 4 3m0-2c4 0 4-3 4-3s-4 0-4 3"/></symbol>
+  <symbol id="i-people" viewBox="0 0 24 24"><path d="M3 6h3v3H3zM3 14h3v3H3zM10 7.5h11M10 15.5h11"/></symbol>
+  <symbol id="i-talk" viewBox="0 0 24 24"><path d="M3 4h18v12h-9l-5 4v-4H3zM7 10h1m3 0h1m3 0h1"/></symbol>
+  <symbol id="i-work" viewBox="0 0 16 16"><path d="M8 2v12M2 8h12M4 4l8 8m0-8-8 8"/></symbol>
+  <symbol id="i-walk" viewBox="0 0 16 16"><path d="m2 11 4-4 3 3 5-6m-4 0h4v4"/></symbol>
+  <symbol id="i-rest" viewBox="0 0 16 16"><path d="M12 10a5 5 0 0 1-6-7 5.5 5.5 0 1 0 6 7Z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="m10 5-7 7 7 7m-7-7h18"/></symbol>
+  <symbol id="i-cross" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M3 4l18 8-18 8 4-8Zm4 8h14"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="plaque" viewBox="0 0 160 58" preserveAspectRatio="none"><path d="M5 1h148l6 6v37l-6 6H88l-8 7-8-7H6l-5-5V7Z" fill="currentColor" stroke="#0d100d" stroke-width="2"/><path d="M8 6h143l3 4v33l-3 2H9l-3-3V10Z" fill="none" stroke="#ffffff" opacity=".2"/></symbol>
+  <symbol id="tab-plate" viewBox="0 0 148 50" preserveAspectRatio="none"><path d="M7 1h134l6 6v36l-6 6H7l-6-6V7Z" fill="currentColor" stroke="var(--edge)" stroke-width="1.3"/><path d="M9 6h130m0 38H9" stroke="var(--rail)" fill="none"/></symbol>
+  <symbol id="dialog-paper" viewBox="0 0 400 690" preserveAspectRatio="none"><path fill="#121511" d="M10 7h365l19 14v652l-20 15H10z"/><path fill="#e8d5a8" stroke="#161813" stroke-width="2" d="M12 2h361l20 17v646l-18 17H14l-12-18V15Z"/><path fill="none" stroke="#aa9265" stroke-width="1.3" stroke-dasharray="1 4" d="M17 11h351l16 14v636l-14 11H18L11 661V23Z"/><path d="M14 19h26m-26 0v25m365 614h-25m25 0v-25" fill="none" stroke="#8b6945" stroke-width="2"/></symbol>
+  <symbol id="index-paper" viewBox="0 0 330 410" preserveAspectRatio="none"><path d="M11 2h304l13 13v376l-13 16H12L2 395V14Z" fill="#202821" stroke="#ad9a6a" stroke-width="2"/><path d="M12 14h301l5 5v369l-6 9H14l-4-6V18Z" fill="none" stroke="#596658" stroke-dasharray="3 4"/></symbol>
+</defs>
+</svg>
+<main class="space" data-ui-page="Space" data-ui-layout="StationLayout">
+  <header class="masthead">
+    <div class="identity"><svg aria-hidden="true"><use href="#i-station"/></svg><div><b>SPACE</b><h1>灯塔站</h1></div></div>
+    <div class="edition"><span aria-hidden="true">✦</span> 原型 · 本地演示</div>
+  </header>
+  <div class="workspace" id="workspace">
+    <section class="field" aria-label="灯塔站场景" data-ui-layout="RoomLayout">
+      <section class="stage" aria-label="房间" data-ui-block="RoomStage">
+        <div class="room-plate">
+          <h2 id="room-title">信号工坊</h2>
+          <span class="population" id="population"></span>
+        </div>
+        <svg class="world" id="world" viewBox="0 0 1000 590" role="group" aria-labelledby="room-title">
+          <g id="room-art" aria-hidden="true"></g><g id="cast"></g><g id="tags"></g>
+        </svg>
+      </section>
+      <nav class="dock" aria-label="地点与人员" data-ui-block="RoomDock">
+        <button class="dock-button" id="workshop" type="button" aria-pressed="true"><svg class="button-plate" aria-hidden="true"><use href="#tab-plate"/></svg><svg class="icon" aria-hidden="true"><use href="#i-workshop"/></svg><span>信号工坊</span></button>
+        <button class="dock-button" id="glasshouse" type="button" aria-pressed="false"><svg class="button-plate" aria-hidden="true"><use href="#tab-plate"/></svg><svg class="icon" aria-hidden="true"><use href="#i-glass"/></svg><span>玻璃温室</span></button>
+        <button class="dock-button roster-button" id="people" type="button" aria-expanded="false" aria-controls="people-index"><svg class="button-plate" aria-hidden="true"><use href="#tab-plate"/></svg><svg class="icon" aria-hidden="true"><use href="#i-people"/></svg><span>人员</span><small id="roster-count" aria-hidden="true"></small></button>
+      </nav>
+      <section class="people-index" id="people-index" aria-labelledby="people-title" data-ui-block="PeopleIndex" hidden>
+        <svg class="index-paper backing" aria-hidden="true"><use href="#index-paper"/></svg>
+        <header><h2 id="people-title">站内人员 <small id="index-count" aria-hidden="true"></small></h2><button type="button" class="icon-button" id="close-people" aria-label="关闭人员名单"><svg class="icon" aria-hidden="true"><use href="#i-cross"/></svg></button></header>
+        <ul id="people-list"></ul>
+      </section>
+    </section>
+    <section id="letter" class="letter" aria-labelledby="letter-name" data-ui-block="ConversationLetter" hidden>
+      <svg class="paper backing" aria-hidden="true"><use href="#dialog-paper"/></svg>
+      <header class="letter-head">
+        <button class="icon-button go-back" type="button" id="close-letter" aria-label="返回房间" title="返回房间"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg></button>
+        <div class="letter-id"><svg class="portrait" id="portrait" aria-hidden="true" viewBox="0 0 84 84"></svg>
+          <div><div class="letter-rubric" id="letter-room"></div><h2 id="letter-name" tabindex="-1"></h2><div class="letter-status" id="letter-role"></div></div>
+        </div>
+        <svg class="letter-stamp" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28"/><circle cx="32" cy="32" r="24" stroke-dasharray="1 3"/><use href="#i-station" x="18" y="13" width="28" height="28"/><path d="M20 46h24m-19 4h14"/></svg>
+      </header>
+      <div class="transcript" id="transcript" role="log" aria-label="对话记录" tabindex="0"></div>
+      <form class="composer" data-ui-component="LetterComposer">
+        <label class="sr-only" for="draft">消息</label><textarea id="draft" rows="2" maxlength="1000"></textarea>
+        <button class="send" type="submit" id="send" disabled><svg class="button-plate" aria-hidden="true"><use href="#tab-plate"/></svg><svg class="icon" aria-hidden="true"><use href="#i-send"/></svg><span>发送</span></button>
+      </form>
+    </section>
+  </div>
+</main>
+</body>
+</html>

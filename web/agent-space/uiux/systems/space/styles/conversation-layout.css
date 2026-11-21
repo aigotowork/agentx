@@ -1,0 +1,183 @@
+/* The canonical reader allocates space by task priority, never by competing percentage slices. */
+@scope (.space-system) {
+  .conversation-layout {
+    --conversation-feedback-limit: var(--space-composer-feedback-limit);
+    --composer-minimum: calc(2lh + var(--space-3));
+    --space-composer-detail-limit: min(var(--editor-height), 50cqh);
+    --space-composer-error-limit: min(var(--touch), 12cqh);
+    --composer-auto-limit: max(var(--touch), min(var(--editor-height), 30cqh));
+    --composer-expanded-limit: max(var(--touch), min(calc(var(--editor-height) + var(--space-12)), 47cqh, calc(100cqh - var(--touch) * 4)));
+    --composer-grip-height: var(--space-3);
+    --composer-grip-width: calc(var(--touch) * 2);
+    position: relative;
+    display: grid;
+    grid-template-rows: auto auto minmax(var(--space-0), 1fr) auto;
+    width: var(--full); height: var(--full); min-width: var(--space-0); min-height: var(--space-0);
+    container: space-conversation / size;
+    overflow: hidden;
+  }
+  .conversation-layout > .conversation-feedback { min-height: var(--space-0); max-height: var(--conversation-feedback-limit); overflow: auto; }
+  .conversation-layout > .conversation-history { min-height: 0; min-width: 0; overflow: auto; overscroll-behavior: contain; }
+  .conversation-history[data-controlled-history] { overflow-anchor: none; }
+  .conversation-history[data-controlled-history]::after {
+    content: ""; display: block; block-size: var(--conversation-anchor-space, 0px);
+  }
+  .conversation-history-status {
+    position: absolute; grid-area: 3 / 1 / 4 / 2; inset-inline: var(--space-2); inset-block-end: var(--space-2);
+    display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-1);
+    pointer-events: none;
+  }
+  .conversation-history-status[data-edge="start"] {
+    inset-block: var(--space-1) auto; justify-content: center;
+  }
+  .conversation-older-status {
+    display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: var(--space-2);
+    padding: var(--space-1) var(--space-2); color: var(--ink); background: var(--space-popup-background);
+    border: var(--border) solid var(--space-popup-border); border-radius: var(--space-popup-radius);
+    box-shadow: var(--space-popup-shadow);
+  }
+  .hall-reader .conversation-history-status button {
+    pointer-events: auto; min-height: var(--space-compact-target); padding: 0 var(--space-2);
+    color: var(--accent); background: var(--surface-selected); border-color: var(--line);
+    border-radius: var(--radius-pill); font-size: var(--text-xs); box-shadow: var(--space-popup-shadow);
+  }
+  .conversation-history > .conversation-context { min-height: var(--space-0); }
+  .hall-reader .conversation-layout > .conversation-composer {
+    min-height: min-content; max-height: none; overflow: visible; padding: var(--space-1) var(--space-composer-inset) var(--space-composer-inset);
+    background: var(--space-composer-rail);
+  }
+  .hall-reader form.hall-composer {
+    position: relative; margin: 0; padding: 0; border: var(--border) solid var(--line);
+    border-radius: var(--space-composer-radius); background: var(--space-composer-field);
+  }
+  .hall-reader form.hall-composer:has(textarea:focus-visible) { border-color: var(--focus); box-shadow: 0 0 0 var(--border) var(--focus); }
+  .hall-reader .hall-composer .composer-editor { display: grid; min-inline-size: 0; }
+  .hall-reader .hall-composer .composer-editor > textarea {
+    grid-area: 1 / 1;
+    box-sizing: border-box;
+    inline-size: var(--full);
+    block-size: auto;
+    min-block-size: var(--composer-minimum);
+    max-block-size: var(--composer-auto-limit);
+    padding: var(--space-2) var(--space-2) var(--space-1);
+    border: 0; border-radius: inherit; background: transparent;
+    overflow-y: auto;
+    resize: none;
+    field-sizing: content;
+    font: inherit;
+    font-size: var(--text-base);
+    line-height: var(--leading-body, 1.5);
+  }
+  .hall-reader .hall-composer .composer-editor > textarea:focus { outline: none; }
+  .hall-reader .hall-composer[data-editor-size="compact"] .composer-editor > textarea { block-size: var(--touch); min-block-size: var(--touch); }
+  .hall-reader .hall-composer[data-editor-size="expanded"] textarea { block-size: var(--composer-expanded-limit); max-block-size: var(--composer-expanded-limit); }
+  .hall-reader .hall-composer[data-editor-size="custom"] textarea { block-size: var(--composer-user-height); max-block-size: var(--composer-expanded-limit); }
+  @supports not (field-sizing: content) {
+    .hall-reader .hall-composer[data-editor-size="auto"] textarea { block-size: var(--full); }
+    .hall-composer[data-editor-size="auto"] .composer-editor::after {
+      grid-area: 1 / 1;
+      box-sizing: border-box;
+      content: attr(data-draft) " ";
+      visibility: hidden;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      min-inline-size: var(--space-0);
+      min-block-size: var(--composer-minimum);
+      max-block-size: var(--composer-auto-limit);
+      padding: var(--space-2) var(--space-2) var(--space-1);
+      overflow: hidden;
+      font: inherit;
+      font-size: var(--text-base);
+      line-height: var(--leading-body, 1.5);
+    }
+  }
+  .hall-reader .hall-composer .composer-resize-grip {
+    position: absolute;
+    z-index: var(--layer-header);
+    inset-block-start: calc(var(--composer-grip-height) / -2);
+    inset-inline-start: calc((var(--full) - var(--composer-grip-width)) / 2);
+    display: grid;
+    place-items: center;
+    inline-size: var(--composer-grip-width);
+    min-block-size: var(--composer-grip-height);
+    padding: var(--space-0);
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: ns-resize;
+    touch-action: none;
+  }
+  .composer-resize-grip::before {
+    content: "";
+    inline-size: var(--space-8);
+    block-size: var(--focus-width);
+    border-radius: var(--radius-sm);
+    background: var(--line);
+  }
+  .composer-resize-grip:is(:hover, :focus-visible, :active)::before { background: var(--accent); }
+  .hall-reader .hall-composer .composer-status { display: flex; align-items: center; flex: 1; flex-wrap: wrap; gap: var(--space-0) var(--space-1); min-inline-size: var(--space-0); }
+  .hall-reader .composer-status small:not(:empty) { max-block-size: var(--touch); overflow: auto; overflow-wrap: anywhere; }
+  .hall-reader .composer-status small:empty { display: none; }
+  .hall-reader .composer-receipt {
+    min-block-size: var(--space-6);
+    padding: var(--space-0);
+    border: 0;
+    background: transparent;
+    color: var(--accent);
+    font-size: var(--text-xs);
+    text-decoration: underline;
+    white-space: nowrap;
+  }
+  .composer-size { flex: none; }
+  .hall-reader .hall-composer .composer-toolbar {
+    flex-wrap: nowrap; min-height: var(--space-compact-target); gap: var(--space-1); padding: 0 var(--space-1) var(--space-1);
+  }
+  .hall-reader .conversation-icon, .hall-reader .hall-composer :is(.message-options, .composer-size) > summary {
+    display: inline-grid; place-items: center; inline-size: var(--space-compact-target); min-inline-size: var(--space-compact-target);
+    min-block-size: var(--space-compact-target); padding: 0; border-color: transparent; border-radius: var(--radius-sm);
+    color: var(--ink); background: transparent;
+  }
+  .hall-reader .conversation-icon:is(:hover, [aria-expanded="true"]), .hall-composer :is(.message-options, .composer-size) > summary:hover {
+    background: var(--surface-selected);
+  }
+  .hall-reader .conversation-icon svg { inline-size: var(--space-4); block-size: var(--space-4); }
+  .hall-reader .conversation-relation-trigger { display: inline-flex; gap: var(--space-1); width: auto; padding-inline: var(--space-1); font-size: var(--text-xs); }
+  .hall-reader .hall-composer .hall-local-append {
+    display: grid; place-items: center; min-inline-size: var(--space-compact-target); min-block-size: var(--space-compact-target);
+    inline-size: var(--space-compact-target); padding: 0;
+  }
+  .hall-reader .hall-local-append > svg { inline-size: var(--space-4); block-size: var(--space-4); }
+  .hall-reader .hall-composer .composer-toolbar > .space-feedback { max-height: var(--touch); overflow: auto; }
+  .hall-reader .composer-feedback { min-height: var(--space-0); max-height: var(--space-composer-error-limit); overflow: auto; }
+  .composer-attachments > summary { display: flex; align-items: center; min-height: var(--touch); cursor: pointer; font-size: var(--text-xs); }
+  .hall-composer .message-options { position: static; flex: none; }
+  .hall-composer :is(.message-options, .composer-size) > summary { list-style: none; cursor: pointer; }
+  .hall-composer :is(.message-options, .composer-size) > summary::-webkit-details-marker { display: none; }
+  .composer-size > summary svg { width: var(--space-4); height: var(--space-4); }
+  .message-options[data-customized] > summary { color: var(--accent); background: var(--surface-selected); border-radius: var(--radius-sm); }
+  .message-options-fields, .composer-attachment-preview, .composer-size-options {
+    position: absolute; bottom: calc(var(--space-compact-target) + var(--space-2)); inset-inline: var(--space-2);
+    z-index: var(--layer-nav); max-height: var(--space-composer-detail-limit); overflow: auto; overscroll-behavior: contain;
+    padding: var(--space-2); border: var(--border) solid var(--space-popup-border); border-radius: var(--space-popup-radius);
+    background: var(--space-popup-background); box-shadow: var(--space-popup-shadow);
+  }
+  .composer-size-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-1); }
+  .composer-size-options button[aria-pressed="true"] { background: var(--surface-selected); border-color: var(--accent); }
+  .message-options-fields { display: grid; gap: var(--space-2); }
+  .message-options-fields label { min-width: var(--space-0); }
+  .message-options-fields input, .message-options-fields select { max-width: var(--full); }
+
+  @container space-conversation (max-height: 18rem) {
+    .hall-reader .hall-composer {
+      --composer-minimum: var(--touch);
+      --composer-auto-limit: max(var(--touch), min(30cqh, calc(100cqh - var(--touch) * 4 - var(--space-12))));
+      --composer-expanded-limit: max(var(--touch), min(47cqh, calc(100cqh - var(--touch) * 5)));
+    }
+  }
+  @media (pointer: coarse) {
+    .hall-reader .hall-composer .composer-resize-grip { display: none; }
+    .hall-reader .hall-composer .composer-editor > textarea { font-size: 1rem; }
+    .hall-reader .composer-receipt { min-block-size: var(--touch); }
+  }
+}

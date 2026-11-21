@@ -1,0 +1,57 @@
+/** Offline consumer checks for explanatory paths; no AgentX daemon is contacted. */
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const { pathToFileURL } = require('node:url');
+const path = require('node:path');
+const assert = require('node:assert/strict');
+(async () => {
+ const browser=await chromium.launch({executablePath:process.env.CHROME_PATH || '/usr/bin/google-chrome',headless:true,args:['--no-sandbox']});
+ const page=await browser.newPage({viewport:{width:1440,height:1000}});
+ const errors=[];const remote=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ page.on('request',r=>{if(/^https?:/.test(r.url()))remote.push(r.url())});
+ const url=pathToFileURL(path.join(__dirname,'index.html')).href;
+ await page.goto(url);
+ await page.locator('[data-node="observe"]').focus();
+ await page.keyboard.press('Enter');
+ assert.match(await page.locator('#node-detail').innerText(),/被动读取/);
+ await page.screenshot({path:'/tmp/agentx-cli-overview.png',fullPage:true});
+ await page.locator('a[href="#work"]').first().click();
+ for(let i=0;i<7;i++)await page.locator('[data-action="next"]').click();
+ assert.match(await page.locator('main').innerText(),/Accepted · 已关闭/);
+ await page.selectOption('#branch','failure');
+ await page.locator('[data-step="6"]').click();
+ assert.match(await page.locator('main').innerText(),/C1 · Failed/);
+ await page.locator('[data-step="8"]').click();
+ assert.match(await page.locator('main').innerText(),/C1 属于旧 R1/);
+ await page.locator('[data-step="11"]').click();
+ assert.match(await page.locator('main').innerText(),/Accepted · 已关闭/);
+ await page.locator('[data-action="reset"]').click();
+ assert.match(await page.locator('main').innerText(),/尚未发布/);
+ await page.locator('a[href="#modes"]').click();
+ await page.locator('[data-mode="workbench-read"]').click();
+ assert.match(await page.locator('main').innerText(),/本地启动时获取；缺失时可自动启动/);
+ await page.locator('[data-mode="observe"]').click();
+ assert.match(await page.locator('main').innerText(),/不获取、不启动/);
+ await page.locator('a[href="#observe"]').click();
+ await page.locator('.stage[data-diagnostic="2"]').click();
+ assert.match(await page.locator('main').innerText(),/DiagnosticReevaluation/);
+ await page.locator('a[href="#catalog"]').click();
+ await page.fill('#query','work report');
+ assert.equal(await page.locator('.catalog-item').count(),1);
+ await page.locator('.catalog-item').click();
+ assert.match(await page.locator('#command-detail').innerText(),/--assignment/);
+ await page.reload();
+ assert.match(await page.locator('#command-detail h2').innerText(),/work report/);
+ await page.screenshot({path:'/tmp/agentx-cli-catalog.png',fullPage:true});
+ await page.setViewportSize({width:390,height:844});
+ for(const view of ['overview','work','modes','observe','catalog']){
+  await page.goto(url+'#'+view);
+  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);
+  assert.equal(overflow,false,view+' causes horizontal viewport overflow');
+ }
+ await page.goto(url+'#work');
+ await page.screenshot({path:'/tmp/agentx-cli-mobile.png',fullPage:true});
+ assert.deepEqual(errors,[]);assert.deepEqual(remote,[]);
+ await browser.close();
+ console.log('PASS: offline paths, success/failure/reset, modes, diagnostics, search/deep link, 390px layout, no script errors or network requests.');
+})().catch(error=>{console.error(error);process.exit(1)});

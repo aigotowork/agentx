@@ -1,0 +1,6 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: Legacy package schema URI
+type: object
+$ref: package.schema.yaml
+$defs:
+  artifact: { $ref: package.schema.yaml#/$defs/artifact }

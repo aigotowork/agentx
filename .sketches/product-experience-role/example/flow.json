@@ -1,0 +1,181 @@
+{
+  "id": "FLOW-1",
+  "revision": "flow-v1",
+  "kind": "design-example",
+  "source": {
+    "path": "source.md",
+    "revision": "source-v1",
+    "scenario": "SC-1",
+    "requirement": "REQ-1"
+  },
+  "modelMaturity": "candidate",
+  "assumptions": [
+    "ASM-1"
+  ],
+  "page": {
+    "id": "PAGE-1",
+    "path": "/experience-example/tasks"
+  },
+  "fixture": {
+    "id": "FX-1",
+    "revision": "fixture-v1",
+    "mode": "read-only-local-mock",
+    "rows": [
+      {
+        "id": "task-demo-1",
+        "title": "发布预览"
+      },
+      {
+        "id": "task-demo-2",
+        "title": "检查合同"
+      }
+    ],
+    "initialQuery": "",
+    "reset": "Fresh browser context; host supplies immutable FX-1 on every load; no domain writes",
+    "owner": "future consuming prototype/Mock owner"
+  },
+  "preconditions": [
+    "Explicit disposable preview origin; no existing live service selected",
+    "Host implements PAGE-1 controls and FX-1 exactly",
+    "Consuming project supplies compatible @playwright/test and browser; not installed by this example"
+  ],
+  "branches": [
+    {
+      "id": "BR-1",
+      "guard": "FX-1 and query 发布",
+      "test": "PW-1",
+      "criteria": [
+        "CR-1"
+      ],
+      "steps": [
+        "ST-1",
+        "ST-2"
+      ]
+    },
+    {
+      "id": "BR-2",
+      "guard": "FX-1 and query 不存在",
+      "test": "PW-2",
+      "criteria": [
+        "CR-2"
+      ],
+      "steps": [
+        "ST-1",
+        "ST-3",
+        "ST-4"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "ST-1",
+      "action": "open",
+      "page": "PAGE-1",
+      "expected": "FX-1 initial list and empty query",
+      "assertions": [
+        "AS-0"
+      ]
+    },
+    {
+      "id": "ST-2",
+      "action": "fill",
+      "control": "CTRL-SEARCH",
+      "value": "发布",
+      "expected": "one intended task and retained query",
+      "assertions": [
+        "AS-1"
+      ]
+    },
+    {
+      "id": "ST-3",
+      "action": "fill",
+      "control": "CTRL-SEARCH",
+      "value": "不存在",
+      "expected": "empty state with no task rows",
+      "assertions": [
+        "AS-2"
+      ]
+    },
+    {
+      "id": "ST-4",
+      "action": "click",
+      "control": "CTRL-CLEAR",
+      "expected": "initial task list restored and query cleared",
+      "assertions": [
+        "AS-3"
+      ]
+    }
+  ],
+  "assertions": [
+    {
+      "id": "AS-0",
+      "criteria": [
+        "CR-1",
+        "CR-2"
+      ],
+      "step": "ST-1",
+      "boundary": "ui-mock",
+      "predicate": "query empty and exact two fixture identities/titles"
+    },
+    {
+      "id": "AS-1",
+      "criteria": [
+        "CR-1"
+      ],
+      "step": "ST-2",
+      "boundary": "ui-mock",
+      "predicate": "query 发布 and only task-demo-1 titled 发布预览"
+    },
+    {
+      "id": "AS-2",
+      "criteria": [
+        "CR-2"
+      ],
+      "step": "ST-3",
+      "boundary": "ui-mock",
+      "predicate": "query 不存在, zero rows and visible empty message"
+    },
+    {
+      "id": "AS-3",
+      "criteria": [
+        "CR-2"
+      ],
+      "step": "ST-4",
+      "boundary": "ui-mock",
+      "predicate": "empty query, original two task identities/titles and no empty message"
+    }
+  ],
+  "manual": [
+    {
+      "id": "OBS-1",
+      "criterion": "CR-3",
+      "method": "neutral task observation",
+      "state": "not-observed",
+      "evidence": []
+    }
+  ],
+  "native": {
+    "file": "search.spec.mjs",
+    "config": "playwright.config.mjs",
+    "tests": [
+      "PW-1",
+      "PW-2"
+    ],
+    "mapping": "explicit native code, no generator/interpreter"
+  },
+  "runPlan": {
+    "id": "PLAN-1",
+    "state": "not-run",
+    "runId": null,
+    "attempts": [],
+    "artifacts": []
+  },
+  "actorAnalysis": {
+    "actorRef": "ACT-1",
+    "claimRef": "CLAIM-1",
+    "needRef": "NEED-1",
+    "basis": "hypothesis",
+    "source": "source.md@source-v1",
+    "evidence": []
+  }
+}

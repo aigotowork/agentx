@@ -1,0 +1,64 @@
+/* Each world supplies semantic color and material to the shared reader and command surface. */
+@scope (.space-system[data-space-game="citrus"]) to (.space-system) {
+  :scope {
+    --canvas: #dfefe5; --surface: #f7fbef; --surface-subtle: #edf4df; --surface-selected: #dfedca;
+    --ink: #213e38; --muted: #45635a; --line: #a3bb9e; --accent: #237068; --accent-hover: #19544d;
+    --focus: #07615e; --skin-on-accent: #fffceb; --skin-detail: #305d51; --skin-rail: #eff2d4;
+    --skin-edge: #6b8f73; --skin-cast: #365c4c50; --skin-shadow: 0 18px 50px #24645849, 0 2px 0 #f8ffe5;
+    --skin-radius: 23px; --skin-form-radius: 11px; --skin-record-radius: 15px;
+    --skin-font: Georgia, "Noto Serif CJK SC", serif; --world-tracking: .025em;
+    --skin-pattern: radial-gradient(ellipse at 92% 0%, #f4d37070, transparent 68%), repeating-linear-gradient(122deg, #7d9c7024 0 1px, transparent 1px 20px);
+    --space-conversation-trim: repeating-linear-gradient(120deg, #2370685c 0 2px, transparent 2px 8px, #e3b64996 8px 10px, transparent 10px 17px);
+    --game-light-glow: #ebc55da6; --game-portrait-paper: #edf3ce;
+  }
+  .hall-reader .conversation-composer { --space-trim-height: 4px; }
+}
+
+@scope (.space-system[data-space-game="reverie"]) to (.space-system) {
+  :scope {
+    color-scheme: dark;
+    --canvas: #292642; --surface: #292945; --surface-subtle: #383454; --surface-selected: #514367;
+    --ink: #fff3fa; --muted: #d7cce6; --line: #847597; --accent: #f5c6dc; --accent-hover: #ffe5f0;
+    --focus: #dfd1ff; --skin-on-accent: #382841; --skin-detail: #edd5ed; --skin-rail: #363250;
+    --skin-edge: #a597c7; --skin-cast: #18122fc7; --skin-shadow: 0 14px 54px #18102fb0, 0 0 0 2px #e6b9dc46;
+    --notice: #ffe5b4; --notice-bg: #493646; --danger: #ffd2de; --danger-bg: #622f42;
+    --skin-radius: 23px 23px 14px 14px; --skin-form-radius: 12px; --skin-record-radius: 15px 15px 6px 15px;
+    --skin-font: Georgia, "Noto Serif CJK SC", serif; --world-tracking: .04em;
+    --skin-pattern: radial-gradient(circle at 2px 3px, #e0bbde59 0 1px, transparent 1.5px) 0 0 / 32px 17px, radial-gradient(ellipse at 85% 0%, #bda4f275, transparent 65%);
+    --space-conversation-trim: radial-gradient(circle at 6px 50%, #f2c9e3af 0 1px, transparent 2px);
+    --game-light-glow: #e9b3dd9b; --game-portrait-paper: #51436c;
+  }
+  .hall-reader .conversation-composer { --space-trim-height: 5px; --space-trim-width: 15px; }
+}
+
+@scope (.space-system[data-space-game="wash"]) to (.space-system) {
+  :scope {
+    --canvas: #e8e7d7; --surface: #f9f3e6; --surface-subtle: #eee9db; --surface-selected: #dde6d9;
+    --ink: #333c45; --muted: #565f65; --line: #aaa99d; --accent: #405b75; --accent-hover: #29465f;
+    --focus: #315877; --skin-on-accent: #fff8e9; --skin-detail: #4d626b; --skin-rail: #eae8dc;
+    --skin-edge: #7d8b84; --skin-cast: #394e575a; --skin-shadow: 0 16px 50px #3c505448, 0 1px 0 #fffaf0;
+    --skin-radius: 10px 13px 9px 16px; --skin-form-radius: 8px; --skin-record-radius: 8px 12px 10px 4px;
+    --skin-font: Georgia, "Noto Serif CJK SC", serif; --world-tracking: .02em;
+    --skin-pattern: radial-gradient(ellipse at 82% 0%, #83a7b485, transparent 67%), radial-gradient(ellipse at 2% 124%, #c5906760, transparent 64%);
+    --space-conversation-trim: linear-gradient(96deg, #9bb09c6a, #6e9ba88c 30%, #a9adb07a 55%, #c5906761 84%, transparent);
+    --game-light-glow: #d2b279a6; --game-portrait-paper: #e8e6d6;
+  }
+  .hall-reader .conversation-composer { --space-trim-height: 4px; }
+}
+
+@scope (.space-system[data-space-game="collage"]) to (.space-system) {
+  :scope {
+    --canvas: #ecd6ab; --surface: #fcf1da; --surface-subtle: #f2e1ba; --surface-selected: #f1ce78;
+    --ink: #26263b; --muted: #55516a; --line: #6d6883; --accent: #2453a3; --accent-hover: #15387a;
+    --focus: #2453a3; --skin-on-accent: #fff9e8; --skin-detail: #43456c; --skin-rail: #f4dfa8;
+    --skin-edge: #383041; --skin-cast: #4436508c; --skin-shadow: 7px 7px 0 #383041, 11px 11px 0 #c7443579;
+    --skin-radius: 2px 13px 2px 2px; --skin-form-radius: 2px; --skin-record-radius: 2px;
+    --skin-font: system-ui, "Noto Sans CJK SC", sans-serif; --world-tracking: -.015em;
+    --skin-pattern: radial-gradient(circle at 2px 2px, #2f4f9c31 0 1px, transparent 1.3px) 0 0 / 9px 9px, linear-gradient(114deg, transparent 0 62%, #edb0405e 62% 84%, #d5443145 84%);
+    --space-conversation-trim: repeating-linear-gradient(115deg, #2453a3 0 8px, transparent 8px 11px, #be4536 11px 18px, transparent 18px 21px, #e4ae4b 21px 28px, transparent 28px 31px);
+    --space-command-mark: conic-gradient(#c74435 0 25%, #e9b14a 0 50%, #2453a3 0 75%, #383041 0);
+    --game-light-glow: #e7a538a6; --game-portrait-paper: #f5dd92;
+  }
+  .hall-reader .conversation-composer { --space-trim-height: 4px; }
+  .hall-reader .history-standard-record.message { box-shadow: 2px 2px 0 #38304146; }
+}

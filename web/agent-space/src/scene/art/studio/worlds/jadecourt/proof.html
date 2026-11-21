@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jade Court · Environment and cast</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #131a28; color: #eff2d9; font: 14px system-ui, sans-serif; }
+  main { width: min(842px, 100%); margin: 0 auto; padding: 20px; }
+  h1, h2, p, figure { margin: 0; }
+  h1 { font: 400 clamp(27px, 6vw, 44px) Georgia, serif; }
+  h2 { font: 400 23px Georgia, serif; }
+  .cap { color: #accdc4; font-size: 10px; font-weight: 650; letter-spacing: .2em; text-transform: uppercase; }
+  .heading { display: flex; gap: 8px 20px; flex-wrap: wrap; align-items: baseline; justify-content: space-between; }
+  .environment { width: 100%; height: auto; display: block; border: 1px solid #49616a; margin: 9px 0 17px; }
+  .cast { background: linear-gradient(150deg, #2e4150, #172332 75%); border: 1px solid #49616a; padding: 13px 15px; }
+  .lineup { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 10px; }
+  .lineup figure { text-align: center; padding: 2px 6px 0; min-width: 0; }
+  .lineup figure + figure { border-left: 1px solid #526573; }
+  .lineup img { display: block; width: 64px; height: 72px; margin: 0 auto 5px; }
+  figcaption strong, figcaption small { display: block; }
+  figcaption strong { font-family: Georgia, serif; font-size: 17px; font-weight: 400; }
+  figcaption small { color: #acd2ca; }
+  @media (max-width: 440px) {
+    main { padding: 12px; }
+    .lineup { grid-template-columns: repeat(2, 1fr); gap: 12px 0; }
+    .lineup figure:nth-child(3) { border-left: 0; }
+  }
+</style>
+<main>
+  <div class="heading"><h1>Jade Court</h1><p class="cap">Glazed dusk · Environment plate</p></div>
+  <svg class="environment" viewBox="0 0 800 450" role="img" aria-labelledby="scene-title">
+    <title id="scene-title">Cutaway of the Jade Court conservatory. Four couriers among jade tile and lanterns overlook a lake at dusk.</title>
+    <defs>
+      <pattern id="floor" patternUnits="userSpaceOnUse" x="86" y="99" width="128" height="128"><image href="floor-oak.svg" width="128" height="128"/></pattern>
+      <pattern id="wall" patternUnits="userSpaceOnUse" x="86" y="99" width="160" height="64"><image href="wall-plaster.svg" width="160" height="64"/></pattern>
+      <clipPath id="room"><rect x="86" y="99" width="628" height="297"/></clipPath>
+      <radialGradient id="cool"><stop stop-color="#aadac6" stop-opacity=".27"/><stop offset="1" stop-color="#abd9c5" stop-opacity="0"/></radialGradient>
+      <radialGradient id="warm"><stop stop-color="#fbc182" stop-opacity=".52"/><stop offset=".48" stop-color="#db9a7d" stop-opacity=".19"/><stop offset="1" stop-color="#eba980" stop-opacity="0"/></radialGradient>
+      <linearGradient id="sill" x2="0" y2="1"><stop stop-color="#90a6a0"/><stop offset=".37" stop-color="#394452"/><stop offset="1" stop-color="#202739"/></linearGradient>
+      <linearGradient id="grade" x2="0" y2="1"><stop stop-color="#172835" stop-opacity=".58"/><stop offset=".41" stop-color="#172835" stop-opacity="0"/><stop offset="1" stop-color="#131d33" stop-opacity=".37"/></linearGradient>
+    </defs>
+    <image href="scene-vista.svg" width="800" height="450"/>
+    <path d="M79 94H721V399L707 416H101L79 400Z" fill="#151e32" opacity=".68"/>
+    <path d="M85 96H715V397L706 411H94L85 398Z" fill="#293240" stroke="#232735" stroke-width="2"/>
+    <path d="M86 396H714L704 409H96Z" fill="url(#sill)"/>
+    <g clip-path="url(#room)">
+      <rect x="86" y="99" width="628" height="297" fill="url(#floor)"/>
+      <image href="rug.svg" x="491" y="262" width="192" height="112"/>
+      <rect x="86" y="143" width="628" height="253" fill="url(#grade)"/>
+      <ellipse cx="215" cy="199" rx="184" ry="113" fill="url(#cool)"/>
+      <ellipse cx="599" cy="206" rx="148" ry="130" fill="url(#cool)" opacity=".8"/>
+      <ellipse cx="419" cy="344" rx="128" ry="85" fill="url(#warm)"/>
+      <rect x="86" y="99" width="628" height="64" fill="url(#wall)"/>
+      <path d="M89 103H711m-622 0v288m622-288v288m-622 0h75m64 0h483" fill="none" stroke="#344a58" stroke-width="7"/>
+      <path d="M89 103H711m-622 0v288m622-288v288m-622 0h75m64 0h483" fill="none" stroke="#91a398" stroke-width="1.2"/>
+      <image href="wall-window.svg" x="112" y="100" width="120" height="48"/>
+      <image href="wall-print.svg" x="373" y="100" width="54" height="48"/>
+      <image href="wall-window.svg" x="565" y="100" width="120" height="48"/>
+      <image href="door-threshold.svg" x="164" y="364" width="64" height="32"/>
+      <image href="cabinet.svg" x="235" y="119" width="68" height="64"/>
+      <image href="bookshelf.svg" x="472" y="119" width="56" height="64"/>
+      <image href="plant.svg" x="103" y="144" width="32" height="46"/>
+      <image href="plant.svg" x="668" y="158" width="32" height="46"/>
+      <image href="coffee.svg" x="641" y="213" width="54" height="62"/>
+      <image href="sofa.svg" x="541" y="225" width="108" height="60"/>
+      <image href="desk.svg" x="134" y="180" width="86" height="68"/>
+      <image href="desk.svg" x="324" y="180" width="86" height="68"/>
+      <image href="stool.svg" x="155" y="231" width="38" height="36"/>
+      <image href="stool.svg" x="344" y="229" width="38" height="36"/>
+      <image href="actor-maker.svg" x="142" y="196" width="64" height="63"/>
+      <image href="glyph-work.svg" x="199" y="206" width="24" height="24"/>
+      <image href="glyph-select.svg" x="331" y="255" width="64" height="24"/>
+      <image href="actor-designer.svg" x="331" y="195" width="64" height="72"/>
+      <image href="glyph-available.svg" x="382" y="211" width="24" height="24"/>
+      <image href="actor-keeper.svg" x="461" y="178" width="64" height="72"/>
+      <image href="glyph-attention.svg" x="511" y="189" width="24" height="24"/>
+      <image href="actor-scout.svg" x="534" y="273" width="64" height="72"/>
+      <image href="envelope.svg" x="518" y="281" width="24" height="16"/>
+      <image href="human-mailbox.svg" x="111" y="306" width="62" height="62"/>
+      <image href="scene-lantern.svg" x="387" y="290" width="64" height="62"/>
+      <image href="plant.svg" x="658" y="329" width="32" height="46"/>
+    </g>
+    <path d="M165 397h62l-5 6h-52Z" fill="#52706c" stroke="#243745"/>
+  </svg>
+  <section class="cast" aria-labelledby="cast-title">
+    <div class="heading"><h2 id="cast-title">The dusk shift</h2><p class="cap">Cast plate · 64 × 72 px · 1:1</p></div>
+    <div class="lineup">
+      <figure><img src="actor-maker.svg" alt="Broad smith in a jade cap, red apron and steel folding iron" width="64" height="72"><figcaption><strong>Rivet</strong><small>Seal smith</small></figcaption></figure>
+      <figure><img src="actor-designer.svg" alt="Slim glasswright wearing a pointed blue cap and holding a drafting lens" width="64" height="72"><figcaption><strong>Lin</strong><small>Glasswright</small></figcaption></figure>
+      <figure><img src="actor-keeper.svg" alt="Archivist with white coiled hair, spectacles, a folio and a key" width="64" height="72"><figcaption><strong>Sable</strong><small>Route keeper</small></figcaption></figure>
+      <figure><img src="actor-scout.svg" alt="Crouched courier with a streaming mint scarf and a dispatch satchel" width="64" height="72"><figcaption><strong>Kestrel</strong><small>Dispatch runner</small></figcaption></figure>
+    </div>
+  </section>
+</main>
+</html>

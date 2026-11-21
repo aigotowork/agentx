@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reverie · 星绒梦室</title>
+<style>
+  * { box-sizing: border-box; }
+  :root { color-scheme: dark; background: #24244a; color: #f9ead9; font: 13px/1.4 system-ui, sans-serif; }
+  body { margin: 0; }
+  main { width: min(100% - 28px, 800px); margin: 24px auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  h1 { margin: 0; font: 500 32px/1.1 Georgia, serif; letter-spacing: .02em; }
+  header span { color: #efbaaa; }
+  .scene { display: block; width: 100%; height: auto; outline: 1px solid #a698bd; }
+  h2 { font-size: 12px; font-weight: 500; color: #ddd0ee; margin: 16px 0 8px; }
+  .cast { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  figure { margin: 0; padding: 8px 2px 6px; text-align: center; background: linear-gradient(124deg,#55547e,#414368); border: 1px solid #8c80a8; }
+  figure img { display: block; margin: auto; }
+  figcaption { font-size: 11px; color: #f6ddc9; margin-top: 4px; }
+</style>
+<main>
+  <header><h1>Reverie</h1><span lang="zh">星绒梦室</span></header>
+  <svg class="scene" viewBox="0 0 800 450" role="img" aria-label="A cutaway atelier under a crescent moon, with worktables, an archive and a lounge crowded with dream couriers" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <pattern id="floor" width="128" height="128" patternUnits="userSpaceOnUse"><image href="floor-oak.svg" width="128" height="128"/></pattern>
+      <pattern id="wall" width="160" height="64" patternUnits="userSpaceOnUse"><image href="wall-plaster.svg" width="160" height="64"/></pattern>
+      <linearGradient id="room-shade" x2="74%" y2="100%"><stop stop-color="#242052" stop-opacity=".24"/><stop offset=".45" stop-color="#240f4c" stop-opacity="0"/><stop offset="1" stop-color="#211d47" stop-opacity=".44"/></linearGradient>
+      <radialGradient id="room-light"><stop stop-color="#ffd2a9" stop-opacity=".35"/><stop offset="1" stop-color="#ffd2a9" stop-opacity="0"/></radialGradient>
+      <radialGradient id="contact"><stop stop-color="#272344" stop-opacity=".55"/><stop offset="1" stop-color="#272344" stop-opacity="0"/></radialGradient>
+      <clipPath id="room-bounds"><rect width="616" height="303"/></clipPath>
+    </defs>
+    <image href="scene-vista.svg" width="800" height="450"/>
+    <image href="human-mailbox.svg" x="50" y="48" width="62" height="62"/>
+    <image href="envelope.svg" x="105" y="75" width="24" height="16"/>
+    <g transform="translate(94 110)">
+      <path d="M8 6h616v307H8z" fill="#332953" opacity=".75"/>
+      <path d="M0 0h616v303H0z" fill="url(#floor)"/>
+      <g clip-path="url(#room-bounds)">
+        <image href="rug.svg" x="388" y="122" width="192" height="112"/>
+        <path d="M0 48h616v255H0z" fill="url(#room-shade)"/>
+        <ellipse cx="40" cy="118" rx="131" ry="117" fill="url(#room-light)"/>
+        <ellipse cx="511" cy="94" rx="127" ry="68" fill="url(#room-light)" opacity=".5"/>
+        <path d="M0 0h616v64H0z" fill="url(#wall)"/>
+        <image href="wall-window.svg" x="27" y="1" width="120" height="48"/>
+        <image href="wall-print.svg" x="281" y="1" width="54" height="48"/>
+        <image href="wall-window.svg" x="466" y="1" width="120" height="48"/>
+        <path d="M0 0v303h32v-6H6V0zm610 0v297H96v6h520V0z" fill="#62577c"/>
+        <path d="M2 1v296m612-296v296M3 300h28m66 0h514" fill="none" stroke="#b290ad"/>
+        <image href="door-threshold.svg" x="32" y="271" width="64" height="32"/>
+        <image href="plant.svg" x="576" y="25" width="32" height="46"/>
+        <image href="sofa.svg" x="400" y="49" width="108" height="60"/>
+        <image href="coffee.svg" x="539" y="49" width="54" height="62"/>
+        <image href="scene-lantern.svg" x="-8" y="61" width="64" height="62"/>
+        <image href="desk.svg" x="60" y="49" width="86" height="68"/>
+        <image href="desk.svg" x="165" y="49" width="86" height="68"/>
+        <image href="desk.svg" x="270" y="49" width="86" height="68"/>
+        <image href="desk.svg" x="60" y="155" width="86" height="68"/>
+        <image href="desk.svg" x="165" y="155" width="86" height="68"/>
+        <image href="desk.svg" x="270" y="155" width="86" height="68"/>
+        <image href="stool.svg" x="84" y="107" width="38" height="36"/>
+        <image href="stool.svg" x="189" y="107" width="38" height="36"/>
+        <image href="stool.svg" x="294" y="107" width="38" height="36"/>
+        <image href="stool.svg" x="84" y="213" width="38" height="36"/>
+        <image href="stool.svg" x="189" y="213" width="38" height="36"/>
+        <image href="stool.svg" x="294" y="213" width="38" height="36"/>
+        <image href="bookshelf.svg" x="463" y="224" width="56" height="64"/>
+        <image href="cabinet.svg" x="530" y="224" width="68" height="64"/>
+        <g fill="url(#contact)">
+          <ellipse cx="103" cy="237" rx="30" ry="8"/><ellipse cx="208" cy="135" rx="30" ry="8"/><ellipse cx="313" cy="245" rx="30" ry="8"/>
+          <ellipse cx="435" cy="161" rx="30" ry="8"/><ellipse cx="527" cy="215" rx="30" ry="8"/><ellipse cx="280" cy="286" rx="30" ry="8"/>
+        </g>
+        <image href="glyph-select.svg" x="403" y="149" width="64" height="24"/>
+        <image href="actor-maker.svg" x="71" y="171" width="64" height="66"/>
+        <image href="glyph-work.svg" x="123" y="182" width="24" height="24"/>
+        <image href="actor-designer.svg" x="176" y="69" width="64" height="66"/>
+        <image href="glyph-work.svg" x="228" y="80" width="24" height="24"/>
+        <image href="actor-maker.svg" x="281" y="173" width="64" height="72"/>
+        <image href="actor-scout.svg" x="403" y="89" width="64" height="72"/>
+        <image href="glyph-available.svg" x="455" y="106" width="24" height="24"/>
+        <image href="actor-keeper.svg" x="495" y="143" width="64" height="72"/>
+        <image href="glyph-attention.svg" x="547" y="160" width="24" height="24"/>
+        <image href="actor-scout.svg" x="248" y="214" width="64" height="72"/>
+      </g>
+    </g>
+  </svg>
+  <h2>Cast at 64 × 72</h2>
+  <div class="cast">
+    <figure><img src="actor-maker.svg" width="64" height="72" alt="Maker in a squat cloud cap and apron"><figcaption>Maker · cloud cap</figcaption></figure>
+    <figure><img src="actor-designer.svg" width="64" height="72" alt="Designer in a crescent brim with a trailing ribbon"><figcaption>Designer · crescent brim</figcaption></figure>
+    <figure><img src="actor-keeper.svg" width="64" height="72" alt="Keeper in a wide velvet mantle, holding an open ledger"><figcaption>Keeper · ledger mantle</figcaption></figure>
+    <figure><img src="actor-scout.svg" width="64" height="72" alt="Scout with hare ears and a peach pennant scarf"><figcaption>Scout · hare ears</figcaption></figure>
+  </div>
+</main>
+</html>

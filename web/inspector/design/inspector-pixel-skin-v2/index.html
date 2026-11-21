@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Agent Inspector · 鲜彩像素换肤</title>
+  <style>
+    :root{--bg:#F3F6FF;--paper:#FFFFFF;--ink:#19254B;--muted:#62708D;--line:#D9E0F0;--accent:#315BFF;--space:24px;--gap:20px;--edge:2px;--content:1392px;--thumb-height:350px;--small:13px;--normal:15px;--title:30px;--compact-title:18px;--leading:1.7;--phone-width:162px;--mobile:680px}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:var(--normal)/var(--leading) system-ui,"Noto Sans CJK SC",sans-serif}main{max-width:var(--content);margin:auto;padding:var(--space)}h1{font-size:var(--title);margin:0}p{color:var(--muted);margin:var(--gap) 0}a{color:var(--accent)}.gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,480px),1fr));gap:var(--space)}article{background:var(--paper);border:var(--edge) solid var(--line)}article h2{font-size:var(--compact-title);margin:var(--gap)}article p{margin:var(--gap);font-size:var(--small)}.artwork{display:block;background:var(--bg);border-bottom:var(--edge) solid var(--line)}.artwork img{display:block;width:100%;height:auto}.phone .artwork{height:var(--thumb-height);display:flex;justify-content:center;overflow:hidden}.phone img{width:var(--phone-width);object-fit:contain;align-self:flex-start}.note{font-size:var(--small)}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Agent Inspector · 鲜彩像素换肤</h1>
+  <p>先看视觉。保留原版八页签、页面布局和操作位置，比较明亮与深色配色。以下均为静态 SVG 设计样例。</p>
+  <div class="gallery">
+    <article><a class="artwork" href="recovery-light.html"><img src="svg/recovery-light.svg" alt="恢复页明亮像素方案"></a><h2>01 · 恢复 / 明亮</h2><p><a href="recovery-light.html">查看画板</a> · <a href="svg/recovery-light.svg">打开 SVG</a>　保留原项目与 Workspace 分组</p></article>
+    <article><a class="artwork" href="recovery-dark.html"><img src="svg/recovery-dark.svg" alt="相同构图的深色恢复页"></a><h2>02 · 恢复 / 深色</h2><p><a href="recovery-dark.html">查看画板</a> · <a href="svg/recovery-dark.svg">打开 SVG</a>　相同结构与内容，只替换颜色</p></article>
+    <article><a class="artwork" href="sessions-light.html"><img src="svg/sessions-light.svg" alt="保留双栏结构的会话页"></a><h2>03 · 会话</h2><p><a href="sessions-light.html">查看画板</a> · <a href="svg/sessions-light.svg">打开 SVG</a>　保留列表、子 Agent 层级与右侧详情区域</p></article>
+    <article><a class="artwork" href="dashboard-light.html"><img src="svg/dashboard-light.svg" alt="保留八项指标及原版信息层级的看板"></a><h2>04 · 看板</h2><p><a href="dashboard-light.html">查看画板</a> · <a href="svg/dashboard-light.svg">打开 SVG</a>　保留摘要、八项指标、年度活跃与成长档案</p></article>
+    <article><a class="artwork" href="visual-system.html"><img src="svg/visual-system.svg" alt="饱和配色和像素控件细节"></a><h2>05 · 色板与控件</h2><p><a href="visual-system.html">查看画板</a> · <a href="svg/visual-system.svg">打开 SVG</a>　主操作、状态、禁用与像素细节</p></article>
+    <article class="phone"><a class="artwork" href="recovery-mobile.html"><img src="svg/recovery-mobile.svg" alt="390像素宽的原结构恢复页"></a><h2>06 · 手机恢复</h2><p><a href="recovery-mobile.html">查看画板</a> · <a href="svg/recovery-mobile.svg">打开 SVG</a>　390 × 844，保留原版工具栏与分组顺序</p></article>
+  </div>
+  <p class="note">在 Paseo Design Canvas 中打开「Agent Inspector · 鲜彩像素换肤」可直接批注。设计稿与真实产品 4187 分开，未改产品代码。<a href="README.md">设计说明</a></p>
+</main>
+</body>
+</html>

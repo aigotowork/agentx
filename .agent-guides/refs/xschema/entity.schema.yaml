@@ -1,0 +1,45 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: xschema entity
+description: YAML entity data and Markdown YAML front matter. Directory Markdown body is content; the carrier identifies the subject.
+type: object
+required: [ schema ]
+properties:
+  schema: { $ref: "#/$defs/schemaId" }
+allOf:
+  - if:
+      properties:
+        schema:
+          enum: [ task, delivery, roadmap, proposal, controller, package, module, document, example, role, scenario, skill, task-meta ]
+      required: [ schema ]
+    then: { $ref: "#/$defs/knownEntity" }
+additionalProperties: true
+$defs:
+  schemaId: { $ref: protocol.schema.yaml#/$defs/schemaId }
+  text: { $ref: protocol.schema.yaml#/$defs/text }
+  rootPath: { $ref: protocol.schema.yaml#/$defs/rootPath }
+  rootScopePath: { $ref: protocol.schema.yaml#/$defs/rootScopePath }
+  path: { $ref: protocol.schema.yaml#/$defs/path }
+  reference: { $ref: protocol.schema.yaml#/$defs/reference }
+  scopePath: { $ref: protocol.schema.yaml#/$defs/scopePath }
+  paths: { $ref: protocol.schema.yaml#/$defs/paths }
+  references: { $ref: protocol.schema.yaml#/$defs/references }
+  strings: { $ref: protocol.schema.yaml#/$defs/strings }
+  knownEntity:
+    oneOf:
+      - { $ref: entities/task.schema.yaml }
+      - { $ref: entities/delivery.schema.yaml }
+      - { $ref: entities/roadmap.schema.yaml }
+      - { $ref: entities/proposal.schema.yaml }
+      - { $ref: entities/controller.schema.yaml }
+      - { $ref: entities/package.schema.yaml }
+      - { $ref: entities/document.schema.yaml }
+      - { $ref: entities/example.schema.yaml }
+      - { $ref: entities/role.schema.yaml }
+      - { $ref: entities/scenario.schema.yaml }
+      - { $ref: entities/skill.schema.yaml }
+      - { $ref: entities/task-meta.schema.yaml }
+  artifact: { $ref: entities/package.schema.yaml#/$defs/artifact }
+  dependency: { $ref: entities/task.schema.yaml#/$defs/dependency }
+  stage: { $ref: entities/delivery.schema.yaml#/$defs/stage }
+  stageDependency: { $ref: entities/delivery.schema.yaml#/$defs/stageDependency }
+  recommendation: { $ref: entities/task-meta.schema.yaml#/$defs/recommendation }
