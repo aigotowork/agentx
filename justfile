@@ -282,3 +282,10 @@ workbench-openapi candidate:
 # Export passive observation wire schema from a selected candidate.
 observation-openapi candidate:
     "{{candidate}}" __export-observation-openapi
+
+[linux]
+[group("release")]
+[doc("Package the native release and embedded Web apps into the cloud daemon image")]
+cloud-image image="agentx-cloud:local":
+    cargo build --release --locked --bin agentx
+    bash deploy/build-image.sh target/release/agentx "{{image}}"

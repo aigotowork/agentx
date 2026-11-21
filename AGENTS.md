@@ -1,3 +1,5 @@
+For cloud daemon Docker packaging, Linux Compose and the GHCR publication contract, read [deployment](deploy/README.md).
+
 For the cloud-connected native scope daemon delivery, start at [the daemon integration entry](.controller/cloud-daemon/AGENTS.md).
 
 For cloud deployment administration and HTTP scope communication, read [the cloud scope delivery](.controller/cloud-scope/AGENTS.md).

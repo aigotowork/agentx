@@ -1,0 +1,22 @@
+services:
+  cloud:
+    image: ${AGENTX_IMAGE:-agentx-cloud:local}
+    network_mode: host
+    init: true
+    restart: unless-stopped
+    environment:
+      AGENTX_ADMIN_TOKEN: ${AGENTX_ADMIN_TOKEN:?Set AGENTX_ADMIN_TOKEN}
+    command:
+      - daemon
+      - cloud
+      - --root
+      - /var/lib/agentx-cloud
+      - --listen
+      - 127.0.0.1:${AGENTX_PORT:-18755}
+      - --public-url
+      - ${AGENTX_PUBLIC_URL:-http://127.0.0.1:${AGENTX_PORT:-18755}}
+    volumes: ["data:/var/lib/agentx-cloud"]
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+volumes:
+  data: {}

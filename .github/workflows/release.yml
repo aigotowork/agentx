@@ -127,6 +127,8 @@ jobs:
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
             echo "$HOME/.cargo/bin" >> $GITHUB_PATH
           fi
+      - name: "Prepare embedded Web applications"
+        uses: "./.github/actions/native-web"
       - name: "Set up JDK 17 (required by Android SDK tools)"
         uses: "actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6"
         if: "${{ contains(matrix.targets, 'aarch64-linux-android') }}"

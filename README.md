@@ -181,7 +181,7 @@ agentx config terminal --info
 
 ## Cross-device
 
-For one HTTPS deployment shared across machines, see [cloud scopes, administration, and client setup](.docs/architecture/cloud-scope.md).
+For the cloud daemon container, Compose quick start and GitHub image releases, see [Docker deployment](deploy/README.md). For one HTTPS deployment shared across machines, see [cloud scopes, administration, and client setup](.docs/architecture/cloud-scope.md).
 
 Connect agents across machines via MQTT relay.
 

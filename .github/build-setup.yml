@@ -1,3 +1,5 @@
+- name: Prepare embedded Web applications
+  uses: ./.github/actions/native-web
 - name: Set up JDK 17 (required by Android SDK tools)
   if: ${{ contains(matrix.targets, 'aarch64-linux-android') }}
   uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
