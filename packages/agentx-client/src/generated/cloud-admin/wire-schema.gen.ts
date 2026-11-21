@@ -618,8 +618,8 @@ export const wireDocument = {
     },
     "description": "Connect Claude Code, Gemini CLI, Codex, OpenCode, Kilo Code, Pi, Oh My Pi, Antigravity, Cursor, Kimi, Copilot, Qoder CLI, and Grok Build so agents can message, watch, and spawn each other across terminals",
     "license": {
-      "identifier": "MIT",
-      "name": "MIT"
+      "identifier": "PolyForm-Noncommercial-1.0.0",
+      "name": "PolyForm-Noncommercial-1.0.0"
     },
     "title": "AgentX Deployment Administration",
     "version": "0.7.31"

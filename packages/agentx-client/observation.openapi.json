@@ -7341,8 +7341,8 @@
     },
     "description": "Passive fixed existing scope. Every integer uses the native $integer marker codec. Exact numeric local Host and same Origin admission; POST application/json only. BrowserRead is the closed thirteen-read boundary. LocalFailure remains a 200 observation outcome, distinct from HTTP errors; an unavailable daemon is never acquired or started. Preserve daemon/epoch/stream references, stale/gap and clock comparability. No report, mutation, arbitrary native request or scope-selection body is exposed.",
     "license": {
-      "identifier": "MIT",
-      "name": "MIT"
+      "identifier": "PolyForm-Noncommercial-1.0.0",
+      "name": "PolyForm-Noncommercial-1.0.0"
     },
     "title": "AgentX Observation",
     "version": "1"

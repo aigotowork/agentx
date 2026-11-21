@@ -2263,8 +2263,8 @@ export const wireDocument = {
     },
     "description": "Fixed-scope/project workbench. Every integer uses the native $integer marker codec. Exact numeric local Host and same Origin admission; POST application/json only. Collaboration writes require listener collaboration=true. Input exposes only OperatorCommand, never AgentReport or caller actor context. A 200 Rejected response is a domain refusal, distinct from transport errors. Original command_id/generation and payload recover durable native changes; do not silently rebase revisions or replace identities.",
     "license": {
-      "identifier": "MIT",
-      "name": "MIT"
+      "identifier": "PolyForm-Noncommercial-1.0.0",
+      "name": "PolyForm-Noncommercial-1.0.0"
     },
     "title": "AgentX Workbench",
     "version": "1"

@@ -2295,8 +2295,8 @@
     },
     "description": "Complete public management projection. Ordinary v1 JSON. Requests require the selected listener authority in Host; Origin, when present, must exactly match that authority. No cross-origin permission or arbitrary actor context. Integer widths/signs come from native types: u-int64/int64 must use lossless JSON parsing and exact bigint conversion; int32/u-int32 are safe numbers. Nullable fields preserve null; missing optional input fields retain native serde defaults. Query keys cannot repeat except label; selectors require current_only=true. AgentRef requires exactly one incarnation/stopped_event; semantic checks remain native. Attachment upload/download use raw bytes. Inspector mutations retain route-specific external tags; internal collection/execution variants are excluded.",
     "license": {
-      "identifier": "MIT",
-      "name": "MIT"
+      "identifier": "PolyForm-Noncommercial-1.0.0",
+      "name": "PolyForm-Noncommercial-1.0.0"
     },
     "title": "AgentX Management",
     "version": "1"

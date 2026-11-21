@@ -7,7 +7,7 @@ image=${2:-agentx-cloud:local}
 stage=$(mktemp -d)
 trap 'rm -rf "$stage"' EXIT
 install -m 755 "$binary" "$stage/agentx"
-cp deploy/Dockerfile "$stage/"
+cp deploy/Dockerfile LICENSE "$stage/"
 labels=()
 if [[ -n ${GITHUB_REPOSITORY:-} && -n ${GITHUB_SHA:-} ]]; then
     labels+=(--label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY"

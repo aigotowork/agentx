@@ -40,7 +40,7 @@ just cloud-image
 bash deploy/smoke.sh
 ```
 
-生成的本地镜像名为 `agentx-cloud:local`，也是 Compose 的默认值。已有同架构、兼容 Ubuntu 24.04 的可执行文件时，可运行 `bash deploy/build-image.sh /path/to/agentx my-agentx:v1`。构建上下文仅含可执行文件和 Dockerfile。离线交付使用 `docker save agentx-cloud:local | gzip > agentx-cloud.tar.gz`，目标机执行 `docker load -i agentx-cloud.tar.gz`，再用同一份 Compose 启动。
+生成的本地镜像名为 `agentx-cloud:local`，也是 Compose 的默认值。已有同架构、兼容 Ubuntu 24.04 的可执行文件时，可运行 `bash deploy/build-image.sh /path/to/agentx my-agentx:v1`。构建上下文仅含可执行文件、许可证和 Dockerfile。离线交付使用 `docker save agentx-cloud:local | gzip > agentx-cloud.tar.gz`，目标机执行 `docker load -i agentx-cloud.tar.gz`，再用同一份 Compose 启动。
 
 [GitHub 镜像工作流](../.github/workflows/cloud-image.yml)在相关 PR 或手动触发时构建并验证镜像。推送与程序版本一致的 `vX.Y.Z` 标签后，发布作业使用仓库的 `GITHUB_TOKEN` 将通过验证的镜像推送至 `ghcr.io/<owner>/<repo>-cloud:vX.Y.Z`。首次公开交付时，在 Packages 中核对包的可见性。冒烟检查使用独立项目、随机 token 和临时端口，覆盖 Web 入口、未授权访问、Admin 创建 scope 和容器重建后的数据读取。
 

@@ -43,6 +43,21 @@ jobs:
           gh release download "$RELEASE_TAG" -R "$GITHUB_REPOSITORY" -p "$archive" -p SHA256SUMS
           awk -v file="$archive" '$2 == file {print; found++} END {exit found != 1}' SHA256SUMS | sha256sum -c -
           docker load -i "$archive"
+      # The first tag checked in its SDK documents before adopting the public license.
+      # Restore exactly those two documentation fields from the tagged Cargo manifest.
+      - name: Reconcile v0.7.31 historical OpenAPI license
+        if: inputs.release_tag == 'v0.7.31'
+        run: |
+          python3 - <<'PYTHON'
+          import json, pathlib, tomllib
+          license_id = tomllib.loads(pathlib.Path("Cargo.toml").read_text())["package"]["license"]
+          for api in ("admin", "scope"):
+              path = pathlib.Path(f"packages/agentx-client/cloud-{api}.openapi.json")
+              doc = json.loads(path.read_text())
+              assert doc["info"]["license"] == {"identifier": "MIT", "name": "MIT"}
+              doc["info"]["license"] = {"identifier": license_id, "name": license_id}
+              path.write_text(json.dumps(doc))
+          PYTHON
       - run: bash deploy/smoke.sh
       - if: github.event_name == 'push' || (inputs.release_tag != '' && github.ref == 'refs/heads/main')
         run: |

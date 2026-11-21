@@ -827,8 +827,8 @@
     },
     "description": "Base: configured scope URL plus /api/v1. All calls require the scope Bearer. Delivery is confirmed by the exact recipient host after Provider evidence. Opaque identifiers and decimal string message IDs remain strings.",
     "license": {
-      "identifier": "MIT",
-      "name": "MIT"
+      "identifier": "PolyForm-Noncommercial-1.0.0",
+      "name": "PolyForm-Noncommercial-1.0.0"
     },
     "title": "AgentX Scope Communication",
     "version": "1"
