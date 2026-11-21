@@ -26,7 +26,7 @@ agents.example.com {
 }
 ```
 
-此配置使用宿主网络，让 daemon 继续只监听回环地址。如需更换端口，在 `.env` 设置 `AGENTX_PORT` 并同步修改代理上游。部署和接入步骤见[管理与 token 操作](../.docs/architecture/cloud-scope.md)和[主机登记](../.docs/architecture/cloud-daemon.md)。
+此配置使用宿主网络，让 daemon 继续只监听回环地址。如需更换端口，在 `.env` 设置 `AGENTX_PORT` 并同步修改代理上游；本地 HTTP 模式也需将 `AGENTX_PUBLIC_URL` 设为含新端口的完整地址。部署和接入步骤见[管理与 token 操作](../.docs/architecture/cloud-scope.md)和[主机登记](../.docs/architecture/cloud-daemon.md)。
 
 ## 从源码交付
 
@@ -43,3 +43,5 @@ bash deploy/smoke.sh
 生成的本地镜像名为 `agentx-cloud:local`，也是 Compose 的默认值。已有同架构、兼容 Ubuntu 24.04 的可执行文件时，可运行 `bash deploy/build-image.sh /path/to/agentx my-agentx:v1`。构建上下文仅含可执行文件和 Dockerfile。离线交付使用 `docker save agentx-cloud:local | gzip > agentx-cloud.tar.gz`，目标机执行 `docker load -i agentx-cloud.tar.gz`，再用同一份 Compose 启动。
 
 [GitHub 镜像工作流](../.github/workflows/cloud-image.yml)在相关 PR 或手动触发时构建并验证镜像。推送与程序版本一致的 `vX.Y.Z` 标签后，发布作业使用仓库的 `GITHUB_TOKEN` 将通过验证的镜像推送至 `ghcr.io/<owner>/<repo>-cloud:vX.Y.Z`。首次公开交付时，在 Packages 中核对包的可见性。冒烟检查使用独立项目、随机 token 和临时端口，覆盖 Web 入口、未授权访问、Admin 创建 scope 和容器重建后的数据读取。
+
+在既有 Release 上补发 GHCR 镜像时，使用 `gh workflow run cloud-image.yml --ref main -f release_tag=vX.Y.Z`。工作流核对 Release 中镜像归档的校验和与程序版本，再用该标签对应的冒烟测试验证镜像。

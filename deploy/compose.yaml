@@ -14,7 +14,7 @@ services:
       - --listen
       - 127.0.0.1:${AGENTX_PORT:-18755}
       - --public-url
-      - ${AGENTX_PUBLIC_URL:-http://127.0.0.1:${AGENTX_PORT:-18755}}
+      - ${AGENTX_PUBLIC_URL:-http://127.0.0.1:18755}
     volumes: ["data:/var/lib/agentx-cloud"]
     cap_drop: ["ALL"]
     security_opt: ["no-new-privileges:true"]
