@@ -120,6 +120,7 @@ try {
   if (evidence) await mkdir(evidence, { recursive: true });
   const screenshot = async name => { if (evidence) await page.screenshot({ path: join(evidence, `${name}.png`) }); };
   await page.setViewport({ width: 1280, height: 800 });
+  await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
   const text = (selector, value) => page.waitForFunction((selector, value) => document.querySelector(selector)?.textContent.includes(value), {}, selector, value);
   async function button(label, within = 'body') {
     const match = await page.waitForFunction((label, within) => [...document.querySelectorAll(`${within} button`)]
@@ -146,12 +147,32 @@ try {
   stage = 'admin roster and scene';
   await text('.cloud-session', '管理员访问');
   await page.waitForSelector('.cloud-scene canvas');
-  await page.waitForSelector('.cloud-scene .office-actor');
+  stage = 'keyboard selection of a presented scene actor';
+  const exactActor = JSON.stringify([current.host, current.name, current.incarnation]);
+  // React inserts the buttons before the first measured frame. That initial frame
+  // can temporarily hide the anchor and drop focus until the camera is laid out.
+  const actor = await page.waitForFunction(key => {
+    const scene = document.querySelector('.cloud-scene');
+    const canvas = scene?.querySelector('canvas');
+    const viewport = canvas?.getBoundingClientRect();
+    const scale = Math.min(2, devicePixelRatio || 1);
+    if (!viewport?.width || !viewport.height || canvas.width !== Math.round(viewport.width * scale)
+      || canvas.height !== Math.round(viewport.height * scale)) return false;
+    const button = [...scene.querySelectorAll('button.office-actor')].find(node => node.dataset.hallObject === key);
+    if (!button || button.hidden || button.disabled || !button.getClientRects().length) return false;
+    const bounds = button.getBoundingClientRect();
+    return bounds.left >= viewport.left && bounds.top >= viewport.top &&
+      bounds.right <= viewport.right && bounds.bottom <= viewport.bottom && button;
+  }, {}, exactActor);
   assert.equal(await page.$('.cloud-scene [data-hall-object="human:bigboss"]'), null);
   await screenshot('cloud-space-desktop');
-  const actor = await page.waitForFunction((host, name, incarnation) => [...document.querySelectorAll('.cloud-scene .office-actor')].find(node => node.dataset.hallObject === JSON.stringify([host, name, incarnation]) && !node.hidden), {}, current.host, current.name, current.incarnation);
-  await actor.asElement().focus();
-  await page.keyboard.press('Enter');
+  try {
+    await actor.asElement().focus();
+    assert(await actor.evaluate(node => document.activeElement === node), 'The exact scene actor must own focus before Enter');
+    await page.keyboard.press('Enter');
+  } finally {
+    await actor.dispose();
+  }
   await text('.cloud-reader-heading', current.incarnation);
   assert.equal(new URL(page.url()).searchParams.get('generation'), generation);
   await text('.cloud-admin-agent', '云端消息需要 Scope 令牌');
