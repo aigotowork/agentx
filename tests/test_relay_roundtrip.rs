@@ -332,9 +332,9 @@ fn assert_tool_pinned(tool: &str, expected_version: &str, install_hint: &str) {
 }
 
 fn list_instances(agentx_dir: &str) -> Vec<serde_json::Value> {
-    let out = agentx_with_dir("list --json", agentx_dir);
-    assert!(out.status.success(), "agentx list --json failed for {agentx_dir}\nstdout: {}\nstderr: {}", String::from_utf8_lossy(&out.stdout), String::from_utf8_lossy(&out.stderr),);
-    serde_json::from_slice(&out.stdout).expect("list --json must return JSON")
+    let out = agentx_with_dir("list --all --json", agentx_dir);
+    assert!(out.status.success(), "agentx list --all --json failed for {agentx_dir}\nstdout: {}\nstderr: {}", String::from_utf8_lossy(&out.stdout), String::from_utf8_lossy(&out.stderr),);
+    serde_json::from_slice(&out.stdout).expect("list --all --json must return JSON")
 }
 
 fn has_instance(agentx_dir: &str, name: &str) -> bool {

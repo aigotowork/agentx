@@ -217,9 +217,11 @@ where
 }
 
 fn list_json_ctx(ctx: &DiagContext) -> Result<Vec<Value>, String> {
-    let (code, stdout, stderr) = run_ctx(ctx, ["list", "--json"]);
+    // The fixture owns the whole temporary scope; a cwd-based team filter can
+    // hide the managed launch while its global ad-hoc listener stays visible.
+    let (code, stdout, stderr) = run_ctx(ctx, ["list", "--all", "--json"]);
     if code != 0 {
-        return Err(format!("agentx list --json failed ({code}): {stderr}"));
+        return Err(format!("agentx list --all --json failed ({code}): {stderr}"));
     }
     serde_json::from_str::<Vec<Value>>(&stdout).map_err(|e| format!("invalid list JSON: {e}\n{stdout}"))
 }
@@ -229,7 +231,7 @@ fn list_json_ctx(ctx: &DiagContext) -> Result<Vec<Value>, String> {
 fn diagnostics_for(ctx: &DiagContext) -> String {
     let mut out = String::new();
     out.push_str("\n===== agentx integration-test diagnostics =====\n");
-    for (label, args) in [("list --json", vec!["list", "--json"]), ("status --json", vec!["status", "--json"]), ("events --last 100", vec!["events", "--last", "100"])] {
+    for (label, args) in [("list --all --json", vec!["list", "--all", "--json"]), ("status --json", vec!["status", "--json"]), ("events --last 100", vec!["events", "--last", "100"])] {
         let (code, stdout, stderr) = run_ctx(ctx, args);
         out.push_str(&format!("\n--- {label} (exit {code}) ---\n{stdout}{stderr}"));
     }
@@ -240,8 +242,8 @@ fn diagnostics_for(ctx: &DiagContext) -> String {
     // *launcher* writes before it spawns anything, so it is true for every
     // launch. The `term <name>` exit code below and the process snapshot are
     // the signals that actually distinguish a live PTY proxy from none.
-    let (code, stdout, stderr) = run_ctx(ctx, ["list", "-v"]);
-    out.push_str(&format!("\n--- list -v (exit {code}) ---\n{stdout}{stderr}"));
+    let (code, stdout, stderr) = run_ctx(ctx, ["list", "--all", "-v"]);
+    out.push_str(&format!("\n--- list --all -v (exit {code}) ---\n{stdout}{stderr}"));
 
     let agentx_log = ctx.agentx_dir.join(".tmp/logs/agentx.log");
     out.push_str(&format!("\n--- {} (tail) ---\n{}", agentx_log.display(), read_tail(&agentx_log, 120)));
