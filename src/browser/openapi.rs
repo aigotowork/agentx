@@ -148,7 +148,7 @@ mod tests {
         let workbench = crate::collaboration::web::openapi::document();
         let observation = crate::observability::web::openapi::document();
         let operations = |spec: &Value| spec["paths"].as_object().unwrap().values().map(|path| path.as_object().unwrap().len()).sum::<usize>();
-        assert_eq!((operations(&management), operations(&workbench), operations(&observation)), (30, 3, 2));
+        assert_eq!((operations(&management), operations(&workbench), operations(&observation)), (32, 3, 2));
         assert_eq!(workbench["components"]["schemas"]["Read"]["oneOf"].as_array().unwrap().len(), 5);
         assert_eq!(workbench["components"]["schemas"]["OperatorCommand"]["oneOf"].as_array().unwrap().len(), 9);
         let browser_variants: usize = observation["components"]["schemas"]["BrowserRead"]["oneOf"].as_array().unwrap().iter().map(|variant| variant.get("enum").and_then(Value::as_array).map_or(1, Vec::len)).sum();

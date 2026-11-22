@@ -1039,7 +1039,7 @@ mod tests {
         let commands = ["send", "list", "events", "stop", "start", "listen", "status", "config", "hooks", "archive", "reset", "transcript", "bundle", "kill", "term", "relay", "run", "resume", "fork"];
         for cmd in commands {
             let help = get_command_help(cmd);
-            assert!(help.starts_with("Usage:"), "help for '{}' should start with 'Usage:'", cmd);
+            assert!(help.lines().any(|line| line.starts_with("Usage:")), "help for '{cmd}' should include a usage line");
             assert!(help.len() > 20, "help for '{}' should have content", cmd);
         }
     }

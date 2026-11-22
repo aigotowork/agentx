@@ -658,8 +658,11 @@ mod selection_tests {
         assert!(crate::runtime::environment::is_lightweight(&argv));
         let argv = words(&["launch", "--tool", "--env-file", ".env", "--dry-run"]);
         assert!(parse_arguments(&argv).unwrap().dry_run);
-        assert!(stdio_project_request(&words(&["launch", "--tool", "--stdio"])).err().unwrap().to_string().contains("explicit values"));
-        assert!(stdio_project_request(&words(&["launch", "--name", "cloud-agent", "--agentx-prompt", "--stdio", "--", "--stdio"])).unwrap().is_none());
+        // Match main: normalize bare launch selectors before the stdio scan.
+        let argv = normalize_selection_args(&words(&["launch", "--tool", "--stdio"]));
+        assert!(stdio_project_request(&argv).err().expect("bare tool selection must fail for stdio").to_string().contains("explicit values"));
+        let argv = normalize_selection_args(&words(&["launch", "--name", "cloud-agent", "--agentx-prompt", "--stdio", "--", "--stdio"]));
+        assert!(stdio_project_request(&argv).unwrap().is_none());
         assert!(crate::runtime::launch_options::extract_launch_flags(&words(&["--role"])).is_err(), "resume/fork still require role values");
         let help = help_text();
         assert!(help.contains("--role [<ROLE>]"));
