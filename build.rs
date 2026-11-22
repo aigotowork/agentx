@@ -42,6 +42,8 @@ fn track_build_inputs() {
         "node_modules/vite",
         "node_modules/rolldown",
         "node_modules/@rolldown/binding-wasm32-wasi",
+        "node_modules/@rolldown/binding-win32-x64-msvc",
+        "node_modules/@rolldown/binding-win32-arm64-msvc",
         "node_modules/@vitejs/plugin-react",
         "node_modules/react",
         "node_modules/react-dom",
@@ -53,6 +55,7 @@ fn track_build_inputs() {
         }
     }
     println!("cargo::rerun-if-env-changed=PATH");
+    println!("cargo::rerun-if-changed=web/vite.mjs");
     // Missing watches would make every cached build dirty. Cargo itself owns
     // toolchain/config discovery; explicitly watch the inputs present here.
     for path in ["rust-toolchain", "rust-toolchain.toml", ".cargo"] {

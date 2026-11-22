@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadVite } from '../vite.mjs';
 
 const source = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(source, "../..");
@@ -14,10 +15,7 @@ if (process.argv.length !== 3 || !target || !isAbsolute(target) || target === re
 await mkdir(target, { recursive: false });
 const compiler = spawnSync(process.execPath, [join(repo, 'node_modules/typescript/bin/tsc'), '-p', join(source, 'tsconfig.json'), '--noEmit'], { cwd: repo, stdio: 'inherit' });
 if (compiler.error || compiler.status !== 0) throw new Error('Observation typecheck failed; install the locked root dependencies before building');
-process.env.NAPI_RS_FORCE_WASI = 'error';
-process.env.NAPI_RS_WASI_FLAVOR = 'wasm32-wasi';
-process.env.NAPI_RS_ENFORCE_VERSION_CHECK = '1';
-const { build } = await import('vite');
+const { build } = await loadVite();
 await build({ configFile: join(source, 'vite.config.ts'), build: { outDir: target } });
 
 const manifest = { files: [] };

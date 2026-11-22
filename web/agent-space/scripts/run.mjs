@@ -2,6 +2,7 @@
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { resolve, isAbsolute } from "node:path";
+import { loadVite } from "../../vite.mjs";
 const source = resolve(fileURLToPath(new URL("../", import.meta.url)));
 const root = resolve(source, "../..");
 const [mode, target] = process.argv.slice(2);
@@ -13,10 +14,7 @@ if (mode === "typecheck" || mode === "build") {
   if (check.error || check.status !== 0) process.exit(check.status || 1);
 }
 if (mode !== "typecheck") {
-  process.env.NAPI_RS_FORCE_WASI = "error";
-  process.env.NAPI_RS_WASI_FLAVOR = "wasm32-wasi";
-  process.env.NAPI_RS_ENFORCE_VERSION_CHECK = "1";
-  const vite = await import("vite");
+  const vite = await loadVite();
   const configFile = resolve(source, "vite.config.ts");
   if (mode === "dev") { const server = await vite.createServer({ configFile }); await server.listen(); server.printUrls(); }
   else {

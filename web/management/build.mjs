@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadVite } from "../vite.mjs";
 
 const source = dirname(fileURLToPath(import.meta.url));
 const root = resolve(source, "../..");
@@ -13,13 +14,7 @@ if (process.argv.length !== 3 || !target || !isAbsolute(target) || target === ro
 await mkdir(target, { recursive: false });
 const compiler = spawnSync(process.execPath, [join(root, "node_modules/typescript/bin/tsc"), "-p", join(source, "tsconfig.json"), "--noEmit"], { cwd: root, stdio: "inherit" });
 if (compiler.error || compiler.status !== 0) throw new Error("Management typecheck failed; install the locked root dependencies before building");
-// The published Linux x64 native binding executes BMI2 in its ELF initializer.
-// Use Rolldown's same-version portable binding before any Vite import; fail
-// instead of falling back to that native module when WASI is unavailable.
-process.env.NAPI_RS_FORCE_WASI = "error";
-process.env.NAPI_RS_WASI_FLAVOR = "wasm32-wasi";
-process.env.NAPI_RS_ENFORCE_VERSION_CHECK = "1";
-const { build } = await import("vite");
+const { build } = await loadVite();
 await build({ configFile: join(source, "vite.config.ts"), build: { outDir: target } });
 const manifest = { files: [] };
 let total = 0;

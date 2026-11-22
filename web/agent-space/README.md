@@ -55,7 +55,7 @@ node web/agent-space/scripts/run.mjs build /tmp/agent-space-build-unique
 python3 -m http.server 18968 --bind 127.0.0.1 --directory /tmp/agent-space-build-unique
 ```
 
-构建目录必须是不存在的绝对路径，且位于模块源码之外。构建会执行 scoped typecheck，随后生成可静态托管的页面、脚本、CSS、原始来源清单及完整许可。脚本在导入 Vite 前使用本仓库既有 WASI 配置。不会构建 Rust、改写安装、重启服务或调用 Agent API。离线指无需业务服务/外部网络，仍需通过本地静态 HTTP 打开；不支持直接双击 `file://`。
+构建目录必须是不存在的绝对路径，且位于模块源码之外。构建会执行 scoped typecheck，随后生成可静态托管的页面、脚本、CSS、原始来源清单及完整许可。脚本通过[共享加载器](../vite.mjs)导入 Vite：Windows 使用原生 Rolldown 绑定，其他平台使用 WASI。不会构建 Rust、改写安装、重启服务或调用 Agent API。离线指无需业务服务/外部网络，仍需通过本地静态 HTTP 打开；不支持直接双击 `file://`。
 
 默认显示合成 scope 的全部已知办公室：`/projects/atlas`、独立的嵌套目录 `web`、空办公室 `empty`，以及单独的全局成员和未知归属。目录选择按精确成员归属计数；工作目录和岗位来源分别显示。成员、岗位、技能、历史在当前办公室内切换；岗位只显示定义和实际采用该来源的成员。技能目录未提供。`@luna` 与当前 `@mora` 采用同一继承岗位，停止的旧 `@mora` 只在历史中出现。
 

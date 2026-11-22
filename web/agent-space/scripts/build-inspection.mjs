@@ -3,11 +3,8 @@ import {resolve} from 'node:path';
 import {pathToFileURL,fileURLToPath} from 'node:url';
 import {mkdir,cp} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';
-// Match the existing runner's portable bundler setup on this host.
-process.env.NAPI_RS_FORCE_WASI='error';
-process.env.NAPI_RS_WASI_FLAVOR='wasm32-wasi';
-process.env.NAPI_RS_ENFORCE_VERSION_CHECK='1';
-const {build}=await import('vite');
+import {loadVite} from '../../vite.mjs';
+const {build}=await loadVite();
 const [checkout,target]=process.argv.slice(2);
 if(!checkout||!target||!target.startsWith('/tmp/'))throw Error('Usage: node web/agent-space/scripts/build-inspection.mjs /absolute/dancingai-checkout /tmp/new-preview-directory');
 const source=fileURLToPath(new URL('../',import.meta.url)),root=resolve(source,'../..');
