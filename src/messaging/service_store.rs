@@ -110,10 +110,13 @@ fn inherit_reply(db: &AgentxDb, input: &mut Submission) -> ServiceResult<()> {
 }
 
 fn delivery(db: &AgentxDb, identity: &SenderIdentity, input: &Submission) -> ServiceResult<submission::ResolvedDelivery> {
-    if !input.recipients.is_empty() && input.recipients.iter().all(|target| target == &identity.name) {
+    let explicit_targets = (!input.recipients.is_empty()).then_some(input.recipients.as_slice());
+    let routed = submission::resolve_delivery(db, identity, &input.text, Some(&input.envelope), explicit_targets).map_err(ServiceError::InvalidInput)?;
+    // Test the same canonical names that routing uses, including bigboss:DEVICE.
+    if explicit_targets.is_some() && !routed.effective_mentions.is_empty() && routed.effective_mentions.iter().all(|target| target == &identity.name) {
         return Err(ServiceError::InvalidInput("agents do not receive their own messages".into()));
     }
-    submission::resolve_delivery(db, identity, &input.text, Some(&input.envelope), (!input.recipients.is_empty()).then_some(input.recipients.as_slice())).map_err(ServiceError::InvalidInput)
+    Ok(routed)
 }
 
 fn bundle_summary(bundle: &Value, id: &str) -> String {

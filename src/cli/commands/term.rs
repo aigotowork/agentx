@@ -467,7 +467,17 @@ fn term_client(session: &crate::cli::client::Session, args: &TermArgs) -> Result
                 if inject { "Remote term inject completed" } else { "No remote screen content" },
             ));
         }
-        let record = selected.ok_or_else(|| format!("Agent '{name}' not found"))?;
+        let Some(record) = selected else {
+            if let Some(stopped) = crate::cli::commands::stop::stopped(session, name).map_err(|error| error.to_string())? {
+                let hint = if stopped.reason == crate::integrations::hooks::hermes::bridge::DISCONNECTED {
+                    crate::integrations::hooks::hermes::bridge::reconnect_hint(&stopped.name)
+                } else {
+                    format!("To resume: agentx r {}", stopped.name)
+                };
+                return Err(format!("'{name}' {}\n  {hint}", stopped.summary()));
+            }
+            return Err(format!("Agent '{name}' not found"));
+        };
         let participant = crate::agents::attachments::ParticipantRef { canonical_name: record.name.clone(), incarnation_bits: record.created_at.to_bits() };
         let output = if inject { crate::runtime::terminal_client::inject(&session.client, &participant, &text, enter) } else { crate::runtime::terminal_client::screen(&session.client, &participant, json, clean) }?;
         println!("{output}");

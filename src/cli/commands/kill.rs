@@ -348,7 +348,8 @@ pub fn run(argv: &[String], flags: &GlobalFlags) -> Result<i32> {
                 let result = crate::relay::control::dispatch_remote_raw(&session.client, device, Some(target), "kill", &serde_json::json!({"target":base}), crate::relay::control::RPC_DEFAULT_TIMEOUT).map_err(anyhow::Error::msg)?;
                 return handle_remote_kill_response(target, &result, &mut report);
             }
-            bail!("Agent '{target}' not found")
+            let suggestion = crate::shared::suggest::did_you_mean(target, records.iter().map(|record| record.name.as_str()));
+            bail!("Agent '{target}' not found{suggestion}")
         })();
         let exit = match attempt {
             Ok(exit) => exit,
