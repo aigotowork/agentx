@@ -1,3 +1,5 @@
+For Cloud Space authentication, SDK reads and exact Agent operations, read [Cloud Space](.controller/cloud-space/AGENTS.md). For the GitHub test matrix, read [CI recovery](.controller/ci-recovery/AGENTS.md).
+
 For cloud daemon Docker packaging, Linux Compose and the GHCR publication contract, read [deployment](deploy/README.md).
 
 For the cloud-connected native scope daemon delivery, start at [the daemon integration entry](.controller/cloud-daemon/AGENTS.md).
