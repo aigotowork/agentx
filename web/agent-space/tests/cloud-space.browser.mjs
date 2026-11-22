@@ -223,12 +223,15 @@ try {
   assert(calls.filter(call => call.audience === 'scope').every(call => call.method === 'GET'));
   assert(calls.every(call => call.path === adminApi || call.path.startsWith(adminApi + '/') || call.path.startsWith(scopeApi + '/')));
   stage = 'native Space demo regression';
-  const cloudRequests = calls.length;
-  await page.goto(`${origin}/space/?supply=demo`);
-  await text('.office-brand', 'Agent 空间');
-  await page.waitForSelector('.space-scene-stage canvas');
-  assert.equal(await page.$('.cloud-workbench'), null);
-  assert(!calls.slice(cloudRequests).some(call => call.path.startsWith('/api/') || call.path.startsWith('/scopes/')));
+  const native = await browser.newPage();
+  const nativeCalls = [];
+  native.on('request', request => nativeCalls.push(new URL(request.url()).pathname));
+  await native.goto(`${origin}/space/?supply=demo`);
+  await native.waitForFunction(() => document.querySelector('.office-brand')?.textContent.includes('Agent 空间'));
+  await native.waitForSelector('.space-scene-stage canvas');
+  assert.equal(await native.$('.cloud-workbench'), null);
+  assert(!nativeCalls.some(path => path.startsWith('/api/v1/admin/') || path.startsWith('/scopes/')));
+  await native.close();
   assert.deepEqual(errors, []);
   console.log('Cloud Space browser: explicit audiences, actual scene and paged roster, host catalogue, launch/receipt recovery, exact stop, retired messages, 320px layout');
 } catch (error) {

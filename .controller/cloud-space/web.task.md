@@ -1,6 +1,12 @@
 ---
 schema: task
-status: active
+status: completed
 agents: [{"scope":"/home/long/works/longwork/agentx/.agentx","generation":"a6195a5b-1dd4-4a6d-87d4-1f18f1b664fb","participant":{"canonical_name":"nesaze","incarnation_bits":4745316877603880888}}]
 ---
 Implement the usable existing Space frontend in cloud mode (not a placeholder/separate standalone app) in an isolated worktree /tmp/agentx-cloud-space-web from origin/main. Use ui-craft and existing Space office/scene, shared SDK for scope-aware administration/selection, same bearer family and HTTP patterns. Coordinate wire and URL/auth contracts with backend owner before coding; see shared .controller/cloud-space/wire.md in original checkout. Make cloud dashboard discoverable, route exact identities, real inventory, host catalogue, launch, exact stop, receipts, show real cloud conversation data if available. Purposefully expose supported audience permissions, no confusing local requests or simulated live data. User wants real cloud Space management and operations, not just HTML. Preserve native local Space. Verify via isolated browser or genuine route fixture, commit and send hashes to veto. Do not push main or deploy.
+
+## Completed source and evidence
+
+Web commit `340c497b4d13eb76d0c927b0a395b006aeae489c` on `cloud-space-web`, built on nohuze’s native history/SDK and scoped entry/deployment commits. See the [shared wire](wire.md) and [Web implementation guide](../../web/agent-space/src/cloud/AGENTS.md). The scoped route mounts the existing Space office and theme without connecting to local Management. Admin inventory, catalogue, launch, exact stop and receipts use the existing cloud SDK and shared Deployment forms. A Scope bearer opens the read-only exact sender/recipient projection, including retired tuples by direct link. Heartbeats do not imply process status; accepted messages do not imply delivery.
+
+SDK build, production Space build/typecheck and the isolated Chrome [browser fixture](../../web/agent-space/tests/cloud-space.browser.mjs) passed. The fixture exercised the scene and paged roster, audience denial, host catalogue, lost-response recovery by original receipt, exact stop, same-name replacement isolation, older message cursor, stale generation, the native demo entry, and 1280px/320px composition. Screenshots: `/tmp/agentx-cloud-space-web-evidence`. This is browser and wire-fixture evidence; native behavior is separately owned. No push, installation or deployment.

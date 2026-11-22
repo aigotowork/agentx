@@ -1,6 +1,16 @@
 ---
 schema: task
-status: active
+status: completed
 agents: [{"scope":"/home/long/works/longwork/agentx/.agentx","generation":"a6195a5b-1dd4-4a6d-87d4-1f18f1b664fb","participant":{"canonical_name":"nohuze","incarnation_bits":4745316877603933713}}]
 ---
 Implement scoped cloud Space HTTP functionality and asset routing on an isolated worktree /tmp/agentx-cloud-space-native off origin/main. Design the contract before implementation, coordinate with the frontend owner via a shared wire document in the original checkout .controller/cloud-space/wire.md. User wants usable cloud Space agent management/actions using existing credentials and request patterns. Preserve existing admission: admin authenticates inventory, capabilities, launch, exact stop and receipt through existing endpoints. Scope token opens a scoped Space for directory and existing member operations under its own authority; do not grant credentials to a client implicitly or permit human impersonation. Supply meaningful link/route to Management and correct embedded Space asset paths, CSP/caching. Include read-only cloud conversation projection if backed by real cloud messages with exact agent identity and pagination. Work with frontend owner to maximize actual capability incl. messaging safely per available authority. No generic tunnel or access to local host APIs. Add scoped backend tests, tag precise support. Deliver commits and usage to veto. Do not push main or deploy.
+
+## Completed native outcome
+
+Branch `feat/cloud-space-native`, worktree `/tmp/agentx-cloud-space-native`, parent `e761c46`. Apply `8d8b274c33f193981072a9106fd609a77e5d24f5` (exact scope history, native OpenAPI and generated SDK), then `72a7f99a6e30a05a859156eb5e74da26133e8c75` (scoped assets, Deployment navigation and HTTP acceptance). The [shared wire](wire.md) is agreed with the Web owner.
+
+Supported at the source and isolated Linux native boundary: authenticated directory and existing admin control using the original bearers; a public, credential-free Space shell and same-origin asset bundle; exact, paginated read-only admitted cloud mail for the selected scope bearer, including retired incarnations. No local Provider transcript, browser Agent sender, inbox claim or remote host access is added. The cloud browser composition is separately owned by the Web Task. No main push or deployment.
+
+Final candidate SHA-256: `9b24943faa05c50aceee028609a7a346cffbb2c01f39126094511700c535d9e8`. Isolated HTTP artifacts: `/tmp/agentx-cloud-space-native-evidence/space/result.json`, `/tmp/agentx-cloud-space-native-evidence/deployment/result.json`, `/tmp/agentx-cloud-space-native-evidence/communication/result.json`. The candidate's emitted scope OpenAPI matches the committed file; all 7 Cloud SDK tests and the Deployment Chromium fixture (including the same-origin Space link) passed. Deployment Chromium evidence: `/tmp/agentx-cloud-space-management-browser`.
+
+Implementation notes: the prior classic script path resolved below the nested Space route; Vite's base placeholder now gives the same embedded absolute asset path without losing standalone relative build support. When invoking the scope generator with npm `--prefix`, pass the candidate's absolute path because npm changes its working directory.
