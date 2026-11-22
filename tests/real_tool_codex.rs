@@ -96,7 +96,9 @@ fn real_codex_approval_gate_blocks_pending_message_then_clears_on_approval() {
     let config = std::fs::read_to_string(&config_path).unwrap();
     std::fs::write(config_path, format!("sandbox_mode = \"workspace-write\"\napproval_policy = \"on-request\"\n{config}")).unwrap();
 
-    let (launch_code, launch_stdout, launch_stderr) = h.run(["launch", "--tool", "codex", "--headless", "--dir", h.workspace.to_str().expect("UTF-8 workspace path")]);
+    // The approval assertion below exercises the PTY scraper and its status
+    // events. A fresh 0.170.0 terminal otherwise defaults to native hosting.
+    let (launch_code, launch_stdout, launch_stderr) = h.run(["launch", "--tool", "codex", "--headless", "--dir", h.workspace.to_str().expect("UTF-8 workspace path"), "--", "--no-daemon"]);
     assert_eq!(launch_code, 0, "real Codex launch failed:\n-- stdout --\n{launch_stdout}\n-- stderr --\n{launch_stderr}\n{}", h.diagnostics());
     let launched_names = parse_launch_names(&launch_stdout);
     assert_eq!(launched_names.len(), 1, "expected one launch placeholder name; stdout={launch_stdout}");
@@ -238,6 +240,11 @@ fn real_codex_argument_overrides_survive_resume_resume_fork_resume() {
         argv.extend(["--headless".to_string(), "--agentx-prompt".to_string(), prompt.clone()]);
         if stage < 3 {
             argv.push("--".to_string());
+            if stage == 0 {
+                // This regression follows retained PTY arguments and requires
+                // hook binding in every stage, including the fresh launch.
+                argv.push("--no-daemon".to_string());
+            }
             argv.extend([if stage == 1 { "--model" } else { "-m" }.to_string(), model.to_string(), "--sandbox".to_string(), "read-only".to_string(), "-c".to_string(), "model_reasoning_effort=\"low\"".to_string()]);
         }
         let (code, stdout, stderr) = h.run(&argv);
