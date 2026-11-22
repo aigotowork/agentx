@@ -495,6 +495,30 @@ pub(crate) fn get_bootstrap_client(client: &crate::service::client::Client, agen
     get_context_client(client, agentx_ctx, instance_name, tool, super::agent_context::ContextReason::Startup)
 }
 
+/// Start's registration and its original caller can differ. Select only the
+/// incarnation returned by Start when preparing context, and leave its
+/// receipt and output confirmation on the original client.
+pub(crate) fn get_start_bootstrap_client(client: &crate::service::client::Client, ctx: &AgentxContext, participant: &crate::agents::attachments::ParticipantRef, tool: &str) -> anyhow::Result<String> {
+    let mut invocation = client.invocation().clone();
+    invocation.explicit_name = Some(participant.canonical_name.clone());
+    let client = client.with_invocation(invocation);
+    let actor = context_actor(&client, &participant.canonical_name)?;
+    if actor.participant != *participant {
+        return Err(crate::service::ServiceError::StaleFence.into());
+    }
+    let instructions = get_instructions_for_actor(&client, ctx, &actor, tool)?;
+    // An ad hoc registration can have no Provider session to host a snapshot.
+    let context = if actor.record.session_id.as_deref().is_some_and(|session| !session.is_empty()) {
+        runtime_context_for_actor(&client, ctx, &participant.canonical_name, tool, super::agent_context::SnapshotReason::Initial, Some(&actor))?
+    } else {
+        String::new()
+    };
+    if context_actor(&client, &participant.canonical_name)?.participant != *participant {
+        return Err(crate::service::ServiceError::StaleFence.into());
+    }
+    combine_context(&instructions, &context)
+}
+
 /// One typed entry to native prompt state; no host-side managed storage fallback.
 pub(crate) fn context_state(client: &crate::service::client::Client, request: crate::agents::context_service::Request) -> anyhow::Result<crate::agents::context_service::Response> {
     use crate::agents::{lifecycle_service, service};
@@ -586,8 +610,13 @@ pub(crate) fn preview_context_client(client: &crate::service::client::Client, ct
 
 /// Frozen on first generation. Later file/config changes cannot rewrite this Agent's instructions.
 pub(crate) fn get_instructions_client(client: &crate::service::client::Client, ctx: &AgentxContext, name: &str, tool: &str) -> anyhow::Result<String> {
-    use crate::agents::context_service::{Request, Response};
     let actor = context_actor(client, name)?;
+    get_instructions_for_actor(client, ctx, &actor, tool)
+}
+
+fn get_instructions_for_actor(client: &crate::service::client::Client, ctx: &AgentxContext, actor: &crate::agents::service::ResolvedActor, tool: &str) -> anyhow::Result<String> {
+    use crate::agents::context_service::{Request, Response};
+    let name = &actor.participant.canonical_name;
     if let Response::Instructions(Some(instructions)) = context_state(client, Request::ReadInstructions { participant: actor.participant.clone() })? {
         return Ok(instructions.text);
     }
@@ -606,7 +635,7 @@ pub(crate) fn get_instructions_client(client: &crate::service::client::Client, c
     let builtin = builtin_context(client, ctx, name, &config)?;
     let request = super::agent_context::InstructionRequest { participant: &actor.participant, tool, cwd: &ctx.cwd };
     let instructions = super::agent_context::prepare_instructions(&request, &sources, &[&builtin])?;
-    match context_state(client, Request::FreezeInstructions { participant: actor.participant, instructions })? {
+    match context_state(client, Request::FreezeInstructions { participant: actor.participant.clone(), instructions })? {
         Response::Instructions(Some(instructions)) => Ok(instructions.text),
         _ => anyhow::bail!("instruction snapshot was not retained"),
     }
@@ -619,13 +648,23 @@ pub(crate) fn get_compact_context_client(client: &crate::service::client::Client
     get_runtime_context(client, ctx, name, tool, super::agent_context::SnapshotReason::AfterCompact)
 }
 fn get_runtime_context(client: &crate::service::client::Client, ctx: &AgentxContext, name: &str, tool: &str, reason: super::agent_context::SnapshotReason) -> anyhow::Result<String> {
+    runtime_context_for_actor(client, ctx, name, tool, reason, None)
+}
+
+fn runtime_context_for_actor(client: &crate::service::client::Client, ctx: &AgentxContext, name: &str, tool: &str, reason: super::agent_context::SnapshotReason, actor: Option<&crate::agents::service::ResolvedActor>) -> anyhow::Result<String> {
     use super::agent_context::*;
     let config = context_config(ctx, false)?;
     let sources = if config.instruction_sources.is_some() { if config.context_sources.trim().is_empty() { Vec::new() } else { parse_sources(&config.context_sources)? } } else { select_sources(None, &config.context_sources)?.1 };
     if sources.is_empty() && reason == SnapshotReason::Initial {
         return Ok(String::new());
     }
-    let actor = context_actor(client, name)?;
+    let resolved;
+    let actor = if let Some(actor) = actor {
+        actor
+    } else {
+        resolved = context_actor(client, name)?;
+        &resolved
+    };
     let session = actor.record.session_id.as_deref().filter(|s| !s.is_empty()).ok_or_else(|| anyhow::anyhow!("runtime context requires a bound native session"))?;
     let builtin = builtin_context(client, ctx, name, &config)?;
     let runtime = RuntimeFacts(&builtin);
@@ -647,7 +686,11 @@ fn get_runtime_context(client: &crate::service::client::Client, ctx: &AgentxCont
 pub(crate) fn get_context_client(client: &crate::service::client::Client, ctx: &AgentxContext, name: &str, tool: &str, reason: super::agent_context::ContextReason) -> anyhow::Result<String> {
     let instructions = get_instructions_client(client, ctx, name, tool)?;
     let context = if reason == super::agent_context::ContextReason::Compact { get_compact_context_client(client, ctx, name, tool)? } else { get_initial_context_client(client, ctx, name, tool)? };
-    let text = [instructions.as_str(), context.as_str()].into_iter().filter(|part| !part.is_empty()).collect::<Vec<_>>().join("\n\n");
+    combine_context(&instructions, &context)
+}
+
+fn combine_context(instructions: &str, context: &str) -> anyhow::Result<String> {
+    let text = [instructions, context].into_iter().filter(|part| !part.is_empty()).collect::<Vec<_>>().join("\n\n");
     if text.len() > super::agent_context::MAX_CONTEXT_BYTES {
         anyhow::bail!("combined AgentX context exceeds the context limit");
     }

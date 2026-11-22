@@ -55,7 +55,7 @@ pub fn run(argv: &[String], flags: &GlobalFlags) -> Result<i32> {
         let name = &participant.canonical_name;
         match bootstrap {
             Bootstrap::Root { tool } => {
-                let bootstrap = crate::runtime::bootstrap::get_bootstrap_client(&client, &runtime, name, tool)?;
+                let bootstrap = crate::runtime::bootstrap::get_start_bootstrap_client(&client, &runtime, participant, tool)?;
                 text.push_str(&format!("[agentx:{name}]\n{bootstrap}\n[agentx:{name}]\n"));
             }
             Bootstrap::Subagent { parent } => {
