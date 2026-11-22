@@ -174,8 +174,16 @@ fn runtime_read_http_503_retains_class_duration_and_request_id_without_query() {
     assert!(response.starts_with("HTTP/1.1 503"), "{response}");
     let request_id = response.lines().find_map(|line| line.split_once(':').filter(|(key, _)| key.eq_ignore_ascii_case("x-request-id")).map(|(_, value)| value.trim())).unwrap();
     uuid::Uuid::parse_str(request_id).unwrap();
-    let logs = crate::log::get_recent_logs_in_scope(scope.path(), 1.0, &["ERROR"], 100);
-    let diagnostic = logs.iter().find(|row| row["event"] == "http.failed").expect("actual 503 must be diagnosable");
+    // DispatchLog writes asynchronously; the HTTP response can arrive first.
+    let deadline = std::time::Instant::now() + Duration::from_secs(5);
+    let diagnostic = loop {
+        let logs = crate::log::get_recent_logs_in_scope(scope.path(), 1.0, &["ERROR"], 100);
+        if let Some(row) = logs.into_iter().find(|row| row["event"] == "http.failed" && row["http_request_id"] == request_id) {
+            break row;
+        }
+        assert!(std::time::Instant::now() < deadline, "HTTP 503 diagnostic missing for request {request_id}");
+        std::thread::park_timeout(Duration::from_millis(10));
+    };
     assert_eq!(diagnostic["http_request_id"], request_id);
     assert_eq!(diagnostic["route"], "/api/v1/management");
     assert_eq!(diagnostic["status"], "503");
