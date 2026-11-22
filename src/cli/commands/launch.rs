@@ -72,11 +72,16 @@ pub fn run(argv: &[String], flags: &GlobalFlags) -> Result<i32> {
     if probe {
         selection.replace_args = true;
     }
-    let (collaboration, resolved) = crate::runtime::launch_profile::prepare_with_role(&scope, &invocation.cwd, &selection_env, &agentx_flags, parsed.tool.as_deref(), &selection, &native_args)?;
+    let (mut collaboration, resolved) = crate::runtime::launch_profile::prepare_with_role(&scope, &invocation.cwd, &selection_env, &agentx_flags, parsed.tool.as_deref(), &selection, &native_args)?;
     let tool = resolved.tool.clone();
     let tool_args = resolved.args.clone();
-    if agentx_flags.stdio && (agentx_flags.role.is_some() || agentx_flags.workspace.is_some()) && crate::integrations::codex::configuration::is_shared_app_server(&tool_args) {
-        bail!("Shared Codex app-server stdio does not yet support --role or --workspace; use a terminal launch");
+    if agentx_flags.stdio && crate::integrations::codex::configuration::is_shared_app_server(&tool_args) {
+        if agentx_flags.role.is_some() || agentx_flags.workspace.is_some() {
+            bail!("Shared Codex app-server stdio does not yet support --role or --workspace; use a terminal launch");
+        }
+        // The proxy registers no participant. Automatic workspace discovery
+        // must not turn a bare shared app-server invocation into a role launch.
+        collaboration.workspace = None;
     }
     let launch_tool = LaunchTool::from_str(&tool)?;
     if count > launch_tool.spec().launch.max_launch_count {

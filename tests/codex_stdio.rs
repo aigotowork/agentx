@@ -471,6 +471,7 @@ fn stdio_rejects_incompatible_modes_without_stdout() {
         &["launch", "--tool", "codex", "--stdio", "--terminal", "here"],
         &["launch", "--tool", "codex", "--stdio", "--no-run-here"],
         &["launch", "--tool", "codex", "--stdio", "--device", "remote"],
+        &["launch", "--tool", "codex", "--stdio", "--workspace", "global", "--go", "--", "app-server"],
         &["launch", "--tool", "codex", "--stdio", "--", "app-server"], // preview gate without --go
         &["r", "missing", "--stdio"],
     ];
@@ -485,14 +486,14 @@ fn stdio_rejects_incompatible_modes_without_stdout() {
 }
 
 #[test]
-fn stdio_unsupported_shared_version_rejects_before_daemon_or_private_fallback() {
+fn stdio_unsupported_shared_version_rejects_without_registration_or_private_fallback() {
     let fake = FakeCodex::new();
     let output = fake.command().args(["launch", "--tool", "codex", "--stdio", "--go", "--", "app-server"]).output().unwrap();
     assert!(!output.status.success());
     assert!(output.stdout.is_empty(), "acquisition failure polluted native stdout");
     let error = String::from_utf8_lossy(&output.stderr);
     assert!(error.contains("0.155.0") && error.contains("0.167.0"), "{error}");
-    assert_eq!(fake.captured("args"), ["--version"], "unsupported version launched a daemon or private app-server");
+    assert_eq!(fake.captured("args"), ["--version"], "unsupported version attempted to run a private app-server");
     assert!(!fake.capture.join("preflight-env").exists(), "unsupported service triggered hook preflight");
     fake.assert_clean();
 }
