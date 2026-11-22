@@ -1,0 +1,2 @@
+# Preserve the exact bytes checked against DancingAI's pinned SHA-256 and size.
+web/agent-space/public/tools/dancingai/dancingai.global.js -text
