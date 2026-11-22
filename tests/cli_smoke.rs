@@ -70,10 +70,11 @@ fn windows_pty_answers_startup_queries_while_waiting_for_terminal_metadata() {
     // cursor query. Before the fix, metadata collection finished (and missed
     // this ID) before the reader could answer; slow launches also leaked the
     // expired cursor reply into the child's prompt.
+    let startup_log = log_file.clone();
     let terminal = std::thread::spawn(move || {
         let deadline = Instant::now() + Duration::from_secs(10);
         while Instant::now() < deadline {
-            if std::fs::read_to_string(&log_file).unwrap_or_default().contains("\"event\":\"startup.dsr_answered\"") {
+            if std::fs::read_to_string(&startup_log).unwrap_or_default().contains("\"event\":\"startup.dsr_answered\"") {
                 std::fs::write(id_file, "terminal-after-cpr").unwrap();
                 return true;
             }
@@ -91,27 +92,32 @@ fn windows_pty_answers_startup_queries_while_waiting_for_terminal_metadata() {
         .env("AGENTX_TEST_CPR_RELEASE", &release_file)
         // Ignore pane IDs inherited from the terminal running this test.
         .env("AGENTX_LAUNCHED_PRESET", "cpr-test-without-pane")
-        .args(["pty", "codex", "--agentx-tool-path", "powershell.exe", "-NoProfile", "-Command", "Write-Output CPR_CHILD_READY; while (-not (Test-Path -LiteralPath $env:AGENTX_TEST_CPR_RELEASE)) { Start-Sleep -Milliseconds 20 }"]);
+        .args([
+            "pty",
+            "codex",
+            "--agentx-tool-path",
+            "powershell.exe",
+            "-NoProfile",
+            "-Command",
+            "Write-Output CPR_CHILD_READY; $deadline = (Get-Date).AddSeconds(45); while (-not (Test-Path -LiteralPath $env:AGENTX_TEST_CPR_RELEASE)) { if ((Get-Date) -gt $deadline) { exit 1 }; Start-Sleep -Milliseconds 20 }",
+        ]);
     let pty = std::thread::spawn(move || command.output().unwrap());
     let answered = terminal.join().unwrap();
     assert!(answered, "proxy did not answer startup CPR");
 
     use rusqlite::OptionalExtension;
-    h.eventually("terminal metadata commit", Duration::from_secs(10), || {
+    h.eventually("live terminal metadata commit and PTY delivery initialization", Duration::from_secs(30), || {
         let conn = rusqlite::Connection::open(h.agentx_dir.join("agentx.db")).map_err(|error| error.to_string())?;
         let raw: Option<String> = conn.query_row("SELECT launch_context FROM instances WHERE name = ?1", [&name], |row| row.get(0)).optional().map_err(|error| error.to_string())?;
         let Some(raw) = raw else { return Ok(None) };
         let context: serde_json::Value = serde_json::from_str(&raw).map_err(|error| error.to_string())?;
-        Ok((context["terminal_id"] == "terminal-after-cpr").then_some(()))
+        let initialized = std::fs::read_to_string(&log_file).unwrap_or_default().contains("\"event\":\"delivery.init.success\"");
+        Ok((context["terminal_id"] == "terminal-after-cpr" && initialized).then_some(()))
     });
     std::fs::write(&release_file, "release").unwrap();
     let output = pty.join().unwrap();
     assert!(output.status.success(), "stdout={} stderr={}", String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr));
     assert!(String::from_utf8_lossy(&output.stdout).contains("CPR_CHILD_READY"));
-    let conn = rusqlite::Connection::open(h.agentx_dir.join("agentx.db")).unwrap();
-    let context: String = conn.query_row("SELECT launch_context FROM instances WHERE name = ?1", [&name], |row| row.get(0)).unwrap();
-    let context: serde_json::Value = serde_json::from_str(&context).unwrap();
-    assert_eq!(context["terminal_id"], "terminal-after-cpr");
 }
 
 #[test]
