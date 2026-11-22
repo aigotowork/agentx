@@ -65,11 +65,15 @@ jobs:
               path.write_text(json.dumps(doc))
           PYTHON
       - run: bash deploy/smoke.sh
-      - if: github.event_name == 'push' || (inputs.release_tag != '' && github.ref == 'refs/heads/main')
+      - if: github.event_name != 'pull_request'
+        env:
+          EXISTING_TAG: ${{ inputs.release_tag }}
         run: |
-          test "v$(docker run --rm --network none agentx-cloud:local --version | awk '{print $2}')" = "$RELEASE_TAG"
+          if [[ "$GITHUB_EVENT_NAME" == push || -n "$EXISTING_TAG" ]]; then
+            test "v$(docker run --rm --network none agentx-cloud:local --version | awk '{print $2}')" = "$RELEASE_TAG"
+          fi
           docker save agentx-cloud:local | gzip > "$RUNNER_TEMP/cloud-image.tar.gz"
-      - if: github.event_name == 'push' || (inputs.release_tag != '' && github.ref == 'refs/heads/main')
+      - if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: cloud-image
