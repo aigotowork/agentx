@@ -48,6 +48,29 @@ pub(in crate::cloud) struct AgentQuery {
     pub host: Option<String>,
 }
 
+/// Select one exact cloud registration and page backward through its accepted messages.
+#[derive(Debug, Deserialize, IntoParams)]
+#[serde(deny_unknown_fields)]
+#[into_params(parameter_in = Query)]
+pub(in crate::cloud) struct MessageHistoryQuery {
+    pub generation: String,
+    pub host: String,
+    pub name: String,
+    pub incarnation: String,
+    /// Exclusive positive decimal message ID; omit to start with the latest messages.
+    pub before: Option<String>,
+    #[param(minimum = 1, maximum = 100)]
+    pub limit: Option<u32>,
+}
+
+/// Durable scope traffic, in descending message ID order. This is not a Provider transcript.
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub(in crate::cloud) struct MessageHistoryPage {
+    pub items: Vec<MessageView>,
+    #[schema(required = true)]
+    pub next: Option<String>,
+}
+
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub(in crate::cloud) struct HostPage {
     pub items: Vec<HostView>,

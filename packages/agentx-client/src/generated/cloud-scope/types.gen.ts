@@ -123,6 +123,14 @@ export type InboxConfirmation = {
 
 export type Intent = 'request' | 'inform' | 'ack';
 
+/**
+ * Durable scope traffic, in descending message ID order. This is not a Provider transcript.
+ */
+export type MessageHistoryPage = {
+    items: Array<MessageView>;
+    next: string | null;
+};
+
 export type MessageOperation = {
     message: MessageView;
     request_id: string;
@@ -450,6 +458,35 @@ export type ScopeRecoverInboxResponses = {
 };
 
 export type ScopeRecoverInboxResponse = ScopeRecoverInboxResponses[keyof ScopeRecoverInboxResponses];
+
+export type ScopeListMessagesData = {
+    body?: never;
+    path?: never;
+    query: {
+        generation: string;
+        host: string;
+        name: string;
+        incarnation: string;
+        /**
+         * Exclusive positive decimal message ID; omit to start with the latest messages.
+         */
+        before?: string;
+        limit?: number;
+    };
+    url: '/messages';
+};
+
+export type ScopeListMessagesErrors = {
+    default: ScopeError;
+};
+
+export type ScopeListMessagesError = ScopeListMessagesErrors[keyof ScopeListMessagesErrors];
+
+export type ScopeListMessagesResponses = {
+    200: MessageHistoryPage;
+};
+
+export type ScopeListMessagesResponse = ScopeListMessagesResponses[keyof ScopeListMessagesResponses];
 
 export type ScopeSendMessageData = {
     body: SendMessage;

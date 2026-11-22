@@ -76,9 +76,15 @@ const overview = await admin.overview();
 const scope = await admin.getScope('office');
 const communication = createCloudScopeClient({ baseUrl: scope.scope_url, token: scopeToken });
 const descriptor = await communication.describe();
+const agents = await communication.listAgents();
+const exactAgent = agents.items[0];
+if (exactAgent) {
+  const history = await communication.listMessages({ ...exactAgent, generation: descriptor.generation });
+  // Pass history.next as the exclusive before cursor when it is non-null.
+}
 ```
 
-`CloudAdminTypes` 和 `CloudScopeTypes` 按原生 OpenAPI 组件名导出。两者的 64 位时间戳在 SDK 中为 `bigint`；标识和消息 ID 仍为字符串。管理方法包括 `overview`、`listScopes`、`getScope`、`listHosts`、`listAgents`、`putScope` 和 `rotateScopeToken`。通信方法包括 `describe`、`listHosts`、`listAgents`、`renewHost`、`registerAgent`、`retireAgent`、`send`、`getOperation`、`claimInbox`、`confirmInbox` 和 `recoverInbox`。各调用可传 `{ signal }`。查看[通信契约](../../.controller/cloud-scope/communication-wire.md)了解写入的代次要求、原始消息查询及投递确认。
+`CloudAdminTypes` 和 `CloudScopeTypes` 按原生 OpenAPI 组件名导出。两者的 64 位时间戳在 SDK 中为 `bigint`；标识和消息 ID 仍为字符串。管理方法包括 `overview`、`listScopes`、`getScope`、`listHosts`、`listAgents`、`putScope` 和 `rotateScopeToken`。通信方法包括 `describe`、`listHosts`、`listAgents`、`listMessages`、`renewHost`、`registerAgent`、`retireAgent`、`send`、`getOperation`、`claimInbox`、`confirmInbox` 和 `recoverInbox`。各调用可传 `{ signal }`。查看[通信契约](../../.controller/cloud-scope/communication-wire.md)了解写入的代次要求、原始消息查询及投递确认。
 
 先保留完整的写入参数，再提交请求。管理 SDK 的 `CloudAdminOutcomeUnknown` 含 Scope、操作、请求 ID，不含令牌；由调用方决定是否向同一部署显式重放原请求。通信 SDK 的 `CloudScopeOutcomeUnknown` 要用原请求或 claim 身份来核对。客户端不会自动重试、变更代次或释放 claim。
 

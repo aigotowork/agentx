@@ -54,7 +54,22 @@ impl Catalog {
         )?;
         db.execute("INSERT OR IGNORE INTO deployment VALUES(1,?1)", [uuid::Uuid::new_v4().to_string()])?;
         let deployment_id = db.query_row("SELECT id FROM deployment WHERE singleton=1", [], |row| row.get(0))?;
-        Ok(Self { db, deployment_id, _lease: lease, root, url, signals: Default::default() })
+        let catalog = Self { db, deployment_id, _lease: lease, root, url, signals: Default::default() };
+        catalog.upgrade_scope_message_history()?;
+        Ok(catalog)
+    }
+
+    fn upgrade_scope_message_history(&self) -> anyhow::Result<()> {
+        let mut stmt = self.db.prepare("SELECT id,generation FROM scopes ORDER BY id")?;
+        let rows = stmt.query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)))?;
+        for row in rows {
+            let (id, generation) = row?;
+            // A detached or unavailable scope must not block unrelated scopes.
+            if communication::store::upgrade_message_history(&self.root_for(&id), &generation).is_err() {
+                eprintln!("Cloud scope {id}: message history indexes unavailable");
+            }
+        }
+        Ok(())
     }
 
     fn receipt(&self, id: &str, generation: String, version: u32) -> ScopeReceipt {

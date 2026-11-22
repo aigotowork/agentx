@@ -29,7 +29,7 @@ pub(super) fn router() -> Router {
         .route("/agents", get(list_agents))
         .route("/agents/{name}", put(register_agent))
         .route("/agents/{name}/retire", post(retire_agent))
-        .route("/messages", post(send_message))
+        .route("/messages", get(list_messages).post(send_message))
         .route("/operations/{request_id}", get(get_operation))
         .route("/inbox/claim", post(claim_inbox))
         .route("/inbox/confirm", post(confirm_inbox))
@@ -210,6 +210,16 @@ async fn retire_agent(Extension(scope): Extension<ScopeContext>, parts: Result<A
     run(scope, Access::WriteAndWake, move |conn, now| store::retire_agent(conn, now, name, input)).await.map(Json)
 }
 
+#[utoipa::path(get, path = "/messages", operation_id = "scopeListMessages", params(MessageHistoryQuery), security(("scopeBearer" = [])), responses(
+    (status = 200, body = MessageHistoryPage),
+    (status = "default", body = ScopeError)
+))]
+async fn list_messages(Extension(scope): Extension<ScopeContext>, input: Result<Query<MessageHistoryQuery>, QueryRejection>) -> store::Result<Json<MessageHistoryPage>> {
+    let input = query(input)?;
+    fence(&scope, &input.generation)?;
+    run(scope, Access::Read, move |conn, _| store::list_messages(conn, input)).await.map(Json)
+}
+
 #[utoipa::path(post, path = "/messages", operation_id = "scopeSendMessage", request_body = SendMessage, security(("scopeBearer" = [])), responses(
     (status = 200, body = MessageView),
     (status = "default", body = ScopeError)
@@ -289,7 +299,7 @@ async fn recover_inbox(Extension(scope): Extension<ScopeContext>, input: Result<
         version = "1",
         description = "Base: configured scope URL plus /api/v1. All calls require the scope Bearer. Delivery is confirmed by the exact recipient host after Provider evidence. Opaque identifiers and decimal string message IDs remain strings."
     ),
-    paths(describe, list_hosts, list_agents, renew_host, register_agent, retire_agent, send_message, get_operation, claim_inbox, confirm_inbox, recover_inbox)
+    paths(describe, list_hosts, list_agents, renew_host, register_agent, retire_agent, list_messages, send_message, get_operation, claim_inbox, confirm_inbox, recover_inbox)
 )]
 struct ScopeApi;
 
@@ -318,6 +328,8 @@ mod tests {
         assert!(paths.keys().all(|path| !path.starts_with("/scopes")));
         let claim = &paths["/inbox/claim"]["post"];
         assert_eq!(claim["security"], serde_json::json!([{ "scopeBearer": [] }]));
+        assert_eq!(paths["/messages"]["get"]["security"], claim["security"]);
+        assert_eq!(paths["/messages"]["get"]["operationId"], "scopeListMessages");
         assert_eq!(paths["/hosts/{host}/control/poll"]["post"]["security"], claim["security"]);
         assert!(claim["responses"]["default"].is_object());
         assert_eq!(spec["components"]["securitySchemes"]["scopeBearer"]["scheme"], "bearer");

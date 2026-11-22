@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client/index.js';
-import type { ScopeClaimInboxData, ScopeClaimInboxErrors, ScopeClaimInboxResponses, ScopeConfirmInboxData, ScopeConfirmInboxErrors, ScopeConfirmInboxResponses, ScopeDescribeData, ScopeDescribeErrors, ScopeDescribeResponses, ScopeGetOperationData, ScopeGetOperationErrors, ScopeGetOperationResponses, ScopeListAgentsData, ScopeListAgentsErrors, ScopeListAgentsResponses, ScopeListHostsData, ScopeListHostsErrors, ScopeListHostsResponses, ScopePollControlOperationData, ScopePollControlOperationErrors, ScopePollControlOperationResponses, ScopeRecoverInboxData, ScopeRecoverInboxErrors, ScopeRecoverInboxResponses, ScopeRegisterAgentData, ScopeRegisterAgentErrors, ScopeRegisterAgentResponses, ScopeRenewControlLeaseData, ScopeRenewControlLeaseErrors, ScopeRenewControlLeaseResponses, ScopeRenewHostData, ScopeRenewHostErrors, ScopeRenewHostResponses, ScopeReportControlOperationData, ScopeReportControlOperationErrors, ScopeReportControlOperationResponses, ScopeRetireAgentData, ScopeRetireAgentErrors, ScopeRetireAgentResponses, ScopeSendMessageData, ScopeSendMessageErrors, ScopeSendMessageResponses } from './types.gen.js';
+import type { ScopeClaimInboxData, ScopeClaimInboxErrors, ScopeClaimInboxResponses, ScopeConfirmInboxData, ScopeConfirmInboxErrors, ScopeConfirmInboxResponses, ScopeDescribeData, ScopeDescribeErrors, ScopeDescribeResponses, ScopeGetOperationData, ScopeGetOperationErrors, ScopeGetOperationResponses, ScopeListAgentsData, ScopeListAgentsErrors, ScopeListAgentsResponses, ScopeListHostsData, ScopeListHostsErrors, ScopeListHostsResponses, ScopeListMessagesData, ScopeListMessagesErrors, ScopeListMessagesResponses, ScopePollControlOperationData, ScopePollControlOperationErrors, ScopePollControlOperationResponses, ScopeRecoverInboxData, ScopeRecoverInboxErrors, ScopeRecoverInboxResponses, ScopeRegisterAgentData, ScopeRegisterAgentErrors, ScopeRegisterAgentResponses, ScopeRenewControlLeaseData, ScopeRenewControlLeaseErrors, ScopeRenewControlLeaseResponses, ScopeRenewHostData, ScopeRenewHostErrors, ScopeRenewHostResponses, ScopeReportControlOperationData, ScopeReportControlOperationErrors, ScopeReportControlOperationResponses, ScopeRetireAgentData, ScopeRetireAgentErrors, ScopeRetireAgentResponses, ScopeSendMessageData, ScopeSendMessageErrors, ScopeSendMessageResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -124,6 +124,12 @@ export const scopeRecoverInbox = <ThrowOnError extends boolean = false>(options:
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+export const scopeListMessages = <ThrowOnError extends boolean = false>(options: Options<ScopeListMessagesData, ThrowOnError>): RequestResult<ScopeListMessagesResponses, ScopeListMessagesErrors, ThrowOnError> => (options.client ?? client).get<ScopeListMessagesResponses, ScopeListMessagesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/messages',
+    ...options
 });
 
 export const scopeSendMessage = <ThrowOnError extends boolean = false>(options: Options<ScopeSendMessageData, ThrowOnError>): RequestResult<ScopeSendMessageResponses, ScopeSendMessageErrors, ThrowOnError> => (options.client ?? client).post<ScopeSendMessageResponses, ScopeSendMessageErrors, ThrowOnError>({

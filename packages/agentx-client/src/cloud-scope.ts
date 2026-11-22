@@ -64,6 +64,13 @@ export function createCloudScopeClient(options: CloudScopeOptions) {
       read('HostPage', wire.scopeListHosts({ client, query, signal: opts?.signal })),
     listAgents: (query?: Query<W.ScopeListAgentsData>, opts?: CallOptions) =>
       read('AgentPage', wire.scopeListAgents({ client, query, signal: opts?.signal })),
+    /** Read accepted cloud messages for one exact registration with an exclusive older-page cursor. */
+    listMessages(query: Query<W.ScopeListMessagesData>, opts?: CallOptions) {
+      const { host, name, incarnation } = query;
+      const isAgent = (agent: SchemaTypes['AgentView']) => agent.host === host && agent.name === name && agent.incarnation === incarnation;
+      return read('MessageHistoryPage', wire.scopeListMessages({ client, query, signal: opts?.signal }),
+        result => result.items.every(message => isAgent(message.from) || isAgent(message.to)));
+    },
     renewHost(host: string, body: SchemaTypes['HostRegistration'], opts?: CallOptions) {
       requirePathSegment(host);
       return write('renewHost', 'HostRegistration', body, 'HostView', opts,

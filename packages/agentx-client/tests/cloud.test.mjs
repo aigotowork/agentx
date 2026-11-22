@@ -289,3 +289,24 @@ test('scope SDK uses separate bearer and preserves original claim, generation an
   assert.deepEqual(await api.confirmInbox({ ...claim, message_ids: [id] }), { confirmed: [id] });
   assert.deepEqual(methods, ['/descriptor', '/inbox/claim', '/inbox/recover', '/inbox/confirm']);
 });
+
+test('scope message history binds an exclusive cursor and exact registration without losing long values', async () => {
+  const agent = { name: 'reader', host: 'west', incarnation: 'run:42' };
+  const peer = { name: 'sender', host: 'east', incarnation: 'run:15' };
+  const cursor = '9223372036854775807';
+  const entry = { id: '9223372036854775806', from: peer, to: agent, body: 'accepted mail', intent: 'inform',
+    reply_to: null, thread: null, created_at: 1234567890 };
+  let message = entry;
+  const scope = createCloudScopeClient({ baseUrl: receipt.scope_url, token: proposedToken, fetch: async request => {
+    const url = new URL(request.url);
+    assert.equal(request.method, 'GET');
+    assert.equal(url.origin + url.pathname, 'https://cloud.example/scopes/office/api/v1/messages');
+    assert.equal(request.headers.get('authorization'), `Bearer ${proposedToken}`);
+    assert.deepEqual(Object.fromEntries(url.searchParams), { ...agent, generation: receipt.generation, before: cursor, limit: '1' });
+    return new Response(JSON.stringify({ items: [message], next: message.id }).replace('1234567890', '9007199254740993'));
+  } });
+  const load = () => scope.listMessages({ ...agent, generation: receipt.generation, before: cursor, limit: 1 });
+  assert.deepEqual(await load(), { items: [{ ...entry, created_at: 9007199254740993n }], next: entry.id });
+  message = { ...entry, to: { ...agent, incarnation: 'replacement' } };
+  await assert.rejects(load, { code: 'InvalidReceipt' });
+});

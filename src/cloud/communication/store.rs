@@ -11,6 +11,7 @@ use std::{
 };
 
 const DB_NAME: &str = "communication.sqlite3";
+const MESSAGE_HISTORY_INDEXES: &str = include_str!("store/message-history-indexes.sql");
 const LEASE_SECONDS: i64 = 60;
 const MESSAGE_COLUMNS: &str = "id,from_name,from_host,from_incarnation,to_name,to_host,to_incarnation,body,intent,reply_to,thread,created_at";
 
@@ -64,10 +65,16 @@ pub(super) fn initialize(root: &Path, generation: &str) -> anyhow::Result<()> {
     conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;")?;
     let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
     tx.execute_batch(include_str!("store/schema.sql"))?;
+    tx.execute_batch(MESSAGE_HISTORY_INDEXES)?;
     tx.execute("INSERT OR IGNORE INTO scope_metadata(singleton,generation) VALUES(1,?1)", [generation])?;
     check_generation(&tx, generation)?;
     tx.commit()?;
     Ok(())
+}
+
+/// Install additive read indexes on scope databases created by older deployments.
+pub(in crate::cloud) fn upgrade_message_history(root: &Path, generation: &str) -> Result<()> {
+    transaction(root, generation, true, || true, |conn, _| Ok(conn.execute_batch(MESSAGE_HISTORY_INDEXES)?))
 }
 
 pub(in crate::cloud) fn transaction<T>(root: &Path, generation: &str, write: bool, credential_valid: impl Fn() -> bool, action: impl FnOnce(&Connection, i64) -> Result<T>) -> Result<T> {
@@ -296,6 +303,45 @@ fn read_message(row: &Row<'_>) -> rusqlite::Result<MessageView> {
         _ => return Err(rusqlite::Error::InvalidQuery),
     };
     Ok(MessageView { id: id.to_string(), from: read_agent(row, 1)?, to: read_agent(row, 4)?, body: row.get(7)?, intent, reply_to: row.get::<_, Option<i64>>(9)?.map(|id| id.to_string()), thread: row.get(10)?, created_at: row.get(11)? })
+}
+
+/// Page by durable message ID without reading the inbox or resolving current short names.
+pub(super) fn list_messages(conn: &Connection, input: MessageHistoryQuery) -> Result<MessageHistoryPage> {
+    name(&input.name)?;
+    host_name(&input.host)?;
+    opaque(&input.incarnation)?;
+    let limit = page_limit(input.limit, 20, BATCH_LIMIT)?;
+    let end = input.before.as_deref().map(message_id).transpose()?.map_or(i64::MAX, |before| before - 1);
+    let exists: bool = conn.query_row("SELECT EXISTS(SELECT 1 FROM agents WHERE name=?1 AND host=?2 AND incarnation=?3)", params![input.name, input.host, input.incarnation], |row| row.get(0))?;
+    if !exists {
+        return Err(Error::NotFound("exact agent registration was not found"));
+    }
+
+    // Each arm can walk its exact identity's index backwards. Exclude a self-send
+    // from the recipient arm so it appears once without a deduplication sort.
+    let mut stmt = conn.prepare(&format!(
+        "SELECT {MESSAGE_COLUMNS} FROM messages INDEXED BY messages_from_history
+         WHERE from_name=?1 AND from_host=?2 AND from_incarnation=?3 AND id<=?4
+         UNION ALL
+         SELECT {MESSAGE_COLUMNS} FROM messages INDEXED BY messages_to_history
+         WHERE to_name=?1 AND to_host=?2 AND to_incarnation=?3 AND id<=?4
+           AND (from_name,from_host,from_incarnation)<>(to_name,to_host,to_incarnation)
+         ORDER BY id DESC LIMIT ?5"
+    ))?;
+    let rows = stmt.query_map(params![input.name, input.host, input.incarnation, end, limit as i64 + 1], read_message)?;
+    let mut items = Vec::new();
+    let mut bytes = 0;
+    let mut next = None;
+    for row in rows {
+        let message = row?;
+        bytes += message.body.len();
+        if items.len() == limit || bytes > MAX_BATCH_BODY_BYTES {
+            next = items.last().map(|previous: &MessageView| previous.id.clone());
+            break;
+        }
+        items.push(message);
+    }
+    Ok(MessageHistoryPage { items, next })
 }
 
 pub(super) fn send(conn: &Connection, now: i64, input: SendMessage) -> Result<MessageView> {

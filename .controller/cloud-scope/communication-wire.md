@@ -10,11 +10,14 @@
 | PUT /hosts/{host} | `{generation,installation_id}` | HostView |
 | PUT /agents/{name} | `{generation,installation_id,host,incarnation}` | AgentView |
 | POST /agents/{name}/retire | same as registration | exact retired AgentView |
+| GET /messages | `generation,host,name,incarnation` and optional `before,limit` | `{items:MessageView[],next}` |
 | POST /messages | `{generation,installation_id,request_id,from:AgentView,to,body,intent,reply_to?,thread?}` | MessageView |
 | GET /operations/{request_id} | — | `{request_id,status,message:MessageView}` |
 | POST /inbox/claim | `{generation,installation_id,agent:AgentView,claim_id,limit?,wait_ms?}` | `{claim_id,items:MessageView[],next:null}` |
 | POST /inbox/confirm | `{generation,installation_id,agent:AgentView,claim_id,message_ids}` | `{confirmed:string[]}` |
 | POST /inbox/recover | `{generation,installation_id,agent:AgentView,claim_id,release?:boolean}` | `{claim_id,items:MessageView[],next:null}` |
+
+The read-only message history requires the exact registered tuple and current generation; a retired tuple remains readable, and an unregistered or mismatched tuple returns 404. Items contain accepted incoming or outgoing messages, newest first, including unconfirmed messages. `before` is an exclusive decimal message ID; it accepts the prior required nullable `next` as a cursor when non-null. It defaults to 20 items and caps at 100 items/1 MiB of UTF-8 body bytes. It never claims or confirms messages. Use the existing admin control API separately for deployment launch/stop; the deployment bearer cannot read this endpoint.
 
 HostView is `{name,last_seen,online}`; AgentView is `{name,host,incarnation}`. MessageView is `{id,from:AgentView,to:AgentView,body,intent,reply_to,thread,created_at}`. Required nullable response fields are emitted as null. Intent is `request|inform|ack`. Message IDs are positive signed-64-bit decimal strings; timestamps are JSON integer Unix seconds. Directory `next` is the last returned name when another page exists. Directory pages allow 1–200 items and default to 50; inbox batches allow 1–100 items, default to 20, and stop at 1 MiB of total message bodies. Each message body is limited to 64 KiB. Claim waits default to zero and are capped at 20 seconds, with capacity reserved for sends and credential changes. The waiter subscribes before checking its durable inbox. Committed sends, releases, retirements and token rotation wake requests; idle waits hold neither a database transaction nor a blocking worker. Send accepts `@name` and `@host/name`; the qualified form requires the exact host. Reply IDs refer to prior delivery between the same exact instances in opposite directions.
 

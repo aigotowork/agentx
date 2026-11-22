@@ -19,6 +19,7 @@ export type SchemaTypes = {
   "InboxBatch": Types.InboxBatch;
   "InboxConfirmation": Types.InboxConfirmation;
   "Intent": Types.Intent;
+  "MessageHistoryPage": Types.MessageHistoryPage;
   "MessageOperation": Types.MessageOperation;
   "MessageView": Types.MessageView;
   "OperationStatus": Types.OperationStatus;
