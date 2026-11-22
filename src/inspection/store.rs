@@ -103,12 +103,12 @@ fn save(db: &AgentxDb, context: &RequestContext, ledger: &mut Ledger) -> Service
 }
 fn snapshot(context: &RequestContext, mut ledger: Ledger) -> Response {
     let now = crate::shared::time::now_epoch_i64();
-    if ledger.settings.enabled {
-        if let Some(last) = ledger.coverage.observed_at.or(ledger.settings.collected_from) {
-            if now.saturating_sub(last) > COLLECTION_GAP_SECONDS {
-                ledger.coverage.discovery_complete = false;
-                gap(&mut ledger, last, None, "collector_not_observed_recently");
-            }
+    if ledger.settings.enabled
+        && let Some(last) = ledger.coverage.observed_at.or(ledger.settings.collected_from)
+    {
+        if now.saturating_sub(last) > COLLECTION_GAP_SECONDS {
+            ledger.coverage.discovery_complete = false;
+            gap(&mut ledger, last, None, "collector_not_observed_recently");
         }
     }
     Response::Snapshot(Snapshot {
@@ -223,8 +223,8 @@ fn collect(db: &AgentxDb, context: &RequestContext, ledger: &mut Ledger, samples
     // Bounded native enumeration is independent of host transcript success. No stopped history backfill.
     let names: Vec<String> = {
         let mut stmt = db.conn().prepare("SELECT name FROM instances WHERE COALESCE(origin_device_id,'')='' ORDER BY name LIMIT 101").map_err(internal)?;
-        let names = stmt.query_map([], |row| row.get(0)).map_err(internal)?.collect::<Result<_, _>>().map_err(internal)?;
-        names
+
+        stmt.query_map([], |row| row.get(0)).map_err(internal)?.collect::<Result<_, _>>().map_err(internal)?
     };
     ledger.coverage.discovery_complete = discovery_complete && names.len() <= MAX_COLLECTED;
     if !ledger.coverage.discovery_complete {
@@ -239,12 +239,12 @@ fn collect(db: &AgentxDb, context: &RequestContext, ledger: &mut Ledger, samples
         let sample = samples.iter().find(|sample| sample.agent == reference && sample.session_id == row.session_id && selected.source.as_ref().is_some_and(|source| super::collection::source_key(source) == sample.source_key)).cloned();
         let status = crate::agents::lifecycle::get_instance_status_stored(&row, db).status;
         ledger.observations.push(Observation { id: uuid::Uuid::new_v4().to_string(), at: now, agent: reference, session_id: row.session_id.clone(), status, model_request: row.model_request.as_deref().cloned(), sample });
-        if ledger.settings.recovery.enabled {
-            if let Some(episode) = recovery::episode(&row) {
-                if recovery::eligible(db, &row, &ledger.settings.recovery, &episode, now).is_ok() {
-                    // Admission errors propagate: do not conceal storage/send failures as successful collection.
-                    continuation(db, context, ledger, episode, now)?;
-                }
+        if ledger.settings.recovery.enabled
+            && let Some(episode) = recovery::episode(&row)
+        {
+            if recovery::eligible(db, &row, &ledger.settings.recovery, &episode, now).is_ok() {
+                // Admission errors propagate: do not conceal storage/send failures as successful collection.
+                continuation(db, context, ledger, episode, now)?;
             }
         }
         if row.model_request.as_ref().is_some_and(|s| s.phase == crate::agents::model_request::RequestPhase::Completed && s.error.is_none()) {

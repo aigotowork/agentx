@@ -158,9 +158,9 @@ impl ManagementService {
                 let _permit = permit;
                 let failure = supervision::run_worker(&input).err();
                 if let Some(reason) = failure {
-                    crate::log::log_in_scope(&client.scope_root(), "ERROR", "management", "worker.failed", &reason, &[("generation", &input.generation), ("operation_id", &input.request_id)]);
+                    crate::log::log_in_scope(client.scope_root(), "ERROR", "management", "worker.failed", &reason, &[("generation", &input.generation), ("operation_id", &input.request_id)]);
                     if let Err(error) = client.call(crate::service::Request::Management(Request::Abandon { request_id: input.request_id.clone(), ticket: input.ticket, reason })) {
-                        crate::log::log_in_scope(&client.scope_root(), "ERROR", "management", "worker.abandon_failed", &error.to_string(), &[("generation", &input.generation), ("operation_id", &input.request_id)]);
+                        crate::log::log_in_scope(client.scope_root(), "ERROR", "management", "worker.abandon_failed", &error.to_string(), &[("generation", &input.generation), ("operation_id", &input.request_id)]);
                     }
                 }
             });

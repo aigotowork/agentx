@@ -28,7 +28,7 @@ pub(super) enum Page {
 #[derive(Clone, Debug)]
 pub(super) enum Link {
     Page(Page),
-    Agent(Subject),
+    Agent(Box<Subject>),
 }
 
 #[derive(Clone, Debug)]
@@ -402,7 +402,7 @@ fn agent_rows(subject: &Subject, reader: &Reader<'_>, facts: &Facts) -> Vec<Row>
 
 fn relation_row(subject: &Subject, label: &str, relation: RelatedAgent) -> Row {
     let name = relation.name.clone();
-    if let Some(related) = subject.related(relation) { Row::agent(label, &name, related.agent.status, Some(Link::Agent(related))) } else { Row::text(label, format!("{name} · Record unavailable")) }
+    if let Some(related) = subject.related(relation) { Row::agent(label, &name, related.agent.status, Some(Link::Agent(Box::new(related)))) } else { Row::text(label, format!("{name} · Record unavailable")) }
 }
 
 fn role_rows(facts: &Facts) -> Vec<Row> {

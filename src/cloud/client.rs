@@ -571,7 +571,7 @@ fn send_command(argv: &[String], help: bool, explicit: Option<&str>, mode: Mode)
     ensure!(!targets.is_empty(), "cloud send requires an exact @name or @host/name target");
     ensure!(command.request_id.is_none() || targets.len() == 1, "--request-id requires one cloud recipient");
     ensure!(!args.had_separator || args.positionals.iter().all(|target| target.starts_with('@')), "only cloud targets may appear before --");
-    let body = if inline.is_some() && !args.had_separator && !args.stdin && args.file.is_none() && args.base64.is_none() { inline.unwrap() } else { send::resolve_message(args).map_err(anyhow::Error::msg)? };
+    let body = if let Some(body) = inline.filter(|_| !args.had_separator && !args.stdin && args.file.is_none() && args.base64.is_none()) { body } else { send::resolve_message(args).map_err(anyhow::Error::msg)? };
     validate_message(&body).map_err(anyhow::Error::msg)?;
     let intent = match args.intent.as_deref().unwrap_or("inform") {
         "request" => Intent::Request,

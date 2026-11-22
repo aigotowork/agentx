@@ -257,24 +257,6 @@ fn quote_argument(value: &std::ffi::OsStr) -> String {
     }
 }
 
-#[cfg(test)]
-mod lifecycle_diagnostic_tests {
-    use super::*;
-
-    #[test]
-    fn mismatch_reports_loaded_client_scope_peer_and_copyable_recovery() {
-        let directory = tempfile::tempdir().unwrap();
-        let scope = DaemonScope::prepare(directory.path().join("a scope's data")).unwrap();
-        let detail = mismatch(&scope, 321, "daemon version/cohort unavailable").to_string();
-        assert!(detail.contains(super::super::wire::build_identity()));
-        assert!(detail.contains(&scope.root().display().to_string()));
-        assert!(detail.contains("authenticated daemon pid=321"));
-        assert!(detail.contains("daemon restart --scope"));
-        assert!(detail.contains("daemon version/cohort unavailable"));
-        assert!(detail.contains(&quote_argument(scope.root().as_os_str())));
-    }
-}
-
 pub(super) fn request_deadline(unix_ms: Option<u64>) -> Result<Instant, DaemonError> {
     let now = Instant::now();
     let maximum = now + IO_TIMEOUT;
@@ -299,4 +281,22 @@ fn pause(deadline: Instant) -> Result<(), DaemonError> {
     }
     std::thread::park_timeout(Duration::from_millis(20).min(deadline.saturating_duration_since(Instant::now())));
     Ok(())
+}
+
+#[cfg(test)]
+mod lifecycle_diagnostic_tests {
+    use super::*;
+
+    #[test]
+    fn mismatch_reports_loaded_client_scope_peer_and_copyable_recovery() {
+        let directory = tempfile::tempdir().unwrap();
+        let scope = DaemonScope::prepare(directory.path().join("a scope's data")).unwrap();
+        let detail = mismatch(&scope, 321, "daemon version/cohort unavailable").to_string();
+        assert!(detail.contains(super::super::wire::build_identity()));
+        assert!(detail.contains(&scope.root().display().to_string()));
+        assert!(detail.contains("authenticated daemon pid=321"));
+        assert!(detail.contains("daemon restart --scope"));
+        assert!(detail.contains("daemon version/cohort unavailable"));
+        assert!(detail.contains(&quote_argument(scope.root().as_os_str())));
+    }
 }

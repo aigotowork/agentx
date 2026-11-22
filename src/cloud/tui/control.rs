@@ -93,7 +93,7 @@ enum Phase {
     Draft,
     Sending(CreateControlOperation, bool),
     Unknown(CreateControlOperation, bool),
-    Known(ControlReceipt, Option<CreateControlOperation>),
+    Known(Box<ControlReceipt>, Option<CreateControlOperation>),
     Rejected,
 }
 
@@ -171,7 +171,7 @@ impl Dialog {
             Update::Submitted(result) => {
                 let Phase::Sending(input, replaying) = &self.phase else { return };
                 self.phase = match result {
-                    Ok(receipt) => Phase::Known(receipt, Some(input.clone())),
+                    Ok(receipt) => Phase::Known(Box::new(receipt), Some(input.clone())),
                     Err(error) if !replaying && matches!(trustworthy_status(&error), Some(status @ 400..=499) if !matches!(status, 408 | 425 | 429)) => {
                         self.notice = Some(http_error(&error));
                         Phase::Rejected
@@ -186,7 +186,7 @@ impl Dialog {
                         Phase::Known(_, input) => input.clone(),
                         _ => None,
                     };
-                    self.phase = Phase::Known(receipt, intent);
+                    self.phase = Phase::Known(Box::new(receipt), intent);
                 }
                 Err(error) => {
                     if let Phase::Unknown(_, can_replay) = &mut self.phase {

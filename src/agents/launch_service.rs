@@ -47,6 +47,7 @@ pub(crate) struct Batch {
     pub instances: Vec<String>,
 }
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[allow(clippy::large_enum_variant, reason = "Keep the native domain payload inline in this serialized envelope")]
 pub(crate) enum Request {
     /// Probe native collaboration support before sending optional launch data.
     WorkspaceSupport,

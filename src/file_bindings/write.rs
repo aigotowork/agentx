@@ -107,7 +107,7 @@ fn edit(path: &Path, assignment: &Assignment, add: bool) -> Result<bool> {
 }
 
 fn render(original: &str, assignment: &Assignment, add: bool) -> Result<Option<String>> {
-    let mut doc = parse(&original)?;
+    let mut doc = parse(original)?;
     let contains = doc.assignments.contains(assignment);
     if contains == add {
         return Ok(None);
@@ -117,7 +117,7 @@ fn render(original: &str, assignment: &Assignment, add: bool) -> Result<Option<S
     } else {
         doc.agents.retain(|value| serde_yaml_ng::from_value::<Assignment>(value.clone()).ok().as_ref() != Some(assignment));
     }
-    let range = frontmatter(&original)?;
+    let range = frontmatter(original)?;
     let yaml = &original[range.clone()];
     // YAML is parsed by the library. This narrow source span locator accepts
     // canonical and quoted block keys; unusual flow-root/alias keys fail safely.

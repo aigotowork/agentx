@@ -251,7 +251,8 @@ pub(crate) fn participant_configuration(row: &crate::db::InstanceRow) {
         }
     }
     // These fields have fixed withholding; do not even copy row text into the projection.
-    for field in [ParticipantFieldId::Hints] {
+    {
+        let field = ParticipantFieldId::Hints;
         if let Ok(field) = projected_field(ConfigFieldId::Participant(field), EvidenceValue::Withheld, FieldResolution::InputOnly) {
             body.fields.push(field);
         }

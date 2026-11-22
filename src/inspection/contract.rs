@@ -164,6 +164,7 @@ pub(crate) enum PublicMutation {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+#[allow(clippy::enum_variant_names, reason = "RequestContinuation is the external native operation name")]
 pub(crate) enum Request {
     Read {
         generation: String,

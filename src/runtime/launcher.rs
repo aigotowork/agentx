@@ -1175,7 +1175,8 @@ fn finalize_background_launch(ctx: &mut BackgroundLaunchCtx<'_>, log_file: Strin
     Ok(())
 }
 
-fn launch_background_runner(tool: &str, cwd: &str, instance_name: &str, instance_env: &mut HashMap<String, String>, tool_args: &[String], terminal_mode: Option<&str>, inside_ai_tool: bool, config: &AgentxConfig) -> Result<(String, u32, String)> {
+fn launch_background_runner(ctx: &BackgroundLaunchCtx, instance_env: &mut HashMap<String, String>, tool_args: &[String], inside_ai_tool: bool, config: &AgentxConfig) -> Result<(String, u32, String)> {
+    let (tool, cwd, instance_name, terminal_mode) = (ctx.tool, ctx.working_dir, ctx.instance_name, ctx.terminal_mode);
     let log_filename = format!("background_{}_{}.log", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0), rand::random::<u16>() % 9000 + 1000);
     let mut runner_env = background_runner_env(tool, instance_env, instance_name);
     runner_env.insert("AGENTX_BACKGROUND".to_string(), log_filename);
@@ -1209,7 +1210,7 @@ fn launch_background_runner(tool: &str, cwd: &str, instance_name: &str, instance
 fn launch_pty_or_background(ctx: &mut BackgroundLaunchCtx<'_>, instance_env: &mut HashMap<String, String>, tool_args: &[String], params: &LaunchParams, inside_ai_tool: bool, config: &AgentxConfig) -> Result<bool> {
     let effective_run_here = will_run_in_current_terminal(params.count, params.background, params.run_here, params.terminal.as_deref(), inside_ai_tool, std::io::IsTerminal::is_terminal(&std::io::stdin()));
     if params.background || (ctx.terminal_mode == Some("tmux") && !effective_run_here) {
-        let (log_file, pid, effective_preset) = launch_background_runner(ctx.tool, ctx.working_dir, ctx.instance_name, instance_env, tool_args, ctx.terminal_mode, inside_ai_tool, config)?;
+        let (log_file, pid, effective_preset) = launch_background_runner(ctx, instance_env, tool_args, inside_ai_tool, config)?;
         finalize_background_launch(ctx, log_file, pid, effective_preset)?;
         Ok(true)
     } else {
@@ -2040,7 +2041,7 @@ fn launch_with_client_inner(mut params: LaunchParams, caller_context: &crate::ru
                             // Generate bootstrap text for preprocessing
                             let bootstrap = &frozen_instructions;
 
-                            effective_args = codex_preprocessing::preprocess_codex_args(&effective_args, &bootstrap, codex_home.as_ref().map(|(path, _)| path.as_path()));
+                            effective_args = codex_preprocessing::preprocess_codex_args(&effective_args, bootstrap, codex_home.as_ref().map(|(path, _)| path.as_path()));
                         }
                         Tool::OpenCode | Tool::Kilo | Tool::Pi | Tool::Omp | Tool::Hermes => {
                             opencode_preprocessing::preprocess_opencode_env(&mut instance_env, &instance_name);
@@ -2056,7 +2057,7 @@ fn launch_with_client_inner(mut params: LaunchParams, caller_context: &crate::ru
                             // system prompt).
                             let bootstrap = &frozen_instructions;
 
-                            inject_grok_rules(&mut effective_args, &bootstrap);
+                            inject_grok_rules(&mut effective_args, bootstrap);
                             ensure_grok_session_id(&mut effective_args);
                             if let Some(ref sp) = params.system_prompt {
                                 inject_grok_rules(&mut effective_args, sp);

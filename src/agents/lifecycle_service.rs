@@ -73,6 +73,7 @@ pub(crate) struct ResumeFence {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[allow(clippy::large_enum_variant, reason = "Keep the native domain payload inline in this serialized envelope")]
 pub(crate) enum ResumeSelection {
     Tracked { name: String, snapshot: ResumeSnapshot, fence: ResumeFence, preview_child_name: Option<String> },
     Disk { session_id: String, fence: ResumeFence },
@@ -91,6 +92,7 @@ pub(crate) struct AdoptedOrphan {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[allow(clippy::large_enum_variant, reason = "Keep the native domain payload inline in this serialized envelope")]
 pub(crate) enum Request {
     Context(super::context_service::Request),
     Start { mode: StartMode, requested_name: Option<String> },
@@ -111,7 +113,6 @@ pub(crate) enum Request {
     ReserveResume { source: ResumeFence, launch: super::launch_service::Reserve },
 }
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
-#[expect(clippy::large_enum_variant, reason = "The finite lifecycle envelope carries one inline KillPlan; variable data remains in owned buffers")]
 pub(crate) enum Response {
     Context(super::context_service::Response),
     Started(StartOutput),

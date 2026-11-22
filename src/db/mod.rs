@@ -837,7 +837,7 @@ impl AgentxDb {
                 migrate_from = migrate_from.min(migration - 1);
             }
         }
-        let tables: std::collections::HashSet<String> = self.conn.prepare("SELECT name FROM sqlite_master WHERE type='table'").and_then(|mut s| Ok(s.query_map([], |row| row.get(0))?.collect::<rusqlite::Result<_>>()?)).unwrap_or_default();
+        let tables: std::collections::HashSet<String> = self.conn.prepare("SELECT name FROM sqlite_master WHERE type='table'").and_then(|mut s| s.query_map([], |row| row.get(0))?.collect::<rusqlite::Result<_>>()).unwrap_or_default();
         for (migration, table) in ADDITIVE_TABLES {
             if !tables.contains(*table) {
                 migrate_from = migrate_from.min(migration - 1);

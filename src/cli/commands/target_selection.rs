@@ -151,10 +151,10 @@ impl ResumeTarget {
         if source.session_id != self.session_id {
             bail!("Selected session changed; run the command again to choose its current session");
         }
-        if let Some(event) = self.stopped_event {
-            if source.stopped_event != Some(event) || source.name.as_deref() != Some(self.name.as_str()) {
-                bail!("Selected stopped session changed; run the command again to choose its current session");
-            }
+        if let Some(event) = self.stopped_event
+            && (source.stopped_event != Some(event) || source.name.as_deref() != Some(self.name.as_str()))
+        {
+            bail!("Selected stopped session changed; run the command again to choose its current session");
         }
         Ok(())
     }

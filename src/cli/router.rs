@@ -566,10 +566,10 @@ pub(crate) fn dispatch_passive_observation(argv: &[String]) -> Option<i32> {
 }
 
 fn is_local_metadata(action: &Action) -> bool {
-    if let Action::Launch { args } = action {
-        if crate::cli::commands::launch::is_dry_run(args) {
-            return true;
-        }
+    if let Action::Launch { args } = action
+        && crate::cli::commands::launch::is_dry_run(args)
+    {
+        return true;
     }
     matches!(action, Action::Command { cmd, .. } if matches!(cmd.as_str(), "run" | "hooks"))
         || matches!(action, Action::Command { cmd, args } if cmd == "config" && args.iter().any(|arg| arg == "environment" || crate::config::file::environment_key(arg).is_some()))

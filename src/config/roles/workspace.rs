@@ -11,10 +11,10 @@ pub(crate) fn select_workspace(cwd: &Path, env: &HashMap<String, String>, dir: O
         return explicit(cwd, value);
     }
     let home = home(env)?;
-    if let Some(dir) = dir {
-        if let Some(root) = discover(&canonical_directory(cwd, dir)?, &home)? {
-            return Ok(Some(root));
-        }
+    if let Some(dir) = dir
+        && let Some(root) = discover(&canonical_directory(cwd, dir)?, &home)?
+    {
+        return Ok(Some(root));
     }
     if let Some(value) = env.get("AGENTX_WORKSPACE").filter(|value| !value.is_empty()) {
         if value == "global" {

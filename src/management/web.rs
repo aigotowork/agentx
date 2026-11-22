@@ -144,7 +144,6 @@ fn reap_periodically(scope: &Path, stop: &AtomicBool) {
     }
 }
 struct Adapter {
-    scope: PathBuf,
     daemon_instance: String,
     service: super::service::ManagementService,
     assets: assets::Assets,
@@ -195,7 +194,7 @@ async fn serve(scope: &Path, daemon_instance: &str, selected: Config, stop: Arc<
         page.bytes = bind_space_document(&page.bytes, scope)?;
     }
     let service = super::service::ManagementService::new(scope.to_path_buf(), project.clone(), invocation(scope, &project), workers);
-    let state = Arc::new(Adapter { scope: scope.to_path_buf(), daemon_instance: daemon_instance.into(), service, assets: embedded, calls: Arc::new(Semaphore::new(8)), diagnostics: crate::log::DispatchLog::start(scope) });
+    let state = Arc::new(Adapter { daemon_instance: daemon_instance.into(), service, assets: embedded, calls: Arc::new(Semaphore::new(8)), diagnostics: crate::log::DispatchLog::start(scope) });
     let router = Router::new().fallback(handle).with_state(state);
     let connections = Arc::new(Semaphore::new(16));
     let mut tasks = tokio::task::JoinSet::new();

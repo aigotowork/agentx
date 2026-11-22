@@ -186,6 +186,7 @@ pub(crate) struct OutstandingClaim {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
+#[allow(clippy::large_enum_variant, reason = "Keep the native domain payload inline in this serialized envelope")]
 pub(crate) enum ReconciliationEvidence {
     PreviouslyRecorded(DeliveryReceipt),
     ProvenUnrecorded(NoInputEvidence),

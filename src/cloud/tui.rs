@@ -127,7 +127,7 @@ enum Job {
     Inspect(String, Inventory),
     Inventory(String, Inventory, Option<String>),
     Write(Change),
-    Control(control::Job),
+    Control(Box<control::Job>),
 }
 
 enum Update {
@@ -420,7 +420,7 @@ impl App {
                 self.control = None;
                 return None;
             }
-            return dialog.key(key).map(Job::Control);
+            return dialog.key(key).map(|job| Job::Control(Box::new(job)));
         }
         if let Some(dialog) = &mut self.credential {
             return match key.code {
@@ -510,7 +510,7 @@ impl App {
                 _ => return None,
             }
         };
-        let load = dialog.load().map(Job::Control);
+        let load = dialog.load().map(|job| Job::Control(Box::new(job)));
         self.control = Some(dialog);
         load
     }
@@ -606,11 +606,9 @@ fn session(mut terminal: Terminal<CrosstermBackend<std::io::Stdout>>, http: Arc<
                 if key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL) || app.credential.is_none() && app.control.is_none() && app.detail.is_none() && matches!(key.code, KeyCode::Char('q') | KeyCode::Esc) {
                     return Ok(());
                 }
-                if !too_small {
-                    if let Some(job) = app.key(key) {
-                        app.notice = None;
-                        pending = Some(start(&http, job));
-                    }
+                if !too_small && let Some(job) = app.key(key) {
+                    app.notice = None;
+                    pending = Some(start(&http, job));
                 }
             }
             _ => {}

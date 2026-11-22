@@ -54,18 +54,22 @@ pub(crate) struct BinaryBody(Vec<u8>);
 // Route-specific external tags reuse the exact native payloads; no internal
 // collection/execution variants are reachable through these public schemas.
 #[derive(utoipa::ToSchema)]
+#[allow(dead_code, reason = "Route-specific OpenAPI schema only")]
 pub(crate) enum ConfigureBody {
     Configure(crate::inspection::contract::ConfigureInput),
 }
 #[derive(utoipa::ToSchema)]
+#[allow(dead_code, reason = "Route-specific OpenAPI schema only")]
 pub(crate) enum AnalyzeBody {
     Analyze(crate::inspection::contract::AnalyzeInput),
 }
 #[derive(utoipa::ToSchema)]
+#[allow(dead_code, reason = "Route-specific OpenAPI schema only")]
 pub(crate) enum CancelAnalysisBody {
     CancelAnalysis(crate::inspection::contract::CancelAnalysisInput),
 }
 #[derive(utoipa::ToSchema)]
+#[allow(dead_code, reason = "Route-specific OpenAPI schema only")]
 pub(crate) enum ContinuationBody {
     RequestContinuation(crate::inspection::contract::RequestContinuationInput),
 }

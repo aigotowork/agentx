@@ -499,6 +499,7 @@ pub(crate) struct TranscriptPage {
     pub exchanges: Vec<ExchangeView>,
 }
 #[derive(Clone, Debug, Deserialize, Serialize, utoipa::ToSchema)]
+#[allow(clippy::large_enum_variant, reason = "Keep the native domain payload inline in this serialized envelope")]
 pub(crate) enum CommandResult {
     Launched(LaunchOutcome),
     LabelsPatched(LabelsOutcome),
@@ -600,6 +601,7 @@ pub(crate) struct AdoptedWorkspaces {
 
 /// The native leaf is callable through authenticated local IPC only.
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[allow(clippy::large_enum_variant, reason = "Keep the native domain payload inline in this serialized envelope")]
 pub(crate) enum Request {
     AdoptedWorkspaces,
     HumanMailbox { before: Option<String>, pending: bool, limit: u32 },
@@ -624,6 +626,7 @@ pub(crate) enum Request {
     Abandon { request_id: String, ticket: String, reason: String },
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[allow(clippy::large_enum_variant, reason = "Keep the native domain payload inline in this serialized envelope")]
 pub(crate) enum Response {
     AdoptedWorkspaces(AdoptedWorkspaces),
     HumanMailbox(HumanMailbox),

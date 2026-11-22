@@ -70,7 +70,7 @@ static ORDINARY: LazyLock<String> = LazyLock::new(|| {
         OR instr(COALESCE(json_extract(value,'$.sql'),''),'{second}')>0 ELSE 0 END"
     )
 });
-static FOR_ORDINARY_KIND: LazyLock<String> = LazyLock::new(|| format!("SELECT key,value FROM kv INDEXED BY agentx_sub_ordinary_kind_v1 WHERE {SUBS} AND ({KIND}) IN (?1,'') AND {} ORDER BY rowid", &*ORDINARY));
+static FOR_ORDINARY_KIND: LazyLock<String> = LazyLock::new(|| format!("SELECT key,value FROM kv INDEXED BY agentx_sub_ordinary_kind_v1 WHERE {SUBS} AND ({KIND}) IN (?1,'') AND {} ORDER BY rowid", *ORDINARY));
 static ALL_WATCH: &str = "SELECT key,value FROM kv NOT INDEXED WHERE key LIKE 'events_sub:reqwatch-%' ORDER BY rowid";
 // Replay already owns the eligible keys. Drive the join from that small set
 // and only then sort the fetched rows into the live evaluator's row order.
@@ -118,7 +118,7 @@ impl AgentxDb {
         self.indexed_subscriptions = true;
         self.indexed_ordinary_subscriptions = self
             .with_write_scope(|| {
-                self.conn().execute_batch(&format!("CREATE INDEX IF NOT EXISTS agentx_sub_ordinary_kind_v1 ON kv(({KIND})) WHERE {SUBS} AND {};", &*ORDINARY))?;
+                self.conn().execute_batch(&format!("CREATE INDEX IF NOT EXISTS agentx_sub_ordinary_kind_v1 ON kv(({KIND})) WHERE {SUBS} AND {};", *ORDINARY))?;
                 Ok(())
             })
             .is_ok();
@@ -248,7 +248,7 @@ mod tests {
         assert_eq!(subscriptions::try_get_thread_members(&db, "a").unwrap(), expected);
         db.enable_subscription_indexes().unwrap();
         assert_eq!(subscriptions::try_get_thread_members(&db, "a").unwrap(), expected);
-        let plan = db.conn().prepare(&format!("EXPLAIN QUERY PLAN {}", &*THREAD_INDEXED)).unwrap().query_map(["a"], |row| row.get::<_, String>(3)).unwrap().collect::<rusqlite::Result<Vec<_>>>().unwrap();
+        let plan = db.conn().prepare(&format!("EXPLAIN QUERY PLAN {}", *THREAD_INDEXED)).unwrap().query_map(["a"], |row| row.get::<_, String>(3)).unwrap().collect::<rusqlite::Result<Vec<_>>>().unwrap();
         assert!(plan.iter().any(|step| step.contains("SEARCH") && step.contains("agentx_thread_member_v1")), "{plan:?}");
         assert!(!plan.iter().any(|step| step.contains("TEMP B-TREE")), "{plan:?}");
         db.conn().execute_batch("DROP INDEX agentx_thread_member_v1").unwrap();
@@ -298,7 +298,7 @@ mod tests {
         save("legacy", json!({"sql":"EXISTS (SELECT 1 FROM events_v e WHERE e.type = 'status')","filters":{"collision":["true"]}}));
         save("delivery", json!({"delivery_only":true}));
 
-        let plan = db.conn().prepare(&format!("EXPLAIN QUERY PLAN {}", &*FOR_ORDINARY_KIND)).unwrap().query_map(["status"], |row| row.get::<_, String>(3)).unwrap().collect::<rusqlite::Result<Vec<_>>>().unwrap();
+        let plan = db.conn().prepare(&format!("EXPLAIN QUERY PLAN {}", *FOR_ORDINARY_KIND)).unwrap().query_map(["status"], |row| row.get::<_, String>(3)).unwrap().collect::<rusqlite::Result<Vec<_>>>().unwrap();
         assert!(plan.iter().any(|step| step.contains("SEARCH") && step.contains("agentx_sub_ordinary_kind_v1")), "{plan:?}");
         let run = |sql: &str| {
             let mut stmt = db.conn().prepare(sql).unwrap();

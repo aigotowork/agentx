@@ -72,7 +72,7 @@ fn offline_target_keeps_its_name_and_mailbox_then_replies_from_its_exact_host() 
     assert_eq!(page.items.iter().map(|h| (h.name.as_str(), h.online)).collect::<Vec<_>>(), [("laptop", true)]);
     assert!(page.next.is_none());
     let page = super::super::agent_page(root, GEN, None, 1, Some("desktop".into())).unwrap();
-    assert_eq!(page.items, [nova.clone()]);
+    assert_eq!(page.items.as_slice(), std::slice::from_ref(&nova));
     assert!(page.next.is_none());
 
     let message = apply(root, |db, now| send(db, now, send_input(&luna, "@desktop/nova", "send-1"))).unwrap();

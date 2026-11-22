@@ -20,6 +20,7 @@ pub(crate) use error::{ServiceError, ServiceResult};
 /// Selected local service operations. Each variant belongs to its domain owner.
 /// Adding a wire operation extends this native declaration, never a second IDL.
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[allow(clippy::large_enum_variant, reason = "Keep the native domain payload inline in this serialized envelope")]
 pub(crate) enum Request {
     Inspection(crate::inspection::contract::Request),
     Management(crate::management::contract::Request),

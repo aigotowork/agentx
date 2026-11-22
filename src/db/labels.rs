@@ -109,7 +109,7 @@ impl super::AgentxDb {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+
     use crate::db::AgentxDb;
     fn downgrade(db: &AgentxDb) {
         db.conn().execute_batch("DROP TABLE agent_labels; DROP TABLE agent_label_sets; DROP INDEX agent_creation_instances_by_creation; DROP INDEX instances_by_adopted_workspace_name; PRAGMA user_version=27;").unwrap();

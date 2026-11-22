@@ -528,7 +528,7 @@ impl TabEntry {
     }
 
     fn spans(&self) -> Vec<Span<'static>> {
-        let bg = agent_background(self.is_cursor, self.is_selected).or_else(|| match self.indicator {
+        let bg = agent_background(self.is_cursor, self.is_selected).or(match self.indicator {
             Some(palette::ORANGE) => Some(Color::Rgb(48, 28, 8)),
             Some(_) => Some(Color::Rgb(46, 42, 14)),
             None => None,

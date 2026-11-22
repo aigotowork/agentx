@@ -68,10 +68,9 @@ impl Session {
         };
         if invocation.activation_target.is_some()
             && let (Some(name), Some(actor)) = (name, actor.as_ref())
+            && name != actor.record.name
         {
-            if name != actor.record.name {
-                return Err(ServiceError::Forbidden(format!("Shared Codex caller --iam must match its attached participant {}", actor.record.name)));
-            }
+            return Err(ServiceError::Forbidden(format!("Shared Codex caller --iam must match its attached participant {}", actor.record.name)));
         }
         if let Some(current) = &actor
             && current.record.tool == "codex"

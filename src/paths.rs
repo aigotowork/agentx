@@ -210,11 +210,6 @@ pub fn db_path() -> PathBuf {
     agentx_dir().join("agentx.db")
 }
 
-/// Get the log file path (agentx_dir/.tmp/logs/agentx.log)
-pub fn log_path() -> PathBuf {
-    agentx_dir().join(".tmp").join("logs").join("agentx.log")
-}
-
 /// Get the pidtrack file path (agentx_dir/.tmp/launched_pids.json)
 pub fn pidtrack_path() -> PathBuf {
     agentx_dir().join(".tmp").join("launched_pids.json")

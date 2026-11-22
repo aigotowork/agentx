@@ -60,6 +60,7 @@ pub(crate) enum Section {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[allow(clippy::large_enum_variant, reason = "Keep the native domain payload inline in this serialized envelope")]
 pub(crate) enum Projection {
     Facts(Box<Facts>),
     Text(Option<String>),

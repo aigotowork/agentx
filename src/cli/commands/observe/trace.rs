@@ -12,7 +12,7 @@ use crate::observability::{
 
 pub(super) fn read(requested: Option<PathBuf>, id: Option<ClientInvocationId>, local: bool, limit: u16, json: bool, out: &mut impl Write) -> io::Result<()> {
     let cwd = std::env::current_dir()?;
-    let requested = requested.unwrap_or_else(|| crate::paths::agentx_dir());
+    let requested = requested.unwrap_or_else(crate::paths::agentx_dir);
     let ScopeLookup::Existing(scope) = observation::resolve_existing_scope(ExistingScopeInput { requested, cwd }) else {
         return Err(io::Error::new(io::ErrorKind::NotFound, "trace needs an existing readable scope directory"));
     };

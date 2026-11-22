@@ -32,10 +32,12 @@ struct Job {
     observation: Option<RequestObservationRef>,
 }
 
+type ReadQueue = (fn(&Request) -> bool, mpsc::SyncSender<Job>);
+
 #[derive(Clone)]
 struct JobQueues {
     writer: mpsc::SyncSender<Job>,
-    reader: Option<(fn(&Request) -> bool, mpsc::SyncSender<Job>)>,
+    reader: Option<ReadQueue>,
     diagnostics: Option<DispatchLog>,
 }
 

@@ -55,14 +55,28 @@ struct ReportPath {
     request_id: String,
 }
 
-async fn context(state: Deployment, id: String) -> Result<ScopeContext, Response> {
+enum AdminError {
+    Deployment(crate::cloud::Failure),
+    Scope(Error),
+}
+
+impl IntoResponse for AdminError {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Deployment(error) => error.into_response(),
+            Self::Scope(error) => error.into_response(),
+        }
+    }
+}
+
+async fn context(state: Deployment, id: String) -> Result<ScopeContext, AdminError> {
     state
         .catalog(move |db| {
             let receipt = db.lookup(&id)?;
             Ok(db.context(&id, receipt.generation, receipt.credential_version))
         })
         .await
-        .map_err(IntoResponse::into_response)
+        .map_err(AdminError::Deployment)
 }
 
 #[derive(Clone, Copy)]
@@ -98,30 +112,30 @@ async fn run<T: Send + 'static>(scope: ScopeContext, access: Access, operation: 
 
 #[utoipa::path(get, path="/api/v1/admin/scopes/{id}/hosts/{host}/capabilities", operation_id="getAdminHostCapabilities",
     params(("id"=String,Path),("host"=String,Path)), responses((status=200,body=HostCapabilities)))]
-async fn admin_capabilities(State(state): State<Deployment>, parts: Result<Path<AdminHostPath>, PathRejection>) -> Result<Json<HostCapabilities>, Response> {
-    let AdminHostPath { id, host } = path(parts).map_err(IntoResponse::into_response)?;
+async fn admin_capabilities(State(state): State<Deployment>, parts: Result<Path<AdminHostPath>, PathRejection>) -> Result<Json<HostCapabilities>, AdminError> {
+    let AdminHostPath { id, host } = path(parts).map_err(AdminError::Scope)?;
     let scope = context(state, id).await?;
     let generation = scope.generation.clone();
-    run(scope, Access::AdminRead, move |db, now| store::capabilities(db, now, generation.clone(), host.clone())).await.map(Json).map_err(IntoResponse::into_response)
+    run(scope, Access::AdminRead, move |db, now| store::capabilities(db, now, generation.clone(), host.clone())).await.map(Json).map_err(AdminError::Scope)
 }
 
 #[utoipa::path(post, path="/api/v1/admin/scopes/{id}/operations", operation_id="createAdminControlOperation",
     params(("id"=String,Path)), request_body=CreateControlOperation, responses((status=200,body=ControlReceipt)))]
-async fn admin_create(State(state): State<Deployment>, parts: Result<Path<AdminPath>, PathRejection>, input: Result<Json<CreateControlOperation>, JsonRejection>) -> Result<Json<ControlReceipt>, Response> {
-    let AdminPath { id } = path(parts).map_err(IntoResponse::into_response)?;
-    let input = payload(input).map_err(IntoResponse::into_response)?;
+async fn admin_create(State(state): State<Deployment>, parts: Result<Path<AdminPath>, PathRejection>, input: Result<Json<CreateControlOperation>, JsonRejection>) -> Result<Json<ControlReceipt>, AdminError> {
+    let AdminPath { id } = path(parts).map_err(AdminError::Scope)?;
+    let input = payload(input).map_err(AdminError::Scope)?;
     let scope = context(state, id).await?;
-    fence(&scope, &input.generation).map_err(IntoResponse::into_response)?;
-    run(scope, Access::AdminSubmit, move |db, now| store::create(db, now, &input)).await.map(Json).map_err(IntoResponse::into_response)
+    fence(&scope, &input.generation).map_err(AdminError::Scope)?;
+    run(scope, Access::AdminSubmit, move |db, now| store::create(db, now, &input)).await.map(Json).map_err(AdminError::Scope)
 }
 
 #[utoipa::path(get, path="/api/v1/admin/scopes/{id}/operations/{request_id}", operation_id="getAdminControlOperation",
     params(("id"=String,Path),("request_id"=String,Path)), responses((status=200,body=ControlReceipt)))]
-async fn admin_get(State(state): State<Deployment>, parts: Result<Path<AdminOperationPath>, PathRejection>) -> Result<Json<ControlReceipt>, Response> {
-    let AdminOperationPath { id, request_id } = path(parts).map_err(IntoResponse::into_response)?;
+async fn admin_get(State(state): State<Deployment>, parts: Result<Path<AdminOperationPath>, PathRejection>) -> Result<Json<ControlReceipt>, AdminError> {
+    let AdminOperationPath { id, request_id } = path(parts).map_err(AdminError::Scope)?;
     let scope = context(state, id).await?;
     let generation = scope.generation.clone();
-    run(scope, Access::AdminRead, move |db, now| store::get(db, now, &generation, &request_id)).await.map(Json).map_err(IntoResponse::into_response)
+    run(scope, Access::AdminRead, move |db, now| store::get(db, now, &generation, &request_id)).await.map(Json).map_err(AdminError::Scope)
 }
 
 #[utoipa::path(put, path="/hosts/{host}/control/lease", operation_id="scopeRenewControlLease",

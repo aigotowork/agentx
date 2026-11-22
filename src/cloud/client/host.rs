@@ -720,10 +720,10 @@ impl Codex {
             params["clientUserMessageId"] = json!(id);
         }
         let outcome = self.call("turn/start", params);
-        if outcome.as_ref().is_err_and(|error| error.downcast_ref::<NativeRejection>().is_some()) {
-            if let Ok(result) = self.call("thread/read", json!({"threadId":self.thread})) {
-                self.idle = result["thread"]["status"]["type"] == "idle";
-            }
+        if outcome.as_ref().is_err_and(|error| error.downcast_ref::<NativeRejection>().is_some())
+            && let Ok(result) = self.call("thread/read", json!({"threadId":self.thread}))
+        {
+            self.idle = result["thread"]["status"]["type"] == "idle";
         }
         let result = outcome?;
         ensure!(result["turn"]["id"].as_str().is_some(), "invalid Codex turn receipt");
