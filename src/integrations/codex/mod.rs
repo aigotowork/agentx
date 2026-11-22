@@ -6,6 +6,7 @@
 pub(crate) mod bridge;
 pub(crate) mod configuration;
 mod mail_evidence;
+#[cfg(target_os = "linux")]
 pub(crate) use mail_evidence::item_matches as mailbox_item_matches;
 #[cfg(target_os = "linux")]
 pub(crate) mod product_execution;

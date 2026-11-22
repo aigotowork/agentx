@@ -20,6 +20,7 @@ const FILE: &str = "cloud.toml";
 const LIMIT: u64 = 65536;
 
 impl Config {
+    #[cfg(target_os = "linux")]
     pub(crate) fn host_name(&self) -> String {
         self.host.clone().unwrap_or_else(super::client::default_host)
     }

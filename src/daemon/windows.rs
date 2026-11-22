@@ -264,10 +264,10 @@ impl Pending {
 
 impl Drop for Pending {
     fn drop(&mut self) {
-        if !self.connected {
-            if let Some(stream) = &self.stream {
-                self.operation.cancel(stream.handle.as_raw_handle());
-            }
+        if !self.connected
+            && let Some(stream) = &self.stream
+        {
+            self.operation.cancel(stream.handle.as_raw_handle());
         }
     }
 }

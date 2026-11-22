@@ -6,7 +6,9 @@ use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::Value;
 
 use super::{Actor, http::Http, path_segment, valid_name};
-use crate::cloud::communication::types::{AgentRegistration, AgentView, ClaimInbox, ConfirmInbox, Descriptor, HostRegistration, HostView, RecoverInbox, SendMessage};
+use crate::cloud::communication::types::{AgentRegistration, ClaimInbox, ConfirmInbox, Descriptor, RecoverInbox, SendMessage};
+#[cfg(target_os = "linux")]
+use crate::cloud::communication::types::{AgentView, HostRegistration, HostView};
 
 pub(super) enum Port {
     Direct(Http),
@@ -53,6 +55,7 @@ pub(super) fn checked_descriptor(http: &Http, url: &str) -> Result<Descriptor> {
     Ok(descriptor)
 }
 
+#[cfg(target_os = "linux")]
 pub(super) fn heartbeat(http: &Http, actor: &Actor) -> Result<()> {
     request::<HostView>(http, "PUT", &format!("/hosts/{}", path_segment(&actor.agent.host)), &HostRegistration { generation: actor.generation.clone(), installation_id: actor.installation_id.clone() })?;
     Ok(())

@@ -12,10 +12,11 @@ const STDERR_LIMIT: usize = 16 * 1024;
 
 /// A Linux deleted executable pathname cannot be used by later launcher steps.
 /// Pin that same loaded image once per build, rather than selecting a new installed binary.
-pub(super) fn self_executable(scope: &Path) -> Result<PathBuf, String> {
+pub(super) fn self_executable(_scope: &Path) -> Result<PathBuf, String> {
     let executable = std::env::current_exe().map_err(|error| format!("worker executable lookup: {error}"))?;
     #[cfg(target_os = "linux")]
     if !executable.is_file() {
+        let scope = _scope;
         let directory = scope.join(".tmp/management-hosts");
         std::fs::create_dir_all(&directory).map_err(|error| format!("worker image directory: {error}"))?;
         crate::sys::fs::set_private_dir(&directory).map_err(|error| format!("worker image permissions: {error}"))?;
@@ -241,7 +242,7 @@ fn read_available(stderr: &mut ChildStderr, bytes: &mut [u8]) -> std::io::Result
             return Err(std::io::ErrorKind::WouldBlock.into());
         }
         let count = bytes.len().min(available as usize);
-        return stderr.read(&mut bytes[..count]);
+        stderr.read(&mut bytes[..count])
     }
     #[cfg(not(windows))]
     stderr.read(bytes)

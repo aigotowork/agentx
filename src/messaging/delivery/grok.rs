@@ -46,7 +46,7 @@ use std::time::{Duration, Instant};
 use anyhow::{Context, Result, bail};
 use serde_json::{Value, json};
 
-#[cfg(test)]
+#[cfg(all(test, unix))]
 use crate::db::AgentxDb;
 use crate::integrations::hooks::{DeliveryAck, common};
 use crate::runtime::notify::NotifyServer;

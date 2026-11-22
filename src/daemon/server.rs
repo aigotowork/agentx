@@ -129,7 +129,7 @@ impl Drop for Admission {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, unix))]
 pub(super) fn run(lease: &ScopeLease, application: &mut impl Application, stop: Arc<AtomicBool>) -> Result<(), DaemonError> {
     run_observed(lease, application, stop, None)
 }

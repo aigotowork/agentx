@@ -221,7 +221,8 @@ pub fn run_pty(args: &[String]) -> Result<()> {
     let mut child_env = pty_child_env();
     #[cfg(target_os = "linux")]
     let mut native_session = None;
-    #[allow(unused_mut)]
+    #[cfg(unix)]
+    #[cfg_attr(not(target_os = "linux"), allow(unused_mut))]
     let mut native_ready = None;
     let grok_acp = if target.known_tool() == Some(tool::Tool::Grok) && instance_name.is_some() {
         let launch = delivery::grok::Launch::new(&command, &extra_args, &tool_args)?;
@@ -234,6 +235,7 @@ pub fn run_pty(args: &[String]) -> Result<()> {
     let grok_leader = grok_acp.clone();
     // Create and run PTY
     let instance_name_for_failure = instance_name.clone();
+    #[cfg_attr(not(target_os = "linux"), allow(clippy::redundant_closure_call, reason = "Linux preparation errors must reach the same failure handler as PTY spawn errors"))]
     let spawn = (|| -> Result<_> {
         #[cfg_attr(not(target_os = "linux"), allow(unused_mut))]
         let mut full_args: Vec<&str> = extra_args.iter().map(String::as_str).chain(leader_args.iter().map(String::as_str)).chain(tool_args.iter().copied()).collect();
@@ -261,7 +263,19 @@ pub fn run_pty(args: &[String]) -> Result<()> {
                 }
             }
         }
-        pty::Proxy::spawn(&command, &full_args, pty::ProxyConfig { ready_patterns, instance_name, target, env_vars: child_env, grok_acp, native_ready })
+        pty::Proxy::spawn(
+            &command,
+            &full_args,
+            pty::ProxyConfig {
+                ready_patterns,
+                instance_name,
+                target,
+                env_vars: child_env,
+                grok_acp,
+                #[cfg(unix)]
+                native_ready,
+            },
+        )
     })();
     let mut proxy = match spawn {
         Ok(proxy) => proxy,

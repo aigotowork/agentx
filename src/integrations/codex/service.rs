@@ -90,6 +90,7 @@ impl CodexService for ManagedCodexService {
 /// Acquisition must reject incompatible service requirements, not start a
 /// second private backend. Per-client identity variables are not backend identity.
 #[derive(Clone, Debug)]
+#[cfg_attr(not(target_os = "linux"), allow(dead_code, reason = "Only the Linux backend consumes these shared acquisition inputs"))]
 pub(crate) struct ServiceRequest {
     pub program: PathBuf,
     pub prefix_args: Vec<String>,
@@ -131,6 +132,7 @@ pub(crate) struct ServiceConnection {
 
 /// Complete native JSON frames, independent of newline/socket framing.
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(not(target_os = "linux"), allow(dead_code, reason = "The shared bridge handles frames from the Linux backend"))]
 pub(crate) enum Receive {
     Frame(String),
     TimedOut,
@@ -138,6 +140,7 @@ pub(crate) enum Receive {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
+#[cfg_attr(not(target_os = "linux"), allow(dead_code, reason = "Only the Linux transport produces every connection failure"))]
 pub(crate) enum ConnectionFailure {
     #[error("native connection closed")]
     Closed,
@@ -158,6 +161,7 @@ pub(crate) trait NativeConnection: Send {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
+#[cfg_attr(not(target_os = "linux"), allow(dead_code, reason = "Other platforms return UnsupportedPlatform before acquisition"))]
 pub(crate) enum ServiceFailure {
     #[cfg(not(target_os = "linux"))]
     #[error("shared Codex service is unsupported on this platform")]

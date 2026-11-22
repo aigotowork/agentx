@@ -1,5 +1,6 @@
 //! Independent native launch reservation, replay and ownership evidence.
 use super::*;
+#[cfg(unix)]
 use crate::runtime::hosts::ChildProcess;
 use crate::service::{CallerContext, CallerProcess, InvocationContext, RequestId};
 

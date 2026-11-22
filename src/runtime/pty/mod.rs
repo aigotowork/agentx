@@ -586,12 +586,21 @@ pub struct ProxyConfig {
     pub env_vars: Vec<(String, String)>,
     pub grok_acp: Option<crate::messaging::delivery::grok::Launch>,
     /// A separate native root owns activation; this proxy owns display only.
+    #[cfg(unix)]
     pub native_ready: Option<std::sync::Arc<std::sync::atomic::AtomicBool>>,
 }
 
 impl Default for ProxyConfig {
     fn default() -> Self {
-        Self { ready_patterns: Tool::Claude.ready_patterns().iter().map(|p| p.to_string()).collect(), instance_name: None, target: PtyTarget::Known(Tool::Claude), env_vars: vec![], grok_acp: None, native_ready: None }
+        Self {
+            ready_patterns: Tool::Claude.ready_patterns().iter().map(|p| p.to_string()).collect(),
+            instance_name: None,
+            target: PtyTarget::Known(Tool::Claude),
+            env_vars: vec![],
+            grok_acp: None,
+            #[cfg(unix)]
+            native_ready: None,
+        }
     }
 }
 
@@ -1544,7 +1553,7 @@ fn delivery_start_poll_ms(timeout: Duration, elapsed: Duration) -> u16 {
 /// Initialize delivery components with dependency injection for testing
 ///
 /// Returns (db, notify) on success, Err on failure
-#[cfg(all(test, any(unix, windows)))]
+#[cfg(all(test, unix))]
 fn initialize_delivery_components<DbF, NotifyF>(instance_name: &str, db_factory: DbF, notify_factory: NotifyF) -> anyhow::Result<(crate::db::AgentxDb, crate::runtime::notify::NotifyServer)>
 where
     DbF: FnOnce() -> anyhow::Result<crate::db::AgentxDb>,

@@ -181,7 +181,8 @@ impl DatabaseGeneration {
 /// destroy it before dropping this value. Never delete `owner.lock` on exit.
 pub struct ScopeLease {
     scope: DaemonScope,
-    lock: File,
+    // Keep the exclusive lock alive for the entire daemon lifetime.
+    _lock: File,
     instance: String,
     generation: DatabaseGeneration,
 }
@@ -211,7 +212,7 @@ impl ScopeLease {
             Err(TryLockError::WouldBlock) => return Err(DaemonError::AlreadyRunning),
             Err(TryLockError::Error(error)) => return Err(error.into()),
         }
-        let lease = Self { scope, lock, instance: uuid::Uuid::new_v4().to_string(), generation: DatabaseGeneration::default() };
+        let lease = Self { scope, _lock: lock, instance: uuid::Uuid::new_v4().to_string(), generation: DatabaseGeneration::default() };
         lease.ensure_ownership()?;
         Ok(lease)
     }
@@ -234,7 +235,7 @@ impl ScopeLease {
         #[cfg(unix)]
         {
             use std::os::unix::fs::MetadataExt;
-            let held = self.lock.metadata()?;
+            let held = self._lock.metadata()?;
             let current = fs::symlink_metadata(self.scope.state.join("owner.lock"))?;
             if !current.is_file() || held.dev() != current.dev() || held.ino() != current.ino() {
                 return Err(DaemonError::Unavailable("scope ownership file was replaced; daemon must stop".into()));
@@ -245,13 +246,14 @@ impl ScopeLease {
 }
 
 fn private_directory(path: &Path) -> Result<(), DaemonError> {
-    let mut builder = fs::DirBuilder::new();
     #[cfg(unix)]
-    {
+    let created = {
         use std::os::unix::fs::DirBuilderExt;
-        builder.mode(0o700);
-    }
-    match builder.create(path) {
+        fs::DirBuilder::new().mode(0o700).create(path)
+    };
+    #[cfg(not(unix))]
+    let created = fs::create_dir(path);
+    match created {
         Ok(()) => {}
         Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
         Err(error) => return Err(error.into()),

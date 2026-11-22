@@ -17,7 +17,9 @@ pub(in crate::cloud) use ownership::{OwnedProcess, exited_process, owned_process
 pub(super) mod http;
 mod mailbox;
 
-use std::fs::{self, File, OpenOptions, TryLockError};
+#[cfg(target_os = "linux")]
+use std::fs::OpenOptions;
+use std::fs::{self, File, TryLockError};
 use std::io::{Write, stdout};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
@@ -30,7 +32,9 @@ use serde_json::json;
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
-use super::communication::types::{AgentView, ClaimInbox, ConfirmInbox, HostView, InboxBatch, InboxConfirmation, Intent, MessageOperation, MessageView, RecoverInbox, SendMessage};
+#[cfg(target_os = "linux")]
+use super::communication::types::RecoverInbox;
+use super::communication::types::{AgentView, ClaimInbox, ConfirmInbox, HostView, InboxBatch, InboxConfirmation, Intent, MessageOperation, MessageView, SendMessage};
 use crate::cli::commands::{
     list::ListArgs,
     listen::ListenArgs,
@@ -58,7 +62,11 @@ struct ManagedContext {
 
 enum Mode {
     Direct,
-    Managed { root: PathBuf, context: Option<String> },
+    Managed {
+        #[cfg_attr(not(target_os = "linux"), allow(dead_code, reason = "Only Linux opens the detected managed scope"))]
+        root: PathBuf,
+        context: Option<String>,
+    },
 }
 
 impl Mode {
@@ -221,15 +229,12 @@ fn read_json_file<T: DeserializeOwned>(path: &Path) -> Result<T> {
     Ok(serde_json::from_reader(File::open(path)?)?)
 }
 
+#[cfg(target_os = "linux")]
 fn private_directory(path: &Path) -> std::io::Result<()> {
+    use std::os::unix::fs::DirBuilderExt;
+
     let mut builder = fs::DirBuilder::new();
-    builder.recursive(true);
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::DirBuilderExt;
-        builder.mode(0o700);
-    }
-    builder.create(path)
+    builder.recursive(true).mode(0o700).create(path)
 }
 
 fn path_segment(value: &str) -> String {
@@ -395,6 +400,7 @@ impl Scope {
         Ok(batch)
     }
 
+    #[cfg(target_os = "linux")]
     fn recover(&self, actor: &Actor, claim_id: &str) -> Result<InboxBatch> {
         let batch: InboxBatch = self.port.call(Command::Recover(RecoverInbox { generation: actor.generation.clone(), installation_id: actor.installation_id.clone(), agent: actor.agent.clone(), claim_id: claim_id.into(), release: false }))?;
         ensure!(batch.claim_id == claim_id && batch.items.iter().all(|message| message.to == actor.agent), "cloud recovery did not match the requested Agent and claim ID");

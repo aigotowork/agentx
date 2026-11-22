@@ -15,6 +15,7 @@ impl RemoteInbox {
     pub(crate) fn new(client: Client) -> Self {
         Self { client }
     }
+    #[cfg(target_os = "linux")]
     pub(crate) fn prepare_product(&self, target: &ActivationTarget, attempt: AttemptId) -> Result<Option<ProductBatch>, PrepareFailure> {
         match self.call(InboxOperation::PrepareProduct { target: target.clone(), attempt }) {
             Ok(InboxOutcome::ProductPrepared(result)) => result,
