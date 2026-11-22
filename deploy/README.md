@@ -16,6 +16,10 @@ docker compose logs --tail=20 cloud
 
 浏览器访问 `http://127.0.0.1:18755/deployment`，使用 `.env` 中的管理 token 创建 scope。容器以 UID 10001 运行，Compose 命名卷保存部署目录。默认 Compose 项目名来自部署目录名，升级时沿用该目录和项目名；先停止服务并备份整个卷，再切换镜像版本并运行 `docker compose up -d`。`docker compose down` 会保留数据，`down -v` 会删除卷。
 
+## 打开云端 Space
+
+在包含云端 Space 的镜像中，从部署控制台选中 scope，点击「打开 Space」，也可以直接访问 `/scopes/{id}/space/`。使用 Admin token 可选择主机和角色、启动 Agent、停止选定实例并查询回执。启动已排队时，等回执显示执行成功，再刷新清单。使用该 scope 的 token 可查看主机、Agent 和选定实例的云端消息。切换页面后需重新输入对应 token。详见 [Space 使用说明](../web/agent-space/README.md#云端-space)。
+
 ## 让其他机器接入
 
 在 `.env` 中设置 `AGENTX_PUBLIC_URL=https://agents.example.com`，然后重新执行 `docker compose up -d`。在宿主机 HTTPS 反向代理上将整个域名转发至 `http://127.0.0.1:18755`，保留请求路径和 Authorization 请求头，并允许超过 20 秒的长轮询。例如，使用宿主机上的 Caddy：
