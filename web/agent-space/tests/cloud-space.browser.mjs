@@ -129,6 +129,7 @@ try {
   }
   async function connect(token) {
     await page.waitForSelector('.cloud-connect input');
+    await page.$eval('.cloud-connect input', input => { input.focus(); input.select(); });
     await page.type('.cloud-connect input', token);
     await button('连接');
   }
@@ -216,7 +217,6 @@ try {
   assert.deepEqual(writes.at(-1).command, { kind: 'stop', name: current.name, incarnation: current.incarnation });
   await button('关闭', 'dialog[open]');
   await exactLink(old, { access: 'admin' });
-  await connect(admin);
   await text('.cloud-reader', '此实例不在当前清单中');
   assert.equal(await page.$('.cloud-reader .cloud-danger'), null);
   assert(!calls.some(call => call.audience === 'admin' && call.path.endsWith('/messages')));
@@ -234,11 +234,10 @@ try {
   await text('.cloud-reader', 'Retired instance earlier message');
   assert(calls.some(call => call.path === `${scopeApi}/messages` && call.query.before === '9223372036854775807' && call.query.incarnation === old.incarnation));
   await exactLink(current, { generation: 'other-generation' });
-  await connect(member);
   await text('.cloud-reader [role=alert]', '代次已变化');
   assert(!calls.some(call => call.path === `${scopeApi}/messages` && call.query.incarnation === current.incarnation));
   assert.equal(await page.evaluate(([admin, member]) => {
-    const values = [location.href, document.cookie, ...Object.values(localStorage), ...Object.values(sessionStorage)];
+    const values = [location.href, document.cookie, ...Object.values(sessionStorage)];
     return values.some(value => value.includes(admin) || value.includes(member));
   }, [admin, member]), false);
   assert(calls.filter(call => call.audience === 'scope').every(call => call.method === 'GET'));

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { forgetLogin, rememberLogin, useRememberedLogin, type TokenRetention } from './remember';
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Icon } from '../presentation';
 import { cloudTokenPattern, deploymentClient, explainError, type AdminClient, type AdminOverview } from './model';
 import { DeploymentWorkspace } from './workspace';
@@ -15,13 +16,20 @@ function DeploymentHeader({ children }: { children?: ReactNode }) {
 }
 
 type Session = { client: AdminClient; overview: AdminOverview };
-
 function DeploymentGate({ onConnect }: { onConnect: (session: Session) => void }) {
   const [token, setToken] = useState('');
+  const [retention, setRetention] = useState<TokenRetention>(90);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const pending = useRef<AbortController | null>(null);
   useEffect(() => () => pending.current?.abort(), []);
+
+  const validate = useCallback(async (bearer: string, signal: AbortSignal) => {
+    const client = deploymentClient(bearer);
+    const overview = await client.overview({ signal });
+    return { client, overview };
+  }, []);
+  const restoring = useRememberedLogin('admin', validate, onConnect);
 
   async function connect(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -33,9 +41,8 @@ function DeploymentGate({ onConnect }: { onConnect: (session: Session) => void }
     setError('');
     setBusy(true);
     try {
-      const client = deploymentClient(bearer);
-      const overview = await client.overview({ signal: controller.signal });
-      if (!controller.signal.aborted) onConnect({ client, overview });
+      const session = await validate(bearer, controller.signal);
+      if (!controller.signal.aborted) { rememberLogin('admin', bearer, retention); onConnect(session); }
     } catch (failure) {
       if (!controller.signal.aborted) setError(explainError(failure, '无法连接部署。请确认部署地址和网络后重试。'));
     } finally {
@@ -50,8 +57,11 @@ function DeploymentGate({ onConnect }: { onConnect: (session: Session) => void }
       <p className="deployment-origin"><code>{location.origin}</code></p>
       {isSecureContext ? <>
         <label>管理员令牌<input type="password" value={token} required autoComplete="off" spellCheck={false} readOnly={busy} aria-invalid={!!error} onChange={event => { setToken(event.target.value); setError(''); }} /></label>
+        <label>记住令牌<select value={retention} onChange={event => setRetention(Number(event.target.value) as TokenRetention)} disabled={busy}>
+          <option value="0">仅本次</option><option value="30">30 天</option><option value="90">90 天</option>
+        </select></label>
         {error && <p role="alert" className="deployment-error">{error}</p>}
-        <button className="primary" type="submit" disabled={busy || !token.trim()}>{busy ? '正在连接…' : '连接'}</button>
+        <button className="primary" type="submit" disabled={busy || restoring || !token.trim()}>{busy ? '正在连接…' : '连接'}</button>
       </> : <p role="alert" className="deployment-error">请通过 HTTPS 打开部署管理台。</p>}
     </form>
   </main>;
@@ -70,7 +80,7 @@ export function DeploymentConsole() {
   }, []);
 
   return <div className="deployment-app">
-    <DeploymentHeader>{session && <button className="quiet deployment-disconnect" onClick={() => setSession(null)}>断开</button>}</DeploymentHeader>
+    <DeploymentHeader>{session && <button className="quiet deployment-disconnect" onClick={() => { forgetLogin('admin'); setSession(null); }}>断开</button>}</DeploymentHeader>
     {session ? <DeploymentWorkspace client={session.client} initialOverview={session.overview} /> : <DeploymentGate onConnect={setSession} />}
   </div>;
 }

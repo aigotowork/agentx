@@ -49,6 +49,7 @@ try {
   await click('连接');
   await text('.deployment-signin [role=alert]', '管理员令牌无效');
   assert.equal(requests.length, 1);
+  await page.select('.deployment-signin select', '0');
   await field(login, demoAdminToken);
   await click('连接');
   await text('.deployment-metrics', '23');

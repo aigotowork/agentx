@@ -96,7 +96,7 @@ The [DancingAI importer](scripts/vendor-dancingai.mjs) removes only the final in
 
 ## 云端 Space
 
-从部署控制台 `/deployment` 中选定 Scope 后进入云端 Space；也可直接打开同一部署的 `/scopes/{id}/space/`。打开后选择访问方式并输入对应令牌。令牌仅用于当前页面的同源请求；重新打开页面，需要再次连接。场景和名册打开同一个精确实例；从已选实例复制地址可保留主机、名称、实例标识与 Scope 代次。
+从部署控制台 `/deployment` 中选定 Scope 后进入云端 Space；也可直接打开同一部署的 `/scopes/{id}/space/`。打开后选择访问方式并输入对应令牌。选择 30 天或 90 天会在本浏览器保存令牌，并在重开时通过同源 API 自动验证。选择「仅本次」或点击「断开」可清除对应凭据。场景和名册打开同一个精确实例；从已选实例复制地址可保留主机、名称、实例标识与 Scope 代次。
 
 | 令牌 | 可用功能 |
 | --- | --- |

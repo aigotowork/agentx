@@ -1,3 +1,4 @@
+import { forgetLogin, rememberLogin, useRememberedLogin, type TokenRetention } from '../../../management/deployment/remember';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { DeploymentControlDialog, DeploymentReceiptLookup, type ControlTarget } from '../../../management/deployment/control';
 import { useCursor, useRead } from '../../../management/deployment/model';
@@ -38,7 +39,7 @@ export function CloudSpace({ scope }: { scope: string }) {
   const styles = <SpaceStyleSwitch value={appearance.style} onChange={chooseStyle} compact />;
   const header = <><div className="cloud-brand"><h1>云端 Space</h1><code>{scope}</code></div>
     <div className="cloud-header-actions">{styles}<a href="/deployment">部署管理</a>
-      {session && <button type="button" title={permissions[session.access]} onClick={() => setSession(undefined)}>断开</button>}
+      {session && <button type="button" title={permissions[session.access]} onClick={() => { forgetLogin(session.access === 'admin' ? 'admin' : scopeAudience(scope)); setSession(undefined); }}>断开</button>}
     </div></>;
   return <SpaceTheme style={appearance.style}><SpaceInteractions><OfficeLayout studio={studio} header={header}
     context={session ? <div className="cloud-session"><strong>{session.access === 'admin' ? '管理员访问' : 'Scope 访问'}</strong><span title={permissions[session.access]}>{permissions[session.access]}</span><code title="当前 Scope 代次">{session.generation}</code></div> : null}>
@@ -48,26 +49,34 @@ export function CloudSpace({ scope }: { scope: string }) {
   </OfficeLayout></SpaceInteractions></SpaceTheme>;
 }
 
+const scopeAudience = (scope: string) => 'scope.' + scope;
+
 function Connect({ scope, onConnect }: { scope: string; onConnect(session: Session): void }) {
   const [access, setAccess] = useState(() => accessHint(location.search));
+  const [token, setToken] = useState('');
+  const [retention, setRetention] = useState<TokenRetention>(90);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const audience = access === 'admin' ? 'admin' : scopeAudience(scope);
+  const validate = useCallback((token: string, signal: AbortSignal) => connectCloud(scope, access, token, signal), [scope, access]);
+  const restoring = useRememberedLogin(audience, validate, onConnect);
   const controller = useRef<AbortController>(null);
-  const input = useRef<HTMLInputElement>(null);
   useEffect(() => () => controller.current?.abort(), []);
   async function connect(event: FormEvent) {
     event.preventDefault();
-    if (controller.current || !input.current) return;
-    const token = input.current.value.trim();
-    if (!tokenPattern.test(token)) { setError('令牌应包含 32–256 个字母、数字、下划线或连字符。'); input.current.focus(); return; }
-    input.current.value = '';
+    if (controller.current) return;
+    const bearer = token.trim();
+    if (!tokenPattern.test(bearer)) { setError('令牌应包含 32–256 个字母、数字、下划线或连字符。'); return; }
     const request = new AbortController();
     controller.current = request;
     setBusy(true);
     setError('');
     try {
-      const session = await connectCloud(scope, access, token, request.signal);
-      if (!request.signal.aborted) onConnect(session);
+      const session = await connectCloud(scope, access, bearer, request.signal);
+      if (!request.signal.aborted) { rememberLogin(audience, bearer, retention);
+        const url = new URL(location.href);
+        url.searchParams.set('access', access);
+        history.replaceState(history.state, '', url); onConnect(session); }
     } catch (failure) {
       if (!request.signal.aborted) setError(cloudProblem(failure, '无法连接云端 Space，请重试。'));
     } finally {
@@ -78,13 +87,16 @@ function Connect({ scope, onConnect }: { scope: string; onConnect(session: Sessi
   return <div className="cloud-entry"><form className="cloud-connect" onSubmit={connect} autoComplete="off">
     <div className="cloud-connect-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m3 14 13-8 13 8v12H3zM12 26v-9h8v9M1 15 16 5l15 10" /></svg></div>
     <h2>连接此 Scope</h2>
-    <label>访问方式<select value={access} disabled={busy} onChange={event => { setAccess(event.target.value as Access); setError(''); if (input.current) input.current.value = ''; }}>
+    <label>访问方式<select value={access} disabled={busy || restoring} onChange={event => { const next = event.target.value as Access; setAccess(next); setToken(''); setError(''); }}>
       <option value="scope">Scope 令牌</option><option value="admin">管理员令牌</option>
     </select></label>
     <p className="cloud-note">{permissions[access]}</p>
-    <label>访问令牌<input ref={input} type="password" required maxLength={256} autoComplete="off" spellCheck={false} aria-describedby={error ? 'cloud-connect-error' : undefined} aria-invalid={!!error} /></label>
+    <label>访问令牌<input value={token} onChange={event => setToken(event.target.value)} type="password" required maxLength={256} autoComplete="off" spellCheck={false} aria-describedby={error ? 'cloud-connect-error' : undefined} aria-invalid={!!error} /></label>
+    <label>记住令牌<select value={retention} onChange={event => setRetention(Number(event.target.value) as TokenRetention)} disabled={busy || restoring}>
+      <option value="0">仅本次</option><option value="30">30 天</option><option value="90">90 天</option>
+    </select></label>
     {error && <p id="cloud-connect-error" role="alert">{error}</p>}
-    <button className="cloud-primary" type="submit" disabled={busy}>{busy ? '正在连接…' : '连接'}</button>
+    <button className="cloud-primary" type="submit" disabled={busy || restoring}>{busy ? '正在连接…' : '连接'}</button>
   </form></div>;
 }
 
