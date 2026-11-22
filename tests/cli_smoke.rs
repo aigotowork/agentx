@@ -56,7 +56,10 @@ fn windows_pty_answers_startup_queries_while_waiting_for_terminal_metadata() {
     let process_id = "cpr-startup-metadata";
     // The managed proxy must register against the same identity that `start`
     // created. It will reject an unrelated process binding before reading CPR.
-    let name = h.start_with_process_id(process_id);
+    // Keep the manual identity alive while the managed PTY initializes. A
+    // one-shot `agentx start` process exits immediately, so the daemon's
+    // process-binding cleanup correctly expires it before delivery startup.
+    let name = h.start_listening_with_process_id(process_id);
     let id_dir = h.agentx_dir.join(".tmp/terminal_ids");
     std::fs::create_dir_all(&id_dir).unwrap();
     let id_file = id_dir.join(process_id);
