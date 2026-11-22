@@ -920,7 +920,9 @@ mod tests {
     fn application_panic_stops_and_joins_admission_before_scope_release() {
         struct PanickingApplication;
         impl Application for PanickingApplication {
-            fn handle(&mut self, _: &RequestContext, _: Request) -> ServiceResult<Response> {
+            fn handle(&mut self, context: &RequestContext, request: Request) -> ServiceResult<Response> {
+                assert_eq!(context.caller.request_id.0, "panic-call");
+                assert!(matches!(request, Request::Participants(crate::agents::service::Request::Lookup { .. })));
                 panic!("fixture application panicked");
             }
         }
@@ -932,7 +934,9 @@ mod tests {
             let serving_stop = stop.clone();
             let server = threads.spawn(move || {
                 std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    super::super::serve_with_stop(serving_scope, serving_stop, |generation| {
+                    // Only the explicit test call should panic the application.
+                    // Management's collector can otherwise dispatch before readiness.
+                    super::super::serve_with_stop_and_management(serving_scope, serving_stop, false, |generation| {
                         generation.publish(uuid::Uuid::new_v4().to_string()).unwrap();
                         Ok(PanickingApplication)
                     })
@@ -945,10 +949,11 @@ mod tests {
                 CallerContext { request_id: RequestId("panic-call".into()), invocation: InvocationContext::default(), deadline_unix_ms: None, expected_database_generation: Some(info.database_generation) },
                 Request::Participants(crate::agents::service::Request::Lookup { name: "fixture".into() }),
             );
-            let exited = server.join().unwrap();
-            assert!(matches!(response, Err(DaemonError::OutcomeUnknown(_))));
-            assert!(exited.is_err());
+            assert!(matches!(response, Err(DaemonError::OutcomeUnknown(_))), "{response:?}");
+            let panic = server.join().unwrap().expect_err("application must unwind");
+            assert_eq!(panic.downcast_ref::<&str>(), Some(&"fixture application panicked"));
             assert!(stop.load(Ordering::Acquire));
+            assert!(super::super::transport::probe(&scope).is_err(), "admission remained open after serve returned");
         });
         assert!(ScopeLease::acquire(scope).is_ok());
     }
