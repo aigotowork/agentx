@@ -53,8 +53,10 @@ fn pty_defaults_unusable_term_and_preserves_valid_term() {
 #[test]
 fn windows_pty_answers_startup_queries_while_waiting_for_terminal_metadata() {
     let h = Agentx::new();
-    let name = h.start();
     let process_id = "cpr-startup-metadata";
+    // The managed proxy must register against the same identity that `start`
+    // created. It will reject an unrelated process binding before reading CPR.
+    let name = h.start_with_process_id(process_id);
     let id_dir = h.agentx_dir.join(".tmp/terminal_ids");
     std::fs::create_dir_all(&id_dir).unwrap();
     let id_file = id_dir.join(process_id);
@@ -84,8 +86,9 @@ fn windows_pty_answers_startup_queries_while_waiting_for_terminal_metadata() {
         .args(["pty", "codex", "--agentx-tool-path", "cmd.exe", "/d", "/c", "echo CPR_CHILD_READY"])
         .output()
         .unwrap();
-    assert!(terminal.join().unwrap(), "proxy did not answer startup CPR");
+    let answered = terminal.join().unwrap();
     assert!(output.status.success(), "stdout={} stderr={}", String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr));
+    assert!(answered, "proxy did not answer startup CPR");
     assert!(String::from_utf8_lossy(&output.stdout).contains("CPR_CHILD_READY"));
     let conn = rusqlite::Connection::open(h.agentx_dir.join("agentx.db")).unwrap();
     let context: String = conn.query_row("SELECT launch_context FROM instances WHERE name = ?1", [&name], |row| row.get(0)).unwrap();
