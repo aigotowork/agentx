@@ -1401,16 +1401,12 @@ fn run_events_wait_cli_oracle(timing: UnreadTiming, wait_secs: u64, expected_cod
     let mid_wait_cursor: i64 = conn.query_row("SELECT last_event_id FROM instances WHERE name = ?1", rusqlite::params![me], |r| r.get(0)).unwrap_or(0);
     let premature_exit = child.try_wait().unwrap_or(None);
 
-    if expected_code == 0
-        && premature_exit.is_none()
-        && let Ok(c) = rusqlite::Connection::open(&db_path)
-    {
+    if expected_code == 0 && premature_exit.is_none() {
         let data = serde_json::json!({"status": "active", "detail": "sol002_target"});
-        let _ = c.execute("INSERT INTO events (timestamp, type, instance, data) VALUES (datetime('now'), 'status', ?1, ?2)", rusqlite::params![me, serde_json::to_string(&data).unwrap()]);
-        let port: Option<u16> = c.query_row("SELECT port FROM notify_endpoints WHERE instance = ?1 AND kind = 'events_wait'", rusqlite::params![me], |r| r.get(0)).ok();
-        if let Some(p) = port {
-            let _ = std::net::TcpStream::connect(("127.0.0.1", p));
-        }
+        conn.execute("INSERT INTO events (timestamp, type, instance, data) VALUES (datetime('now'), 'status', ?1, ?2)", rusqlite::params![me, data.to_string()]).expect("insert matching status event");
+        // Raw fixture inserts bypass daemon post-commit notifications.
+        let port = observer_port.expect("ready observer endpoint");
+        std::net::TcpStream::connect(("127.0.0.1", port)).expect("wake observer for matching status event");
     }
 
     let deadline_secs = wait_secs + 2;
