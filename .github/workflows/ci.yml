@@ -176,10 +176,46 @@ jobs:
       # per-attempt line is what separates "the test failed" from "something
       # took the runner out from under it".
       - shell: bash
-        if: runner.os != 'Windows'
+        if: runner.os != 'Windows' || matrix.tool == 'relay'
         env:
           AGENTX_TEST_KEEP_DIR: ${{ runner.temp }}/agentx-real-tool
         run: |
+          if [[ '${{ matrix.tool }}' == relay ]]; then
+            fixture_dir="$RUNNER_TEMP/agentx-relay-broker"
+            mkdir -p "$fixture_dir"
+            config="$fixture_dir/loopback.conf"
+            port=18883
+            printf 'listener %s 127.0.0.1\nallow_anonymous true\npersistence false\n' "$port" > "$config"
+            if [[ "$RUNNER_OS" == Windows ]]; then
+              # Extract the pinned official distribution without installing a service.
+              archive="$fixture_dir/mosquitto-win64.exe"
+              curl -fsSL -o "$archive" https://mosquitto.org/files/binary/win64/mosquitto-2.0.22-install-windows-x64.exe
+              echo "2d3d57d918cc8cd4a0df6c6812edf1c3d723ee813b569354ff4a021e9e1d84bc  $archive" | sha256sum -c -
+              7z x -y -o"$(cygpath -w "$fixture_dir")" "$(cygpath -w "$archive")" >/dev/null
+              broker="$fixture_dir/mosquitto.exe"
+              config="$(cygpath -w "$config")"
+            else
+              sudo apt-get update
+              sudo apt-get install --yes --no-install-recommends mosquitto
+              broker=mosquitto
+            fi
+            log="$fixture_dir/broker.log"
+            "$broker" -c "$config" </dev/null >"$log" 2>&1 &
+            broker_pid=$!
+            trap 'kill "$broker_pid" 2>/dev/null || true; wait "$broker_pid" 2>/dev/null || true' EXIT
+            for _ in {1..10}; do
+              if ! kill -0 "$broker_pid" 2>/dev/null; then break; fi
+              if node -e 'const s = require("node:net").connect(Number(process.argv[1]), "127.0.0.1"); s.setTimeout(1000, () => s.destroy(new Error("connect timeout"))); s.on("connect", () => s.destroy());' "$port" 2>/dev/null; then
+                export AGENTX_TEST_RELAY_BROKER="mqtt://127.0.0.1:$port"
+                break
+              fi
+              sleep 1
+            done
+            if [[ -z "${AGENTX_TEST_RELAY_BROKER:-}" ]]; then
+              cat "$log"
+              exit 1
+            fi
+          fi
           for i in $(seq 1 "${{ inputs.repeat || 1 }}"); do
             echo "::group::${{ matrix.test }} attempt $i"
             start=$SECONDS
@@ -197,7 +233,7 @@ jobs:
             fi
           done
       - shell: pwsh
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && matrix.tool != 'relay'
         env:
           AGENTX_TEST_KEEP_DIR: ${{ runner.temp }}/agentx-real-tool
         run: |
@@ -222,7 +258,9 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: failed-${{ matrix.test }}-${{ matrix.os }}
-          path: ${{ runner.temp }}/agentx-real-tool
+          path: |
+            ${{ runner.temp }}/agentx-real-tool
+            ${{ runner.temp }}/agentx-relay-broker/broker.log
           include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 14
