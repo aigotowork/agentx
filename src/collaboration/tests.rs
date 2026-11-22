@@ -239,7 +239,9 @@ fn exact_incarnation_generation_project_and_capacity_are_native_guards() {
     stale.generation = "replaced".into();
     assert!(matches!(f.call(stale).unwrap(), Response::Rejected(Failure::StaleReference)));
     let mut wrong_project = f.mutation(&created, "cross-project", OperatorCommand::DispatchAssignment { role: Role::Implementer });
-    wrong_project.project = "/elsewhere".into();
+    let elsewhere = f._root.path().join("elsewhere");
+    std::fs::create_dir(&elsewhere).unwrap();
+    wrong_project.project = elsewhere.canonicalize().unwrap().to_str().unwrap().to_owned();
     assert!(matches!(f.call(wrong_project).unwrap(), Response::Rejected(Failure::StaleReference)));
     let mut w: Work = serde_json::from_str(&f.db.collaboration_work(&f.generation, &created.reference.id).unwrap().unwrap()).unwrap();
     for _ in 0..MAX_HISTORY {

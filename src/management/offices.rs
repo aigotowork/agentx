@@ -222,16 +222,18 @@ mod tests {
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         std::fs::write(path, value).unwrap();
     }
-    fn adopted() -> serde_json::Value {
-        json!({"workspace":"/member", "endpoint":false, "role":{
-            "name":"controller", "path":"/deleted/role.toml", "namespace":"global:/deleted",
+    fn adopted(root: &Path) -> serde_json::Value {
+        json!({"workspace":root.join("member"), "endpoint":false, "role":{
+            "name":"controller", "path":root.join("deleted").join("role.toml"), "namespace":format!("global:{}", root.join("deleted").display()),
             "profile":"deep", "prompt":"SECRET ADOPTED PROMPT", "description":"controller role", "default":true
         }, "instruction_additions":"SECRET ADDITION"})
     }
 
     #[test]
     fn current_and_stopped_collaboration_preserve_provenance_and_withhold_instructions() {
-        let context = json!({"collaboration":adopted(),"env":{"TOKEN":"SECRET ENV"}});
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().canonicalize().unwrap();
+        let context = json!({"collaboration":adopted(&root),"env":{"TOKEN":"SECRET ENV"}});
         let current = collaboration(Some(&context.to_string()));
         let object = collaboration_value(&json!({"launch_context":context}));
         let string = collaboration_value(&json!({"launch_context":context.to_string()}));
@@ -239,8 +241,8 @@ mod tests {
         assert_eq!(serde_json::to_value(object).unwrap(), expected);
         assert_eq!(serde_json::to_value(string).unwrap(), expected);
         assert_eq!(current.status, "adopted");
-        assert_eq!(current.workspace.as_deref(), Some("/member"));
-        assert_eq!(current.role.unwrap().path, "/deleted/role.toml");
+        assert_eq!(current.workspace.as_deref().map(Path::new), Some(root.join("member").as_path()));
+        assert_eq!(Path::new(&current.role.unwrap().path), root.join("deleted").join("role.toml"));
         assert!(!expected.to_string().contains("SECRET"));
     }
 
@@ -252,20 +254,23 @@ mod tests {
         let global = collaboration(Some(&json!({"collaboration":{"workspace":null,"role":null,"endpoint":false}}).to_string()));
         assert_eq!(global.status, "adopted");
         assert!(global.workspace.is_none() && global.role.is_none());
-        let local = collaboration(Some(&json!({"collaboration":{"workspace":"/explicit/no-marker","role":null,"endpoint":false}}).to_string()));
-        assert_eq!(local.workspace.as_deref(), Some("/explicit/no-marker"));
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().canonicalize().unwrap();
+        let workspace = root.join("explicit").join("no-marker");
+        let local = collaboration(Some(&json!({"collaboration":{"workspace":workspace,"role":null,"endpoint":false}}).to_string()));
+        assert_eq!(local.workspace.as_deref().map(Path::new), Some(workspace.as_path()));
         for context in [json!("broken"), json!([]), json!({"collaboration":null}), json!({"collaboration":{"workspace":null,"endpoint":false}})] {
             let unavailable = collaboration_value(&json!({"launch_context":context}));
             assert_eq!(unavailable.status, "unavailable");
             assert!(unavailable.workspace.is_none());
         }
         for (field, invalid) in [("workspace", json!("relative")), ("role", json!({"name":"x"}))] {
-            let mut adoption = adopted();
+            let mut adoption = adopted(&root);
             adoption[field] = invalid;
             assert_eq!(collaboration(Some(&json!({"collaboration":adoption}).to_string())).status, "unavailable");
         }
         for (field, invalid) in [("namespace", json!("global:relative")), ("path", json!("relative")), ("namespace", json!("future:/role"))] {
-            let mut adoption = adopted();
+            let mut adoption = adopted(&root);
             adoption["role"][field] = invalid;
             assert_eq!(collaboration(Some(&json!({"collaboration":adoption}).to_string())).status, "unavailable");
         }
@@ -281,9 +286,10 @@ mod tests {
         let mut covered = coverage();
         discover(root.path(), &mut rows, &mut covered);
         assert_eq!(rows.len(), 3);
-        assert!(rows.contains_key(&root.path().join("empty").to_string_lossy().into_owned()));
-        assert!(rows.contains_key(&root.path().join("nested/office").to_string_lossy().into_owned()));
-        assert!(rows.contains_key(&root.path().to_string_lossy().into_owned()), "the fixture root has its own .git and .agentx markers");
+        let canonical = root.path().canonicalize().unwrap();
+        assert!(rows.contains_key(canonical.join("empty").to_str().unwrap()));
+        assert!(rows.contains_key(canonical.join("nested").join("office").to_str().unwrap()));
+        assert!(rows.contains_key(canonical.to_str().unwrap()), "the fixture root has its own .git and .agentx markers");
         assert!(covered.scan_limit_reached, "depth cap is incomplete coverage");
         assert!(covered.directories_examined <= MAX_DIRECTORIES);
     }
@@ -368,9 +374,9 @@ mod tests {
         assert!(effective[0].namespace.starts_with("local:"));
         assert!(!serde_json::to_string(&effective).unwrap().contains("secret"));
         let selected = native_roles::select_workspace(&child, &HashMap::new(), Some("."), None).unwrap();
-        assert_eq!(selected.as_deref(), Some(child.as_path()));
+        assert_eq!(selected, Some(child.canonicalize().unwrap()));
         let route = native_roles::resolve_default(&scope, selected.as_deref()).unwrap();
-        assert_eq!(route.workspace.as_deref(), Some(parent.as_path()));
+        assert_eq!(route.workspace, Some(parent.canonicalize().unwrap()));
         // Unshadowed malformed definitions and conflicting defaults fail the whole query.
         write(&scope.join("roles/helper.toml"), "BROKEN");
         assert!(effective_roles(&scope, Some(&child)).is_err());

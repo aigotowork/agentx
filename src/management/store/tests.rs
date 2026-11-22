@@ -10,6 +10,11 @@ fn with_db(body: impl FnOnce(&AgentxDb, RequestContext)) {
     body(&db, context(&db));
 }
 
+/// A host-absolute fixture path, including for a historical directory that no longer exists.
+fn fixture_path(db: &AgentxDb, leaf: &str) -> String {
+    db.path().parent().unwrap().join(leaf).to_str().unwrap().to_owned()
+}
+
 fn context(db: &AgentxDb) -> RequestContext {
     let pid = std::process::id();
     let generation = db.database_generation().unwrap();
@@ -426,17 +431,24 @@ fn native_completeness_workspace_members_page_checks_adoption_before_limit() {
 #[test]
 fn directory_send_replay_keeps_exact_recipient_and_rejects_mismatched_completion() {
     with_db(|db, context| {
-        let command = Command::DirectorySend { directory: "/missing-but-frozen-intent".into(), message: MessageInput { attachments: vec![], text: "contact office".into(), intent: Some("request".into()), reply_to: None, thread: None } };
+        let command = Command::DirectorySend { directory: fixture_path(db, "missing-but-frozen-intent"), message: MessageInput { attachments: vec![], text: "contact office".into(), intent: Some("request".into()), reply_to: None, thread: None } };
         let (id, ticket) = accept(db, &context, command.clone());
         claim(db, &context, &id, &ticket).unwrap();
         let recipient = AgentRef { name: "mora".into(), incarnation: Some(1.0f64.to_bits().to_string()), stopped_event: None };
         let mut outcome = DirectorySendOutcome {
             entry: DirectoryEntry {
                 generation: context.database_generation.clone(),
-                directory: "/canonical-target".into(),
-                requested_workspace: Some("/child".into()),
-                resolved_workspace: Some("/parent".into()),
-                role: RoleView { name: "controller".into(), path: "/parent/.agentx/roles/controller.toml".into(), namespace: "local:/parent/.agentx/roles".into(), profile: "fixture".into(), description: None, default: true },
+                directory: fixture_path(db, "canonical-target"),
+                requested_workspace: Some(fixture_path(db, "child")),
+                resolved_workspace: Some(fixture_path(db, "parent")),
+                role: RoleView {
+                    name: "controller".into(),
+                    path: fixture_path(db, "parent/.agentx/roles/controller.toml"),
+                    namespace: format!("local:{}", fixture_path(db, "parent/.agentx/roles")),
+                    profile: "fixture".into(),
+                    description: None,
+                    default: true,
+                },
                 endpoint: EndpointView { status: "bound".into(), participant: Some(recipient.clone()), candidates: 1, reason: None },
             },
             recipient: recipient.clone(),
@@ -453,33 +465,36 @@ fn directory_send_replay_keeps_exact_recipient_and_rejects_mismatched_completion
         let Some(CommandResult::DirectorySent(retained)) = replay.operation.result else { panic!("missing exact routed receipt") };
         assert_eq!(serde_json::to_value(retained).unwrap(), expected);
         let Command::DirectorySend { message, .. } = command else { unreachable!() };
-        assert!(matches!(submit(db, &context, &id, Command::DirectorySend { directory: "/other".into(), message }, false), Err(ServiceError::Conflict(_))));
+        assert!(matches!(submit(db, &context, &id, Command::DirectorySend { directory: fixture_path(db, "other"), message }, false), Err(ServiceError::Conflict(_))));
     });
 }
 
 #[test]
 fn exact_stopped_collaboration_does_not_follow_namesake_or_edited_role_files() {
     with_db(|db, _context| {
-        let adopted = serde_json::json!({"workspace":"/original-team","role":{"name":"reviewer","path":"/deleted/roles/reviewer.toml","namespace":"global:/deleted/roles","profile":"original-profile","prompt":"private instructions","description":"original role","default":false},"endpoint":false});
-        let saved = serde_json::json!({"name":"mora","tool":"qoder","created_at":1.0,"directory":"/different-cwd","session_id":"saved-session","launch_context":serde_json::json!({"collaboration":adopted}).to_string()});
+        let team = fixture_path(db, "original-team");
+        let role_path = fixture_path(db, "deleted/roles/reviewer.toml");
+        let stopped_directory = fixture_path(db, "different-cwd");
+        let adopted = serde_json::json!({"workspace":team,"role":{"name":"reviewer","path":role_path,"namespace":format!("global:{}", fixture_path(db, "deleted/roles")),"profile":"original-profile","prompt":"private instructions","description":"original role","default":false},"endpoint":false});
+        let saved = serde_json::json!({"name":"mora","tool":"qoder","created_at":1.0,"directory":stopped_directory,"session_id":"saved-session","launch_context":serde_json::json!({"collaboration":adopted}).to_string()});
         db.log_event("life", "mora", &serde_json::json!({"action":"stopped","snapshot":saved})).unwrap();
         let event = db.get_last_event_id();
         db.save_instance_named(
             "mora",
-            serde_json::json!({"tool":"qoder","created_at":2.0,"directory":"/new-cwd","launch_context":serde_json::json!({"collaboration":{"workspace":null,"role":null,"endpoint":false}}).to_string()}).as_object().unwrap(),
+            serde_json::json!({"tool":"qoder","created_at":2.0,"directory":fixture_path(db, "new-cwd"),"launch_context":serde_json::json!({"collaboration":{"workspace":null,"role":null,"endpoint":false}}).to_string()}).as_object().unwrap(),
         )
         .unwrap();
         let stopped = agent(db, &AgentRef { name: "mora".into(), incarnation: None, stopped_event: Some(event.to_string()) }).unwrap();
         let live = agent(db, &AgentRef { name: "mora".into(), incarnation: Some(2.0f64.to_bits().to_string()), stopped_event: None }).unwrap();
         assert_eq!(stopped.collaboration.status, "adopted");
-        assert_eq!(stopped.collaboration.workspace.as_deref(), Some("/original-team"));
+        assert_eq!(stopped.collaboration.workspace.as_deref(), Some(team.as_str()));
         let role = stopped.collaboration.role.unwrap();
         assert_eq!(role.profile, "original-profile");
-        assert_eq!(role.path, "/deleted/roles/reviewer.toml");
+        assert_eq!(role.path, role_path);
         assert!(!serde_json::to_string(&role).unwrap().contains("private instructions"));
         assert_eq!(live.collaboration.status, "adopted");
         assert!(live.collaboration.workspace.is_none() && live.collaboration.role.is_none());
-        assert_eq!(stopped.directory, "/different-cwd");
+        assert_eq!(stopped.directory, stopped_directory);
     });
 }
 
@@ -865,21 +880,20 @@ fn adopted_projection(db: &AgentxDb, context: &RequestContext) -> AdoptedWorkspa
 fn runtime_read_compact_workspaces_retain_history_without_agent_hydration() {
     with_db(|db, context| {
         let collaboration = |path: &str| json!({"collaboration":{"workspace":path,"role":null,"endpoint":false}});
-        db.save_instance_named("same", json!({"tool":"codex","created_at":2.0,"launch_context":collaboration("/current").to_string()}).as_object().unwrap()).unwrap();
-        db.save_instance_named("remote", json!({"tool":"codex","created_at":2.0,"origin_device_id":"elsewhere","launch_context":collaboration("/remote").to_string()}).as_object().unwrap()).unwrap();
-        for launch_context in [collaboration("/historical-object"), json!(collaboration("/historical-string").to_string())] {
+        db.save_instance_named("same", json!({"tool":"codex","created_at":2.0,"launch_context":collaboration(&fixture_path(db, "current")).to_string()}).as_object().unwrap()).unwrap();
+        db.save_instance_named("remote", json!({"tool":"codex","created_at":2.0,"origin_device_id":"elsewhere","launch_context":collaboration(&fixture_path(db, "remote")).to_string()}).as_object().unwrap()).unwrap();
+        for launch_context in [collaboration(&fixture_path(db, "historical-object")), json!(collaboration(&fixture_path(db, "historical-string")).to_string())] {
             // Invalid labels would reject a full historical AgentView. Membership needs only collaboration.
             db.log_event("life", "same", &json!({"action":"stopped","snapshot":{"created_at":1.0,"launch_context":launch_context,"labels":["invalid-for-AgentView"]}})).unwrap();
         }
-        db.log_event("life", "same", &json!({"action":"stopped","snapshot":{"launch_context":collaboration("/current")}})).unwrap();
-        db.log_event("life", "remote", &json!({"action":"stopped","snapshot":{"origin_device_id":"elsewhere","launch_context":collaboration("/remote-history")}})).unwrap();
+        db.log_event("life", "same", &json!({"action":"stopped","snapshot":{"launch_context":collaboration(&fixture_path(db, "current"))}})).unwrap();
+        db.log_event("life", "remote", &json!({"action":"stopped","snapshot":{"origin_device_id":"elsewhere","launch_context":collaboration(&fixture_path(db, "remote-history"))}})).unwrap();
         db.log_event("life", "legacy", &json!({"action":"stopped","snapshot":{"launch_context":{"collaboration":{"workspace":"relative","role":null,"endpoint":false}}}})).unwrap();
         // Valid JSON satisfies event indexes; its malformed recipient scalar must not be read by compact membership projection.
         db.log_event("message", "sender", &json!({"delivered_to":"not-json-array"})).unwrap();
         let projection = adopted_projection(db, &context);
-        let paths: std::collections::BTreeSet<_> = projection.paths.iter().map(String::as_str).collect();
-        assert_eq!(paths, ["/current", "/historical-object", "/historical-string"].into());
-        assert_eq!(projection.paths, ["/current", "/historical-string", "/historical-object"], "dedup preserves current-first and stopped-desc admission order");
+        let expected = ["current", "historical-string", "historical-object"].map(|leaf| fixture_path(db, leaf));
+        assert_eq!(projection.paths, expected, "dedup preserves current-first and stopped-desc admission order");
         assert_eq!(projection.agent_pages, 1);
         assert!(!projection.agent_limit_reached);
         assert!(list(db, &context, None, 100).is_err());
@@ -895,25 +909,25 @@ fn runtime_read_compact_workspaces_keep_first_thousand_coverage() {
         assert!(!empty.agent_limit_reached);
         // Two current rows take precedence over descending stopped executions.
         for name in ["aaaa", "zzzz"] {
-            db.save_instance_named(name, json!({"tool":"codex","created_at":2.0,"launch_context":json!({"collaboration":{"workspace":format!("/{name}"),"role":null,"endpoint":false}}).to_string()}).as_object().unwrap()).unwrap();
+            db.save_instance_named(name, json!({"tool":"codex","created_at":2.0,"launch_context":json!({"collaboration":{"workspace":fixture_path(db, name),"role":null,"endpoint":false}}).to_string()}).as_object().unwrap()).unwrap();
         }
         for index in 0..998 {
-            db.log_event("life", "history", &json!({"action":"stopped","snapshot":{"launch_context":{"collaboration":{"workspace":format!("/history-{index}"),"role":null,"endpoint":false}}}})).unwrap();
+            db.log_event("life", "history", &json!({"action":"stopped","snapshot":{"launch_context":{"collaboration":{"workspace":fixture_path(db, &format!("history-{index}")),"role":null,"endpoint":false}}}})).unwrap();
         }
         let full = adopted_projection(db, &context);
         assert_eq!(full.agent_pages, 10);
         assert!(!full.agent_limit_reached);
         assert_eq!(full.paths.len(), 1000);
-        assert_eq!(&full.paths[..3], ["/aaaa", "/zzzz", "/history-997"]);
-        db.log_event("life", "history", &json!({"action":"stopped","snapshot":{"launch_context":{"collaboration":{"workspace":"/newest","role":null,"endpoint":false}}}})).unwrap();
+        assert_eq!(&full.paths[..3], ["aaaa", "zzzz", "history-997"].map(|leaf| fixture_path(db, leaf)));
+        db.log_event("life", "history", &json!({"action":"stopped","snapshot":{"launch_context":{"collaboration":{"workspace":fixture_path(db, "newest"),"role":null,"endpoint":false}}}})).unwrap();
         let truncated = adopted_projection(db, &context);
         assert_eq!(truncated.agent_pages, 10);
         assert!(truncated.agent_limit_reached);
         assert_eq!(truncated.paths.len(), 1000);
-        for included in ["/aaaa", "/zzzz", "/newest", "/history-997"] {
-            assert!(truncated.paths.iter().any(|path| path == included), "missing {included}");
+        for included in ["aaaa", "zzzz", "newest", "history-997"].map(|leaf| fixture_path(db, leaf)) {
+            assert!(truncated.paths.contains(&included), "missing {included}");
         }
-        assert!(!truncated.paths.iter().any(|path| path == "/history-0"));
+        assert!(!truncated.paths.contains(&fixture_path(db, "history-0")));
     });
 }
 

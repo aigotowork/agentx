@@ -88,7 +88,7 @@ fn additive_exact_assignments_deduplicate_and_preserve_source() {
     let original = source("task", "planning").replace('\n', "\r\n");
     std::fs::write(&path, &original).unwrap();
     let paths = preflight(&[PathBuf::from("anything.md"), path.clone()], tmp.path()).unwrap();
-    assert_eq!(paths, vec![path.clone()]);
+    assert_eq!(paths, vec![path.canonicalize().unwrap()]);
     assert_eq!(bind(&paths, &assignment(1)).unwrap(), paths);
     assert!(bind(&paths, &assignment(1)).unwrap().is_empty());
     bind(&paths, &assignment(2)).unwrap();
@@ -162,7 +162,9 @@ fn index_rebuild_retains_last_success_and_separates_missing_malformed_state() {
     assert_eq!(bad.document.unwrap().status, Status::Blocked);
     std::fs::remove_file(&path).unwrap();
     let missing = index.query(&refresh, tmp.path()).unwrap().files.remove(0);
-    assert!(missing.diagnostic.unwrap().contains("No such file"));
+    let filesystem_error = std::fs::metadata(&path).unwrap_err();
+    assert_eq!(filesystem_error.kind(), std::io::ErrorKind::NotFound);
+    assert_eq!(missing.diagnostic.as_deref(), Some(filesystem_error.to_string().as_str()));
     assert!(missing.last_success_at.is_some());
     let explicit = Query { paths: vec![path], ..refresh };
     let fresh = Index::default().query(&explicit, tmp.path()).unwrap().files.remove(0);
