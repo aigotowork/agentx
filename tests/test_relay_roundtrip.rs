@@ -1,8 +1,7 @@
 //! Relay MQTT roundtrip integration test.
 //!
 //! Two real agentx instances (separate AGENTX_DIR), each with their own
-//! daemon, talking through a real public MQTT broker.
-//! Zero mocking, zero fake payloads.
+//! daemon, talking through a real MQTT broker.
 //!
 //! Phases:
 //! 1. Device A: agentx relay new → daemon connects to broker
@@ -17,7 +16,7 @@
 //!
 //! Requires:
 //! - cargo-built agentx test binary
-//! - Network access to public MQTT brokers
+//! - Network access to public MQTT brokers, or a real broker at `AGENTX_TEST_RELAY_BROKER`
 //! - pinned claude installed; model calls are routed to a localhost mock
 //!
 //! Run:
@@ -877,7 +876,12 @@ fn test_relay_roundtrip() {
     // ── Phase 1: Device A creates relay group ────────────────────
     logln!(log, "\n[Phase 1] Device A: relay new...");
 
-    let output = check("A", "relay new", &path_a);
+    let new_command = match std::env::var("AGENTX_TEST_RELAY_BROKER") {
+        Ok(broker) => format!("relay new --broker {}", shell_words::quote(&broker)),
+        Err(std::env::VarError::NotPresent) => "relay new".to_owned(),
+        Err(error) => panic!("invalid AGENTX_TEST_RELAY_BROKER: {error}"),
+    };
+    let output = check("A", &new_command, &path_a);
     logln!(log, "{}", output.trim_end());
 
     let token = parse_token(&output).expect("Could not parse token from relay new output");
