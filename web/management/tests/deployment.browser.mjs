@@ -163,6 +163,7 @@ try {
   await click('完成');
   await page.waitForSelector('dialog[open]', { hidden: true });
   await text('.deployment-scope-url', 'https://deployment.example/scopes/studio');
+  assert.equal(await page.$eval('.deployment-space-link', link => link.getAttribute('href')), '/scopes/studio/space/?access=admin');
 
   stage = 'mobile scope library and exact rotation recovery';
   await page.setViewport({ width: 390, height: 675 });

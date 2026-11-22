@@ -5,6 +5,7 @@ pub(crate) mod client;
 mod communication;
 pub(crate) mod connection;
 mod control;
+mod space;
 mod tui;
 pub(crate) mod uplink;
 
@@ -130,9 +131,11 @@ async fn scope_guard(State(state): State<Deployment>, OriginalUri(uri): Original
     Ok(next.run(req).await)
 }
 async fn bounded(State(state): State<Deployment>, req: Request, next: Next) -> Result<Response, Failure> {
-    let _permit = state.calls.try_acquire().map_err(|_| Failure(StatusCode::SERVICE_UNAVAILABLE, "busy", "too many concurrent requests"))?;
-    let mut response = next.run(req).await;
-    response.headers_mut().insert(header::CACHE_CONTROL, "no-store".parse().unwrap());
+    let mut response = match state.calls.try_acquire() {
+        Ok(_permit) => next.run(req).await,
+        Err(_) => Failure(StatusCode::SERVICE_UNAVAILABLE, "busy", "too many concurrent requests").into_response(),
+    };
+    response.headers_mut().entry(header::CACHE_CONTROL).or_insert("no-store".parse().unwrap());
     response.headers_mut().insert(header::X_CONTENT_TYPE_OPTIONS, "nosniff".parse().unwrap());
     Ok(response)
 }
@@ -143,7 +146,7 @@ async fn asset(method: Method, uri: Uri) -> Response {
     if uri.path() == "/" {
         return Redirect::temporary("/deployment").into_response();
     }
-    let key = if uri.path() == "/deployment" { "/" } else { uri.path() };
+    let key = if matches!(uri.path(), "/deployment" | "/deployment/") { "/" } else { uri.path() };
     let entries: &[(&str, &str, &[u8])] = include!(concat!(env!("OUT_DIR"), "/management_assets.rs"));
     if let Some((_, mime, bytes)) = entries.iter().find(|entry| entry.0 == key) {
         return ([(header::CONTENT_TYPE, *mime), (header::REFERRER_POLICY, "no-referrer")], *bytes).into_response();
@@ -154,7 +157,7 @@ async fn asset(method: Method, uri: Uri) -> Response {
 fn router(state: Deployment) -> Router {
     let admin = admin::router(state.clone()).layer(middleware::from_fn_with_state(state.clone(), admin_guard));
     let scopes = communication::router().layer(middleware::from_fn_with_state(state.clone(), scope_guard));
-    Router::new().nest("/api/v1/admin", admin).nest("/scopes/{id}/api/v1", scopes).fallback(asset).layer(DefaultBodyLimit::max(256 * 1024)).layer(middleware::from_fn_with_state(state, bounded))
+    Router::new().nest("/api/v1/admin", admin).nest("/scopes/{id}/api/v1", scopes).merge(space::router()).fallback(asset).layer(DefaultBodyLimit::max(256 * 1024)).layer(middleware::from_fn_with_state(state, bounded))
 }
 
 #[derive(clap::Parser)]

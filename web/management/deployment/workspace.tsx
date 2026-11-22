@@ -136,12 +136,13 @@ function ScopeDetails({ client, id, onBack, onRotate, onControl }: {
   const load = useCallback((signal: AbortSignal) => client.getScope(id, { signal }), [client, id]);
   const { read, retry } = useRead(load);
   const scope = read.kind === 'ready' ? read.data : null;
+  const spaceHref = scope ? `/scopes/${encodeURIComponent(scope.id)}/space/?access=admin` : null;
   const launch = (row: Host) => { if (scope) onControl({ scope: id, generation: scope.generation, host: row.name, kind: 'launch' }); };
   const stop = (agent: Agent) => { if (scope) onControl({ scope: id, generation: scope.generation, host: agent.host, kind: 'stop', name: agent.name, incarnation: agent.incarnation }); };
   return <section className="deployment-detail" aria-labelledby="deployment-scope-title">
     <header className="deployment-detail-header">
       <button className="quiet icon-button deployment-back" onClick={onBack}><Icon name="back" />Scopes</button>
-      <div className="deployment-scope-title"><h2 id="deployment-scope-title" tabIndex={-1}>{id}</h2>{scope && <StatusDot active={scope.available} label={scope.available ? '可用' : '不可用'} />}</div>
+      <div className="deployment-scope-title"><h2 id="deployment-scope-title" tabIndex={-1}>{id}</h2>{scope && <StatusDot active={scope.available} label={scope.available ? '可用' : '不可用'} />}{spaceHref && <a className="deployment-space-link" href={spaceHref}>打开 Space</a>}</div>
       {scope && <>
         <div className="deployment-credential"><span className="muted">令牌版本 <code>v{String(scope.credential_version)}</code></span><button onClick={() => onRotate(scope)}>轮换令牌</button></div>
         <p className="deployment-scope-url"><code>{scope.scope_url}</code></p>

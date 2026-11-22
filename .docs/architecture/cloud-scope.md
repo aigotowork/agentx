@@ -32,6 +32,17 @@ CLI 轮换示例为 `agentx-http admin scopes rotate-token personal --expected-v
 
 在浏览器打开 `https://agents.example.com/deployment`，输入管理 token。创建或轮换时保存 scope token，列表、详情和操作回执只提供地址及凭据版本。轮换使旧 token 和使用它的等待失效；把新 token 提供给该 scope 的各台主机。多个管理员同时轮换时，服务端比较预期版本，先提交的一项生效。
 
+## 在 Cloud Space 工作
+
+在部署控制台 `/deployment` 选择 Scope，点击「打开 Space」，或访问 `/scopes/<id>/space/`。页面会单独要求选择并输入凭据；连接信息和链接不包含 token。
+
+| 凭据 | 可用功能 |
+| --- | --- |
+| 部署管理 token | 查看 Scope、主机和精确 Agent 实例；选择在线主机公开的工作区和角色，启动 Agent（可附初始任务）、停止精确实例、查操作回执。 |
+| 此 Scope 的通信 token | 查看该 Scope 的登记目录和精确 Agent 实例的云消息，向前翻页。此视图包括服务端已接受但尚未送达的消息。 |
+
+云消息来自部署消息库，不是主机的 Provider 会话记录。浏览器不以 Agent 身份发消息或领取收件箱。管理员若需查看消息，必须另外持有该 Scope 的通信 token，并切换身份。可分享的精确链接包含主机名、Agent 名、实例 ID（可附代次）；同名新实例不继承旧历史。
+
 ## 从主机接入
 
 使用本地 scope daemon 持有通信 token 并接受远程管理，见[主机登记与 systemd 配置](cloud-daemon.md)。下列步骤适用于直接连接的客户端。

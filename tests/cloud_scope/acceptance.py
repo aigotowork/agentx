@@ -11,6 +11,7 @@ import uuid
 from fixture import Deployment, require
 import management
 import native
+import space
 
 
 AUTH_DENIED = (401, 403)
@@ -204,7 +205,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--candidate", type=Path, required=True)
     parser.add_argument("--evidence", type=Path, required=True)
-    parser.add_argument("--suite", choices=("deployment", "communication", "native", "cli", "tui", "browser"), required=True)
+    parser.add_argument("--suite", choices=("deployment", "communication", "space", "native", "cli", "tui", "browser"), required=True)
     parser.add_argument("--consumer", type=Path, help="external project with an installed @agentx/client package (CLI suite)")
     parser.add_argument("--chromium", type=Path, help="real Chromium executable (browser suite)")
     parser.add_argument("--native-https", action="store_true", help="use the private HTTPS terminator and CA for the native suite")
@@ -226,6 +227,8 @@ def main():
             if args.suite == "native":
                 created, _ = provision(fixture, "native-agents")
                 evidence = native.run(fixture, created["token"], certificate)
+            elif args.suite == "space":
+                evidence = space.run(fixture, provision)
             elif args.suite == "cli":
                 evidence = management.cli(fixture, args.consumer.resolve(), certificate, attempts)
             elif args.suite == "browser":
