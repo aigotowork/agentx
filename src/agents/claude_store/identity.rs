@@ -1,9 +1,10 @@
-//! Structured lineage selection and primary-generation routing. File contents
-//! are supplied as bounded envelope facts; this module performs no host I/O.
+//! Structured lineage selection and primary-generation routing. Provider file
+//! contents are supplied as bounded envelope facts. Late launch recovery only
+//! probes the retained OS process incarnation.
 use super::*;
 use std::collections::BTreeSet;
 
-fn fresh(db: &AgentxDb, binding: Option<&(Option<String>, String)>, expected: Option<&str>) -> ServiceResult<bool> {
+fn fresh(db: &AgentxDb, context: &RequestContext, binding: Option<&(Option<String>, String)>, expected: Option<&str>, native_start: bool) -> ServiceResult<bool> {
     let Some((session, name)) = binding else {
         return Ok(false);
     };
@@ -21,7 +22,32 @@ fn fresh(db: &AgentxDb, binding: Option<&(Option<String>, String)>, expected: Op
         && (resumed
             || crate::agents::records::is_launching_placeholder(&row)
             || (row.status == "blocked" && row.status_context == "launch_blocked")
-            || (row.status == "listening" && matches!(row.status_context.as_str(), "start" | "ready_observed" | "launch_blocked_cleared"))))
+            || (row.status == "listening" && matches!(row.status_context.as_str(), "start" | "ready_observed" | "launch_blocked_cleared"))
+            || (native_start && same_live_timed_out_launch(context, &row))))
+}
+
+/// A launch diagnosis can run before a slow wrapper reaches SessionStart.
+/// An exact, still-live reservation can finish binding despite that diagnosis.
+fn same_live_timed_out_launch(context: &RequestContext, row: &InstanceRow) -> bool {
+    if row.status != "inactive" || row.status_context != "launch_failed" || row.session_id.is_some() {
+        return false;
+    }
+    let invocation = &context.caller.invocation;
+    let env = &invocation.environment;
+    if env.get("AGENTX_LAUNCHED").map(String::as_str) != Some("1")
+        || env.get("AGENTX_LAUNCH_GENERATION").map(String::as_str) != Some(context.database_generation.as_str())
+        || env.get("AGENTX_LAUNCH_PARTICIPANT").and_then(|value| serde_json::from_str::<ParticipantRef>(value).ok()).as_ref() != Some(&participant(row))
+    {
+        return false;
+    }
+    let Some(launch) = row.launch_context.as_deref().and_then(|value| serde_json::from_str::<serde_json::Value>(value).ok()) else { return false };
+    let stored_binding = launch.get("process_id").and_then(serde_json::Value::as_str).filter(|binding| !binding.is_empty());
+    if stored_binding.is_none() || stored_binding != invocation.process_binding_id.as_deref() {
+        return false;
+    }
+    let Some(pid) = row.pid.and_then(|pid| u32::try_from(pid).ok()).filter(|pid| *pid != 0) else { return false };
+    let Some(incarnation) = row.pid_identity().filter(|identity| !identity.is_empty()) else { return false };
+    crate::sys::process::is_alive(pid) && crate::sys::process::identity(pid).as_deref() == Some(incarnation.as_str())
 }
 
 fn session(db: &AgentxDb, context: &RequestContext, input: &Observation) -> ServiceResult<String> {
@@ -37,7 +63,7 @@ fn session(db: &AgentxDb, context: &RequestContext, input: &Observation) -> Serv
     };
     let binding = db.get_process_binding_full(process).map_err(internal)?;
     let allow = match input.kind {
-        ObservationKind::SessionStart { source: StartSource::Fork | StartSource::Startup | StartSource::Resume } => fresh(db, binding.as_ref(), None)?,
+        ObservationKind::SessionStart { source: StartSource::Fork | StartSource::Startup | StartSource::Resume } => fresh(db, context, binding.as_ref(), None, true)?,
         _ => binding.as_ref().and_then(|(session, _)| session.as_deref()) == Some(candidate),
     };
     Ok(if allow { candidate.to_owned() } else { input.session_id.clone() })
@@ -129,13 +155,13 @@ fn observe_in_scope(db: &AgentxDb, context: &RequestContext, input: &Observation
     if start && input.agent_id.is_some() {
         return Err(ServiceError::InvalidInput("Claude SessionStart must identify a root".into()));
     }
-    let fresh = fresh(db, binding.as_ref(), Some(session))?;
+    let native = matches!(input.kind, ObservationKind::SessionStart { source: StartSource::Startup | StartSource::Fork | StartSource::Resume });
+    let fresh = fresh(db, context, binding.as_ref(), Some(session), native)?;
     let fork = context.caller.invocation.environment.get("AGENTX_IS_FORK").map(String::as_str) == Some("1") && fresh;
     let compact = matches!(input.kind, ObservationKind::SessionStart { source: StartSource::Compact })
         && process_owner.is_some()
         && session_owner.as_deref() == process_owner
         && db.get_instance_full(process_owner.unwrap()).map_err(internal)?.is_some_and(|row| row.session_id.as_deref() == Some(session));
-    let native = matches!(input.kind, ObservationKind::SessionStart { source: StartSource::Startup | StartSource::Fork | StartSource::Resume });
     let scan = if start { !compact && !fork && validated.is_none() && (native || session_owner.is_none() || session_owner.as_deref() != process_owner) } else { session_owner.is_none() || validated.as_ref() != session_owner.as_ref() };
     if scan && matches!(input.evidence, TranscriptEvidence::NotRead) {
         return Ok(Resolution::NeedsLineage { session_id: session.to_owned() });

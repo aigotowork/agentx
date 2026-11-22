@@ -108,6 +108,51 @@ fn fresh_fork_keeps_reserved_identity_and_persistent_flag_cannot_override_later_
 }
 
 #[test]
+fn list_timeout_allows_only_the_same_live_launch_to_bind_its_late_session() {
+    use crate::service::{queries, queries_store};
+
+    fixture(|db, context| {
+        let launch = json!({"process_id":"worker","pid_identity":context.process.incarnation});
+        db.save_instance_named("reserved", json!({"tool":"claude","created_at":crate::shared::time::now_epoch_f64()-40.0,"status":"pending","status_context":"new","pid":context.process.pid,"launch_context":launch.to_string()}).as_object().unwrap())
+            .unwrap();
+        db.conn().execute("INSERT INTO process_bindings(process_id,instance_name,session_id,updated_at) VALUES('worker','reserved',NULL,0),('other-worker','reserved',NULL,0)", []).unwrap();
+        let reserved = participant(&db.get_instance_full("reserved").unwrap().unwrap());
+        let mut hook = context.clone();
+        hook.caller.invocation.environment.extend([("AGENTX_LAUNCHED".into(), "1".into()), ("AGENTX_LAUNCH_GENERATION".into(), context.database_generation.clone()), ("AGENTX_LAUNCH_PARTICIPANT".into(), serde_json::to_string(&reserved).unwrap())]);
+
+        // The ordinary native listing command applies the same transition that
+        // can occur while a Windows wrapper is still starting its provider.
+        queries_store::handle(db, &request(context, "ordinary-list"), queries::Request::Listing { target: None }).unwrap();
+        assert_eq!(db.get_instance_full("reserved").unwrap().unwrap().status_context, "launch_failed");
+        let mut input = observation(ObservationKind::SessionStart { source: StartSource::Startup }, "late-session");
+        input.evidence = TranscriptEvidence::Missing;
+
+        let mut stale = request(&hook, "stale-generation");
+        stale.caller.invocation.environment.insert("AGENTX_LAUNCH_GENERATION".into(), "old".into());
+        assert!(matches!(observed(db, &stale, input.clone()), Resolution::Unbound { .. }));
+        let mut stale = request(&hook, "stale-participant");
+        let previous = ParticipantRef { incarnation_bits: reserved.incarnation_bits + 1, ..reserved.clone() };
+        stale.caller.invocation.environment.insert("AGENTX_LAUNCH_PARTICIPANT".into(), serde_json::to_string(&previous).unwrap());
+        assert!(matches!(observed(db, &stale, input.clone()), Resolution::Unbound { .. }));
+        let mut stale = request(&hook, "stale-binding");
+        stale.caller.invocation.process_binding_id = Some("other-worker".into());
+        assert!(matches!(observed(db, &stale, input.clone()), Resolution::Unbound { .. }));
+
+        let mut stale_launch = launch.clone();
+        stale_launch["pid_identity"] = json!("old-pid-incarnation");
+        db.update_instance_fields("reserved", json!({"launch_context":stale_launch.to_string()}).as_object().unwrap()).unwrap();
+        assert!(matches!(observed(db, &request(&hook, "reused-pid"), input.clone()), Resolution::Unbound { .. }));
+        db.update_instance_fields("reserved", json!({"launch_context":launch.to_string()}).as_object().unwrap()).unwrap();
+
+        let Resolution::Ready(view) = observed(db, &request(&hook, "late-start"), input) else { panic!("same live launch could not bind after list timeout") };
+        assert_eq!(view.actor.participant, reserved);
+        assert_eq!(view.actor.session_id, "late-session");
+        assert_eq!(db.get_validated_claude_session_owner("late-session").unwrap().as_deref(), Some("reserved"));
+        assert_eq!(db.get_instance_full("reserved").unwrap().unwrap().status_context, "start");
+    });
+}
+
+#[test]
 fn lineage_envelopes_exclude_unvalidated_top_level_and_distinguish_ambiguity_and_read_failure() {
     fixture(|db, context| {
         root_fixture(db);
