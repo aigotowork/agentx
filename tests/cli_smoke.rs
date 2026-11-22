@@ -64,6 +64,7 @@ fn windows_pty_answers_startup_queries_while_waiting_for_terminal_metadata() {
     std::fs::create_dir_all(&id_dir).unwrap();
     let id_file = id_dir.join(process_id);
     let log_file = h.agentx_dir.join(".tmp/logs/agentx.log");
+    let release_file = h.agentx_dir.join(".tmp/cpr-release");
 
     // The terminal ID arrives only once the proxy has answered ConPTY's
     // cursor query. Before the fix, metadata collection finished (and missed
@@ -80,18 +81,32 @@ fn windows_pty_answers_startup_queries_while_waiting_for_terminal_metadata() {
         }
         false
     });
-    let output = h
-        .cmd()
+    // Keep the ConPTY child alive after its startup marker. The host persists
+    // terminal metadata asynchronously after answering CPR; exiting at the
+    // marker lets delivery teardown retire the identity before that commit.
+    let mut command = h.cmd();
+    command
         .env("AGENTX_INSTANCE_NAME", &name)
         .env("AGENTX_PROCESS_ID", process_id)
+        .env("AGENTX_TEST_CPR_RELEASE", &release_file)
         // Ignore pane IDs inherited from the terminal running this test.
         .env("AGENTX_LAUNCHED_PRESET", "cpr-test-without-pane")
-        .args(["pty", "codex", "--agentx-tool-path", "cmd.exe", "/d", "/c", "echo CPR_CHILD_READY"])
-        .output()
-        .unwrap();
+        .args(["pty", "codex", "--agentx-tool-path", "powershell.exe", "-NoProfile", "-Command", "Write-Output CPR_CHILD_READY; while (-not (Test-Path -LiteralPath $env:AGENTX_TEST_CPR_RELEASE)) { Start-Sleep -Milliseconds 20 }"]);
+    let pty = std::thread::spawn(move || command.output().unwrap());
     let answered = terminal.join().unwrap();
-    assert!(output.status.success(), "stdout={} stderr={}", String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr));
     assert!(answered, "proxy did not answer startup CPR");
+
+    use rusqlite::OptionalExtension;
+    h.eventually("terminal metadata commit", Duration::from_secs(10), || {
+        let conn = rusqlite::Connection::open(h.agentx_dir.join("agentx.db")).map_err(|error| error.to_string())?;
+        let raw: Option<String> = conn.query_row("SELECT launch_context FROM instances WHERE name = ?1", [&name], |row| row.get(0)).optional().map_err(|error| error.to_string())?;
+        let Some(raw) = raw else { return Ok(None) };
+        let context: serde_json::Value = serde_json::from_str(&raw).map_err(|error| error.to_string())?;
+        Ok((context["terminal_id"] == "terminal-after-cpr").then_some(()))
+    });
+    std::fs::write(&release_file, "release").unwrap();
+    let output = pty.join().unwrap();
+    assert!(output.status.success(), "stdout={} stderr={}", String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr));
     assert!(String::from_utf8_lossy(&output.stdout).contains("CPR_CHILD_READY"));
     let conn = rusqlite::Connection::open(h.agentx_dir.join("agentx.db")).unwrap();
     let context: String = conn.query_row("SELECT launch_context FROM instances WHERE name = ?1", [&name], |row| row.get(0)).unwrap();
