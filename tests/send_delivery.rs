@@ -113,7 +113,8 @@ fn failed_stdout_write_preserves_incoming_messages() {
     drop(reader);
     let output = h.cmd().args(["send", "--iam", &receiver, &format!("@{sender}"), "--", "reply"]).stdout(Stdio::from(OwnedFd::from(writer))).output().unwrap();
     assert!(!output.status.success());
-    assert!(String::from_utf8_lossy(&output.stderr).contains("Message sent, but incoming message output failed"));
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("Message sent, but") && stderr.contains("incoming message output failed; unread messages retained"), "{stderr}");
     assert_eq!(cursor(&db, &receiver), before, "{tool}");
     assert!(send(&h, &receiver, &sender, "reply2").contains("incoming-sentinel"));
 }
@@ -139,8 +140,8 @@ fn external_sender_preserves_inline_receive_delivery() {
     assert_eq!(code, 0, "{err}");
     assert!(out.contains("external-incoming-sentinel"), "{tool}: {out}");
     let (status, context): (String, String) = db.query_row("SELECT status,status_context FROM instances WHERE name=?", [&receiver], |r| Ok((r.get(0)?, r.get(1)?))).unwrap();
-    assert_eq!(status, "inactive");
-    assert!(context.starts_with("deliver:"), "{context}");
+    assert_eq!(status, "active");
+    assert_eq!(context, format!("deliver:{sender}"));
     let from: String = db.query_row("SELECT json_extract(data,'$.from') FROM events WHERE type='message' AND json_extract(data,'$.text')='external-outgoing'", [], |r| r.get(0)).unwrap();
     assert_eq!(from, "operator");
 }

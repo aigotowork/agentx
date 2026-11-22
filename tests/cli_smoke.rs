@@ -452,7 +452,7 @@ fn ai_tool_broadcast_to_many_requires_go_preview() {
 }
 
 #[test]
-fn non_destructive_reset_paths_deliver_pending_messages() {
+fn reset_preview_delivers_mail_and_hook_reset_preserves_it() {
     let h = Agentx::new();
     let sender = h.start();
     let process_id = "reset-pending-delivery-process";
@@ -480,6 +480,10 @@ fn non_destructive_reset_paths_deliver_pending_messages() {
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(output.status.success(), "stdout={stdout} stderr={stderr}");
+    // Hook reset stays host-local; the next explicit listen owns delivery.
+    assert!(!stdout.contains("pending during reset hooks"), "stdout={stdout}");
+    let (code, stdout, stderr) = h.run(["listen", "--iam", &recipient, "--timeout", "1", "--json"]);
+    assert_eq!(code, 0, "{stderr}");
     assert!(stdout.contains("pending during reset hooks"), "stdout={stdout}");
 }
 
@@ -1377,18 +1381,17 @@ fn run_events_wait_cli_oracle(timing: UnreadTiming, wait_secs: u64, expected_cod
     let child = h.cmd().args(["events", "--wait", &wait_secs.to_string(), "--sql", "data LIKE '%sol002_target%'", "--iam", &me]).stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::piped()).spawn().expect("spawn events wait");
     let mut child = ChildGuard::new(child);
 
-    let mut endpoint_ready = false;
+    let read_observer_port = |conn: &rusqlite::Connection| conn.query_row("SELECT port FROM notify_endpoints WHERE instance LIKE 'event-observer:observe-%' AND kind = 'events_wait' LIMIT 1", [], |row| row.get::<_, u16>(0)).ok();
+    let mut observer_port = None;
     if matches!(timing, UnreadTiming::ArrivingAfterReadiness) {
         for _ in 0..100 {
-            if let Ok(c) = rusqlite::Connection::open(&db_path)
-                && c.query_row("SELECT 1 FROM notify_endpoints WHERE instance = ?1 AND kind = 'events_wait' LIMIT 1", rusqlite::params![me], |_| Ok(true)).unwrap_or(false)
-            {
-                endpoint_ready = true;
+            observer_port = read_observer_port(&conn);
+            if observer_port.is_some() {
                 break;
             }
             std::thread::sleep(Duration::from_millis(10));
         }
-        assert!(endpoint_ready, "waiter notify endpoint must be registered before sending arriving message");
+        assert!(observer_port.is_some(), "waiter notify endpoint must be registered before sending arriving message");
 
         let (sc, _, _) = h.run(["send", &format!("@{me}"), "--iam", &other, "--", "arr"]);
         send_code = Some(sc);
@@ -1413,6 +1416,8 @@ fn run_events_wait_cli_oracle(timing: UnreadTiming, wait_secs: u64, expected_cod
     let deadline_secs = wait_secs + 2;
     let (code, stdout, stderr) = child.wait_bounded(Duration::from_secs(deadline_secs));
 
+    assert!(read_observer_port(&conn).is_none(), "observer endpoint leaked after command exit");
+    let endpoint_ready = observer_port.is_some();
     let preview_pattern = format!("<agentx>{other} → {me}</agentx>");
     let preview_count = stdout.matches(&preview_pattern).count();
 
@@ -1481,7 +1486,7 @@ fn unknown_agent_gets_typo_suggestion() {
     }
     let (code, _stdout, stderr) = h.run(["kill", &typo]);
     assert_eq!(code, 1);
-    assert!(stderr.contains(&format!("No agent named '{typo}'")) && stderr.contains(&format!("Did you mean: {me}?")), "stderr={stderr}");
+    assert!(stderr.contains(&format!("Agent '{typo}' not found")) && stderr.contains(&format!("Did you mean: {me}?")), "stderr={stderr}");
 }
 
 #[test]
@@ -1501,12 +1506,12 @@ fn send_rejects_ambiguous_bare_word_and_self_target() {
 
     let (code, _stdout, stderr) = h.run(["send", &format!("@{me}"), "--iam", &me, "--", "x"]);
     assert_eq!(code, 1);
-    assert!(stderr.contains("is you"), "stderr={stderr}");
+    assert!(stderr.contains("do not receive their own messages"), "stderr={stderr}");
 
     // bigboss:DEVICE routes to bigboss, so it is also a self-only target.
     let (code, _stdout, stderr) = h.run(["send", "-b", "@bigboss:ABCD", "--", "x"]);
     assert_eq!(code, 1);
-    assert!(stderr.contains("is you"), "stderr={stderr}");
+    assert!(stderr.contains("do not receive their own messages"), "stderr={stderr}");
 }
 
 #[test]
