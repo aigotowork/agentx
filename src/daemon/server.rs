@@ -749,7 +749,8 @@ mod tests {
             let serving_scope = scope.clone();
             let serving_stop = stop.clone();
             let server = threads.spawn(move || {
-                super::super::serve_with_stop(serving_scope, serving_stop, |generation| {
+                // The captured call must come from this test, not the collector.
+                super::super::serve_with_stop_and_management(serving_scope, serving_stop, false, |generation| {
                     generation.publish(uuid::Uuid::new_v4().to_string()).unwrap();
                     Ok(HeldApplication { entered, release: held, calls: 0 })
                 })
