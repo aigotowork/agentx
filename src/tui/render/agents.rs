@@ -857,7 +857,8 @@ mod tests {
     #[test]
     fn list_and_strip_wheel_leave_focus_selection_and_message_scroll_alone() {
         crate::config::Config::init();
-        let renderers: [(ViewMode, fn(&mut Frame, Rect, &App)); 2] = [(ViewMode::Vertical, render_agents_compact), (ViewMode::Inline, render_agents_tabstrip)];
+        type Renderer = fn(&mut Frame, Rect, &App);
+        let renderers: [(ViewMode, Renderer); 2] = [(ViewMode::Vertical, render_agents_compact), (ViewMode::Inline, render_agents_tabstrip)];
         for (mode, render) in renderers {
             let mut app = crate::tui::test_helpers::offline_app();
             app.ui.view_mode = mode;

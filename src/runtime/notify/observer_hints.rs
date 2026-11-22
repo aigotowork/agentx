@@ -100,6 +100,33 @@ impl ObserverHints {
     }
 }
 
+impl Shared {
+    fn take(&self) -> Option<Hint> {
+        let pending = self.pending.lock().ok()?;
+        let mut pending = self.ready.wait_while(pending, |pending| !pending.stopping && pending.jobs.is_empty()).ok()?;
+        if pending.stopping { None } else { pending.jobs.pop_front() }
+    }
+
+    fn valid(&self, hint: &Hint) -> bool {
+        hint.queued.elapsed() < TTL && self.generation.current() == hint.generation && self.revision.load(Ordering::Acquire) == hint.revision
+    }
+}
+
+impl Drop for ObserverHints {
+    fn drop(&mut self) {
+        self.shared.revision.fetch_add(1, Ordering::AcqRel);
+        {
+            let mut pending = self.shared.pending.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+            pending.stopping = true;
+            pending.jobs.clear();
+        }
+        self.shared.ready.notify_one();
+        if let Some(worker) = self.worker.take() {
+            let _ = worker.join();
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -134,32 +161,5 @@ mod tests {
         }
         assert_eq!(offer(uuid::Uuid::new_v4(), 2), Admission::Dropped);
         release.send(()).unwrap();
-    }
-}
-
-impl Shared {
-    fn take(&self) -> Option<Hint> {
-        let pending = self.pending.lock().ok()?;
-        let mut pending = self.ready.wait_while(pending, |pending| !pending.stopping && pending.jobs.is_empty()).ok()?;
-        if pending.stopping { None } else { pending.jobs.pop_front() }
-    }
-
-    fn valid(&self, hint: &Hint) -> bool {
-        hint.queued.elapsed() < TTL && self.generation.current() == hint.generation && self.revision.load(Ordering::Acquire) == hint.revision
-    }
-}
-
-impl Drop for ObserverHints {
-    fn drop(&mut self) {
-        self.shared.revision.fetch_add(1, Ordering::AcqRel);
-        {
-            let mut pending = self.shared.pending.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
-            pending.stopping = true;
-            pending.jobs.clear();
-        }
-        self.shared.ready.notify_one();
-        if let Some(worker) = self.worker.take() {
-            let _ = worker.join();
-        }
     }
 }

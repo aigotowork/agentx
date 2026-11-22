@@ -85,7 +85,7 @@ fn offline_target_keeps_its_name_and_mailbox_then_replies_from_its_exact_host() 
 
     let (received, open) = apply(root, |db, now| claim(db, now, &claim_input(&nova, "claim-1"))).unwrap();
     assert!(!open);
-    assert_eq!(received.items, [message.clone()]);
+    assert_eq!(received.items.as_slice(), std::slice::from_ref(&message));
     assert_eq!(apply(root, |db, _| operation(db, "send-1".into())).unwrap().status, OperationStatus::Claimed);
     apply(root, |db, now| confirm(db, now, confirm_input(&nova, "claim-1", &[&message.id]))).unwrap();
     assert_eq!(apply(root, |db, _| operation(db, "send-1".into())).unwrap().status, OperationStatus::Confirmed);
@@ -116,10 +116,10 @@ fn partial_confirmation_recovers_without_redelivery_and_release_is_explicit() {
 
     for _ in 0..2 {
         let confirmed = apply(root, |db, now| confirm(db, now, confirm_input(&nova, "claim", &[&first.id]))).unwrap();
-        assert_eq!(confirmed.confirmed, [first.id.clone()]);
+        assert_eq!(confirmed.confirmed.as_slice(), std::slice::from_ref(&first.id));
     }
     let remaining = apply(root, |db, now| recover(db, now, recover_input(&nova, "claim", false))).unwrap();
-    assert_eq!(remaining.items, [second.clone()]);
+    assert_eq!(remaining.items.as_slice(), std::slice::from_ref(&second));
     apply(root, |db, now| recover(db, now, recover_input(&nova, "claim", true))).unwrap();
     let (after_release, _) = apply(root, |db, now| claim(db, now, &claim_input(&nova, "fresh"))).unwrap();
     assert_eq!(after_release.items, [second]);

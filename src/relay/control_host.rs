@@ -74,26 +74,6 @@ fn prepare_launch_at(scope: &std::path::Path, inherited: &std::collections::Hash
     Ok(resolved)
 }
 
-#[cfg(test)]
-mod profile_tests {
-    use super::*;
-
-    #[test]
-    fn remote_profile_uses_target_scope_without_reselecting_target_env() {
-        let target = tempfile::tempdir().unwrap();
-        std::fs::write(target.path().join("config.toml"), "[launch]\ndefault_profile='deep'\n[launch.codex]\nargs='--model legacy'\n[launch.profiles.deep]\ntool='codex'\nargs=['--model','target','--add-dir','target-dir']\n").unwrap();
-        let request = RemoteLaunch::from_params(&json!({"selection":{"profile":"deep"},"args":["--model","override"],"count":2})).unwrap();
-        let environment = std::collections::HashMap::from([("AGENTX_PROFILE".into(), "missing".into()), ("AGENTX_CODEX_ARGS".into(), "--model env-legacy".into())]);
-        let resolved = prepare_launch_at(target.path(), &environment, &request).unwrap();
-        assert_eq!(resolved.args, ["--add-dir", "target-dir", "--model", "override"]);
-        assert_eq!(resolved.profile.unwrap().definition.args[1], "target");
-        let empty = tempfile::tempdir().unwrap();
-        assert!(prepare_launch_at(empty.path(), &environment, &request).is_err());
-        let default_request = RemoteLaunch::from_params(&json!({})).unwrap();
-        assert_eq!(prepare_launch_at(target.path(), &environment, &default_request).unwrap().args[1], "target");
-    }
-}
-
 fn execute(storage: &Client, effect: &ControlEffect) -> Result<Value, String> {
     use crate::runtime::launcher::{self, LaunchParams, LaunchTool};
     let config = crate::config::AgentxConfig::load_for_scope(storage.scope_root(), &storage.invocation().environment);
@@ -234,4 +214,24 @@ fn launch_result(storage: &Client, result: &crate::runtime::launcher::LaunchResu
         }
     }
     Ok(value)
+}
+
+#[cfg(test)]
+mod profile_tests {
+    use super::*;
+
+    #[test]
+    fn remote_profile_uses_target_scope_without_reselecting_target_env() {
+        let target = tempfile::tempdir().unwrap();
+        std::fs::write(target.path().join("config.toml"), "[launch]\ndefault_profile='deep'\n[launch.codex]\nargs='--model legacy'\n[launch.profiles.deep]\ntool='codex'\nargs=['--model','target','--add-dir','target-dir']\n").unwrap();
+        let request = RemoteLaunch::from_params(&json!({"selection":{"profile":"deep"},"args":["--model","override"],"count":2})).unwrap();
+        let environment = std::collections::HashMap::from([("AGENTX_PROFILE".into(), "missing".into()), ("AGENTX_CODEX_ARGS".into(), "--model env-legacy".into())]);
+        let resolved = prepare_launch_at(target.path(), &environment, &request).unwrap();
+        assert_eq!(resolved.args, ["--add-dir", "target-dir", "--model", "override"]);
+        assert_eq!(resolved.profile.unwrap().definition.args[1], "target");
+        let empty = tempfile::tempdir().unwrap();
+        assert!(prepare_launch_at(empty.path(), &environment, &request).is_err());
+        let default_request = RemoteLaunch::from_params(&json!({})).unwrap();
+        assert_eq!(prepare_launch_at(target.path(), &environment, &default_request).unwrap().args[1], "target");
+    }
 }
