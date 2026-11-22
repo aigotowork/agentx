@@ -11,7 +11,7 @@ struct Fixture {
 }
 impl Fixture {
     fn new() -> Self {
-        let root = tempfile::tempdir().unwrap();
+        let root = crate::paths::test_roots::canonical_tempdir().unwrap();
         let scope = root.path().join("scope");
         fs::create_dir(&scope).unwrap();
         let base = HashMap::from([("HOME".into(), root.path().to_string_lossy().into_owned()), ("AGENTX_DIR".into(), scope.to_string_lossy().into_owned())]);

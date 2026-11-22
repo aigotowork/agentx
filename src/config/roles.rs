@@ -302,7 +302,7 @@ mod tests {
 
     impl Fixture {
         fn new() -> Self {
-            let root = tempfile::tempdir().unwrap();
+            let root = crate::paths::test_roots::canonical_tempdir().unwrap();
             let scope = root.path().join("scope");
             let parent = root.path().join("project");
             let child = parent.join("child");

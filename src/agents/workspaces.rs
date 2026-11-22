@@ -323,6 +323,12 @@ mod tests {
     use crate::service::{CallerContext, CallerProcess, InvocationContext, RequestContext, RequestId};
     use serde_json::json;
 
+    // These are stored identities only. Tests never need these paths to exist.
+    const WORKSPACE: &str = if cfg!(windows) { r"C:\workspace" } else { "/workspace" };
+    const CONTROLLER_ROLE: &str = if cfg!(windows) { r"C:\roles\controller.toml" } else { "/roles/controller.toml" };
+    const REVIEWER_ROLE: &str = if cfg!(windows) { r"C:\roles\reviewer.toml" } else { "/roles/reviewer.toml" };
+    const NON_CANONICAL_WORKSPACE: &str = if cfg!(windows) { r"C:\workspace\..\other" } else { "/workspace/../other" };
+
     fn fixture() -> (tempfile::TempDir, AgentxDb, RequestContext) {
         let directory = tempfile::tempdir().unwrap();
         let db = AgentxDb::open_at(&directory.path().join("agentx.db")).unwrap();
@@ -339,7 +345,7 @@ mod tests {
     fn snapshot(workspace: Option<&str>, endpoint: bool) -> LaunchCollaboration {
         LaunchCollaboration {
             workspace: workspace.map(str::to_owned),
-            role: Some(ResolvedRole { name: "controller".into(), path: "/roles/controller.toml".into(), namespace: "global:/roles".into(), profile: "deep".into(), prompt: "Frozen instructions".into(), description: None, default: true }),
+            role: Some(ResolvedRole { name: "controller".into(), path: CONTROLLER_ROLE.into(), namespace: "global:/roles".into(), profile: "deep".into(), prompt: "Frozen instructions".into(), description: None, default: true }),
             endpoint,
             instruction_additions: None,
         }
@@ -376,7 +382,7 @@ mod tests {
     }
 
     fn lookup(db: &AgentxDb, context: &RequestContext, workspace: Option<&str>) -> ServiceResult<Option<ParticipantRef>> {
-        match handle(db, context, Request::EndpointLookup { workspace: workspace.map(str::to_owned), role_path: "/roles/controller.toml".into() })? {
+        match handle(db, context, Request::EndpointLookup { workspace: workspace.map(str::to_owned), role_path: CONTROLLER_ROLE.into() })? {
             Response::Endpoint(value) => Ok(value),
             _ => panic!("endpoint response"),
         }
@@ -391,7 +397,7 @@ mod tests {
     #[test]
     fn collaboration_survives_terminal_recapture_and_stopped_snapshot() {
         let (_directory, db, mut context) = fixture();
-        let adopted = snapshot(Some("/workspace"), false);
+        let adopted = snapshot(Some(WORKSPACE), false);
         context.caller.invocation.launch_context = Some(json!({"pane_id":"pane-7","audit":"retained"}));
         let reserved = reserve_member(&db, &context, "lobo", Some(adopted.clone()));
         handle(&db, &context, Request::TerminalLaunched { reservation: reserved, requested: None, effective: "fixture".into(), background: None }).unwrap();
@@ -400,7 +406,7 @@ mod tests {
         crate::agents::invocation_binding::capture_launch_context(&db, &context, "lobo").unwrap();
         let row = db.get_instance_full("lobo").unwrap().unwrap();
         assert_eq!(collaboration(&row), Some(adopted.clone()));
-        assert_eq!(workspace(&row).as_deref(), Some("/workspace"));
+        assert_eq!(workspace(&row).as_deref(), Some(WORKSPACE));
         let context: serde_json::Value = serde_json::from_str(row.launch_context.as_deref().unwrap()).unwrap();
         assert_eq!(context["pane_id"], "pane-7");
         assert_eq!(context["audit"], "retained");
@@ -415,17 +421,17 @@ mod tests {
         let (_directory, db, context) = fixture();
         reserve_member(&db, &context, "lobo", None);
         reserve_member(&db, &context, "mora", Some(LaunchCollaboration { workspace: None, role: None, endpoint: false, instruction_additions: None }));
-        reserve_member(&db, &context, "riva", Some(LaunchCollaboration { workspace: Some("/workspace".into()), role: None, endpoint: false, instruction_additions: None }));
+        reserve_member(&db, &context, "riva", Some(LaunchCollaboration { workspace: Some(WORKSPACE.into()), role: None, endpoint: false, instruction_additions: None }));
         assert!(collaboration(&db.get_instance_full("lobo").unwrap().unwrap()).is_none());
         assert!(collaboration(&db.get_instance_full("mora").unwrap().unwrap()).is_some());
-        assert_eq!(workspace(&db.get_instance_full("riva").unwrap().unwrap()).as_deref(), Some("/workspace"));
-        assert!(lookup(&db, &context, Some("/workspace")).unwrap().is_none());
+        assert_eq!(workspace(&db.get_instance_full("riva").unwrap().unwrap()).as_deref(), Some(WORKSPACE));
+        assert!(lookup(&db, &context, Some(WORKSPACE)).unwrap().is_none());
     }
 
     #[test]
     fn pane_title_uses_adopted_role_and_launch_title() {
         let (_directory, db, context) = fixture();
-        let mut launch = input("saki", Some(snapshot(Some("/workspace"), false)));
+        let mut launch = input("saki", Some(snapshot(Some(WORKSPACE), false)));
         launch.title = Some("优化终端标题".into());
         handle(&db, &request(&context, "pane-title"), Request::Reserve(launch)).unwrap();
         let row = db.get_instance_full("saki").unwrap().unwrap();
@@ -445,11 +451,11 @@ mod tests {
     #[test]
     fn adopts_only_one_compatible_member_and_preserves_adopted_prompt() {
         let (_directory, db, context) = fixture();
-        let local = reserve_member(&db, &context, "lobo", Some(snapshot(Some("/workspace"), false)));
+        let local = reserve_member(&db, &context, "lobo", Some(snapshot(Some(WORKSPACE), false)));
         reserve_member(&db, &context, "mora", Some(snapshot(None, false)));
-        assert_eq!(lookup(&db, &context, Some("/workspace")).unwrap(), Some(local.participant.clone()));
+        assert_eq!(lookup(&db, &context, Some(WORKSPACE)).unwrap(), Some(local.participant.clone()));
         db.update_instance_fields("lobo", json!({"status":"active","directory":"/moved"}).as_object().unwrap()).unwrap();
-        assert_eq!(lookup(&db, &context, Some("/workspace")).unwrap(), Some(local.participant));
+        assert_eq!(lookup(&db, &context, Some(WORKSPACE)).unwrap(), Some(local.participant));
         assert_eq!(collaboration(&db.get_instance_full("lobo").unwrap().unwrap()).unwrap().role.unwrap().prompt, "Frozen instructions");
     }
 
@@ -457,10 +463,10 @@ mod tests {
     fn ambiguous_members_do_not_create_an_endpoint_binding() {
         let (_directory, db, context) = fixture();
         for name in ["lobo", "mora"] {
-            reserve_member(&db, &context, name, Some(snapshot(Some("/workspace"), false)));
+            reserve_member(&db, &context, name, Some(snapshot(Some(WORKSPACE), false)));
         }
-        assert!(matches!(lookup(&db, &context, Some("/workspace")), Err(ServiceError::Conflict(_))));
-        assert!(db.kv_get(&endpoint_key(Some("/workspace")).unwrap()).unwrap().is_none());
+        assert!(matches!(lookup(&db, &context, Some(WORKSPACE)), Err(ServiceError::Conflict(_))));
+        assert!(db.kv_get(&endpoint_key(Some(WORKSPACE)).unwrap()).unwrap().is_none());
     }
 
     #[test]
@@ -476,7 +482,7 @@ mod tests {
                 std::thread::spawn(move || {
                     let db = AgentxDb::open_at(&path).unwrap();
                     barrier.wait();
-                    let input = input(name, Some(snapshot(Some("/workspace"), true)));
+                    let input = input(name, Some(snapshot(Some(WORKSPACE), true)));
                     let outcome = handle(&db, &context, Request::Reserve(input.clone()));
                     if let Ok(Response::Reserved(reserved)) = &outcome {
                         let Response::Reserved(replayed) = handle(&db, &context, Request::Reserve(input)).unwrap() else { panic!("replay response") };
@@ -490,18 +496,18 @@ mod tests {
         assert_eq!(outcomes.iter().filter(|outcome| matches!(outcome, Ok(Response::Reserved(_)))).count(), 1);
         assert_eq!(outcomes.iter().filter(|outcome| matches!(outcome, Err(ServiceError::Conflict(_)))).count(), 1);
         assert_eq!(db.iter_instances_full().unwrap().len(), 1);
-        assert!(lookup(&db, &context, Some("/workspace")).unwrap().is_some());
+        assert!(lookup(&db, &context, Some(WORKSPACE)).unwrap().is_some());
     }
 
     #[test]
     fn endpoint_write_failure_rolls_back_identity_binding_and_request_receipt() {
         let (_directory, db, context) = fixture();
         db.conn().execute_batch("CREATE TRIGGER endpoint_failure BEFORE INSERT ON kv WHEN NEW.key LIKE 'workspace_endpoint:%' BEGIN SELECT RAISE(ABORT, 'endpoint write failure'); END;").unwrap();
-        let launch = input("lobo", Some(snapshot(Some("/workspace"), true)));
+        let launch = input("lobo", Some(snapshot(Some(WORKSPACE), true)));
         assert!(handle(&db, &context, Request::Reserve(launch.clone())).is_err());
         assert!(db.get_instance_full("lobo").unwrap().is_none());
         assert!(db.get_process_binding("process-lobo").unwrap().is_none());
-        assert!(db.kv_get(&endpoint_key(Some("/workspace")).unwrap()).unwrap().is_none());
+        assert!(db.kv_get(&endpoint_key(Some(WORKSPACE)).unwrap()).unwrap().is_none());
         db.conn().execute_batch("DROP TRIGGER endpoint_failure").unwrap();
         assert!(matches!(handle(&db, &context, Request::Reserve(launch)), Ok(Response::Reserved(_))));
     }
@@ -509,47 +515,47 @@ mod tests {
     #[test]
     fn pending_and_failed_endpoints_remain_reserved_and_cannot_be_reset_or_replaced() {
         let (_directory, db, context) = fixture();
-        let reserved = reserve_member(&db, &context, "lobo", Some(snapshot(Some("/workspace"), true)));
-        assert_eq!(lookup(&db, &context, Some("/workspace")).unwrap(), Some(reserved.participant.clone()));
+        let reserved = reserve_member(&db, &context, "lobo", Some(snapshot(Some(WORKSPACE), true)));
+        assert_eq!(lookup(&db, &context, Some(WORKSPACE)).unwrap(), Some(reserved.participant.clone()));
         handle(&db, &context, Request::CancelFailed(reserved.clone())).unwrap();
-        assert_eq!(lookup(&db, &context, Some("/workspace")).unwrap(), Some(reserved.participant));
+        assert_eq!(lookup(&db, &context, Some(WORKSPACE)).unwrap(), Some(reserved.participant));
         assert_eq!(db.get_instance_full("lobo").unwrap().unwrap().status_context, "launch_failed");
-        assert!(matches!(handle(&db, &context, Request::EndpointReset { workspace: Some("/workspace".into()) }), Err(ServiceError::Conflict(_))));
+        assert!(matches!(handle(&db, &context, Request::EndpointReset { workspace: Some(WORKSPACE.into()) }), Err(ServiceError::Conflict(_))));
         assert!(matches!(handle(&db, &request(&context, "replacement"), Request::Reserve(input("lobo", None))), Err(ServiceError::Conflict(_))));
-        assert!(matches!(handle(&db, &request(&context, "second"), Request::Reserve(input("mora", Some(snapshot(Some("/workspace"), true))))), Err(ServiceError::Conflict(_))));
+        assert!(matches!(handle(&db, &request(&context, "second"), Request::Reserve(input("mora", Some(snapshot(Some(WORKSPACE), true))))), Err(ServiceError::Conflict(_))));
     }
 
     #[test]
     fn absent_row_and_namesake_without_exact_retirement_do_not_release_binding() {
         let (_directory, db, context) = fixture();
-        let reserved = reserve_member(&db, &context, "lobo", Some(snapshot(Some("/workspace"), true)));
+        let reserved = reserve_member(&db, &context, "lobo", Some(snapshot(Some(WORKSPACE), true)));
         db.delete_instance("lobo").unwrap();
-        assert!(matches!(lookup(&db, &context, Some("/workspace")), Err(ServiceError::OutcomeUnknown(_))));
+        assert!(matches!(lookup(&db, &context, Some(WORKSPACE)), Err(ServiceError::OutcomeUnknown(_))));
         db.log_event("life", "lobo", &json!({"action":"stopped","snapshot":{"created_at":0.0}})).unwrap();
-        assert!(matches!(lookup(&db, &context, Some("/workspace")), Err(ServiceError::OutcomeUnknown(_))));
+        assert!(matches!(lookup(&db, &context, Some(WORKSPACE)), Err(ServiceError::OutcomeUnknown(_))));
         db.save_instance_named("lobo", json!({"tool":"codex","created_at":f64::from_bits(reserved.participant.incarnation_bits) + 1.0}).as_object().unwrap()).unwrap();
-        assert!(matches!(lookup(&db, &context, Some("/workspace")), Err(ServiceError::StaleFence)));
-        assert!(matches!(handle(&db, &context, Request::EndpointReset { workspace: Some("/workspace".into()) }), Err(ServiceError::Conflict(_))));
+        assert!(matches!(lookup(&db, &context, Some(WORKSPACE)), Err(ServiceError::StaleFence)));
+        assert!(matches!(handle(&db, &context, Request::EndpointReset { workspace: Some(WORKSPACE.into()) }), Err(ServiceError::Conflict(_))));
     }
 
     #[test]
     fn exact_retirement_allows_same_role_successor_but_role_drift_needs_reset() {
         let (_directory, db, context) = fixture();
-        reserve_member(&db, &context, "lobo", Some(snapshot(Some("/workspace"), true)));
+        reserve_member(&db, &context, "lobo", Some(snapshot(Some(WORKSPACE), true)));
         stop(&db, "lobo");
-        assert!(lookup(&db, &context, Some("/workspace")).unwrap().is_none());
-        let successor = reserve_member(&db, &context, "mora", Some(snapshot(Some("/workspace"), true)));
-        assert_eq!(lookup(&db, &context, Some("/workspace")).unwrap(), Some(successor.participant));
+        assert!(lookup(&db, &context, Some(WORKSPACE)).unwrap().is_none());
+        let successor = reserve_member(&db, &context, "mora", Some(snapshot(Some(WORKSPACE), true)));
+        assert_eq!(lookup(&db, &context, Some(WORKSPACE)).unwrap(), Some(successor.participant));
         stop(&db, "mora");
-        let changed = Request::EndpointLookup { workspace: Some("/workspace".into()), role_path: "/roles/reviewer.toml".into() };
+        let changed = Request::EndpointLookup { workspace: Some(WORKSPACE.into()), role_path: REVIEWER_ROLE.into() };
         assert!(matches!(handle(&db, &context, changed), Err(ServiceError::Conflict(_))));
         let reset_context = request(&context, "explicit-reset");
-        handle(&db, &reset_context, Request::EndpointReset { workspace: Some("/workspace".into()) }).unwrap();
-        let mut changed = snapshot(Some("/workspace"), true);
-        changed.role.as_mut().unwrap().path = "/roles/reviewer.toml".into();
+        handle(&db, &reset_context, Request::EndpointReset { workspace: Some(WORKSPACE.into()) }).unwrap();
+        let mut changed = snapshot(Some(WORKSPACE), true);
+        changed.role.as_mut().unwrap().path = REVIEWER_ROLE.into();
         let current = reserve_member(&db, &context, "riva", Some(changed));
-        handle(&db, &reset_context, Request::EndpointReset { workspace: Some("/workspace".into()) }).unwrap();
-        let stored = endpoint_binding(&db, &endpoint_key(Some("/workspace")).unwrap()).unwrap().unwrap();
+        handle(&db, &reset_context, Request::EndpointReset { workspace: Some(WORKSPACE.into()) }).unwrap();
+        let stored = endpoint_binding(&db, &endpoint_key(Some(WORKSPACE)).unwrap()).unwrap().unwrap();
         assert_eq!(stored.participant, current.participant, "replayed reset cannot clear a later endpoint");
     }
 
@@ -574,7 +580,7 @@ mod tests {
 
     fn inspect(db: &AgentxDb, context: &RequestContext, role: &str) -> EndpointInspection {
         let before = database_frontier(db);
-        let Response::EndpointInspected(inspection) = handle(db, context, Request::EndpointInspect { workspace: Some("/workspace".into()), role_path: role.into() }).unwrap() else { panic!("inspection response") };
+        let Response::EndpointInspected(inspection) = handle(db, context, Request::EndpointInspect { workspace: Some(WORKSPACE.into()), role_path: role.into() }).unwrap() else { panic!("inspection response") };
         assert_eq!(database_frontier(db), before, "inspection must preserve rows, binding, events and mutation frontier");
         inspection
     }
@@ -582,64 +588,64 @@ mod tests {
     #[test]
     fn inspect_absent_unique_and_ambiguous_without_adopting() {
         let (_directory, db, context) = fixture();
-        assert_eq!(inspect(&db, &context, "/roles/controller.toml").status, EndpointStatus::Absent);
-        let member = reserve_member(&db, &context, "lobo", Some(snapshot(Some("/workspace"), false)));
-        let unique = inspect(&db, &context, "/roles/controller.toml");
+        assert_eq!(inspect(&db, &context, CONTROLLER_ROLE).status, EndpointStatus::Absent);
+        let member = reserve_member(&db, &context, "lobo", Some(snapshot(Some(WORKSPACE), false)));
+        let unique = inspect(&db, &context, CONTROLLER_ROLE);
         assert_eq!(unique.status, EndpointStatus::Adoptable);
         assert_eq!(unique.participant, Some(member.participant));
         assert_eq!(unique.candidates, 1);
-        reserve_member(&db, &context, "mora", Some(snapshot(Some("/workspace"), false)));
-        let ambiguous = inspect(&db, &context, "/roles/controller.toml");
+        reserve_member(&db, &context, "mora", Some(snapshot(Some(WORKSPACE), false)));
+        let ambiguous = inspect(&db, &context, CONTROLLER_ROLE);
         assert_eq!(ambiguous.status, EndpointStatus::Ambiguous);
         assert_eq!(ambiguous.candidates, 2);
         assert!(ambiguous.participant.is_none());
-        assert!(db.kv_get(&endpoint_key(Some("/workspace")).unwrap()).unwrap().is_none());
+        assert!(db.kv_get(&endpoint_key(Some(WORKSPACE)).unwrap()).unwrap().is_none());
     }
 
     #[test]
     fn inspect_pending_failed_and_role_drift_remain_occupied() {
         let (_directory, db, context) = fixture();
-        let reserved = reserve_member(&db, &context, "lobo", Some(snapshot(Some("/workspace"), true)));
-        assert_eq!(inspect(&db, &context, "/roles/controller.toml").status, EndpointStatus::Bound);
+        let reserved = reserve_member(&db, &context, "lobo", Some(snapshot(Some(WORKSPACE), true)));
+        assert_eq!(inspect(&db, &context, CONTROLLER_ROLE).status, EndpointStatus::Bound);
         handle(&db, &context, Request::CancelFailed(reserved.clone())).unwrap();
-        let failed = inspect(&db, &context, "/roles/controller.toml");
+        let failed = inspect(&db, &context, CONTROLLER_ROLE);
         assert_eq!(failed.status, EndpointStatus::Bound);
         assert_eq!(failed.participant, Some(reserved.participant.clone()));
-        let changed = inspect(&db, &context, "/roles/reviewer.toml");
+        let changed = inspect(&db, &context, REVIEWER_ROLE);
         assert_eq!(changed.status, EndpointStatus::RoleChanged);
         assert_eq!(changed.participant, Some(reserved.participant));
         let mut changed_adoption = snapshot(Some("/other"), true);
-        changed_adoption.role.as_mut().unwrap().path = "/roles/reviewer.toml".into();
+        changed_adoption.role.as_mut().unwrap().path = REVIEWER_ROLE.into();
         db.update_instance_fields("lobo", json!({"launch_context":json!({"collaboration":changed_adoption}).to_string()}).as_object().unwrap()).unwrap();
-        assert_eq!(inspect(&db, &context, "/roles/controller.toml").status, EndpointStatus::RoleChanged);
+        assert_eq!(inspect(&db, &context, CONTROLLER_ROLE).status, EndpointStatus::RoleChanged);
     }
 
     #[test]
     fn inspect_absent_bound_row_is_unknown_and_namesake_is_stale() {
         let (_directory, db, context) = fixture();
-        let reserved = reserve_member(&db, &context, "lobo", Some(snapshot(Some("/workspace"), true)));
+        let reserved = reserve_member(&db, &context, "lobo", Some(snapshot(Some(WORKSPACE), true)));
         db.delete_instance("lobo").unwrap();
-        let unknown = inspect(&db, &context, "/roles/controller.toml");
+        let unknown = inspect(&db, &context, CONTROLLER_ROLE);
         assert_eq!(unknown.status, EndpointStatus::Unknown);
         assert_eq!(unknown.participant, Some(reserved.participant.clone()));
         db.log_event("life", "lobo", &json!({"action":"stopped","snapshot":{"created_at":0.0}})).unwrap();
-        assert_eq!(inspect(&db, &context, "/roles/controller.toml").status, EndpointStatus::Unknown);
+        assert_eq!(inspect(&db, &context, CONTROLLER_ROLE).status, EndpointStatus::Unknown);
         db.save_instance_named("lobo", json!({"tool":"codex","created_at":f64::from_bits(reserved.participant.incarnation_bits)+1.0}).as_object().unwrap()).unwrap();
-        assert_eq!(inspect(&db, &context, "/roles/controller.toml").status, EndpointStatus::Stale);
+        assert_eq!(inspect(&db, &context, CONTROLLER_ROLE).status, EndpointStatus::Stale);
     }
 
     #[test]
     fn inspect_retired_binding_observes_successor_without_rebinding() {
         let (_directory, db, context) = fixture();
-        reserve_member(&db, &context, "lobo", Some(snapshot(Some("/workspace"), true)));
+        reserve_member(&db, &context, "lobo", Some(snapshot(Some(WORKSPACE), true)));
         stop(&db, "lobo");
-        assert_eq!(inspect(&db, &context, "/roles/controller.toml").status, EndpointStatus::Absent);
-        let next = reserve_member(&db, &context, "mora", Some(snapshot(Some("/workspace"), false)));
-        let candidate = inspect(&db, &context, "/roles/controller.toml");
+        assert_eq!(inspect(&db, &context, CONTROLLER_ROLE).status, EndpointStatus::Absent);
+        let next = reserve_member(&db, &context, "mora", Some(snapshot(Some(WORKSPACE), false)));
+        let candidate = inspect(&db, &context, CONTROLLER_ROLE);
         assert_eq!(candidate.status, EndpointStatus::Adoptable);
         assert_eq!(candidate.participant, Some(next.participant));
-        assert_eq!(endpoint_binding(&db, &endpoint_key(Some("/workspace")).unwrap()).unwrap().unwrap().participant.canonical_name, "lobo");
-        assert_eq!(inspect(&db, &context, "/roles/reviewer.toml").status, EndpointStatus::RoleChanged);
+        assert_eq!(endpoint_binding(&db, &endpoint_key(Some(WORKSPACE)).unwrap()).unwrap().unwrap().participant.canonical_name, "lobo");
+        assert_eq!(inspect(&db, &context, REVIEWER_ROLE).status, EndpointStatus::RoleChanged);
     }
 
     #[test]
@@ -653,7 +659,7 @@ mod tests {
         assert!(matches!(checked_collaboration(None), CheckedCollaboration::Missing));
         assert!(matches!(checked_collaboration(Some("{}")), CheckedCollaboration::Missing));
         assert!(matches!(checked_collaboration(Some("{")), CheckedCollaboration::Unavailable(_)));
-        for path in ["relative", "/workspace/../other"] {
+        for path in ["relative", NON_CANONICAL_WORKSPACE] {
             let adopted = snapshot(Some(path), false);
             let raw = json!({"collaboration":adopted}).to_string();
             assert!(matches!(checked_collaboration(Some(&raw)), CheckedCollaboration::Unavailable(_)));

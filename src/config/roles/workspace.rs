@@ -109,7 +109,7 @@ mod tests {
 
     impl Fixture {
         fn new() -> Self {
-            let root = tempfile::tempdir().unwrap();
+            let root = crate::paths::test_roots::canonical_tempdir().unwrap();
             let cwd = root.path().join("caller/sub");
             let home = root.path().join("home");
             std::fs::create_dir_all(&cwd).unwrap();

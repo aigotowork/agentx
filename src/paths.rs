@@ -90,6 +90,12 @@ pub(crate) mod test_roots {
     use super::{Path, PathBuf, resolve_deepest_existing};
     use std::sync::{Mutex, OnceLock};
 
+    /// Create a disposable fixture below the canonical host temp directory.
+    /// Windows TEMP can use an 8.3 alias; domain results contain the full path.
+    pub(crate) fn canonical_tempdir() -> std::io::Result<tempfile::TempDir> {
+        tempfile::tempdir_in(std::env::temp_dir().canonicalize()?)
+    }
+
     fn roots() -> &'static Mutex<Vec<PathBuf>> {
         static ROOTS: OnceLock<Mutex<Vec<PathBuf>>> = OnceLock::new();
         ROOTS.get_or_init(|| Mutex::new(Vec::new()))
