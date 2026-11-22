@@ -360,9 +360,7 @@ fn message_history_service_advertises_capability_and_fences_exact_reads() {
     let events = {
         let db = AgentxDb::open_at(&database).unwrap();
         db.save_instance_named("toku", serde_json::json!({"created_at":10.0,"tool":"codex"}).as_object().unwrap()).unwrap();
-        (0..22).map(|index| {
-            db.insert_event_row("message", "toku", &serde_json::json!({"text":format!("item {index}")}), Some("1970-01-01T00:00:11.000000+00:00")).unwrap().to_string()
-        }).collect::<Vec<_>>()
+        (0..22).map(|index| db.insert_event_row("message", "toku", &serde_json::json!({"text":format!("item {index}")}), Some("1970-01-01T00:00:11.000000+00:00")).unwrap().to_string()).collect::<Vec<_>>()
     };
     let _daemon = TestDaemon::start(root.path(), &database);
     let service = ManagementService::new(root.path().into(), root.path().into(), InvocationContext { cwd: root.path().into(), ..Default::default() }, Arc::new(Semaphore::new(0)));

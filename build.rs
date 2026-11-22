@@ -14,7 +14,23 @@ fn main() {
 
 fn track_build_inputs() {
     // Cargo recursively scans directory watches, including new embedded assets.
-    for path in ["src", "tests/support", "Cargo.toml", "Cargo.lock", "build.rs", "web/observability", "web/workbench", "web/management", "packages/agentx-client/src", "packages/agentx-client/scripts", "packages/agentx-client/tsconfig.json", "packages/agentx-client/package.json", "packages/agentx-client/package-lock.json", "package.json", "package-lock.json"] {
+    for path in [
+        "src",
+        "tests/support",
+        "Cargo.toml",
+        "Cargo.lock",
+        "build.rs",
+        "web/observability",
+        "web/workbench",
+        "web/management",
+        "packages/agentx-client/src",
+        "packages/agentx-client/scripts",
+        "packages/agentx-client/tsconfig.json",
+        "packages/agentx-client/package.json",
+        "packages/agentx-client/package-lock.json",
+        "package.json",
+        "package-lock.json",
+    ] {
         println!("cargo::rerun-if-changed={path}");
     }
     // Changes to an installed checkout compiler also invalidate the bundle.

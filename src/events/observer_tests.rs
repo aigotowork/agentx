@@ -23,8 +23,8 @@ fn fixture(body: impl FnOnce(&mut AgentxDb, &RequestContext, ObserverSpec, &Noti
 
 #[test]
 fn postcommit_async_observer_waits_for_commit_without_holding_dispatch_and_revokes_ended_hint() {
-    use crate::runtime::notify::observer_hints::ObserverHints;
     use crate::observability::post_commit::Dispatch;
+    use crate::runtime::notify::observer_hints::ObserverHints;
     fixture(|db, context, original, _| {
         let generation = crate::daemon::DatabaseGeneration::default();
         generation.publish(context.database_generation.clone()).unwrap();
@@ -32,9 +32,22 @@ fn postcommit_async_observer_waits_for_commit_without_holding_dispatch_and_revok
         let (release, gate) = std::sync::mpsc::channel();
         let (sent, sent_hint) = std::sync::mpsc::channel();
         let first_port = original.port;
-        db.install_observer_hints(generation, |generation, revision| ObserverHints::with_sender(generation, revision, move |port| {
-            if port == first_port { entered.send(()).unwrap(); let _ = gate.recv_timeout(Duration::from_secs(5)); }
-        }, move |port| { let _ = sent.send(port); })).unwrap();
+        db.install_observer_hints(generation, |generation, revision| {
+            ObserverHints::with_sender(
+                generation,
+                revision,
+                move |port| {
+                    if port == first_port {
+                        entered.send(()).unwrap();
+                        let _ = gate.recv_timeout(Duration::from_secs(5));
+                    }
+                },
+                move |port| {
+                    let _ = sent.send(port);
+                },
+            )
+        })
+        .unwrap();
         begin(db, context, original.clone()).unwrap();
         let capture = Dispatch::begin();
         let rollback: anyhow::Result<()> = db.with_write_scope(|| {
@@ -47,7 +60,8 @@ fn postcommit_async_observer_waits_for_commit_without_holding_dispatch_and_revok
             db.log_event("status", "luna", &json!({"status":"active"}))?;
             db.log_event("status", "luna", &json!({"status":"active"}))?;
             Ok(())
-        }).unwrap();
+        })
+        .unwrap();
         waiting.recv_timeout(Duration::from_secs(2)).unwrap();
         assert_eq!(capture.work().unwrap().observer_hints_queued, 1);
         assert!(sent_hint.try_recv().is_err());

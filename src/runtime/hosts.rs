@@ -113,29 +113,89 @@ impl EndpointKind {
 pub(crate) enum Request {
     DirectTerminalSupport,
     ReserveNativeRoot(NativeRootReservation),
-    ReserveProductRoot { root: NativeRootReservation, role: String, workspace: std::path::PathBuf },
-    RegisterNativeRoot { target: ActivationTarget, owner: AttachmentOwnerId, wake_port: u16, state: NativeRootState },
+    ReserveProductRoot {
+        root: NativeRootReservation,
+        role: String,
+        workspace: std::path::PathBuf,
+    },
+    RegisterNativeRoot {
+        target: ActivationTarget,
+        owner: AttachmentOwnerId,
+        wake_port: u16,
+        state: NativeRootState,
+    },
     RenewNativeRoot(HostRegistration),
     /// The originating terminal observed a ready prompt for this native host.
     NativeRootReady(HostRegistration),
-    NativeRecovery { registration: HostRegistration, action: crate::agents::recovery::NativeAction },
+    NativeRecovery {
+        registration: HostRegistration,
+        action: crate::agents::recovery::NativeAction,
+    },
     ReleaseNativeRoot(HostRegistration),
-    ObserveLaunch { launcher: Option<String>, batch_id: Option<String>, timeout_secs: u64 },
-    RegisterLaunchWaiter { batch_prefix: Option<String>, port: u16 },
+    ObserveLaunch {
+        launcher: Option<String>,
+        batch_id: Option<String>,
+        timeout_secs: u64,
+    },
+    RegisterLaunchWaiter {
+        batch_prefix: Option<String>,
+        port: u16,
+    },
     ReleaseLaunchWaiter(LaunchWaitRegistration),
-    RegisterProcess { participant: ParticipantRef, child: ChildProcess, launch_context: Option<String> },
-    CaptureProcessContext { registration: ProcessRegistration, launch_context: String },
-    SetProcessEndpoint { registration: ProcessRegistration, kind: EndpointKind, port: u16 },
-    ReleaseProcessEndpoint { registration: ProcessRegistration, kind: EndpointKind, port: u16 },
-    ObserveApproval { participant: ParticipantRef, approval: bool },
-    ObserveClaudeModHealth { registration: ProcessRegistration },
-    ReportClaudeMod { session: String, report: ClaudeModReport },
-    BeginClaudeModPoll { session: String, port: u16 },
-    FinishClaudeModPoll { registration: ClaudeModPoll, claim: bool },
-    BootstrapSnapshot { name: String },
-    SetPluginEndpoint { participant: ParticipantRef, port: u16, standby: bool },
-    SetCopilotEndpoint { participant: ParticipantRef, session_id: String, port: u16 },
-    WakeHook { participant: ParticipantRef },
+    RegisterProcess {
+        participant: ParticipantRef,
+        child: ChildProcess,
+        launch_context: Option<String>,
+    },
+    CaptureProcessContext {
+        registration: ProcessRegistration,
+        launch_context: String,
+    },
+    SetProcessEndpoint {
+        registration: ProcessRegistration,
+        kind: EndpointKind,
+        port: u16,
+    },
+    ReleaseProcessEndpoint {
+        registration: ProcessRegistration,
+        kind: EndpointKind,
+        port: u16,
+    },
+    ObserveApproval {
+        participant: ParticipantRef,
+        approval: bool,
+    },
+    ObserveClaudeModHealth {
+        registration: ProcessRegistration,
+    },
+    ReportClaudeMod {
+        session: String,
+        report: ClaudeModReport,
+    },
+    BeginClaudeModPoll {
+        session: String,
+        port: u16,
+    },
+    FinishClaudeModPoll {
+        registration: ClaudeModPoll,
+        claim: bool,
+    },
+    BootstrapSnapshot {
+        name: String,
+    },
+    SetPluginEndpoint {
+        participant: ParticipantRef,
+        port: u16,
+        standby: bool,
+    },
+    SetCopilotEndpoint {
+        participant: ParticipantRef,
+        session_id: String,
+        port: u16,
+    },
+    WakeHook {
+        participant: ParticipantRef,
+    },
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]

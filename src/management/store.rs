@@ -253,10 +253,7 @@ fn workspace_members(db: &AgentxDb, context: &RequestContext, workspace: &str, c
     let prefix = format!("workspace-members:{fingerprint}:");
     let cursor = match after {
         None => "",
-        Some(cursor) => cursor
-            .strip_prefix(&prefix)
-            .filter(|cursor| cursor.starts_with("0:") || (!current_only && cursor.starts_with("1:")))
-            .ok_or_else(|| invalid("workspace member cursor belongs to another query or generation"))?,
+        Some(cursor) => cursor.strip_prefix(&prefix).filter(|cursor| cursor.starts_with("0:") || (!current_only && cursor.starts_with("1:"))).ok_or_else(|| invalid("workspace member cursor belongs to another query or generation"))?,
     };
     let mut page = list_page(db, context, cursor, limit, Some(workspace), current_only)?;
     page.next = page.next.map(|cursor| format!("{prefix}{cursor}"));
@@ -309,12 +306,15 @@ fn list_page(db: &AgentxDb, context: &RequestContext, cursor: &str, limit: u32, 
         let stopped = if let Some(workspace) = workspace {
             // An old stopped snapshot may store launch context as a JSON object
             // instead of a serialized string, just as the detail view accepts.
-            let mut stmt = db.conn().prepare_cached(
-                "SELECT id,instance FROM events WHERE id < ?1 AND type='life' AND CASE WHEN json_valid(data) THEN
+            let mut stmt = db
+                .conn()
+                .prepare_cached(
+                    "SELECT id,instance FROM events WHERE id < ?1 AND type='life' AND CASE WHEN json_valid(data) THEN
                     json_extract(data,'$.action')='stopped' AND json_type(data,'$.snapshot')='object' AND COALESCE(json_extract(data,'$.snapshot.origin_device_id'),'')=''
                     AND agentx_adopted_workspace(CASE WHEN json_type(data,'$.snapshot.launch_context') IN ('text','object') THEN json_extract(data,'$.snapshot.launch_context') END)=?3
                  END ORDER BY id DESC LIMIT ?2",
-            ).map_err(internal)?;
+                )
+                .map_err(internal)?;
             let rows = stmt.query_map(rusqlite::params![stop_before, remaining, workspace], stopped_row).map_err(internal)?;
             rows.collect::<Result<Vec<_>, _>>().map_err(internal)?
         } else {
@@ -371,11 +371,7 @@ fn message_history(db: &AgentxDb, context: &RequestContext, reference: AgentRef,
     }
     let before = before.map(|value| value.parse::<i64>().ok().filter(|id| *id > 0).ok_or_else(|| invalid("invalid event cursor"))).transpose()?;
     let (start, stop) = conversation_bounds(db, &reference)?;
-    let live_after = if before.is_none() {
-        Some(db.conn().query_row("SELECT COALESCE(MAX(id),0) FROM events", [], |row| row.get::<_, i64>(0)).map_err(internal)?)
-    } else {
-        None
-    };
+    let live_after = if before.is_none() { Some(db.conn().query_row("SELECT COALESCE(MAX(id),0) FROM events", [], |row| row.get::<_, i64>(0)).map_err(internal)?) } else { None };
     let through = before.map(|id| id - 1).or(live_after).unwrap_or_default().min(stop.unwrap_or(i64::MAX));
     let (events, has_more) = crate::events::store::conversation_history(db, &reference.name, &start, through, limit as usize)?;
     let messages = project_messages(db, context, events)?;
@@ -502,9 +498,10 @@ fn worker_matches(record: &Record, peer: &CallerProcess) -> bool {
 }
 fn result_matches(command: &Command, result: &CommandResult) -> bool {
     match (command, result) {
-        (Command::Launch(_) | Command::Resume(_) | Command::Fork(_), CommandResult::Launched(result)) => result.agent_refs.as_ref().is_none_or(|refs| {
-            !refs.is_empty() && refs.len() == result.agents.len() && refs.iter().zip(&result.agents).all(|(reference, name)| &reference.name == name && reference.incarnation.is_some() && validate_reference(reference).is_ok())
-        }),
+        (Command::Launch(_) | Command::Resume(_) | Command::Fork(_), CommandResult::Launched(result)) => result
+            .agent_refs
+            .as_ref()
+            .is_none_or(|refs| !refs.is_empty() && refs.len() == result.agents.len() && refs.iter().zip(&result.agents).all(|(reference, name)| &reference.name == name && reference.incarnation.is_some() && validate_reference(reference).is_ok())),
         (Command::Send { agent, .. }, CommandResult::Sent(result)) => result.recipients == [agent.name.clone()],
         (Command::DirectorySend { .. }, CommandResult::DirectorySent(result)) => {
             validate_reference(&result.recipient).is_ok() && result.recipient.incarnation.is_some() && result.sent.recipients == [result.recipient.name.clone()] && result.entry.endpoint.participant.as_ref() == Some(&result.recipient)

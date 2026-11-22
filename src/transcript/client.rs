@@ -1,8 +1,8 @@
 //! Host transcript reads from one daemon-selected source; no managed SQLite.
 use super::service::{Selection, Source};
-use super::{self as transcript, Exchange, ReadOptions, format_transcript_exchanges};
 use crate::agents::attachments::ParticipantRef;
 use crate::service::{Request, Response, client::Client, queries};
+use crate::transcript::{self, Exchange, ReadOptions, format_transcript_exchanges};
 use serde_json::{Value, json};
 use std::path::Path;
 

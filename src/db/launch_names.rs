@@ -44,15 +44,17 @@ mod tests {
     fn launch_name_lookup_reads_only_stopped_history_and_keeps_reservations() {
         let root = tempfile::tempdir().unwrap();
         let db = AgentxDb::open_at(&root.path().join("agentx.db")).unwrap();
-        db.conn.execute_batch(
-            "WITH RECURSIVE ids(i) AS (VALUES(1) UNION ALL SELECT i+1 FROM ids WHERE i<4000)
+        db.conn
+            .execute_batch(
+                "WITH RECURSIVE ids(i) AS (VALUES(1) UNION ALL SELECT i+1 FROM ids WHERE i<4000)
              INSERT INTO events(timestamp,type,instance,data) SELECT '', 'life', 'luna', '{\"action\":\"created\"}' FROM ids;
              INSERT INTO events(timestamp,type,instance,data) VALUES
                 ('','life','luna','{\"action\":\"stopped\"}'),
                 ('','life','luna','{\"action\":\"stopped\"}'),
                 ('','life','nava','{\"action\":\"stopped\",\"placeholder\":1}'),
                 ('','status','telu','{\"action\":\"stopped\"}');",
-        ).unwrap();
+            )
+            .unwrap();
         db.save_instance_named("nava", serde_json::json!({"tool":"codex","created_at":1.0}).as_object().unwrap()).unwrap();
         let before = crate::agents::names::collect_taken_names(&db).unwrap();
         db.enable_launch_name_index().unwrap();

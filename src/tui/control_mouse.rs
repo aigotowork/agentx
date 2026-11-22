@@ -101,7 +101,8 @@ pub fn activate(app: &mut App, target: ControlTarget) {
         OpenReader if ShortcutScope::Compose.active(app) => app.handle_key(KeyCode::Char('t'), KeyModifiers::CONTROL),
         CloseHelp if app.ui.help_open => app.handle_key(KeyCode::Esc, KeyModifiers::NONE),
         CancelConfirm if app.ui.confirm.is_some() => app.handle_key(KeyCode::Esc, KeyModifiers::NONE),
-        ConfirmChoice(yes) if let Some(confirm) = app.ui.confirm.as_mut() => {
+        ConfirmChoice(yes) => {
+            let Some(confirm) = app.ui.confirm.as_mut() else { return };
             if confirm.is_expired() {
                 app.ui.confirm = None;
             } else {

@@ -66,8 +66,8 @@ impl ViewCache {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::management::contract::HumanMailbox;
     use crate::db::AgentxDb;
+    use crate::management::contract::HumanMailbox;
 
     #[test]
     fn management_view_cache_skips_repeat_load_and_observes_commit() {
@@ -87,7 +87,12 @@ mod tests {
         assert!(matches!(cache.read(version(), key(), load).unwrap(), Response::HumanMailbox(page) if page.unhandled_count == 1));
         cache.entries.get_mut(&key()).unwrap().0 = Instant::now() - TTL;
         let mut refreshed = false;
-        cache.read(version(), key(), || { refreshed = true; load() }).unwrap();
+        cache
+            .read(version(), key(), || {
+                refreshed = true;
+                load()
+            })
+            .unwrap();
         assert!(refreshed, "time-dependent views need a finite lifetime");
     }
 }

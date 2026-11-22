@@ -189,7 +189,7 @@ pub(crate) fn handle(db: &AgentxDb, context: &RequestContext, request: Request) 
                 }
                 match row.session_id.as_deref().filter(|session| !session.is_empty()) {
                     None => db.update_instance_fields(name, &serde_json::Map::from_iter([("session_id".into(), serde_json::json!(attachment.session.session_id))])).map_err(internal)?,
-                    Some(session) if session == attachment.session.session_id => {},
+                    Some(session) if session == attachment.session.session_id => {}
                     _ => return Err(ServiceError::StaleFence),
                 }
                 let mut stored = load(db, name)?.ok_or(ServiceError::StaleFence)?;
@@ -277,16 +277,20 @@ fn load(db: &AgentxDb, name: &str) -> ServiceResult<Option<RegisteredHost>> {
 
 pub(crate) fn direct_recovery_session(db: &AgentxDb, row: &crate::db::InstanceRow, participant: &crate::agents::attachments::ParticipantRef) -> ServiceResult<Option<String>> {
     let Some(stored) = load(db, &row.name)? else { return Ok(None) };
-    if !stored.direct_terminal || stored.registration.target.participant != *participant || row.pid != Some(i64::from(stored.pid))
+    if !stored.direct_terminal
+        || stored.registration.target.participant != *participant
+        || row.pid != Some(i64::from(stored.pid))
         || db.get_instance_pid_identity(&row.name).map_err(internal)?.as_deref() != Some(&stored.incarnation)
         || db.get_notify_endpoint_port(&row.name, "hook") != Some(stored.registration.wake_port)
-        || crate::sys::process::has_exited(stored.pid) || crate::sys::process::identity(stored.pid).as_deref() != Some(&stored.incarnation)
+        || crate::sys::process::has_exited(stored.pid)
+        || crate::sys::process::identity(stored.pid).as_deref() != Some(&stored.incarnation)
     {
         return Ok(None);
     }
     let current = SqliteAttachmentStore::new(db).current_for_participant(participant).map_err(internal)?;
-    Ok(current.filter(|attachment| attachment.target == stored.registration.target && attachment.owner == stored.registration.owner
-        && attachment.session.provider == "codex" && row.session_id.as_deref() == Some(&attachment.session.session_id)).map(|attachment| attachment.session.session_id))
+    Ok(current
+        .filter(|attachment| attachment.target == stored.registration.target && attachment.owner == stored.registration.owner && attachment.session.provider == "codex" && row.session_id.as_deref() == Some(&attachment.session.session_id))
+        .map(|attachment| attachment.session.session_id))
 }
 
 fn validate_registration(db: &AgentxDb, context: &RequestContext, registration: &HostRegistration, require_attachment: bool) -> ServiceResult<()> {

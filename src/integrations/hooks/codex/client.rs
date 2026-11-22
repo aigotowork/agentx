@@ -5,11 +5,11 @@ use crate::agents::service::{ObserveHookPosition, Request, ResolvedActor, Respon
 use crate::integrations::hooks::{HookPayload, client::HookClient, tool_status};
 use crate::observability::trace::{self, Phase};
 use crate::runtime::context::AgentxContext;
+use crate::service::codex_hook::{Activity, HookEvent, HookOutcome};
 use crate::shared::{ST_ACTIVE, ST_LISTENING};
 use anyhow::{Result, bail};
 use serde_json::{Value, json};
 use std::path::PathBuf;
-use crate::service::codex_hook::{Activity, HookEvent, HookOutcome};
 
 fn directory(hook: &HookClient, payload: &HookPayload) -> PathBuf {
     payload.raw.get("cwd").and_then(Value::as_str).filter(|cwd| !cwd.is_empty()).map(PathBuf::from).unwrap_or_else(|| hook.context.cwd.clone())
@@ -248,7 +248,8 @@ pub(super) fn dispatch(event: &str) -> i32 {
             } else {
                 HookClient::connect(&context, false)
             }
-        }).inspect_err(|_| trace::fail(Phase::DaemonAcquire))?;
+        })
+        .inspect_err(|_| trace::fail(Phase::DaemonAcquire))?;
         trace::time(Phase::Route, || route(&mut hook, event, &payload))
     });
     if result.is_err() {
@@ -300,7 +301,9 @@ fn decode_managed(event: &str, bytes: &[u8], cwd: &std::path::Path) -> Result<Op
         }
         "codex-posttooluse" => Activity::PostTool { tool_name: tool_name.unwrap_or_default() },
         "codex-premodelrequest" | "codex-postmodelrequest" => {
-            let phase = if event == "codex-premodelrequest" { RequestPhase::Started } else {
+            let phase = if event == "codex-premodelrequest" {
+                RequestPhase::Started
+            } else {
                 match status.as_deref() {
                     Some("completed") => RequestPhase::Completed,
                     Some("failed") => RequestPhase::Failed,
@@ -341,9 +344,12 @@ pub(super) fn dispatch_managed(event: &str) {
             const MAX_INPUT: u64 = 64 * 1024 * 1024;
             let mut bytes = Vec::new();
             std::io::stdin().lock().take(MAX_INPUT + 1).read_to_end(&mut bytes)?;
-            if bytes.len() as u64 > MAX_INPUT { bail!("Codex hook input too large"); }
+            if bytes.len() as u64 > MAX_INPUT {
+                bail!("Codex hook input too large");
+            }
             Ok((decode_managed(event, &bytes, &context.cwd)?, bytes))
-        }).inspect_err(|_| trace::fail(Phase::ReadInput))?;
+        })
+        .inspect_err(|_| trace::fail(Phase::ReadInput))?;
         let (input, bytes) = input;
         let mut prepared = None;
         if let Some(input) = input {
@@ -366,7 +372,8 @@ pub(super) fn dispatch_managed(event: &str) {
                 serde_json::to_writer(&mut stdout, &context_output(event, &output.formatted_context, true))?;
                 stdout.flush()?;
                 output::confirm_hook_output(&client, output.confirmation)
-            }).inspect_err(|_| trace::fail(Phase::Output))?;
+            })
+            .inspect_err(|_| trace::fail(Phase::Output))?;
         } else if event == "codex-stop" {
             let mut stdout = std::io::stdout().lock();
             serde_json::to_writer(&mut stdout, &json!({}))?;

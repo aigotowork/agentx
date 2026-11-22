@@ -478,10 +478,11 @@ fn send_client(session: &Session, args: &SendArgs) -> Result<i32, String> {
             && word.split_whitespace().nth(1).is_none()
         {
             let stopped = stopped_targets(session, vec![word.to_string()])?;
-            let known = !stopped.is_empty() || matches!(
-                session.client.call(Request::Participants(crate::agents::service::Request::Lookup { name: word.into() })).map_err(|error| error.to_string())?,
-                Response::Participants(crate::agents::service::Response::Participant(Some(_)))
-            );
+            let known = !stopped.is_empty()
+                || matches!(
+                    session.client.call(Request::Participants(crate::agents::service::Request::Lookup { name: word.into() })).map_err(|error| error.to_string())?,
+                    Response::Participants(crate::agents::service::Response::Participant(Some(_)))
+                );
             let hint = if known { format!("\nDid you mean @{word}? agentx send @{word} -- <message>") } else { format!("\n  Direct:    agentx send @name -- {word}\n  Broadcast: agentx send -- {word}") };
             return Err(format!("'{word}' is ambiguous: a target needs '@', a broadcast needs '--'{hint}"));
         }
@@ -651,10 +652,13 @@ fn native_recipient_feedback(report: Option<&crate::messaging::delivery_report::
     if targets.len() > 10 {
         return format!("Sent to {} agents", targets.len());
     }
-    let labels = targets.iter().map(|name| {
-        let status = report.and_then(|report| report.recipients.iter().find(|recipient| &recipient.name == name)).and_then(|recipient| recipient.status.as_deref());
-        format!("{} {name}", status.map(status_icon).unwrap_or("◌"))
-    }).collect::<Vec<_>>();
+    let labels = targets
+        .iter()
+        .map(|name| {
+            let status = report.and_then(|report| report.recipients.iter().find(|recipient| &recipient.name == name)).and_then(|recipient| recipient.status.as_deref());
+            format!("{} {name}", status.map(status_icon).unwrap_or("◌"))
+        })
+        .collect::<Vec<_>>();
     format!("Sent to: {}", labels.join(", "))
 }
 fn recipient_labels(records: &[crate::db::InstanceRow], targets: &[String]) -> Vec<String> {

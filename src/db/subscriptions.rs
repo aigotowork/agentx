@@ -131,7 +131,8 @@ pub(crate) fn create_filter_subscription(db: &AgentxDb, filters: &HashMap<String
         "last_id": last_id,
         "once": once,
     });
-    if sql_parts.is_empty() && !filters.contains_key("collision")
+    if sql_parts.is_empty()
+        && !filters.contains_key("collision")
         && let Some([kind]) = filters.get("type").map(Vec::as_slice)
         && matches!(kind.as_str(), "message" | "status" | "life")
     {
@@ -607,145 +608,147 @@ fn fire_matching_subscriptions(db: &AgentxDb, event_id: i64, event_type: &str, i
     }
 
     post_commit::count(|work| work.subscription_candidates = work.subscription_candidates.saturating_add(rows.len().min(u32::MAX as usize) as u32));
-    post_commit::measure(Phase::Match, || for (key, value) in &rows {
-        let mut sub: serde_json::Value = match serde_json::from_str(value) {
-            Ok(v) => v,
-            Err(_) => continue,
-        };
-        if subscription_is_delivery_only(&sub) {
-            continue;
-        }
-        if let Some(sql) = sub.get("filters").and_then(|f| f.get("collision")).and(sub.get("sql")).and_then(|v| v.as_str()).and_then(upgrade_collision_sql) {
-            // Only the sql field, and only if no other process rewrote the
-            // record since it was read (it may have advanced last_id).
-            if let Err(e) = db.conn.execute("UPDATE kv SET value = json_set(value, '$.sql', ?1) WHERE key = ?2 AND value = ?3", params![sql, key, value]) {
-                crate::log::log_error("db", "collision_sql_upgrade", &format!("{e}"));
-            }
-            sub["sql"] = json!(sql);
-        }
-        let sub_id = sub.get("id").and_then(|v| v.as_str()).unwrap_or(key.as_str());
-
-        // Carry the reaction chain so a subscription never reacts to output it
-        // caused, directly or through other subscriptions. Independent
-        // subscriptions still react.
-        let reaction_chain: Vec<String> = data.get("reaction_subscriptions").and_then(|v| v.as_array()).map(|ids| ids.iter().filter_map(|v| v.as_str().map(String::from)).collect()).unwrap_or_default();
-        if reaction_chain.iter().any(|id| id == sub_id) {
-            continue;
-        }
-
-        let last_id = sub.get("last_id").and_then(|v| v.as_i64()).unwrap_or(0);
-        if event_id <= last_id {
-            continue;
-        }
-
-        // The collision clause needs a file-write status event; checking that
-        // here skips one SQL query per agent for every other event.
-        if !can_collide && sub.get("filters").and_then(|f| f.get("collision")).is_some() {
-            continue;
-        }
-
-        let sql = sub.get("sql").and_then(|v| v.as_str()).unwrap_or("");
-        if !sql.is_empty() {
-            post_commit::count(|work| work.subscription_predicates = work.subscription_predicates.saturating_add(1));
-            let filter_query = format!("SELECT 1 FROM events_v WHERE id = ? AND ({})", sql);
-            let stored_params: Vec<String> = sub.get("params").and_then(|v| v.as_array()).map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect()).unwrap_or_default();
-
-            let matched = if stored_params.is_empty() {
-                db.conn.query_row(&filter_query, params![event_id], |_| Ok(())).is_ok()
-            } else {
-                let mut all_params: Vec<Box<dyn rusqlite::types::ToSql>> = vec![Box::new(event_id)];
-                for p in &stored_params {
-                    all_params.push(Box::new(p.clone()));
-                }
-                let refs: Vec<&dyn rusqlite::types::ToSql> = all_params.iter().map(|p| p.as_ref()).collect();
-                db.conn.query_row(&filter_query, refs.as_slice(), |_| Ok(())).is_ok()
+    post_commit::measure(Phase::Match, || {
+        for (key, value) in &rows {
+            let mut sub: serde_json::Value = match serde_json::from_str(value) {
+                Ok(v) => v,
+                Err(_) => continue,
             };
-
-            if !matched {
+            if subscription_is_delivery_only(&sub) {
                 continue;
             }
-        }
-
-        let sub_filters = sub.get("filters").cloned().unwrap_or(serde_json::Value::Null);
-        if sub_filters.get("request_watch").is_some() {
-            let request_id = sub_filters.get("request_id").and_then(|v| v.as_i64()).unwrap_or(0);
-            let target = sub_filters.get("target").and_then(|v| v.as_str()).unwrap_or("");
-            let sub_caller = sub.get("caller").and_then(|v| v.as_str()).unwrap_or("");
-            if request_id > 0 && !target.is_empty() {
-                let waterline: i64 = db.conn.query_row("SELECT last_event_id FROM instances WHERE name = ?", params![target], |row| row.get(0)).unwrap_or(0);
-                if waterline < request_id {
-                    let mut sub_mut = sub.clone();
-                    sub_mut["last_id"] = serde_json::json!(event_id);
-                    kv_store_sub(db, key, &sub_mut);
-                    continue;
+            if let Some(sql) = sub.get("filters").and_then(|f| f.get("collision")).and(sub.get("sql")).and_then(|v| v.as_str()).and_then(upgrade_collision_sql) {
+                // Only the sql field, and only if no other process rewrote the
+                // record since it was read (it may have advanced last_id).
+                if let Err(e) = db.conn.execute("UPDATE kv SET value = json_set(value, '$.sql', ?1) WHERE key = ?2 AND value = ?3", params![sql, key, value]) {
+                    crate::log::log_error("db", "collision_sql_upgrade", &format!("{e}"));
                 }
+                sub["sql"] = json!(sql);
+            }
+            let sub_id = sub.get("id").and_then(|v| v.as_str()).unwrap_or(key.as_str());
 
-                if reqwatch_reply_exists(db, request_id, target, sub_caller) {
-                    if let Err(e) = db.kv_set(key, None) {
-                        crate::log::log_error("db", "check_event_subscriptions.kv_set_cleanup", &format!("{e}"));
+            // Carry the reaction chain so a subscription never reacts to output it
+            // caused, directly or through other subscriptions. Independent
+            // subscriptions still react.
+            let reaction_chain: Vec<String> = data.get("reaction_subscriptions").and_then(|v| v.as_array()).map(|ids| ids.iter().filter_map(|v| v.as_str().map(String::from)).collect()).unwrap_or_default();
+            if reaction_chain.iter().any(|id| id == sub_id) {
+                continue;
+            }
+
+            let last_id = sub.get("last_id").and_then(|v| v.as_i64()).unwrap_or(0);
+            if event_id <= last_id {
+                continue;
+            }
+
+            // The collision clause needs a file-write status event; checking that
+            // here skips one SQL query per agent for every other event.
+            if !can_collide && sub.get("filters").and_then(|f| f.get("collision")).is_some() {
+                continue;
+            }
+
+            let sql = sub.get("sql").and_then(|v| v.as_str()).unwrap_or("");
+            if !sql.is_empty() {
+                post_commit::count(|work| work.subscription_predicates = work.subscription_predicates.saturating_add(1));
+                let filter_query = format!("SELECT 1 FROM events_v WHERE id = ? AND ({})", sql);
+                let stored_params: Vec<String> = sub.get("params").and_then(|v| v.as_array()).map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect()).unwrap_or_default();
+
+                let matched = if stored_params.is_empty() {
+                    db.conn.query_row(&filter_query, params![event_id], |_| Ok(())).is_ok()
+                } else {
+                    let mut all_params: Vec<Box<dyn rusqlite::types::ToSql>> = vec![Box::new(event_id)];
+                    for p in &stored_params {
+                        all_params.push(Box::new(p.clone()));
                     }
+                    let refs: Vec<&dyn rusqlite::types::ToSql> = all_params.iter().map(|p| p.as_ref()).collect();
+                    db.conn.query_row(&filter_query, refs.as_slice(), |_| Ok(())).is_ok()
+                };
+
+                if !matched {
                     continue;
                 }
+            }
 
-                let target_tool = sub_filters.get("target_tool").and_then(|v| v.as_str()).unwrap_or("");
-                let now = crate::shared::time::now_epoch_f64();
-                match super::reqwatch_policy::reqwatch_notify_decision(target_tool, event_type, data, &sub, now) {
-                    super::reqwatch_policy::ReqwatchNotifyDecision::Skip => continue,
-                    super::reqwatch_policy::ReqwatchNotifyDecision::Defer { set_grace_if_absent } => {
+            let sub_filters = sub.get("filters").cloned().unwrap_or(serde_json::Value::Null);
+            if sub_filters.get("request_watch").is_some() {
+                let request_id = sub_filters.get("request_id").and_then(|v| v.as_i64()).unwrap_or(0);
+                let target = sub_filters.get("target").and_then(|v| v.as_str()).unwrap_or("");
+                let sub_caller = sub.get("caller").and_then(|v| v.as_str()).unwrap_or("");
+                if request_id > 0 && !target.is_empty() {
+                    let waterline: i64 = db.conn.query_row("SELECT last_event_id FROM instances WHERE name = ?", params![target], |row| row.get(0)).unwrap_or(0);
+                    if waterline < request_id {
                         let mut sub_mut = sub.clone();
                         sub_mut["last_id"] = serde_json::json!(event_id);
-                        if set_grace_if_absent {
-                            sub_mut["idle_grace_until"] = serde_json::json!(now + AGY_REQWATCH_IDLE_GRACE_SEC);
-                            sub_mut["idle_grace_event_id"] = serde_json::json!(event_id);
-                        }
                         kv_store_sub(db, key, &sub_mut);
                         continue;
                     }
-                    super::reqwatch_policy::ReqwatchNotifyDecision::Proceed => {}
-                }
-            }
-        }
 
-        let still_exists: bool = db.conn.query_row("SELECT 1 FROM kv WHERE key = ?", params![key], |_| Ok(true)).unwrap_or(false);
-        if !still_exists {
-            continue;
-        }
+                    if reqwatch_reply_exists(db, request_id, target, sub_caller) {
+                        if let Err(e) = db.kv_set(key, None) {
+                            crate::log::log_error("db", "check_event_subscriptions.kv_set_cleanup", &format!("{e}"));
+                        }
+                        continue;
+                    }
 
-        let caller = sub.get("caller").and_then(|v| v.as_str()).unwrap_or("");
-        if caller.is_empty() {
-            continue;
-        }
-
-        let filters_opt = sub.get("filters");
-        let notification = format_sub_notification(db, sub_id, event_id, event_type, instance, data, filters_opt);
-        let _ = send_sub_notification(db, caller, &notification);
-
-        if let Some(on_hit_text) = sub.get("on_hit_text").and_then(|v| v.as_str()) {
-            let caller_kind = sub.get("caller_kind").and_then(|v| v.as_str()).unwrap_or("external");
-            let mut chain = reaction_chain.clone();
-            chain.push(sub_id.to_string());
-            let reaction = OnHitReaction { caller: caller.to_string(), caller_kind: caller_kind.to_string(), text: on_hit_text.to_string(), chain };
-            match defer_reactions.as_deref_mut() {
-                Some(queue) => queue.push(reaction),
-                None => reaction.send(db),
-            }
-        }
-
-        if sub.get("once").and_then(|v| v.as_bool()).unwrap_or(false) {
-            if let Err(e) = db.kv_set(key, None) {
-                crate::log::log_error("db", "check_event_subscriptions.kv_set_once", &format!("{e}"));
-            }
-        } else {
-            let mut sub_mut = sub.clone();
-            sub_mut["last_id"] = serde_json::json!(event_id);
-            match serde_json::to_string(&sub_mut) {
-                Ok(json) => {
-                    if let Err(e) = db.kv_set(key, Some(&json)) {
-                        crate::log::log_error("db", "check_event_subscriptions.kv_set_cursor", &format!("{e}"));
+                    let target_tool = sub_filters.get("target_tool").and_then(|v| v.as_str()).unwrap_or("");
+                    let now = crate::shared::time::now_epoch_f64();
+                    match super::reqwatch_policy::reqwatch_notify_decision(target_tool, event_type, data, &sub, now) {
+                        super::reqwatch_policy::ReqwatchNotifyDecision::Skip => continue,
+                        super::reqwatch_policy::ReqwatchNotifyDecision::Defer { set_grace_if_absent } => {
+                            let mut sub_mut = sub.clone();
+                            sub_mut["last_id"] = serde_json::json!(event_id);
+                            if set_grace_if_absent {
+                                sub_mut["idle_grace_until"] = serde_json::json!(now + AGY_REQWATCH_IDLE_GRACE_SEC);
+                                sub_mut["idle_grace_event_id"] = serde_json::json!(event_id);
+                            }
+                            kv_store_sub(db, key, &sub_mut);
+                            continue;
+                        }
+                        super::reqwatch_policy::ReqwatchNotifyDecision::Proceed => {}
                     }
                 }
-                Err(e) => {
-                    crate::log::log_error("db", "check_event_subscriptions.serialize_cursor", &format!("{e}"));
+            }
+
+            let still_exists: bool = db.conn.query_row("SELECT 1 FROM kv WHERE key = ?", params![key], |_| Ok(true)).unwrap_or(false);
+            if !still_exists {
+                continue;
+            }
+
+            let caller = sub.get("caller").and_then(|v| v.as_str()).unwrap_or("");
+            if caller.is_empty() {
+                continue;
+            }
+
+            let filters_opt = sub.get("filters");
+            let notification = format_sub_notification(db, sub_id, event_id, event_type, instance, data, filters_opt);
+            let _ = send_sub_notification(db, caller, &notification);
+
+            if let Some(on_hit_text) = sub.get("on_hit_text").and_then(|v| v.as_str()) {
+                let caller_kind = sub.get("caller_kind").and_then(|v| v.as_str()).unwrap_or("external");
+                let mut chain = reaction_chain.clone();
+                chain.push(sub_id.to_string());
+                let reaction = OnHitReaction { caller: caller.to_string(), caller_kind: caller_kind.to_string(), text: on_hit_text.to_string(), chain };
+                match defer_reactions.as_deref_mut() {
+                    Some(queue) => queue.push(reaction),
+                    None => reaction.send(db),
+                }
+            }
+
+            if sub.get("once").and_then(|v| v.as_bool()).unwrap_or(false) {
+                if let Err(e) = db.kv_set(key, None) {
+                    crate::log::log_error("db", "check_event_subscriptions.kv_set_once", &format!("{e}"));
+                }
+            } else {
+                let mut sub_mut = sub.clone();
+                sub_mut["last_id"] = serde_json::json!(event_id);
+                match serde_json::to_string(&sub_mut) {
+                    Ok(json) => {
+                        if let Err(e) = db.kv_set(key, Some(&json)) {
+                            crate::log::log_error("db", "check_event_subscriptions.kv_set_cursor", &format!("{e}"));
+                        }
+                    }
+                    Err(e) => {
+                        crate::log::log_error("db", "check_event_subscriptions.serialize_cursor", &format!("{e}"));
+                    }
                 }
             }
         }

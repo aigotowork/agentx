@@ -152,7 +152,11 @@ fn wake_committed(db: &AgentxDb) {
     for (queue, registration, pid, incarnation, port) in ordinary {
         let admission = queue.offer(registration, &generation, pid, &incarnation, port);
         crate::observability::post_commit::count(|work| {
-            let counter = match admission { Admission::Queued => &mut work.observer_hints_queued, Admission::Coalesced => &mut work.observer_hints_coalesced, Admission::Dropped => &mut work.observer_hints_dropped };
+            let counter = match admission {
+                Admission::Queued => &mut work.observer_hints_queued,
+                Admission::Coalesced => &mut work.observer_hints_coalesced,
+                Admission::Dropped => &mut work.observer_hints_dropped,
+            };
             *counter = counter.saturating_add(1);
         });
     }

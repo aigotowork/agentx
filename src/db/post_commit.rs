@@ -52,9 +52,16 @@ impl AgentxDb {
         self.install_observer_hints(generation, crate::runtime::notify::observer_hints::ObserverHints::start)
     }
 
-    pub(crate) fn install_observer_hints(&mut self, generation: crate::daemon::DatabaseGeneration, start: impl FnOnce(crate::daemon::DatabaseGeneration, std::sync::Arc<std::sync::atomic::AtomicU64>) -> std::io::Result<crate::runtime::notify::observer_hints::ObserverHints>) -> anyhow::Result<()> {
+    pub(crate) fn install_observer_hints(
+        &mut self,
+        generation: crate::daemon::DatabaseGeneration,
+        start: impl FnOnce(crate::daemon::DatabaseGeneration, std::sync::Arc<std::sync::atomic::AtomicU64>) -> std::io::Result<crate::runtime::notify::observer_hints::ObserverHints>,
+    ) -> anyhow::Result<()> {
         use rusqlite::functions::FunctionFlags;
-        use std::sync::{Arc, atomic::{AtomicU64, Ordering}};
+        use std::sync::{
+            Arc,
+            atomic::{AtomicU64, Ordering},
+        };
         let revision = Arc::new(AtomicU64::new(0));
         let invalidate = revision.clone();
         self.conn().create_scalar_function("agentx_revoke_observer_hints", 0, FunctionFlags::SQLITE_UTF8, move |_| {
@@ -85,7 +92,9 @@ impl AgentxDb {
         Ok(())
     }
 
-    pub(crate) fn observer_hints(&self) -> Option<&crate::runtime::notify::observer_hints::ObserverHints> { self.observer_hints.as_ref() }
+    pub(crate) fn observer_hints(&self) -> Option<&crate::runtime::notify::observer_hints::ObserverHints> {
+        self.observer_hints.as_ref()
+    }
 
     /// Freeze only safe domain references and exact originating fences. This
     /// shares savepoint rollback with existing deferred effects; there is no

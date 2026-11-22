@@ -34,6 +34,7 @@
     "@rolldown/binding-wasm32-wasi": "1.2.18"
   },
   "overrides": {
+    "effect@4.0.0-beta.83": "4.0.0-beta.103",
     "vite@8.3.7": {
       "rolldown": "1.2.18"
     },

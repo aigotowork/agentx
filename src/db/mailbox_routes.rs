@@ -46,8 +46,7 @@ impl AgentxDb {
             for (trigger, operation, condition, preceding) in [
                 ("hook_mailbox_event_insert", "INSERT", "new.type='message'", "DELETE FROM hook_mailbox_routes WHERE event_id=new.id;"),
                 ("hook_mailbox_event_update", "UPDATE OF id,type,data", "old.type='message' OR new.type='message'", "DELETE FROM hook_mailbox_routes WHERE event_id=old.id;"),
-            ]
-            {
+            ] {
                 self.conn().execute_batch(&format!(
                     "CREATE TRIGGER IF NOT EXISTS {trigger} AFTER {operation} ON events WHEN {condition} BEGIN
                     {preceding}

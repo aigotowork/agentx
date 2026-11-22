@@ -846,9 +846,11 @@ mod tests {
         let deadline = Instant::now() + Duration::from_secs(2);
         loop {
             let log = std::fs::read_to_string(&path).unwrap_or_default();
-            if log.lines().filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok()).any(|entry| {
-                entry["event"] == "admission.busy" && entry["stage"] == "queue" && entry["dispatch_lane"] == "read" && entry["operation"] == "AdoptedWorkspaces"
-            }) {
+            if log
+                .lines()
+                .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
+                .any(|entry| entry["event"] == "admission.busy" && entry["stage"] == "queue" && entry["dispatch_lane"] == "read" && entry["operation"] == "AdoptedWorkspaces")
+            {
                 break;
             }
             assert!(Instant::now() < deadline, "missing read admission diagnostic: {log}");

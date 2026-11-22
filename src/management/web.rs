@@ -411,13 +411,7 @@ async fn route(state: Arc<Adapter>, request: HttpRequest) -> Result<HttpResponse
             }
             ["api", "v1", "workspaces", "members"] => {
                 allowed_query(&query, &["generation", "workspace", "after", "limit", "current_only"])?;
-                let input = ListWorkspaceMembersInput {
-                    generation,
-                    workspace: required_query(&query, "workspace")?,
-                    after: query.get("after").cloned(),
-                    limit,
-                    current_only: current_only(&query)?,
-                };
+                let input = ListWorkspaceMembersInput { generation, workspace: required_query(&query, "workspace")?, after: query.get("after").cloned(), limit, current_only: current_only(&query)? };
                 blocking(move || list_workspace_members(&state, input)).await
             }
             ["api", "v1", "roles"] => {

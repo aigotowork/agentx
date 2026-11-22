@@ -53,7 +53,9 @@ fn live_selection(row: crate::db::InstanceRow) -> Selection {
             let session = row.session_id.clone().filter(|session| !session.is_empty())?;
             home.is_absolute().then_some(CodexLookup { home, session })
         })()
-    } else { None };
+    } else {
+        None
+    };
     Selection { canonical_name: row.name.clone(), source: (!row.transcript_path.is_empty()).then_some(Source { name: row.name, path: row.transcript_path, tool: row.tool, session_id: row.session_id }), missing: None, codex_lookup }
 }
 fn exact(db: &AgentxDb, name: &str) -> ServiceResult<Option<Source>> {

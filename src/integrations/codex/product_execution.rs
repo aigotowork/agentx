@@ -50,16 +50,16 @@ impl Runner {
         match command {
             Command::Bind { thread } => {
                 ensure!(self.host.is_none() && uuid::Uuid::parse_str(&thread).is_ok(), "exact fresh native thread required");
-                let Response::Reserved(participant) = HostService::call(&self.client, Request::ReserveProductRoot {
-                    root: self.root.clone(), role: self.role_selector.clone(), workspace: self.root.cwd.clone(),
-                })? else { bail!("unexpected reservation response") };
+                let Response::Reserved(participant) = HostService::call(&self.client, Request::ReserveProductRoot { root: self.root.clone(), role: self.role_selector.clone(), workspace: self.root.cwd.clone() })? else {
+                    bail!("unexpected reservation response")
+                };
                 let mut attachments = RemoteAttachments::new(self.client.clone());
                 let native = NativeThreadKey { canonical_home: self.root.canonical_home.to_string_lossy().into_owned(), thread_id: thread.clone() };
                 let binding = CodexRootBindings::new(&mut attachments).attach(&self.root.execution, &self.root.owner, RootIntent::Create { provisional: participant.clone() }, native)?;
                 self.inbox.select_delivery_mode(&binding.attachment.target, DeliveryMode::DedicatedProduct)?;
-                let Response::Registered(host) = HostService::call(&self.client, Request::RegisterNativeRoot {
-                    target: binding.attachment.target, owner: self.root.owner.clone(), wake_port: self.notify.port(), state: NativeRootState::Idle,
-                })? else { bail!("unexpected host registration response") };
+                let Response::Registered(host) = HostService::call(&self.client, Request::RegisterNativeRoot { target: binding.attachment.target, owner: self.root.owner.clone(), wake_port: self.notify.port(), state: NativeRootState::Idle })? else {
+                    bail!("unexpected host registration response")
+                };
                 self.host = Some(host);
                 self.thread = Some(thread);
                 Ok(json!({
@@ -102,10 +102,8 @@ impl Runner {
                 ensure!(item_matches(&item, &client_id(&source.batch), &source.batch.formatted_context), "native input does not match frozen claim");
                 let native_item: String = serde_json::from_str(item.get("id").context("no native input ID")?.get())?;
                 let payload_digest = ProductInput::digest(&source.batch.formatted_context);
-                let proof = ProductInput { request_id: source.request_id.clone(), message_id: source.message_id.clone(),
-                    thread_id: thread, turn_id: turn, item_id: native_item, payload_digest };
-                let confirmation = self.inbox.confirm(DeliveryReceipt { target: target.clone(), batch: source.batch.id.clone(), through: source.batch.window.through,
-                    evidence: DeliveryEvidence::ProductInputRecorded(proof.clone()) })?;
+                let proof = ProductInput { request_id: source.request_id.clone(), message_id: source.message_id.clone(), thread_id: thread, turn_id: turn, item_id: native_item, payload_digest };
+                let confirmation = self.inbox.confirm(DeliveryReceipt { target: target.clone(), batch: source.batch.id.clone(), through: source.batch.window.through, evidence: DeliveryEvidence::ProductInputRecorded(proof.clone()) })?;
                 ensure!(matches!(confirmation, Confirmation::Advanced | Confirmation::AlreadyConfirmed), "mailbox proof was not accepted");
                 *phase = ClaimPhase::Admitted;
                 Ok(serde_json::to_value(proof)?)
@@ -141,16 +139,32 @@ pub(crate) fn serve(args: &[String]) -> Result<()> {
     ensure!(scope != home && scope != workspace, "dedicated workspace, scope and native home required");
     let selected_role = crate::config::roles::resolve_role(&scope, Some(&workspace), role)?;
     let profile = crate::config::profiles::ProfileCatalog::load(&scope)?;
-    ensure!(profile.profiles.get(&selected_role.profile).is_some_and(|entry| entry.tool == "codex" && entry.args.is_empty()),
-        "dedicated execution requires an argument-free Codex profile; configure the approved provider in the isolated native launcher");
+    ensure!(
+        profile.profiles.get(&selected_role.profile).is_some_and(|entry| entry.tool == "codex" && entry.args.is_empty()),
+        "dedicated execution requires an argument-free Codex profile; configure the approved provider in the isolated native launcher"
+    );
     let invocation = InvocationContext { cwd: workspace.clone(), ..Default::default() };
     let client = Client::connect_existing(&scope, invocation)?;
     let mut runner = Runner {
-        inbox: RemoteInbox::new(client.clone()), client, notify: NotifyServer::new()?, role_selector: role.clone(), role: selected_role,
-        root: NativeRootReservation { explicit_name: Some(name.clone()), initial_cursor: None, launch_args: vec!["app-server".into()], launch_profile: None,
-            cwd: workspace, environment: Default::default(), canonical_home: home,
-            execution: ExecutionId(uuid::Uuid::new_v4().to_string()), owner: AttachmentOwnerId(uuid::Uuid::new_v4().to_string()) },
-        thread: None, host: None, flight: None,
+        inbox: RemoteInbox::new(client.clone()),
+        client,
+        notify: NotifyServer::new()?,
+        role_selector: role.clone(),
+        role: selected_role,
+        root: NativeRootReservation {
+            explicit_name: Some(name.clone()),
+            initial_cursor: None,
+            launch_args: vec!["app-server".into()],
+            launch_profile: None,
+            cwd: workspace,
+            environment: Default::default(),
+            canonical_home: home,
+            execution: ExecutionId(uuid::Uuid::new_v4().to_string()),
+            owner: AttachmentOwnerId(uuid::Uuid::new_v4().to_string()),
+        },
+        thread: None,
+        host: None,
+        flight: None,
     };
     let stdin = std::io::stdin();
     let mut stdout = std::io::stdout().lock();
@@ -168,7 +182,9 @@ pub(crate) fn serve(args: &[String]) -> Result<()> {
             };
             writeln!(stdout, "{response}")?;
             stdout.flush()?;
-            if stop { break; }
+            if stop {
+                break;
+            }
         }
         Ok(())
     })();

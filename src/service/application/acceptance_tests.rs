@@ -31,7 +31,12 @@ fn agent_names_read_lane_applies_workspace_and_label_scope_without_cleanup() {
     use crate::service::queries::{AgentFilter, AgentWorkspace, Request as Query, Response as View};
     with_application(|app, _, generation| {
         for (name, created, workspace, remote) in [("lobo", 1.0, None, None), ("nava", 2.0, Some("/team-a"), None), ("miri", 3.0, Some("/team-b"), None), ("remote", 4.0, Some("/team-a"), Some("peer"))] {
-            app.db.save_instance_named(name, serde_json::json!({"created_at":created,"tool":"codex","status":"active","launch_context":serde_json::json!({"collaboration":{"workspace":workspace}}).to_string(),"origin_device_id":remote}).as_object().unwrap()).unwrap();
+            app.db
+                .save_instance_named(
+                    name,
+                    serde_json::json!({"created_at":created,"tool":"codex","status":"active","launch_context":serde_json::json!({"collaboration":{"workspace":workspace}}).to_string(),"origin_device_id":remote}).as_object().unwrap(),
+                )
+                .unwrap();
         }
         let mut lane = app.read_lane().unwrap();
         let workspace = AgentWorkspace::Team("/team-a".into());
@@ -42,11 +47,13 @@ fn agent_names_read_lane_applies_workspace_and_label_scope_without_cleanup() {
             names
         };
         let watermark = app.db.get_last_event_id();
-        app.db.with_write_scope(|| {
-            assert_eq!(names(vec![]), ["remote", "nava", "lobo"]);
-            assert_eq!(names(vec![crate::agents::labels::parse_selector("!topic").unwrap()]), ["lobo", "nava"]);
-            Ok(())
-        }).unwrap();
+        app.db
+            .with_write_scope(|| {
+                assert_eq!(names(vec![]), ["remote", "nava", "lobo"]);
+                assert_eq!(names(vec![crate::agents::labels::parse_selector("!topic").unwrap()]), ["lobo", "nava"]);
+                Ok(())
+            })
+            .unwrap();
         assert_eq!(app.db.get_last_event_id(), watermark);
     });
 }
@@ -95,11 +102,13 @@ fn management_reader_serves_committed_state_while_writer_holds_transaction() {
         assert!((lane.accepts)(&request));
         assert!(!(lane.accepts)(&Request::Management(Management::HandleHumanMessages { ids: vec![] })));
         assert!(matches!(lane.application.handle(&context(&generation), Request::Management(Management::List { after: None, limit: 20 })), Ok(Response::Management(View::Agents(_)))));
-        app.db.with_write_scope(|| {
-            app.db.insert_event_row("message", "lobo", &serde_json::json!({"scope":"mentions","mentions":["bigboss"]}), None)?;
-            assert!(matches!(lane.application.handle(&context(&generation), request.clone()), Ok(Response::Management(View::HumanMailbox(page))) if page.unhandled_count == 0));
-            Ok(())
-        }).unwrap();
+        app.db
+            .with_write_scope(|| {
+                app.db.insert_event_row("message", "lobo", &serde_json::json!({"scope":"mentions","mentions":["bigboss"]}), None)?;
+                assert!(matches!(lane.application.handle(&context(&generation), request.clone()), Ok(Response::Management(View::HumanMailbox(page))) if page.unhandled_count == 0));
+                Ok(())
+            })
+            .unwrap();
         assert!(matches!(lane.application.handle(&context(&generation), request.clone()), Ok(Response::Management(View::HumanMailbox(page))) if page.unhandled_count == 1));
         app.db.kv_set("service:database_generation", Some(&uuid::Uuid::new_v4().to_string())).unwrap();
         assert!(matches!(lane.application.handle(&context(&generation), request), Err(ServiceError::StaleFence)));
@@ -142,13 +151,16 @@ fn delivery_poll_reader_serves_committed_mail_and_fences_progress() {
         assert_eq!(read_mail(&impostor), [committed]);
         let progress = |db: &AgentxDb| hosts_store::delivery_progress(db, &participant).unwrap().unwrap().last_poll;
         assert_eq!(progress(&app.db), None);
-        let later = app.db.with_write_scope(|| {
-            let later = app.db.insert_event_row("message", "nova", &mail, None)?;
-            assert_eq!(read_mail(&caller), [committed]);
-            assert!(progress(&app.db).is_some());
-            assert_eq!(app.db.kv_get(key)?.as_deref(), Some(before.as_str()));
-            Ok(later)
-        }).unwrap();
+        let later = app
+            .db
+            .with_write_scope(|| {
+                let later = app.db.insert_event_row("message", "nova", &mail, None)?;
+                assert_eq!(read_mail(&caller), [committed]);
+                assert!(progress(&app.db).is_some());
+                assert_eq!(app.db.kv_get(key)?.as_deref(), Some(before.as_str()));
+                Ok(later)
+            })
+            .unwrap();
         assert_eq!(read_mail(&caller), [committed, later]);
         assert_eq!(app.db.kv_get(key).unwrap().as_deref(), Some(before.as_str()));
         let last_poll = progress(&app.db).unwrap();
@@ -170,12 +182,15 @@ fn delivery_poll_reader_serves_committed_mail_and_fences_progress() {
 #[test]
 fn nested_query_does_not_disable_the_remaining_read_budget() {
     with_application(|app, _, _| {
-        let result = app.db.with_read_budget(|| true, || {
-            app.db.with_read_budget(|| false, || ()).unwrap();
-            // A projection that falls back must still fail the outer request
-            // when the actual SQLite instruction budget was interrupted.
-            let _ = app.db.conn().query_row("WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x+1 FROM n WHERE x<10000) SELECT sum(x) FROM n", [], |row| row.get::<_, i64>(0));
-        });
+        let result = app.db.with_read_budget(
+            || true,
+            || {
+                app.db.with_read_budget(|| false, || ()).unwrap();
+                // A projection that falls back must still fail the outer request
+                // when the actual SQLite instruction budget was interrupted.
+                let _ = app.db.conn().query_row("WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x+1 FROM n WHERE x<10000) SELECT sum(x) FROM n", [], |row| row.get::<_, i64>(0));
+            },
+        );
         assert_eq!(result.unwrap_err().sqlite_error_code(), Some(rusqlite::ErrorCode::OperationInterrupted));
         assert_eq!(app.db.conn().query_row("SELECT 1", [], |row| row.get::<_, i64>(0)).unwrap(), 1);
     });

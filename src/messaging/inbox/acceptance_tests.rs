@@ -73,8 +73,8 @@ fn product_input_requires_an_exact_managed_send_and_freezes_the_native_proof() {
     assert_eq!(batch.message_id, first.0.to_string());
     let second = queue(&db, "lobo", "later foreign message");
     inbox.mark_issuing(target, &batch.batch.id).unwrap();
-    let mut proof = ProductInput { request_id: batch.request_id, message_id: second.0.to_string(), thread_id: "root-a".into(), turn_id: "turn-a".into(),
-        item_id: "input-a".into(), payload_digest: ProductInput::digest(&batch.batch.formatted_context) };
+    let mut proof =
+        ProductInput { request_id: batch.request_id, message_id: second.0.to_string(), thread_id: "root-a".into(), turn_id: "turn-a".into(), item_id: "input-a".into(), payload_digest: ProductInput::digest(&batch.batch.formatted_context) };
     assert!(inbox.confirm(receipt(&attachment, &batch.batch, DeliveryEvidence::ProductInputRecorded(proof.clone()))).is_err());
     proof.message_id = batch.message_id;
     let mut wrong = proof.clone();

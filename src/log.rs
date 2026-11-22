@@ -93,11 +93,14 @@ impl DispatchLog {
     pub(crate) fn start(scope: &Path) -> Option<Self> {
         let (sender, receiver) = mpsc::sync_channel(128);
         let path = scope.to_owned();
-        std::thread::Builder::new().name("agentx-dispatch-log".into()).spawn(move || {
-            for entry in receiver {
-                append(&path, entry, true);
-            }
-        }).ok()?;
+        std::thread::Builder::new()
+            .name("agentx-dispatch-log".into())
+            .spawn(move || {
+                for entry in receiver {
+                    append(&path, entry, true);
+                }
+            })
+            .ok()?;
         Some(Self { scope: scope.to_owned(), sender })
     }
 

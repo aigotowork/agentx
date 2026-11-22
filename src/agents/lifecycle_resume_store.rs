@@ -354,7 +354,7 @@ mod tests {
             launch_profile: None,
             collaboration: None,
             title: None,
-        labels: Default::default(),
+            labels: Default::default(),
         }
     }
     #[test]

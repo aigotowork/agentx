@@ -149,10 +149,7 @@ pub(crate) fn conversation_history(db: &AgentxDb, participant: &str, start: &str
     } else {
         // Seek to the first row outside the scan budget. Bound the raw scan
         // by ID rather than materializing payloads or assuming dense IDs.
-        let lower = db.conn().query_row(
-            "SELECT id FROM events WHERE id>0 AND id<=?1 ORDER BY id DESC LIMIT 1 OFFSET ?2",
-            rusqlite::params![through, RAW_ROWS], |row| row.get::<_, i64>(0),
-        ).optional().map_err(internal)?.unwrap_or(0);
+        let lower = db.conn().query_row("SELECT id FROM events WHERE id>0 AND id<=?1 ORDER BY id DESC LIMIT 1 OFFSET ?2", rusqlite::params![through, RAW_ROWS], |row| row.get::<_, i64>(0)).optional().map_err(internal)?.unwrap_or(0);
         (JOURNAL, lower)
     };
     let limit = limit.min(MAX_PAGE_EVENTS);

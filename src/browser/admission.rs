@@ -46,7 +46,5 @@ pub(crate) fn cors(response: &mut axum::response::Response) {
 /// OPTIONS never reads a daemon or performs native work. Route handlers still
 /// validate the actual request and preserve readonly/operator/actor boundaries.
 pub(crate) fn preflight(request: &Request) -> Option<axum::response::Response> {
-    (request.method() == axum::http::Method::OPTIONS).then(|| {
-        axum::response::Response::builder().status(axum::http::StatusCode::NO_CONTENT).body(axum::body::Body::empty()).unwrap()
-    })
+    (request.method() == axum::http::Method::OPTIONS).then(|| axum::response::Response::builder().status(axum::http::StatusCode::NO_CONTENT).body(axum::body::Body::empty()).unwrap())
 }

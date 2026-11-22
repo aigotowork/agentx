@@ -700,7 +700,9 @@ impl Proxy {
         let startup_trace = shared::StartupTrace::new(spawned_at, config.instance_name.as_deref());
 
         // Write PID and launch context to database for agentx kill
-        let process_host = if config.native_ready.is_none() && let Some(ref instance_name) = config.instance_name {
+        let process_host = if config.native_ready.is_none()
+            && let Some(ref instance_name) = config.instance_name
+        {
             let persist_result = crate::runtime::process_host::ProcessHost::register(&shared::host_context(&config), instance_name, child_pid, Some(shared::build_early_launch_context()));
             match persist_result {
                 Ok(host) => Some(host),

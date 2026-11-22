@@ -167,36 +167,19 @@ impl DeliveryHost {
         let row = &self.snapshot.actor.record;
         let Some(model) = row.model_request.as_ref().filter(|model| model.error.is_none() && matches!(model.phase, RequestPhase::Started | RequestPhase::Completed)) else { return Ok(false) };
         let Some(progress_at) = model.last_progress_at else { return Ok(false) };
-        if row.tool != "codex" || row.status != ST_ACTIVE || row.status_context != ERROR_CONTEXT
-            || row.session_id.as_deref() != Some(&model.session_id) || self.snapshot.pending.is_empty()
-            || !evaluate_gate(config, state, true).safe
-        {
+        if row.tool != "codex" || row.status != ST_ACTIVE || row.status_context != ERROR_CONTEXT || row.session_id.as_deref() != Some(&model.session_id) || self.snapshot.pending.is_empty() || !evaluate_gate(config, state, true).safe {
             return Ok(false);
         }
         let input_stamp = || {
             let screen = state.screen.read().ok()?;
-            (screen.ready && screen.prompt_empty && !screen.approval && !screen.nav_overlay && !screen.startup_loading)
-                .then_some((screen.last_user_input, screen.last_prompt_submit))
+            (screen.ready && screen.prompt_empty && !screen.approval && !screen.nav_overlay && !screen.startup_loading).then_some((screen.last_user_input, screen.last_prompt_submit))
         };
         let Some(before) = input_stamp() else { return Ok(false) };
-        let Some(completed_at_ms) = crate::transcript::codex_completion::latest_turn_completion(
-            Path::new(&row.transcript_path), &model.session_id, &model.turn_id,
-        ) else { return Ok(false) };
-        if input_stamp() != Some(before) || !evaluate_gate(config, state, true).safe
-            || chrono::Utc::now().timestamp_millis().saturating_sub(completed_at_ms) < 2_000
-            || completed_at_ms < progress_at.max(row.status_time).saturating_mul(1000)
-        {
+        let Some(completed_at_ms) = crate::transcript::codex_completion::latest_turn_completion(Path::new(&row.transcript_path), &model.session_id, &model.turn_id) else { return Ok(false) };
+        if input_stamp() != Some(before) || !evaluate_gate(config, state, true).safe || chrono::Utc::now().timestamp_millis().saturating_sub(completed_at_ms) < 2_000 || completed_at_ms < progress_at.max(row.status_time).saturating_mul(1000) {
             return Ok(false);
         }
-        self.gate(GateObservation::CodexTurnCompleted {
-            session: model.session_id.clone(),
-            turn: model.turn_id.clone(),
-            phase: model.phase,
-            progress_at,
-            status_time: row.status_time,
-            cursor: row.last_event_id,
-            completed_at_ms,
-        })
+        self.gate(GateObservation::CodexTurnCompleted { session: model.session_id.clone(), turn: model.turn_id.clone(), phase: model.phase, progress_at, status_time: row.status_time, cursor: row.last_event_id, completed_at_ms })
     }
 
     fn recovery(&self, ticket: &Ticket, action: HostAction) -> ServiceResult<bool> {
@@ -280,11 +263,7 @@ fn drive_recovery(host: &DeliveryHost, state: &DeliveryState, config: &ToolConfi
                         return Ok(false);
                     }
                     let screen = state.screen.read().unwrap();
-                    return Ok(!state.is_user_active(&screen)
-                        && !screen.approval
-                        && !screen.nav_overlay
-                        && submit_ownership(&screen, PROMPT, false) == PromptOwnership::Exclusive
-                        && inject_enter(state.inject_port));
+                    return Ok(!state.is_user_active(&screen) && !screen.approval && !screen.nav_overlay && submit_ownership(&screen, PROMPT, false) == PromptOwnership::Exclusive && inject_enter(state.inject_port));
                 }
                 PromptOwnership::Mixed => return Ok(false),
                 _ => std::thread::sleep(Duration::from_millis(20)),
@@ -817,7 +796,9 @@ pub(crate) fn run_delivery_loop_client(
                                 }
                             }
                         }
-                        if host.snapshot.actor.record.status == ST_LISTENING && let Some(since) = block_since {
+                        if host.snapshot.actor.record.status == ST_LISTENING
+                            && let Some(since) = block_since
+                        {
                             // After 2 seconds of blocking, update TUI status context
                             if since.elapsed().as_secs_f64() >= 2.0 {
                                 let context = format!("tui:{}", gate.reason.replace('_', "-"));

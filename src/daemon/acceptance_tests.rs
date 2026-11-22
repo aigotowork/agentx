@@ -369,7 +369,15 @@ fn controlled_pty_message_delivery(tool: &str, recovery: bool, missed_stop: bool
     let project = fixture.root.path().join("workspace");
     let provider_home = fixture.root.path().join(format!("home/{tool}"));
     let path = format!("{}:/usr/bin:/bin", bin.display());
-    let environment = [("PATH", path.as_str()), ("AGENTX_TEST_ROOT", root), ("AGENTX_TEST_PARENT", parent), ("QODER_CONFIG_DIR", provider_home.to_str().unwrap()), ("CODEX_HOME", provider_home.to_str().unwrap()), ("AGENTX_TEST_RECOVERY", if recovery { "1" } else { "0" }), ("AGENTX_TEST_MISSED_STOP", if missed_stop { "1" } else { "0" })];
+    let environment = [
+        ("PATH", path.as_str()),
+        ("AGENTX_TEST_ROOT", root),
+        ("AGENTX_TEST_PARENT", parent),
+        ("QODER_CONFIG_DIR", provider_home.to_str().unwrap()),
+        ("CODEX_HOME", provider_home.to_str().unwrap()),
+        ("AGENTX_TEST_RECOVERY", if recovery { "1" } else { "0" }),
+        ("AGENTX_TEST_MISSED_STOP", if missed_stop { "1" } else { "0" }),
+    ];
     let mut arguments = vec!["launch", "--tool", tool, "--headless", "--json", "--go", "--dir", project.to_str().unwrap(), "--iam", parent];
     if recovery {
         arguments.extend(["--label", "project=recover"]);

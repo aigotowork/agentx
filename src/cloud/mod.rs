@@ -3,8 +3,8 @@ mod admin;
 mod catalog;
 pub(crate) mod client;
 mod communication;
-mod control;
 pub(crate) mod connection;
+mod control;
 mod tui;
 pub(crate) mod uplink;
 

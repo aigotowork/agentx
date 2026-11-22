@@ -36,10 +36,7 @@ struct OwnerCleanup {
 
 impl OwnerCleanup {
     fn new(predicate: &str) -> Self {
-        Self {
-            indexed: format!("DELETE FROM kv INDEXED BY agentx_sub_owner_v1 WHERE {SUBS} AND ({OWNER}) IN (?1,X'') AND {CLEANUP} AND {predicate}"),
-            legacy: format!("DELETE FROM kv WHERE {CLEANUP} AND {predicate}"),
-        }
+        Self { indexed: format!("DELETE FROM kv INDEXED BY agentx_sub_owner_v1 WHERE {SUBS} AND ({OWNER}) IN (?1,X'') AND {CLEANUP} AND {predicate}"), legacy: format!("DELETE FROM kv WHERE {CLEANUP} AND {predicate}") }
     }
 
     fn prepare<'a>(&self, db: &'a AgentxDb) -> rusqlite::Result<rusqlite::CachedStatement<'a>> {
@@ -66,22 +63,25 @@ static FOR_KIND: LazyLock<String> = LazyLock::new(|| format!("SELECT key,value F
 // the partial index until the evaluator has upgraded them once.
 static ORDINARY: LazyLock<String> = LazyLock::new(|| {
     let [first, second] = super::subscriptions::LEGACY_COLLISION_PATTERNS.map(|pattern| pattern.replace('\'', "''"));
-    format!("({MATCHABLE}) AND CASE WHEN json_valid(value) THEN
+    format!(
+        "({MATCHABLE}) AND CASE WHEN json_valid(value) THEN
         json_type(value,'$.filters.collision') IS NULL
         OR instr(COALESCE(json_extract(value,'$.sql'),''),'{first}')>0
-        OR instr(COALESCE(json_extract(value,'$.sql'),''),'{second}')>0 ELSE 0 END")
+        OR instr(COALESCE(json_extract(value,'$.sql'),''),'{second}')>0 ELSE 0 END"
+    )
 });
 static FOR_ORDINARY_KIND: LazyLock<String> = LazyLock::new(|| format!("SELECT key,value FROM kv INDEXED BY agentx_sub_ordinary_kind_v1 WHERE {SUBS} AND ({KIND}) IN (?1,'') AND {} ORDER BY rowid", &*ORDINARY));
 static ALL_WATCH: &str = "SELECT key,value FROM kv NOT INDEXED WHERE key LIKE 'events_sub:reqwatch-%' ORDER BY rowid";
 // Replay already owns the eligible keys. Drive the join from that small set
 // and only then sort the fetched rows into the live evaluator's row order.
-static REPLAY_MATCHES: LazyLock<String> = LazyLock::new(|| format!(
-    "SELECT kv.key,kv.value FROM (SELECT value AS replay_key FROM json_each(?1)) AS restored
+static REPLAY_MATCHES: LazyLock<String> = LazyLock::new(|| {
+    format!(
+        "SELECT kv.key,kv.value FROM (SELECT value AS replay_key FROM json_each(?1)) AS restored
      CROSS JOIN kv ON kv.key=restored.replay_key
      WHERE kv.key LIKE 'events_sub:%' AND ({MATCHABLE}) ORDER BY kv.rowid"
-));
-const REPLAY_WATCHES: &str =
-    "SELECT kv.key,kv.value FROM json_each(?1) CROSS JOIN kv ON kv.key=json_each.value
+    )
+});
+const REPLAY_WATCHES: &str = "SELECT kv.key,kv.value FROM json_each(?1) CROSS JOIN kv ON kv.key=json_each.value
      WHERE kv.key LIKE 'events_sub:reqwatch-%' ORDER BY kv.rowid";
 static BY_TARGET: LazyLock<String> = LazyLock::new(|| watch_sql("agentx_watch_target_v1", TARGET, "= ?1"));
 static BY_GRACE: LazyLock<String> = LazyLock::new(|| watch_sql("agentx_watch_grace_v1", GRACE, "<= ?1"));
@@ -89,15 +89,17 @@ static THREAD_LEGACY: LazyLock<String> = LazyLock::new(|| thread_sql("", "key LI
 static THREAD_INDEXED: LazyLock<String> = LazyLock::new(|| thread_sql("INDEXED BY agentx_thread_member_v1", SUBS));
 
 fn thread_sql(index: &str, prefix: &str) -> String {
-    format!("SELECT i.name FROM kv {index} CROSS JOIN instances i ON i.name=CASE WHEN json_valid(value) THEN CASE WHEN json_type(value,'$.caller')='text' THEN json_extract(value,'$.caller') END END
-             WHERE {prefix} AND {THREAD_MEMBER} AND ({THREAD_NAME})=?1 ORDER BY json_extract(value,'$.created'),key")
+    format!(
+        "SELECT i.name FROM kv {index} CROSS JOIN instances i ON i.name=CASE WHEN json_valid(value) THEN CASE WHEN json_type(value,'$.caller')='text' THEN json_extract(value,'$.caller') END END
+             WHERE {prefix} AND {THREAD_MEMBER} AND ({THREAD_NAME})=?1 ORDER BY json_extract(value,'$.created'),key"
+    )
 }
 
 pub(super) fn thread_members(db: &AgentxDb, thread: &str) -> rusqlite::Result<Vec<String>> {
-    let read = |sql: &str| -> rusqlite::Result<Vec<String>> {
-        db.conn().prepare_cached(sql)?.query_map([thread], |row| row.get(0))?.collect()
-    };
-    if db.indexed_subscriptions && let Ok(names) = read(&THREAD_INDEXED) {
+    let read = |sql: &str| -> rusqlite::Result<Vec<String>> { db.conn().prepare_cached(sql)?.query_map([thread], |row| row.get(0))?.collect() };
+    if db.indexed_subscriptions
+        && let Ok(names) = read(&THREAD_INDEXED)
+    {
         return Ok(names);
     }
     read(&THREAD_LEGACY)
@@ -114,10 +116,12 @@ impl AgentxDb {
             Ok(())
         })?;
         self.indexed_subscriptions = true;
-        self.indexed_ordinary_subscriptions = self.with_write_scope(|| {
-            self.conn().execute_batch(&format!("CREATE INDEX IF NOT EXISTS agentx_sub_ordinary_kind_v1 ON kv(({KIND})) WHERE {SUBS} AND {};", &*ORDINARY))?;
-            Ok(())
-        }).is_ok();
+        self.indexed_ordinary_subscriptions = self
+            .with_write_scope(|| {
+                self.conn().execute_batch(&format!("CREATE INDEX IF NOT EXISTS agentx_sub_ordinary_kind_v1 ON kv(({KIND})) WHERE {SUBS} AND {};", &*ORDINARY))?;
+                Ok(())
+            })
+            .is_ok();
         if !self.indexed_ordinary_subscriptions {
             crate::log::log_warn("events", "subscription.ordinary_index_unavailable", "Keeping the event-kind selector for ordinary events");
         }
@@ -132,7 +136,9 @@ pub(super) fn matching(db: &AgentxDb, event_type: &str, replay_keys: Option<&Has
     if let Some(keys) = replay_keys {
         return replay(db, &REPLAY_MATCHES, keys);
     }
-    if db.indexed_ordinary_subscriptions && !can_collide && !event_type.is_empty()
+    if db.indexed_ordinary_subscriptions
+        && !can_collide
+        && !event_type.is_empty()
         && let Ok(rows) = query(db, &FOR_ORDINARY_KIND, &[&event_type])
     {
         return Ok(rows);
@@ -344,19 +350,28 @@ mod tests {
     fn replay_seeks_only_restored_keys_without_scanning_unrelated_history() {
         let root = tempfile::tempdir().unwrap();
         let db = AgentxDb::open_at(&root.path().join("agentx.db")).unwrap();
-        db.conn().execute_batch(
-            "WITH RECURSIVE history(id) AS (SELECT 1 UNION ALL SELECT id+1 FROM history WHERE id<20000)
+        db.conn()
+            .execute_batch(
+                "WITH RECURSIVE history(id) AS (SELECT 1 UNION ALL SELECT id+1 FROM history WHERE id<20000)
              INSERT INTO kv(key,value) SELECT 'history:'||id,'{}' FROM history;
              INSERT INTO kv(key,value) VALUES ('events_sub:z','{}'),('events_sub:reqwatch-a','{}'),
                 ('events_sub:unrelated','{}'),('events_sub:delivery','{\"delivery_only\":true}'),
-                ('events_sub:invalid','oops');"
-        ).unwrap();
-        let keys = ["events_sub:reqwatch-a", "events_sub:z", "events_sub:delivery", "events_sub:invalid", "events_sub:missing"]
-            .map(str::to_string).into_iter().collect::<HashSet<_>>();
+                ('events_sub:invalid','oops');",
+            )
+            .unwrap();
+        let keys = ["events_sub:reqwatch-a", "events_sub:z", "events_sub:delivery", "events_sub:invalid", "events_sub:missing"].map(str::to_string).into_iter().collect::<HashSet<_>>();
         let steps = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let measured = steps.clone();
         use std::sync::atomic::Ordering;
-        db.conn().progress_handler(50, Some(move || { measured.fetch_add(50, Ordering::Relaxed); false })).unwrap();
+        db.conn()
+            .progress_handler(
+                50,
+                Some(move || {
+                    measured.fetch_add(50, Ordering::Relaxed);
+                    false
+                }),
+            )
+            .unwrap();
         let matches = matching(&db, "life", Some(&keys), false).unwrap();
         let watches = watches(&db, Watches::Target("any"), Some(&keys)).unwrap();
         assert_eq!(matches, [("events_sub:z".into(), "{}".into()), ("events_sub:reqwatch-a".into(), "{}".into())]);

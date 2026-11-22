@@ -60,11 +60,7 @@ fn replay_freezes_original_recipients_after_membership_changes() {
 fn generated_bundle_summary_does_not_change_accepted_message_recipients() {
     with_db(|db, context| {
         db.save_instance_named("miri", json!({"created_at":12.0,"tool":"codex","status":"active"}).as_object().unwrap()).unwrap();
-        let input = Submission {
-            text: "@nava review this".into(),
-            inline_bundle: Some(json!({"title":"Note about @miri","description":"Attached context","refs":{"events":["1"],"files":["src/main.rs"],"transcript":["1:normal"]}})),
-            ..submission()
-        };
+        let input = Submission { text: "@nava review this".into(), inline_bundle: Some(json!({"title":"Note about @miri","description":"Attached context","refs":{"events":["1"],"files":["src/main.rs"],"transcript":["1:normal"]}})), ..submission() };
         let first = accepted(handle(db, &context, Request::Submit(input.clone())).unwrap());
         assert_eq!(first.recipients, ["nava"]);
         let event: String = db.conn().query_row("SELECT data FROM events WHERE id=?1", [first.event.0], |row| row.get(0)).unwrap();

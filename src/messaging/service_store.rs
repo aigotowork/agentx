@@ -334,10 +334,9 @@ pub(crate) fn prepare_hook_output(db: &AgentxDb, context: &RequestContext, parti
     match prepare_output(db, &mut inbox, participant, InboxConsumer::Hook, &context.process, false) {
         Ok(PreparedOutput::Deferred) => Ok(None),
         Ok(PreparedOutput::Unmanaged { receipt, formatted_context, .. }) => Ok(Some(HookOutput { formatted_context, confirmation: OutputConfirmation::Unmanaged(receipt) })),
-        Ok(PreparedOutput::Claimed { target, batch, .. }) => Ok(Some(HookOutput {
-            formatted_context: batch.formatted_context,
-            confirmation: OutputConfirmation::Claimed(DeliveryReceipt { target, batch: batch.id, through: batch.window.through, evidence: DeliveryEvidence::HookOutputWritten }),
-        })),
+        Ok(PreparedOutput::Claimed { target, batch, .. }) => {
+            Ok(Some(HookOutput { formatted_context: batch.formatted_context, confirmation: OutputConfirmation::Claimed(DeliveryReceipt { target, batch: batch.id, through: batch.window.through, evidence: DeliveryEvidence::HookOutputWritten }) }))
+        }
         Err(InboxFailure::StaleParticipant) => Err(ServiceError::StaleFence),
         Err(error) => Err(ServiceError::Unavailable(error.to_string())),
     }
@@ -495,10 +494,14 @@ fn prepare_output(db: &AgentxDb, inbox: &mut SqlitePendingInbox<'_>, participant
                         // Bound transcript output while retaining a full first
                         // message. The receipt covers only the emitted prefix.
                         let mut body_bytes = 0usize;
-                        let count = unread.iter().enumerate().take_while(|(index, message)| {
-                            body_bytes = body_bytes.saturating_add(message.text.len());
-                            *index == 0 || body_bytes <= crate::shared::MAX_MESSAGE_SIZE
-                        }).count();
+                        let count = unread
+                            .iter()
+                            .enumerate()
+                            .take_while(|(index, message)| {
+                                body_bytes = body_bytes.saturating_add(message.text.len());
+                                *index == 0 || body_bytes <= crate::shared::MAX_MESSAGE_SIZE
+                            })
+                            .count();
                         unread.truncate(count);
                     }
                     let remaining = unread_count.saturating_sub(unread.len());

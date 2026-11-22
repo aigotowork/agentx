@@ -38,10 +38,9 @@ impl AgentxDb {
                     DELETE FROM conversation_routes WHERE event_id=old.id;
                 END;",
             )?;
-            for (trigger, operation, condition, remove) in [
-                ("conversation_route_insert", "INSERT", "new.type='message'", "new.id"),
-                ("conversation_route_update", "UPDATE OF id,type,instance,data", "old.type='message' OR new.type='message'", "old.id"),
-            ] {
+            for (trigger, operation, condition, remove) in
+                [("conversation_route_insert", "INSERT", "new.type='message'", "new.id"), ("conversation_route_update", "UPDATE OF id,type,instance,data", "old.type='message' OR new.type='message'", "old.id")]
+            {
                 self.conn().execute_batch(&format!(
                     "CREATE TRIGGER IF NOT EXISTS {trigger} AFTER {operation} ON events WHEN {condition} BEGIN
                         DELETE FROM conversation_routes WHERE event_id={remove};
@@ -72,14 +71,13 @@ impl AgentxDb {
             if through >= ceiling {
                 return Ok(false);
             }
-            let upper = self.conn().query_row(
-                "SELECT COALESCE(MAX(id),?2) FROM (SELECT id FROM events WHERE id>?1 AND id<=?2 ORDER BY id LIMIT ?3)",
-                params![through, ceiling, BACKFILL_BATCH], |row| row.get::<_, i64>(0),
-            )?;
+            let upper = self.conn().query_row("SELECT COALESCE(MAX(id),?2) FROM (SELECT id FROM events WHERE id>?1 AND id<=?2 ORDER BY id LIMIT ?3)", params![through, ceiling, BACKFILL_BATCH], |row| row.get::<_, i64>(0))?;
             self.conn().execute(
-                &format!("INSERT OR IGNORE INTO conversation_routes(participant,event_id)
+                &format!(
+                    "INSERT OR IGNORE INTO conversation_routes(participant,event_id)
                     WITH incoming AS MATERIALIZED (SELECT id,instance,data FROM events NOT INDEXED WHERE id>?1 AND id<=?2 AND type='message')
-                    {PARTICIPANTS}"),
+                    {PARTICIPANTS}"
+                ),
                 params![through, upper],
             )?;
             self.conn().execute("UPDATE conversation_route_coverage SET through_id=?1 WHERE singleton=1", [upper])?;

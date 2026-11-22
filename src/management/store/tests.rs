@@ -639,15 +639,17 @@ fn exact_conversation_index_preserves_pages_and_bounds_without_scanning_unrelate
         let name = "target";
         db.save_instance_named(name, json!({"created_at":20.0,"tool":"codex"}).as_object().unwrap()).unwrap();
         let agent = AgentRef { name: name.into(), incarnation: Some(20.0_f64.to_bits().to_string()), stopped_event: None };
-        let insert = |second: u32, from: &str, data| {
-            db.insert_event_row("message", from, &data, Some(&format!("1970-01-01T00:00:{second:02}.000000+00:00"))).unwrap()
-        };
+        let insert = |second: u32, from: &str, data| db.insert_event_row("message", from, &data, Some(&format!("1970-01-01T00:00:{second:02}.000000+00:00"))).unwrap();
         let old = insert(11, name, json!({"from":name,"text":"old"}));
         let stop = db.insert_event_row("life", name, &json!({"action":"stopped","snapshot":{"created_at":10.0,"tool":"codex"}}), Some("1970-01-01T00:00:12.000000+00:00")).unwrap();
         let historical = AgentRef { name: name.into(), incarnation: None, stopped_event: Some(stop.to_string()) };
         let first = insert(20, name, json!({"from":"display alias","text":"outgoing","delivered_to":[name,name,"other"]}));
-        db.conn().execute_batch(r#"WITH RECURSIVE seed(n) AS (VALUES (1) UNION ALL SELECT n+1 FROM seed WHERE n<3000)
-            INSERT INTO events(timestamp,type,instance,data) SELECT '1970-01-01T00:00:21.000000+00:00','message','unrelated','{"delivered_to":["other"]}' FROM seed;"#).unwrap();
+        db.conn()
+            .execute_batch(
+                r#"WITH RECURSIVE seed(n) AS (VALUES (1) UNION ALL SELECT n+1 FROM seed WHERE n<3000)
+            INSERT INTO events(timestamp,type,instance,data) SELECT '1970-01-01T00:00:21.000000+00:00','message','unrelated','{"delivered_to":["other"]}' FROM seed;"#,
+            )
+            .unwrap();
         let second = insert(22, "origin", json!({"from":"origin","text":"incoming","delivered_to":[name],"thread":"thread-a","reply_to":first}));
         insert(23, "origin", json!({"from":name,"text":"not actually delivered","scope":"mentions","mentions":[name]}));
 
@@ -921,9 +923,7 @@ fn message_history_wal_snapshot_pins_coverage_and_watermark_during_append_and_ba
         let name = "target";
         db.save_instance_named(name, json!({"created_at":20.0,"tool":"codex"}).as_object().unwrap()).unwrap();
         let current = AgentRef { name: name.into(), incarnation: Some(20.0_f64.to_bits().to_string()), stopped_event: None };
-        let insert = |second: u32, routing, data| {
-            db.insert_event_row("message", routing, &data, Some(&format!("1970-01-01T00:00:{second:02}.000000+00:00"))).unwrap()
-        };
+        let insert = |second: u32, routing, data| db.insert_event_row("message", routing, &data, Some(&format!("1970-01-01T00:00:{second:02}.000000+00:00"))).unwrap();
         let historical_id = insert(10, name, json!({"text":"before resume"}));
         let stop = db.insert_event_row("life", name, &json!({"action":"stopped","snapshot":{"created_at":10.0,"tool":"codex"}}), Some("1970-01-01T00:00:12.000000+00:00")).unwrap();
         let stopped = AgentRef { name: name.into(), incarnation: None, stopped_event: Some(stop.to_string()) };
@@ -969,8 +969,12 @@ fn message_history_raw_cap_cannot_claim_false_exhaustion() {
         let current = AgentRef { name: name.into(), incarnation: Some(20.0_f64.to_bits().to_string()), stopped_event: None };
         let time = Some("1970-01-01T00:00:20.000000+00:00");
         let oldest = db.insert_event_row("message", name, &json!({"text":"before the raw scan window"}), time).unwrap();
-        db.conn().execute_batch(r#"WITH RECURSIVE seed(n) AS (VALUES (1) UNION ALL SELECT n+1 FROM seed WHERE n<4096)
-            INSERT INTO events(timestamp,type,instance,data) SELECT '1970-01-01T00:00:20.000000+00:00','message','unrelated','{}' FROM seed;"#).unwrap();
+        db.conn()
+            .execute_batch(
+                r#"WITH RECURSIVE seed(n) AS (VALUES (1) UNION ALL SELECT n+1 FROM seed WHERE n<4096)
+            INSERT INTO events(timestamp,type,instance,data) SELECT '1970-01-01T00:00:20.000000+00:00','message','unrelated','{}' FROM seed;"#,
+            )
+            .unwrap();
         assert!(db.start_conversation_routes().unwrap());
         assert!(matches!(message_history(db, &context, current.clone(), None, 1), Err(ServiceError::Unavailable(_))));
         let first = db.insert_event_row("message", name, &json!({"text":"in budget"}), time).unwrap();

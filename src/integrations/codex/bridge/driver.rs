@@ -7,10 +7,10 @@ use crate::agents::attachments::ActivationTarget;
 use crate::messaging::activation::{ActivationDriver, ActivationRejection, ActivationRequest, Admission, DeferReason, DriverEvent, TurnEvidence};
 use crate::messaging::inbox::{ClaimPhase, Confirmation, DeliveryEvidence, DeliveryReceipt, OutstandingClaim, ReconciliationEvidence};
 
+use super::super::mail_evidence::{client_id, item_matches};
 #[cfg(test)]
 use super::super::protocol::FrameKind;
 use super::super::protocol::{ClientRequestOwner, NativeFrame, RawObject, RpcId};
-use super::super::mail_evidence::{client_id, item_matches};
 use super::session::{child, field};
 use super::{NativeAttempt, NativeBridge, StateRead, ThreadState};
 

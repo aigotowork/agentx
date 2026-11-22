@@ -73,7 +73,8 @@ const CODEX_HOOK_COMMANDS: &[(&str, &str, Option<&str>)] = &[
 ];
 
 pub static PER_RUN: PerRunAdapter = PerRunAdapter { prepare: prepare_per_run, cleanup_legacy: cleanup_legacy_per_run, ensure_permissions: Some(ensure_per_run_permissions), managed_value_flags: &[], strip_legacy_args: None };
-static MANAGED_PTY: PerRunAdapter = PerRunAdapter { prepare: |ctx| prepare_per_run_with_mode(ctx, true), cleanup_legacy: cleanup_legacy_per_run, ensure_permissions: Some(ensure_per_run_permissions), managed_value_flags: &[], strip_legacy_args: None };
+static MANAGED_PTY: PerRunAdapter =
+    PerRunAdapter { prepare: |ctx| prepare_per_run_with_mode(ctx, true), cleanup_legacy: cleanup_legacy_per_run, ensure_permissions: Some(ensure_per_run_permissions), managed_value_flags: &[], strip_legacy_args: None };
 
 pub(crate) fn plan_managed_pty(ctx: &LaunchCtx) -> AnyResult<RuntimeInjection> {
     runtime::plan(&MANAGED_PTY, ctx)
@@ -842,7 +843,8 @@ fn build_codex_hook_command(command: &str) -> String {
 }
 
 fn codex_hook_command_for_context(command: &str, ctx: Option<&LaunchCtx>, managed: bool) -> String {
-    if managed && client::managed_event(command)
+    if managed
+        && client::managed_event(command)
         && ctx.is_some_and(|ctx| ctx.var("AGENTX_CODEX_SHARED") != Some("1"))
         && let Ok(executable) = std::env::current_exe()
         && let Some(executable) = executable.to_str()

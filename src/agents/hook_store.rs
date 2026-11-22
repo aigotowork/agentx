@@ -202,9 +202,7 @@ pub(crate) fn resolve_codex_pty(db: &AgentxDb, context: &RequestContext, session
     if row.tool != "codex" || row.status_context == "exit:killed" {
         return Err(ServiceError::StaleFence);
     }
-    if transcript.is_none()
-        && (directory.file_name().is_some_and(|name| name == "memories" || name == "memories_v2")
-            || session.is_some_and(|session| row.session_id.as_deref().filter(|bound| !bound.is_empty()).is_some_and(|bound| bound != session)))
+    if transcript.is_none() && (directory.file_name().is_some_and(|name| name == "memories" || name == "memories_v2") || session.is_some_and(|session| row.session_id.as_deref().filter(|bound| !bound.is_empty()).is_some_and(|bound| bound != session)))
     {
         return Ok(None);
     }
@@ -234,9 +232,13 @@ pub(crate) fn resolve_codex_pty(db: &AgentxDb, context: &RequestContext, session
 }
 
 impl CodexPtyActor {
-    pub(crate) fn participant(&self) -> &ParticipantRef { &self.0.participant }
+    pub(crate) fn participant(&self) -> &ParticipantRef {
+        &self.0.participant
+    }
 
-    pub(crate) fn approval_blocked(&self) -> bool { self.0.record.status == "blocked" && self.0.record.status_context == "pty:approval" }
+    pub(crate) fn approval_blocked(&self) -> bool {
+        self.0.record.status == "blocked" && self.0.record.status_context == "pty:approval"
+    }
 
     pub(crate) fn status(&self, db: &AgentxDb, status: &str, context: &str) -> ServiceResult<()> {
         let tool_name = context.strip_prefix("approved:").unwrap_or("");

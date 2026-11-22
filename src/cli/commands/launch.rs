@@ -50,7 +50,9 @@ pub fn run(argv: &[String], flags: &GlobalFlags) -> Result<i32> {
         bail!("--bind supports fresh local terminal launches only; remote and stdio are unsupported");
     }
     let labels = crate::cli::commands::labels::parse_set(&agentx_flags.labels).map_err(anyhow::Error::msg)?;
-    if !labels.is_empty() && (agentx_flags.device.is_some() || agentx_flags.stdio) { bail!("--label supports fresh local terminal launches only"); }
+    if !labels.is_empty() && (agentx_flags.device.is_some() || agentx_flags.stdio) {
+        bail!("--label supports fresh local terminal launches only");
+    }
     let binding_paths = crate::file_bindings::preflight(&agentx_flags.bindings, &invocation.cwd)?;
     if agentx_flags.device.is_some() && agentx_flags.title.is_some() {
         bail!("--title is not supported by remote Relay launches; use a local launch on the target");
@@ -1216,7 +1218,19 @@ mod tests {
         let output = build_remote_launch_output(
             &db,
             &GlobalFlags::default(),
-            &LaunchResult { tool: "claude".to_string(), batch_id: "batch-1".to_string(), launched: 1, failed: 0, background: false, log_files: Vec::new(), handles: Vec::new(), errors: Vec::new(), stdio_exit_code: None, attach_participant: None, launched_participants: Vec::new() },
+            &LaunchResult {
+                tool: "claude".to_string(),
+                batch_id: "batch-1".to_string(),
+                launched: 1,
+                failed: 0,
+                background: false,
+                log_files: Vec::new(),
+                handles: Vec::new(),
+                errors: Vec::new(),
+                stdio_exit_code: None,
+                attach_participant: None,
+                launched_participants: Vec::new(),
+            },
             Some("kitty".to_string()),
             Some(false),
         )
@@ -1240,7 +1254,19 @@ mod tests {
         let output = build_remote_launch_output(
             &db,
             &GlobalFlags::default(),
-            &LaunchResult { tool: "codex".to_string(), batch_id: "batch-2".to_string(), launched: 1, failed: 0, background: false, log_files: Vec::new(), handles: Vec::new(), errors: Vec::new(), stdio_exit_code: None, attach_participant: None, launched_participants: Vec::new() },
+            &LaunchResult {
+                tool: "codex".to_string(),
+                batch_id: "batch-2".to_string(),
+                launched: 1,
+                failed: 0,
+                background: false,
+                log_files: Vec::new(),
+                handles: Vec::new(),
+                errors: Vec::new(),
+                stdio_exit_code: None,
+                attach_participant: None,
+                launched_participants: Vec::new(),
+            },
             None,
             None,
         )

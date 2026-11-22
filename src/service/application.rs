@@ -71,7 +71,9 @@ impl Application for SqliteApplication {
         ]
         .into_iter()
         .filter(|(due, _)| due.is_some_and(|at| at <= std::time::Instant::now()))
-        .min_by_key(|(due, _)| **due) else { return };
+        .min_by_key(|(due, _)| **due) else {
+            return;
+        };
         *due = match backfill(&self.db) {
             Ok(true) => Some(std::time::Instant::now() + std::time::Duration::from_millis(25)),
             Ok(false) => None,

@@ -171,9 +171,14 @@ pub(crate) fn handle(db: &AgentxDb, context: &RequestContext, request: Request) 
                 GateObservation::CodexTurnCompleted { session, turn, phase, progress_at, status_time, cursor, completed_at_ms } => {
                     use crate::agents::model_request::{ERROR_CONTEXT, RequestPhase};
                     let row = &actor.record;
-                    if row.tool != "codex" || row.origin_device_id.is_some() || row.parent_name.is_some()
-                        || row.status != "active" || row.status_context != ERROR_CONTEXT || row.status_time != status_time
-                        || row.session_id.as_deref() != Some(&session) || row.last_event_id != cursor
+                    if row.tool != "codex"
+                        || row.origin_device_id.is_some()
+                        || row.parent_name.is_some()
+                        || row.status != "active"
+                        || row.status_context != ERROR_CONTEXT
+                        || row.status_time != status_time
+                        || row.session_id.as_deref() != Some(&session)
+                        || row.last_event_id != cursor
                         || !matches!(phase, RequestPhase::Started | RequestPhase::Completed)
                         || row.model_request.as_ref().is_none_or(|model| model.error.is_some() || model.session_id != session || model.turn_id != turn || model.phase != phase || model.last_progress_at != Some(progress_at))
                         || completed_at_ms < progress_at.max(status_time).saturating_mul(1000)

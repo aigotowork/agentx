@@ -1439,7 +1439,9 @@ fn launch_with_client_inner(mut params: LaunchParams, caller_context: &crate::ru
     // their existing native prompt channel until that contract carries history.
     crate::agents::labels::validate_set(&params.labels)?;
     if !params.labels.is_empty() {
-        if params.stdio || resume.is_some() || params.prior_session_id.is_some() { bail!("initial labels support fresh terminal launches only"); }
+        if params.stdio || resume.is_some() || params.prior_session_id.is_some() {
+            bail!("initial labels support fresh terminal launches only");
+        }
         launch_request(&client, launch_service::Request::LabelsSupport)?;
     }
     params.title = crate::agents::launch_title::normalize(params.title.as_deref()).map_err(anyhow::Error::msg)?;
@@ -1579,10 +1581,8 @@ fn launch_with_client_inner(mut params: LaunchParams, caller_context: &crate::ru
 
     // Build base environment for the current launch regime, then overlay
     // config.toml + ~/.agentx/env which win.
-    let fresh_codex_terminal = normalized.tool() == Tool::Codex && !params.stdio && params.prior_session_id.is_none() && resume.is_none()
-        && !params.args.windows(2).any(|pair| pair[0] == "fork" && uuid::Uuid::parse_str(&pair[1]).is_ok());
-    let inherited_direct_terminal = fresh_codex_terminal && client.invocation().activation_target.is_some()
-        && caller_context.raw_env.get("AGENTX_CODEX_DIRECT_TERMINAL").is_some_and(|value| value == "1");
+    let fresh_codex_terminal = normalized.tool() == Tool::Codex && !params.stdio && params.prior_session_id.is_none() && resume.is_none() && !params.args.windows(2).any(|pair| pair[0] == "fork" && uuid::Uuid::parse_str(&pair[1]).is_ok());
+    let inherited_direct_terminal = fresh_codex_terminal && client.invocation().activation_target.is_some() && caller_context.raw_env.get("AGENTX_CODEX_DIRECT_TERMINAL").is_some_and(|value| value == "1");
     let regime = if base_env_run_here {
         LaunchEnvRegime::RunHere
     } else if inherited_direct_terminal {
@@ -1675,11 +1675,8 @@ fn launch_with_client_inner(mut params: LaunchParams, caller_context: &crate::ru
                     crate::integrations::hooks::runtime::strip_replayed_args(adapter, persisted);
                 }
                 let ctx = crate::integrations::hooks::runtime::LaunchCtx { tool: normalized.tool(), env: base_env.clone(), cwd: canonical_dir.clone(), args: params.args.clone(), auto_approve: agentx_config.auto_approve };
-                let injection = if normalized.tool() == Tool::Codex && !params.stdio && backend != LaunchBackend::NativePrint {
-                    crate::integrations::hooks::codex::plan_managed_pty(&ctx)?
-                } else {
-                    crate::integrations::hooks::runtime::plan(adapter, &ctx)?
-                };
+                let injection =
+                    if normalized.tool() == Tool::Codex && !params.stdio && backend != LaunchBackend::NativePrint { crate::integrations::hooks::codex::plan_managed_pty(&ctx)? } else { crate::integrations::hooks::runtime::plan(adapter, &ctx)? };
                 for (key, value) in &injection.env {
                     insert_effective_env(&mut base_env, key.clone(), value.clone(), cfg!(windows));
                 }
@@ -1804,7 +1801,19 @@ fn launch_with_client_inner(mut params: LaunchParams, caller_context: &crate::ru
         let args = codex_preprocessing::preprocess_codex_args(&params.args, "", codex_home.as_ref().map(|(path, _)| path.as_path()));
         let launch = crate::integrations::codex::bridge::RootLaunch { explicit_name: params.name, initial_cursor: params.resume_cursor, launch_args: stored_launch_args, launch_profile: params.launch_profile.clone() };
         let status = crate::integrations::codex::bridge::run_with_client(&args, &base_env, &canonical_dir, launch, agentx_config.auto_approve, &client)?;
-        return Ok(LaunchResult { tool: base_tool.to_owned(), batch_id, launched: 1, failed: 0, background: false, log_files: Vec::new(), handles: Vec::new(), errors: Vec::new(), stdio_exit_code: Some(status), attach_participant: None, launched_participants: Vec::new() });
+        return Ok(LaunchResult {
+            tool: base_tool.to_owned(),
+            batch_id,
+            launched: 1,
+            failed: 0,
+            background: false,
+            log_files: Vec::new(),
+            handles: Vec::new(),
+            errors: Vec::new(),
+            stdio_exit_code: Some(status),
+            attach_participant: None,
+            launched_participants: Vec::new(),
+        });
     }
 
     let mut launched = 0usize;

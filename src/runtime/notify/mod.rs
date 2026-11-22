@@ -10,9 +10,9 @@
 //!   `inject`, which lives in the same DB table but speaks a bidirectional
 //!   protocol (see `commands::term`).
 
+pub(crate) mod observer_hints;
 pub mod server;
 pub mod wake;
-pub(crate) mod observer_hints;
 
 pub use server::NotifyServer;
 pub use wake::{WAKE_TARGETED_MS, snapshot_all_wake_ports, wake, wake_ports};

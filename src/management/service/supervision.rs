@@ -87,7 +87,9 @@ pub(super) fn supervise(input: &WorkerInput, executable: &Path, timeout: Duratio
     let mut stdin = child.stdin.take().ok_or_else(|| "worker stdin unavailable".to_owned())?;
     #[cfg(unix)]
     if let Err(error) = make_nonblocking(&stdin) {
-        let _ = child.kill(); let _ = child.wait(); capture.finish();
+        let _ = child.kill();
+        let _ = child.wait();
+        capture.finish();
         return Err(format!("worker input setup: {error}"));
     }
     let input_stop = Arc::new(AtomicBool::new(false));
@@ -95,7 +97,9 @@ pub(super) fn supervise(input: &WorkerInput, executable: &Path, timeout: Duratio
     let writer = std::thread::Builder::new().name("management-input".into()).spawn(move || {
         let mut offset = 0;
         while offset < bytes.len() {
-            if writer_stop.load(Ordering::Acquire) { return Err(std::io::Error::new(std::io::ErrorKind::Interrupted, "input cancelled before completion")) }
+            if writer_stop.load(Ordering::Acquire) {
+                return Err(std::io::Error::new(std::io::ErrorKind::Interrupted, "input cancelled before completion"));
+            }
             match stdin.write(&bytes[offset..]) {
                 Ok(0) => return Err(std::io::ErrorKind::WriteZero.into()),
                 Ok(count) => offset += count,
@@ -186,7 +190,9 @@ impl StderrCapture {
                                 drained_after_stop += count;
                                 // Drain the completed host's pipe tail, but never
                                 // follow a continuously writing descendant forever.
-                                if drained_after_stop >= 1024 * 1024 { break }
+                                if drained_after_stop >= 1024 * 1024 {
+                                    break;
+                                }
                             }
                         }
                         Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,

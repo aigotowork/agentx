@@ -32,10 +32,7 @@ pub(super) fn apply(db: &AgentxDb, context: &RequestContext, target: &Participan
                     ForkSource::Stopped { name, event } => (name, None, Some(event)),
                 };
                 let id = creation(db, target).map_err(internal)?.ok_or_else(|| internal("missing fork creation"))?;
-                db.conn().execute(
-                    "INSERT INTO agent_creation_forks(creation,source_name,source_incarnation,source_stopped_event) VALUES (?1,?2,?3,?4)",
-                    params![id, name, incarnation, event],
-                ).map_err(internal)?;
+                db.conn().execute("INSERT INTO agent_creation_forks(creation,source_name,source_incarnation,source_stopped_event) VALUES (?1,?2,?3,?4)", params![id, name, incarnation, event]).map_err(internal)?;
             }
             Ok(())
         }

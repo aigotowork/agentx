@@ -2368,7 +2368,19 @@ mod tests {
         let db = test_db();
         let output = build_remote_resume_output(
             &db,
-            &LaunchResult { tool: "claude".to_string(), batch_id: "batch-1".to_string(), launched: 1, failed: 0, background: true, log_files: Vec::new(), handles: Vec::new(), errors: Vec::new(), stdio_exit_code: None, attach_participant: None, launched_participants: Vec::new() },
+            &LaunchResult {
+                tool: "claude".to_string(),
+                batch_id: "batch-1".to_string(),
+                launched: 1,
+                failed: 0,
+                background: true,
+                log_files: Vec::new(),
+                handles: Vec::new(),
+                errors: Vec::new(),
+                stdio_exit_code: None,
+                attach_participant: None,
+                launched_participants: Vec::new(),
+            },
             &s(&["--terminal", "kitty", "--run-here"]),
             false,
             &GlobalFlags::default(),
@@ -2387,7 +2399,19 @@ mod tests {
         let db = test_db();
         let output = build_remote_resume_output(
             &db,
-            &LaunchResult { tool: "codex".to_string(), batch_id: "batch-2".to_string(), launched: 1, failed: 0, background: false, log_files: Vec::new(), handles: Vec::new(), errors: Vec::new(), stdio_exit_code: None, attach_participant: None, launched_participants: Vec::new() },
+            &LaunchResult {
+                tool: "codex".to_string(),
+                batch_id: "batch-2".to_string(),
+                launched: 1,
+                failed: 0,
+                background: false,
+                log_files: Vec::new(),
+                handles: Vec::new(),
+                errors: Vec::new(),
+                stdio_exit_code: None,
+                attach_participant: None,
+                launched_participants: Vec::new(),
+            },
             &[],
             true,
             &GlobalFlags::default(),

@@ -10,9 +10,9 @@ pub(crate) use super::service_store::{attachment_owned_by_process, handle, reser
 // registration in the same transaction; this is not another IPC operation.
 pub(crate) use super::cleanup_store::{cleanup_system, tracked_process_state};
 pub(crate) use super::hook_service::{HookSession, ObserveHookPosition, SessionStopOutcome, StopSession, ToolActivity};
+pub(crate) use super::hook_store::resolve_codex_pty;
 pub(crate) use super::hook_store::stop_killed;
 pub(crate) use super::hook_store::stop_operator;
-pub(crate) use super::hook_store::resolve_codex_pty;
 
 /// Daemon composition only. Each adapter chooses its existing finite cleanup
 /// policy; none of these decisions is an independently callable stop RPC.

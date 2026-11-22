@@ -41,11 +41,13 @@ mod tests {
     fn fork_provenance_migrates_v28_without_inventing_a_source() {
         let dir = tempfile::tempdir().unwrap();
         let mut db = AgentxDb::open_at(&dir.path().join("agentx.db")).unwrap();
-        db.conn().execute_batch(
-            "DROP TABLE agent_creation_forks;
+        db.conn()
+            .execute_batch(
+                "DROP TABLE agent_creation_forks;
              INSERT INTO agent_creations(id,name,incarnation,origin) VALUES('legacy','luna','1','external');
-             PRAGMA user_version=28;"
-        ).unwrap();
+             PRAGMA user_version=28;",
+            )
+            .unwrap();
         db.ensure_schema().unwrap();
         let version = db.conn().query_row("PRAGMA user_version", [], |row| row.get::<_, i32>(0)).unwrap();
         let legacy = db.conn().query_row("SELECT origin FROM agent_creations WHERE id='legacy'", [], |row| row.get::<_, String>(0)).unwrap();

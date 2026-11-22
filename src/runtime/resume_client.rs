@@ -262,7 +262,9 @@ pub(crate) fn should_preview_resume_rpc(extra_args: &[String]) -> bool {
 /// Extract resume-only flags, then reuse the shared launch flag parser.
 pub(crate) fn extract_resume_flags(args: &[String]) -> Result<(Option<String>, super::launch_options::AgentxLaunchFlags, Vec<String>)> {
     let (flags, remaining) = extract_launch_flags(args)?;
-    if !flags.labels.is_empty() { bail!("--label only sets labels on fresh launches; use agentx labels set after resume or fork"); }
+    if !flags.labels.is_empty() {
+        bail!("--label only sets labels on fresh launches; use agentx labels set after resume or fork");
+    }
     if !flags.bindings.is_empty() {
         anyhow::bail!("--bind supports fresh local launch only; resume/fork are unsupported");
     }

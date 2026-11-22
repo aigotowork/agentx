@@ -192,8 +192,10 @@ impl<'a> SqlitePendingInbox<'a> {
     fn valid_receipt(claim: &OutstandingClaim, receipt: &DeliveryReceipt) -> bool {
         let medium = matches!(
             (&claim.consumer, &receipt.evidence),
-            (InboxConsumer::Hook, DeliveryEvidence::HookOutputWritten) | (InboxConsumer::ExplicitListen, DeliveryEvidence::ToolOutputWritten) | (InboxConsumer::NativeInput, DeliveryEvidence::ProviderInputRecorded { .. })
-            | (InboxConsumer::ProductInput, DeliveryEvidence::ProductInputRecorded(_))
+            (InboxConsumer::Hook, DeliveryEvidence::HookOutputWritten)
+                | (InboxConsumer::ExplicitListen, DeliveryEvidence::ToolOutputWritten)
+                | (InboxConsumer::NativeInput, DeliveryEvidence::ProviderInputRecorded { .. })
+                | (InboxConsumer::ProductInput, DeliveryEvidence::ProductInputRecorded(_))
         );
         medium && claim.target == receipt.target && claim.batch.id == receipt.batch && claim.batch.window.through == receipt.through && claim.phase != ClaimPhase::Prepared
     }
@@ -230,7 +232,9 @@ impl<'a> SqlitePendingInbox<'a> {
 
     fn product_source(&self, target: &ActivationTarget, batch: &PreparedBatch, generation: &str) -> Result<ProductBatch, InboxFailure> {
         let messages = self.frozen_messages(&batch.id)?;
-        let [message] = messages.as_slice() else { return Err(InboxFailure::InvalidEvidence); };
+        let [message] = messages.as_slice() else {
+            return Err(InboxFailure::InvalidEvidence);
+        };
         let member = message.event_id.ok_or(InboxFailure::InvalidEvidence)?;
         let raw = self.db.kv_get(&ProductSend::key(generation, member)).map_err(unavailable)?.ok_or(InboxFailure::InvalidEvidence)?;
         let source: ProductSend = serde_json::from_str(&raw).map_err(unavailable)?;
@@ -246,18 +250,25 @@ impl<'a> SqlitePendingInbox<'a> {
         let db = self.db;
         db.with_write_scope(|| {
             self.validate(target)?;
-            let Some(snapshot) = self.snapshot(&target.participant)? else { return Ok(None); };
+            let Some(snapshot) = self.snapshot(&target.participant)? else {
+                return Ok(None);
+            };
             let batch = self.prepare(target, attempt, &snapshot, InboxConsumer::ProductInput)?;
             Ok(Some(self.product_source(target, &batch, generation).map_err(PrepareFailure::Store)?))
-        }).map_err(|error| error.downcast_ref::<PrepareFailure>().cloned().or_else(|| error.downcast_ref::<InboxFailure>().cloned().map(PrepareFailure::Store)).unwrap_or_else(|| PrepareFailure::Store(unavailable(error))))
+        })
+        .map_err(|error| error.downcast_ref::<PrepareFailure>().cloned().or_else(|| error.downcast_ref::<InboxFailure>().cloned().map(PrepareFailure::Store)).unwrap_or_else(|| PrepareFailure::Store(unavailable(error))))
     }
 
     fn validate_product_input(&self, receipt: &DeliveryReceipt, proof: &ProductInput, batch: &PreparedBatch) -> Result<(), InboxFailure> {
         let generation = self.db.read_database_generation().map_err(unavailable)?;
         let source = self.product_source(&receipt.target, batch, &generation)?;
         let attachment = SqliteAttachmentStore::new(self.db).current_for_participant(&receipt.target.participant).map_err(unavailable)?.ok_or(InboxFailure::StaleParticipant)?;
-        if attachment.target != receipt.target || attachment.session.session_id != proof.thread_id
-            || proof.turn_id.is_empty() || proof.item_id.is_empty() || proof.request_id != source.request_id || proof.message_id != source.message_id
+        if attachment.target != receipt.target
+            || attachment.session.session_id != proof.thread_id
+            || proof.turn_id.is_empty()
+            || proof.item_id.is_empty()
+            || proof.request_id != source.request_id
+            || proof.message_id != source.message_id
             || proof.payload_digest != ProductInput::digest(&source.batch.formatted_context)
         {
             return Err(InboxFailure::InvalidEvidence);

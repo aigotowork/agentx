@@ -187,15 +187,19 @@ pub(crate) fn select_current(db: &AgentxDb, context: &RequestContext, mut query:
     read_scope(db, || {
         let remaining_ms = context.caller.deadline_unix_ms.map(|deadline| deadline.saturating_sub(crate::shared::time::now_epoch_f64().mul_add(1000.0, 0.0) as u64)).unwrap_or(2000).min(2000);
         let deadline = std::time::Instant::now() + std::time::Duration::from_millis(remaining_ms);
-        db.with_read_budget(move || std::time::Instant::now() >= deadline, || {
-            let mut records = db.select_labeled_instances(&query, &after).map_err(query_error)?;
-            let more = records.len() > query.limit as usize;
-            records.truncate(query.limit as usize);
-            let participants: Vec<_> = records.iter().map(|row| ParticipantRef { canonical_name: row.name.clone(), incarnation_bits: row.created_at.to_bits() }).collect();
-            let snapshots = hydrate(db, context, &participants)?;
-            let next = more.then(|| format!("labels:{fingerprint}:{}", records.last().expect("nonempty page").name));
-            Ok(LabelPage { records, snapshots, next })
-        }).map_err(query_error)?
+        db.with_read_budget(
+            move || std::time::Instant::now() >= deadline,
+            || {
+                let mut records = db.select_labeled_instances(&query, &after).map_err(query_error)?;
+                let more = records.len() > query.limit as usize;
+                records.truncate(query.limit as usize);
+                let participants: Vec<_> = records.iter().map(|row| ParticipantRef { canonical_name: row.name.clone(), incarnation_bits: row.created_at.to_bits() }).collect();
+                let snapshots = hydrate(db, context, &participants)?;
+                let next = more.then(|| format!("labels:{fingerprint}:{}", records.last().expect("nonempty page").name));
+                Ok(LabelPage { records, snapshots, next })
+            },
+        )
+        .map_err(query_error)?
     })
 }
 pub(crate) fn handle(db: &AgentxDb, context: &RequestContext, request: Request) -> ServiceResult<Response> {

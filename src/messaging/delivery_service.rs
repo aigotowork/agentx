@@ -35,15 +35,7 @@ pub(crate) enum GateObservation {
     Blocked { cursor: i64, context: String, detail: String },
     Cleared { cursor: i64, context: String },
     RecoveredIdle { previous_context: String },
-    CodexTurnCompleted {
-        session: String,
-        turn: String,
-        phase: crate::agents::model_request::RequestPhase,
-        progress_at: i64,
-        status_time: i64,
-        cursor: i64,
-        completed_at_ms: i64,
-    },
+    CodexTurnCompleted { session: String, turn: String, phase: crate::agents::model_request::RequestPhase, progress_at: i64, status_time: i64, cursor: i64, completed_at_ms: i64 },
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]

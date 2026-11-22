@@ -24,17 +24,16 @@ use crate::shared::time::now_epoch_f64;
 
 mod claude_actors;
 mod conversation_routes;
-mod mailbox_routes;
 mod human_mailbox;
+mod mailbox_routes;
 pub(crate) use human_mailbox::HUMAN_ADDRESSED;
-mod subscription_index;
 mod collaboration;
 mod events;
 mod instances;
 mod kv;
 pub(crate) mod labels;
-mod launch_relations;
 mod launch_names;
+mod launch_relations;
 mod message_acceptance;
 mod notify;
 mod post_commit;
@@ -42,6 +41,7 @@ pub(crate) mod reqwatch_policy;
 mod reset;
 mod sessions;
 mod shared_runtime;
+mod subscription_index;
 pub(crate) mod subscriptions;
 
 pub(crate) use collaboration::StoredWorkCommand;
@@ -281,18 +281,24 @@ impl AgentxDb {
         if self.read_budget.get() {
             return Ok(read());
         }
-        use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
+        use std::sync::{
+            Arc,
+            atomic::{AtomicBool, Ordering},
+        };
         let interrupted = Arc::new(AtomicBool::new(false));
         let flag = interrupted.clone();
         let mut ticks = 0u32;
-        self.conn.progress_handler(1_000, Some(move || {
-            ticks += 1;
-            let stop = ticks > 20_000 || expired();
-            if stop {
-                flag.store(true, Ordering::Relaxed);
-            }
-            stop
-        }))?;
+        self.conn.progress_handler(
+            1_000,
+            Some(move || {
+                ticks += 1;
+                let stop = ticks > 20_000 || expired();
+                if stop {
+                    flag.store(true, Ordering::Relaxed);
+                }
+                stop
+            }),
+        )?;
         self.read_budget.set(true);
         struct Reset<'a>(&'a AgentxDb);
         impl Drop for Reset<'_> {
@@ -383,7 +389,18 @@ impl AgentxDb {
     }
 
     fn from_connection(conn: Connection, db_path: &std::path::Path) -> Self {
-        Self { conn, db_path: db_path.to_path_buf(), db_inode: get_inode(db_path), post_commit: Default::default(), hook_mailbox_routes: Default::default(), observer_hints: None, indexed_subscriptions: false, indexed_ordinary_subscriptions: false, read_budget: Default::default(), poll_progress: Default::default() }
+        Self {
+            conn,
+            db_path: db_path.to_path_buf(),
+            db_inode: get_inode(db_path),
+            post_commit: Default::default(),
+            hook_mailbox_routes: Default::default(),
+            observer_hints: None,
+            indexed_subscriptions: false,
+            indexed_ordinary_subscriptions: false,
+            read_budget: Default::default(),
+            poll_progress: Default::default(),
+        }
     }
 
     /// Reconnect if the DB file was replaced (e.g., by agentx reset / schema bump).
