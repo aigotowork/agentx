@@ -259,12 +259,14 @@ mod tests {
         let module = module_path!().split_once("::").unwrap().1;
         let helper = format!("{module}::hold_running_binary");
         let mut child = Command::new(&target).args(["--exact", &helper, "--ignored", "--nocapture"]).env("AGENTX_TEST_HOLD_BINARY", "1").stdin(Stdio::piped()).stdout(Stdio::piped()).spawn().unwrap();
-        let stdout = std::io::BufReader::new(child.stdout.take().unwrap());
-        let held = stdout.lines().map_while(std::io::Result::ok).any(|line| line.contains("holding binary"));
+        let mut stdout = std::io::BufReader::new(child.stdout.take().unwrap());
+        let held = (&mut stdout).lines().map_while(std::io::Result::ok).any(|line| line.contains("holding binary"));
         let result = held.then(|| replace_binary(&staged, &target));
         // Releasing stdin allows the held test process to exit and its backup
         // to become deletable. Do this before assertions to avoid orphaning it.
         drop(child.stdin.take());
+        // Libtest still writes its result after the helper is released.
+        std::io::copy(&mut stdout, &mut std::io::sink()).unwrap();
         assert!(child.wait().unwrap().success());
         result.expect("running-executable fixture reached its hold point").unwrap();
         assert_eq!(std::fs::read(&target).unwrap(), b"replacement");
