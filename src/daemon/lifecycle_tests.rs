@@ -16,6 +16,9 @@ fn passive_missing_scope_reports_stopped_without_creating_anything() {
 #[test]
 fn passive_empty_scope_has_no_database_or_ownership_side_effects() {
     let directory = tempfile::tempdir().unwrap();
+    #[cfg(windows)]
+    super::super::windows::private_directory(directory.path()).unwrap();
+    #[cfg(not(windows))]
     crate::sys::fs::set_private_dir(directory.path()).unwrap();
     let result = status(directory.path(), directory.path()).unwrap();
     assert_eq!(result.state, State::Stopped);
