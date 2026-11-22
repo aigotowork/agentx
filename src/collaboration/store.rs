@@ -65,6 +65,31 @@ fn load(db: &AgentxDb, context: &RequestContext, project: &str, reference: &Work
     }
     Ok(work)
 }
+fn participant_directory_matcher(project: &str) -> impl Fn(&participants::ParticipantView) -> bool + '_ {
+    #[cfg(windows)]
+    let verified_child_spelling = std::cell::OnceCell::new();
+    move |record| {
+        if record.directory == project {
+            return true;
+        }
+        #[cfg(windows)]
+        {
+            use std::path::Path;
+            if record.origin_device_id.as_ref().is_some_and(|id| !id.is_empty()) {
+                return false;
+            }
+            // A local Provider can report the ordinary cwd given to its child
+            // process. Verify only that spelling of the selected project, at
+            // most once per read, and never resolve a record's arbitrary path.
+            let project = Path::new(project);
+            let child_directory = crate::shared::platform::child_process_path(project);
+            child_directory != project && child_directory.is_absolute() && Path::new(&record.directory) == child_directory && *verified_child_spelling.get_or_init(|| child_directory.canonicalize().is_ok_and(|canonical| canonical == project))
+        }
+        #[cfg(not(windows))]
+        false
+    }
+}
+
 fn participant_record(db: &AgentxDb, context: &RequestContext, participant: &ParticipantRef, project: &str) -> Outcome<participants::ParticipantView> {
     let record = match participants::handle(db, context, participants::Request::Record { name: participant.canonical_name.clone() })? {
         participants::Response::Record(Some(record)) => record,
@@ -73,7 +98,7 @@ fn participant_record(db: &AgentxDb, context: &RequestContext, participant: &Par
     if record.name != participant.canonical_name || record.created_at.to_bits() != participant.incarnation_bits {
         return Err(Failure::StaleReference.into());
     }
-    if record.directory != project || record.origin_device_id.as_ref().is_some_and(|id| !id.is_empty()) || matches!(record.status.as_str(), "inactive" | "stopped" | "killed") {
+    if record.origin_device_id.as_ref().is_some_and(|id| !id.is_empty()) || matches!(record.status.as_str(), "inactive" | "stopped" | "killed") || !participant_directory_matcher(project)(&record) {
         return Err(Failure::Forbidden.into());
     }
     Ok(record)
@@ -148,9 +173,10 @@ fn read_work(db: &AgentxDb, context: &RequestContext, generation: &str, project:
                 participants::Response::Records(rows) => rows,
                 _ => return Err(internal("unexpected participant list")),
             };
+            let in_project = participant_directory_matcher(project);
             let mut items: Vec<_> = records
                 .into_iter()
-                .filter(|r| r.directory == project && page.after.as_ref().is_none_or(|after| &r.name > after))
+                .filter(|record| page.after.as_ref().is_none_or(|after| &record.name > after) && in_project(record))
                 .map(|record| {
                     let participant = ParticipantRef { canonical_name: record.name.clone(), incarnation_bits: record.created_at.to_bits() };
                     let unavailable = if record.origin_device_id.as_ref().is_some_and(|s| !s.is_empty()) {

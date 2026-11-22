@@ -253,6 +253,25 @@ fn exact_incarnation_generation_project_and_capacity_are_native_guards() {
     assert!(f.db.message_acceptance(&f.generation, "work-message-capacity").unwrap().is_none());
 }
 
+#[cfg(windows)]
+#[test]
+fn local_provider_cwd_matches_the_canonical_project_for_candidates_and_assignment() {
+    let f = Fixture::new();
+    let project = std::path::Path::new(&f.project);
+    let provider_cwd = crate::shared::platform::child_process_path(project);
+    assert_ne!(provider_cwd, project, "fixture must exercise distinct Windows spellings");
+    let fields = serde_json::json!({"directory":provider_cwd});
+    f.db.update_instance_fields("impl", fields.as_object().unwrap()).unwrap();
+    f.db.save_instance_named("remote", serde_json::json!({"directory":provider_cwd,"origin_device_id":"another-host","created_at":3.0}).as_object().unwrap()).unwrap();
+    let request = Request::Read { generation: f.generation.clone(), project: f.project.clone(), read: Read::Candidates(Page { after: None, limit: 10 }) };
+    let Response::Read(ReadValue::Candidates { items, .. }) = handle(&f.db, &f.context, request).unwrap() else { panic!("expected candidates") };
+    assert!(items.iter().any(|candidate| candidate.participant == participant("impl", 1.0)));
+    assert!(!items.iter().any(|candidate| candidate.participant.canonical_name == "remote"));
+    let created = f.create();
+    assert_eq!(created.reference.project, f.project);
+    assert_eq!(created.reference.generation, f.generation);
+}
+
 #[test]
 fn managed_reset_removes_work_receipts_and_changes_generation_fence() {
     let f = Fixture::new();
