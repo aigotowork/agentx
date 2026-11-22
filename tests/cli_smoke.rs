@@ -230,7 +230,8 @@ fn status_json_in_fresh_dir() {
     let (code, stdout, _stderr) = h.run(["status", "--json"]);
     assert_eq!(code, 0);
     let v: serde_json::Value = serde_json::from_str(&stdout).unwrap_or_else(|e| panic!("status json: {e}\n{stdout}"));
-    assert_eq!(v["agentx_dir"].as_str(), Some(h.path().to_str().unwrap()));
+    let scope = h.path().canonicalize().expect("canonical fixture scope");
+    assert_eq!(v["agentx_dir"].as_str(), scope.to_str());
     assert_eq!(v["instances"]["total"], 0);
 }
 
@@ -240,7 +241,7 @@ fn status_clean_logs_displays_path() {
     let (code, stdout, _stderr) = h.run(["status"]);
     assert_eq!(code, 0);
     assert!(stdout.contains("logs:      ✓ ok"));
-    let log_path = h.path().join(".tmp/logs/agentx.log");
+    let log_path = h.path().canonicalize().expect("canonical fixture scope").join(".tmp").join("logs").join("agentx.log");
     assert!(stdout.contains(&log_path.display().to_string()), "stdout should contain log path: {stdout}");
 }
 
