@@ -197,12 +197,21 @@ jobs:
             else
               sudo apt-get update
               sudo apt-get install --yes --no-install-recommends mosquitto
+              # The Ubuntu package cannot read config from the runner temp directory.
+              # Keep this file outside conf.d so the system broker never includes it.
+              sudo install -m 0644 "$config" /etc/mosquitto/agentx-ci-loopback.conf
+              config=/etc/mosquitto/agentx-ci-loopback.conf
               broker=mosquitto
             fi
             log="$fixture_dir/broker.log"
             "$broker" -c "$config" </dev/null >"$log" 2>&1 &
             broker_pid=$!
-            trap 'kill "$broker_pid" 2>/dev/null || true; wait "$broker_pid" 2>/dev/null || true' EXIT
+            cleanup_broker() {
+              kill "$broker_pid" 2>/dev/null || true
+              wait "$broker_pid" 2>/dev/null || true
+              if [[ "$RUNNER_OS" != Windows ]]; then sudo rm -f -- "$config"; fi
+            }
+            trap cleanup_broker EXIT
             for _ in {1..10}; do
               if ! kill -0 "$broker_pid" 2>/dev/null; then break; fi
               if node -e 'const s = require("node:net").connect(Number(process.argv[1]), "127.0.0.1"); s.setTimeout(1000, () => s.destroy(new Error("connect timeout"))); s.on("connect", () => s.destroy());' "$port" 2>/dev/null; then
