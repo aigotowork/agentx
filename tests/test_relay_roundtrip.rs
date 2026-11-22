@@ -541,7 +541,7 @@ fn try_remote_launch_claude_headless(agentx_dir: &str, target_device: &str) -> R
     // launched Claude on agentx's detached PTY runner, preserving term screen /
     // inject coverage without requiring tmux or another terminal emulator.
     let launch_dir = std::env::temp_dir().to_string_lossy().replace('\\', "/");
-    let cmd = format!("1 claude --device {target_device} --headless --dir {} --go", shell_words::quote(&launch_dir));
+    let cmd = format!("launch --tool claude --device {target_device} --headless --dir {} --go", shell_words::quote(&launch_dir));
     let out = agentx_with_dir(&cmd, agentx_dir);
     if !out.status.success() {
         return Err(format!("agentx {cmd}\nstdout: {}\nstderr: {}", String::from_utf8_lossy(&out.stdout), String::from_utf8_lossy(&out.stderr),));
