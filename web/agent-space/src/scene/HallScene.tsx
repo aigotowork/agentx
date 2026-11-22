@@ -23,7 +23,7 @@ export type { HallProp, HallPropAnchor } from "./runtime/contracts";
 interface Props {
   debugControls?: SceneDebugControls;
   studioSample?: boolean;
-  human?: AgentSpaceSupply["human"]; humanOpen?: boolean; onHuman(): void;
+  human?: AgentSpaceSupply["human"]; hideHumanMailbox?: boolean; humanOpen?: boolean; onHuman(): void;
   messages?: readonly SceneMessage[];
   scene: Scene; camera: Camera; viewport: Viewport; visibleKeys: ReadonlySet<string>; paused: boolean;
   selected?: { key: string; point: Point }; props: readonly HallPropAnchor[];
@@ -154,8 +154,8 @@ export function HallScene(props: Props) {
       onPointerUp={endPan} onPointerCancel={endPan} onLostPointerCapture={endPan} />
     {studio && artStatus !== "ready" && <div className="studio-art-notice" role={artStatus === "error" ? "alert" : "status"}>{artStatus === "error" ? "工作室画面未加载" : "正在打开工作室…"}</div>}
     {(!studio || hasArt) && <SceneObjectLayer>
-      <FactButton className="office-human" data-scene-object-id={objectId("human", "$human:bigboss")} data-hall-object="human:bigboss" style={humanPosition} onClick={props.onHuman}
-        aria-label={props.studioSample ? mailbox : "@bigboss 人类通信端"} facts={humanFacts}><span>{mailbox}{!props.studioSample && props.human?.unhandledCount !== undefined ? ` · ${props.human.unhandledCount}` : ""}</span></FactButton>
+      {!props.hideHumanMailbox && <FactButton className="office-human" data-scene-object-id={objectId("human", "$human:bigboss")} data-hall-object="human:bigboss" style={humanPosition} onClick={props.onHuman}
+        aria-label={props.studioSample ? mailbox : "@bigboss 人类通信端"} facts={humanFacts}><span>{mailbox}{!props.studioSample && props.human?.unhandledCount !== undefined ? ` · ${props.human.unhandledCount}` : ""}</span></FactButton>}
       {props.scene.rooms.map(room => <span className="hall-room-name" data-room-key={room.key} key={room.key}
         style={coordinates(worldToScreen({ x: room.origin.x + 16, y: room.origin.y - 8 }, props.camera))}>{room.title}</span>)}
       {props.props.map(item => <button type="button" className="office-prop" key={`${item.id}:${item.roomKey ?? `${item.x}:${item.y}`}`}

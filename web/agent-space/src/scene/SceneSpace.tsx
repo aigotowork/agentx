@@ -19,7 +19,7 @@ export interface SceneMemory { camera: Camera; viewport: Viewport; scope: string
 interface Props {
   memory: { current: SceneMemory | null };
   layoutMemory: HallLayoutMemory; population?: PopulationSnapshot; identityScope: string;
-  human?: AgentSpaceSupply["human"]; onHumanNavigate?(id: string): void;
+  human?: AgentSpaceSupply["human"]; hideHumanMailbox?: boolean; onHumanNavigate?(id: string): void;
   messages?: readonly SceneMessage[];
   agents: readonly AgentResource[]; names: ReadonlyMap<string, string>; visibleKeys: ReadonlySet<string>;
   selectedId: string | null; reading: boolean; reader: ReactNode; directory: ReactNode;
@@ -37,7 +37,7 @@ export function SceneSpace(props: Props) {
   const [expanded, setExpanded] = useState(props.memory.current?.expanded ?? false), [paused, setPaused] = useState(props.memory.current?.paused ?? false);
   const [roomLights, setRoomLights] = useState<RoomLights>(() => props.memory.current?.roomLights ?? {});
   function toggleRoomLight(key: string) { setRoomLights(lights => ({ ...lights, [key]: !roomIsLit(lights, key) })); }
-  const directory = props.panel === 'directory', humanOpen = props.panel === 'mailbox';
+  const directory = props.panel === 'directory', humanOpen = !props.hideHumanMailbox && props.panel === 'mailbox';
   const setDirectory = (open: boolean) => props.onPanel(open ? 'directory' : '');
   const setHumanOpen = (open: boolean) => props.onPanel(open ? 'mailbox' : '');
   const commands = useAgentCommands(), directoryRoot = useRef<HTMLElement>(null);
@@ -131,7 +131,7 @@ export function SceneSpace(props: Props) {
   const readerAnchor = worldToScreen(point, camera);
   const empty = props.visibleKeys.size === 0;
   const debugControls = { zoom, panorama, pause: setPaused };
-  return <div ref={stage} className="space-scene-stage"><HallScene studioSample={props.studioSample} humanOpen={humanOpen} debugControls={debugControls} human={props.human} onHuman={() => setHumanOpen(!humanOpen)} messages={props.messages} scene={scene} camera={camera} viewport={viewport} visibleKeys={props.visibleKeys} paused={paused} selected={selected} props={anchors} roomLights={roomLights} onRoomLight={toggleRoomLight} onActor={select} onActorContext={(actor, anchor) => commands?.menu(actor.resource, anchor)} onProp={props.onCabinet} onPan={pan} />
+  return <div ref={stage} className="space-scene-stage"><HallScene studioSample={props.studioSample} humanOpen={humanOpen} debugControls={debugControls} human={props.human} hideHumanMailbox={props.hideHumanMailbox} onHuman={() => { if (!props.hideHumanMailbox) setHumanOpen(!humanOpen); }} messages={props.messages} scene={scene} camera={camera} viewport={viewport} visibleKeys={props.visibleKeys} paused={paused} selected={selected} props={anchors} roomLights={roomLights} onRoomLight={toggleRoomLight} onActor={select} onActorContext={(actor, anchor) => commands?.menu(actor.resource, anchor)} onProp={props.onCabinet} onPan={pan} />
     {humanOpen && <HumanMailbox feed={props.human} onClose={closeHuman} onNavigate={props.onHumanNavigate} />}
     <SceneControls paused={paused} directory={directory} onZoom={zoom} onPanorama={panorama} onPause={() => setPaused(value => !value)} onDirectory={() => setDirectory(!directory)} />
     {props.showEmpty !== false && empty && !props.reading && !directory && <div className={props.studio && !scene.actors.length ? "studio-empty-room" : "scene-empty"}>{props.studio && !scene.actors.length ? <span role="status">暂无成员</span> : <><span>暂无成员或无匹配</span><button type="button" onClick={props.onReset}>清除筛选</button></>}</div>}

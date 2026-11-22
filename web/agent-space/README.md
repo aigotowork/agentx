@@ -93,3 +93,14 @@ Space 的 canonical UIUX 资源现由 [uiux/README.md](uiux/README.md) 维护：
 ### Production inspection asset packaging
 
 The [DancingAI importer](scripts/vendor-dancingai.mjs) removes only the final inline source map from the browser script, preserving runtime code and embedded legal notices. Production, static and native Space builds copy the pinned script unchanged; [the packaging check](scripts/production-assets.mjs) verifies its hash and records it in `tools/dancingai/production.json`. The source inspection builder still generates maps for Agent Space itself. To debug DancingAI with its own map, build the recorded upstream version separately. Native limits remain 8 MiB per file and 32 MiB per bundle.
+
+## 云端 Space
+
+从部署控制台 `/deployment` 中选定 Scope 后进入云端 Space；也可直接打开同一部署的 `/scopes/{id}/space/`。打开后选择访问方式并输入对应令牌。令牌仅用于当前页面的同源请求；重新打开页面，需要再次连接。场景和名册打开同一个精确实例；从已选实例复制地址可保留主机、名称、实例标识与 Scope 代次。
+
+| 令牌 | 可用功能 |
+| --- | --- |
+| 管理员 | 查看注册主机和 Agent，在「主机」中查阅工作区及角色目录、启动 Agent，在实例详情中精确停止 Agent。提交后可在「回执」中按原请求 ID 查询。 |
+| Scope | 查看注册清单与精确实例的已接收云端消息，可继续读较早记录。浏览器不发送消息；云端记录不代表 Provider 对话或已送达。 |
+
+界面上的主机心跳反映云端注册连接；主机是否能接收启动和停止操作由其管理租约决定。接口与权限细节见 [Cloud Space wire](../../.controller/cloud-space/wire.md)。

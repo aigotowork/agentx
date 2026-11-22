@@ -51,6 +51,7 @@ export function useCursor() {
   const [history, setHistory] = useState<(string | undefined)[]>([undefined]);
   return {
     after: history.at(-1), index: history.length - 1,
+    reset: () => setHistory([undefined]),
     back: () => setHistory(items => items.length > 1 ? items.slice(0, -1) : items),
     next: (cursor: string) => setHistory(items => items.at(-1) !== cursor ? [...items, cursor] : items),
   };
