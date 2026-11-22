@@ -119,8 +119,8 @@ fn timeout_native_result_and_failed_write_remain_three_independent_facts() {
 fn ordinary_long_scope_request_retains_full_lifecycle_and_configuration() {
     use crate::observability::configuration::{ConfigCaptureResult, ConfigSnapshotRef, ConfigStage, InvocationCaptureRef};
 
-    // Same scope shape as the real detached LAN demonstration, without touching disk.
-    let scope = ScopeRef::from_canonical_scope(std::path::PathBuf::from("/home/long/.local/state/agentx-observability-demo/data")).unwrap();
+    // Keep the nested demonstration scope absolute on every host, without touching disk.
+    let scope = ScopeRef::from_canonical_scope(std::env::temp_dir().join("state/agentx-observability-demo/data")).unwrap();
     let daemon = DaemonRef::from_lease(scope, uuid::Uuid::new_v4().to_string()).unwrap();
     let registry = RuntimeRegistry::new(daemon.clone(), ObservationClock::new(), None).unwrap();
     let epoch = ObservationEpoch::from_committed_generation(daemon.clone(), uuid::Uuid::new_v4().to_string()).unwrap();
