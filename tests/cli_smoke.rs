@@ -874,6 +874,13 @@ fn run_cursor_hook(h: &Agentx, hook: &str, process_id: &str, payload: &serde_jso
     serde_json::from_str(stdout.trim()).unwrap_or_else(|e| panic!("{hook} json: {e}\nstdout={stdout}"))
 }
 
+/// Simulate the provider-owned registration prerequisite of native hooks.
+fn start_provider_process(h: &Agentx, tool: &str, process_id: &str) -> String {
+    let output = h.cmd().arg("start").env("AGENTX_PROCESS_ID", process_id).env("AGENTX_TOOL", tool).output().expect("failed to run agentx start");
+    assert!(output.status.success(), "{tool} registration failed: {}", String::from_utf8_lossy(&output.stderr));
+    parse_agentx_marker(&String::from_utf8_lossy(&output.stdout)).expect("no [agentx:NAME] marker")
+}
+
 /// End-to-end cursor-agent native hook lifecycle over JSON-on-stdin.
 ///
 /// Mirrors `antigravity_e2e_hook_dispatch`, but exercises cursor's real payload
@@ -889,12 +896,7 @@ fn cursor_e2e_hook_dispatch() {
     let pid = "pid-cur-123";
     let session_id = "sess-cur-1";
 
-    // Register a process binding so the hooks can resolve an instance.
-    let mut start_cmd = h.cmd();
-    start_cmd.arg("start");
-    start_cmd.env("AGENTX_PROCESS_ID", pid);
-    let start_out = start_cmd.output().expect("failed to run agentx start");
-    let me = support::parse_agentx_marker(&String::from_utf8_lossy(&start_out.stdout)).expect("no [agentx:NAME] marker");
+    let me = start_provider_process(&h, "cursor", pid);
 
     // 1. sessionStart binds the conversation to the active instance. Cursor reads
     //    the id from `conversation_id` (snake_case, per the docs' common schema)
@@ -931,7 +933,8 @@ fn cursor_e2e_hook_dispatch() {
             "prompt": "do a thing",
         }),
     );
-    assert_eq!(before_submit, serde_json::json!({ "continue": true }));
+    assert_eq!(before_submit["continue"], true);
+    assert!(before_submit["additional_context"].is_string(), "{before_submit}");
 
     let (code, stdout, _) = h.run(["list", &me, "--json"]);
     assert_eq!(code, 0);
@@ -992,12 +995,7 @@ fn copilot_e2e_hook_dispatch() {
     let pid = "pid-cop-123";
     let session_id = "sess-cop-1";
 
-    // Register a process binding so the hooks can resolve an instance.
-    let mut start_cmd = h.cmd();
-    start_cmd.arg("start");
-    start_cmd.env("AGENTX_PROCESS_ID", pid);
-    let start_out = start_cmd.output().expect("failed to run agentx start");
-    let me = support::parse_agentx_marker(&String::from_utf8_lossy(&start_out.stdout)).expect("no [agentx:NAME] marker");
+    let me = start_provider_process(&h, "copilot", pid);
 
     // 1. SessionStart binds the session to the active instance.
     let _ = run_cursor_hook(
@@ -1017,7 +1015,7 @@ fn copilot_e2e_hook_dispatch() {
     let v: serde_json::Value = serde_json::from_str(&stdout).expect("list json");
     assert_eq!(v["session_id"].as_str(), Some(session_id));
 
-    // 2. UserPromptSubmit marks the instance active and returns an empty object.
+    // 2. UserPromptSubmit marks the instance active and refreshes context.
     let prompt_submit = run_cursor_hook(
         &h,
         "copilot-userpromptsubmit",
@@ -1028,7 +1026,7 @@ fn copilot_e2e_hook_dispatch() {
             "prompt": "do a thing",
         }),
     );
-    assert_eq!(prompt_submit, serde_json::json!({}));
+    assert!(prompt_submit["additionalContext"].is_string(), "{prompt_submit}");
 
     let (code, stdout, _) = h.run(["list", &me, "--json"]);
     assert_eq!(code, 0);
@@ -1106,13 +1104,6 @@ fn qoder_e2e_hook_dispatch() {
     let session_id = "sess-qod-1";
     let transcript_path = "/home/u/.qoder/projects/p/sess-qod-1.jsonl";
 
-    let mut start_cmd = h.cmd();
-    start_cmd.arg("start");
-    start_cmd.env("AGENTX_PROCESS_ID", pid);
-    start_cmd.env("QODER_CLI", "1");
-    let start_out = start_cmd.output().expect("failed to run agentx start");
-    let me = support::parse_agentx_marker(&String::from_utf8_lossy(&start_out.stdout)).expect("no [agentx:NAME] marker");
-
     // 1. UserPromptSubmit with no prior SessionStart (untrusted folder): binds
     //    lazily and carries the bootstrap.
     let first = run_qoder_hook(
@@ -1128,9 +1119,11 @@ fn qoder_e2e_hook_dispatch() {
         }),
     );
     assert_eq!(first["hookSpecificOutput"]["hookEventName"], "UserPromptSubmit", "{first}");
-    let (code, stdout, stderr) = h.run(["list", &me, "--json"]);
+    let (code, stdout, stderr) = h.run(["list", "--all", "--json"]);
     assert_eq!(code, 0, "stderr={stderr}");
-    let v: serde_json::Value = serde_json::from_str(&stdout).expect("list json");
+    let rows: Vec<serde_json::Value> = serde_json::from_str(&stdout).expect("list json");
+    let [v] = rows.as_slice() else { panic!("expected one lazily registered Qoder participant: {stdout}") };
+    let me = v["name"].as_str().expect("Qoder participant name");
     assert_eq!(v["session_id"].as_str(), Some(session_id));
     assert_eq!(v["status"].as_str(), Some("active"));
 
@@ -1192,16 +1185,16 @@ fn qoder_e2e_hook_dispatch() {
     // 5. With nothing pending, Stop goes listening and writes nothing.
     let stop = run_qoder_hook(&h, "qoder-stop", pid, &serde_json::json!({ "session_id": session_id, "stop_hook_active": true }));
     assert_eq!(stop, serde_json::json!({}));
-    let (_, stdout, _) = h.run(["list", &me, "--json"]);
+    let (_, stdout, _) = h.run(["list", me, "--json"]);
     let v: serde_json::Value = serde_json::from_str(&stdout).expect("list json");
     assert_eq!(v["status"].as_str(), Some("listening"));
 
     // 6. SessionEnd for the bound session removes the instance; `clear` does not.
     let _ = run_qoder_hook(&h, "qoder-sessionend", pid, &serde_json::json!({ "session_id": session_id, "reason": "clear" }));
-    let (code, _, _) = h.run(["list", &me, "--json"]);
+    let (code, _, _) = h.run(["list", me, "--json"]);
     assert_eq!(code, 0, "clear must not end the instance");
     let _ = run_qoder_hook(&h, "qoder-sessionend", pid, &serde_json::json!({ "session_id": session_id, "reason": "other" }));
-    let (code, _, _) = h.run(["list", &me, "--json"]);
+    let (code, _, _) = h.run(["list", me, "--json"]);
     assert_ne!(code, 0, "SessionEnd for the bound session ends the instance");
 }
 
@@ -1233,12 +1226,7 @@ fn pi_e2e_hook_dispatch() {
     let pid = "pid-pi-123";
     let session_id = "sess-pi-1";
 
-    // Register a process binding so pi-start can resolve an instance.
-    let mut start_cmd = h.cmd();
-    start_cmd.arg("start");
-    start_cmd.env("AGENTX_PROCESS_ID", pid);
-    let start_out = start_cmd.output().expect("failed to run agentx start");
-    let me = support::parse_agentx_marker(&String::from_utf8_lossy(&start_out.stdout)).expect("no [agentx:NAME] marker");
+    let me = start_provider_process(&h, "pi", pid);
 
     // 1. pi-start binds the session and returns bootstrap context to the plugin.
     let cwd = h.root.path().to_string_lossy().to_string();
@@ -1288,7 +1276,10 @@ fn pi_e2e_hook_dispatch() {
     let ping = batch["messages"].as_array().and_then(|items| items.iter().find(|m| m["message"] == "ping")).unwrap_or_else(|| panic!("pi-read should return pending ping: {batch}"));
     let ping_id = ping["event_id"].as_i64().expect("event_id").to_string();
 
-    let ack = run_argv_hook(&h, "pi-read", Some(pid), &["--name", &me, "--ack", "--up-to", &ping_id]);
+    let receipt = batch["receipt"].to_string();
+    let no_receipt = run_argv_hook(&h, "pi-read", Some(pid), &["--name", &me, "--ack", "--up-to", &ping_id]);
+    assert!(no_receipt["error"].as_str().is_some_and(|error| error.contains("--receipt")), "{no_receipt}");
+    let ack = run_argv_hook(&h, "pi-read", Some(pid), &["--name", &me, "--ack", "--up-to", &ping_id, "--receipt", &receipt]);
     assert_eq!(ack["acked_to"].to_string(), ping_id);
     let check = run_argv_hook(&h, "pi-read", Some(pid), &["--name", &me, "--check"]);
     assert_eq!(check, serde_json::json!(false));
@@ -1617,8 +1608,10 @@ fn config_reports_file_parse_errors_in_get_and_list_modes() {
     std::fs::write(h.agentx_dir.join("config.toml"), "timeout = [broken\n").unwrap();
     for args in [vec!["config", "timeout"], vec!["config", "terminal"], vec!["config", "dev_root"], vec!["config"], vec!["config", "--json"]] {
         let (code, stdout, stderr) = h.run(args);
-        assert_eq!(code, 0, "{stderr}");
-        assert!(stderr.contains("Invalid config.toml"), "stdout={stdout} stderr={stderr}");
+        assert_eq!(code, 1, "{stderr}");
+        assert!(stdout.is_empty(), "{stdout}");
+        assert!(stderr.contains("environment settings contain invalid TOML") && stderr.contains("config.toml"), "{stderr}");
+        assert!(!stderr.contains("[broken"), "parser diagnostic leaked the config value: {stderr}");
     }
 }
 
@@ -1715,11 +1708,11 @@ fn events_follow_rejects_conflicting_flags() {
 #[test]
 fn events_follow_exits_on_query_error() {
     let h = Agentx::new();
-    // An unbound `?` passes prepare but fails at query time; follow must
-    // report it instead of polling forever.
-    let (code, _, stderr) = h.run(["events", "--follow", "--sql", "type = ?"]);
+    // The native predicate guard rejects unbound parameters before following.
+    let (code, stdout, stderr) = h.run(["events", "--follow", "--sql", "type = ?"]);
     assert_eq!(code, 2, "stderr={stderr}");
-    assert!(stderr.contains("SQL"), "stderr={stderr}");
+    assert!(stdout.is_empty(), "{stdout}");
+    assert!(stderr.contains("cannot contain unbound parameters"), "stderr={stderr}");
 }
 
 #[test]
