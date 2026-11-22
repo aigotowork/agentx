@@ -30,6 +30,12 @@ jobs:
         if: inputs.release_tag == ''
       - run: npm test --prefix packages/agentx-client
         if: inputs.release_tag == ''
+      - name: Exercise scoped Space HTTP and browser operations
+        if: inputs.release_tag == ''
+        run: |
+          python3 tests/cloud_scope/acceptance.py --suite space --candidate target/release/agentx --evidence "$RUNNER_TEMP/cloud-space-http"
+          node web/agent-space/build.mjs "$RUNNER_TEMP/cloud-space-web"
+          node web/agent-space/tests/cloud-space.browser.mjs "$RUNNER_TEMP/cloud-space-web"
       - run: bash deploy/build-image.sh
         if: inputs.release_tag == ''
       - name: Load the published release archive
