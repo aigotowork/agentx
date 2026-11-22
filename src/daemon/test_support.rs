@@ -17,7 +17,7 @@ pub(crate) struct TestDaemon {
 
 impl TestDaemon {
     pub(crate) fn start(scope_path: &Path, database_path: &Path) -> Self {
-        assert!(scope_path.starts_with(std::env::temp_dir()), "fixture scope must be disposable");
+        assert!(crate::paths::is_test_temp_path(scope_path), "fixture scope must be disposable");
         let scope = super::DaemonScope::prepare(scope_path).unwrap();
         let daemon_scope = scope.clone();
         let stop = Arc::new(AtomicBool::new(false));

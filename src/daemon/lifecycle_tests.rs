@@ -16,11 +16,7 @@ fn passive_missing_scope_reports_stopped_without_creating_anything() {
 #[test]
 fn passive_empty_scope_has_no_database_or_ownership_side_effects() {
     let directory = tempfile::tempdir().unwrap();
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(directory.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
-    }
+    crate::sys::fs::set_private_dir(directory.path()).unwrap();
     let result = status(directory.path(), directory.path()).unwrap();
     assert_eq!(result.state, State::Stopped);
     assert!(!directory.path().join(".daemon").exists());

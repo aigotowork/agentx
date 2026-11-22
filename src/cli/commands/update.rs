@@ -255,19 +255,18 @@ mod tests {
         let staged = tmp.path().join("staged.exe");
         std::fs::copy(std::env::current_exe().unwrap(), &target).unwrap();
         std::fs::write(&staged, b"replacement").unwrap();
-        let mut child = Command::new(&target).args(["--exact", "commands::update::tests::hold_running_binary", "--ignored", "--nocapture"]).env("AGENTX_TEST_HOLD_BINARY", "1").stdin(Stdio::piped()).stdout(Stdio::piped()).spawn().unwrap();
-        let mut stdout = std::io::BufReader::new(child.stdout.take().unwrap());
-        for line in (&mut stdout).lines() {
-            if line.unwrap().contains("holding binary") {
-                break;
-            }
-        }
-        let result = replace_binary(&staged, &target);
+        // Libtest uses the full module path inside the crate for exact names.
+        let module = module_path!().split_once("::").unwrap().1;
+        let helper = format!("{module}::hold_running_binary");
+        let mut child = Command::new(&target).args(["--exact", &helper, "--ignored", "--nocapture"]).env("AGENTX_TEST_HOLD_BINARY", "1").stdin(Stdio::piped()).stdout(Stdio::piped()).spawn().unwrap();
+        let stdout = std::io::BufReader::new(child.stdout.take().unwrap());
+        let held = stdout.lines().map_while(std::io::Result::ok).any(|line| line.contains("holding binary"));
+        let result = held.then(|| replace_binary(&staged, &target));
         // Releasing stdin allows the held test process to exit and its backup
         // to become deletable. Do this before assertions to avoid orphaning it.
         drop(child.stdin.take());
         assert!(child.wait().unwrap().success());
-        result.unwrap();
+        result.expect("running-executable fixture reached its hold point").unwrap();
         assert_eq!(std::fs::read(&target).unwrap(), b"replacement");
         let backup = std::fs::read_dir(tmp.path()).unwrap().flatten().find(|entry| entry.file_name().to_string_lossy().starts_with("agentx.exe.update-old-")).unwrap();
         std::fs::remove_file(backup.path()).unwrap();
