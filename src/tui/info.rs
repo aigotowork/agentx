@@ -100,7 +100,7 @@ impl Visit {
 impl Info {
     fn new(subject: Subject) -> Self {
         let label = subject.name.clone();
-        Self { render_cache: Default::default(), visit: Visit::new(*subject, Page::Agent, label), history: Vec::new(), cursor: 0, scroll: 0, starts: Vec::new(), max_scroll: 0, height: 1, reveal: false }
+        Self { render_cache: Default::default(), visit: Visit::new(subject, Page::Agent, label), history: Vec::new(), cursor: 0, scroll: 0, starts: Vec::new(), max_scroll: 0, height: 1, reveal: false }
     }
     pub(super) fn rows(&self) -> &[Row] {
         &self.visit.rows

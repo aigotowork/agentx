@@ -650,12 +650,12 @@ fn info_identity() {
     let child = replay.request("nova", |page| matches!(page, Page::Agent));
     assert_info_subject(&child, &original_nova);
     assert_ne!(child.1.identity().2, replay.app.data.agents[1].created_at.to_bits());
-    replay.info_reply("Load nova's exact parent link", child, vec![info_row("From", "@luna", Some(Link::Agent(Subject::from_agent(&parent))))]);
+    replay.info_reply("Load nova's exact parent link", child, vec![info_row("From", "@luna", Some(Link::Agent(Box::new(Subject::from_agent(&parent)))))]);
     replay.click_info_row("Follow the historical parent", "@luna");
     let parent_read = replay.request("luna", |page| matches!(page, Page::Agent));
     assert_info_subject(&parent_read, &parent);
     assert_ne!(parent_read.1.identity().2, replay.app.data.agents[0].created_at.to_bits());
-    replay.info_reply("Load the parent's exact child links", parent_read, vec![info_row("Child", "@nova", Some(Link::Agent(Subject::from_agent(&stopped_nova)))), info_row("Child", "@ravo", Some(Link::Agent(Subject::from_agent(&sibling))))]);
+    replay.info_reply("Load the parent's exact child links", parent_read, vec![info_row("Child", "@nova", Some(Link::Agent(Box::new(Subject::from_agent(&stopped_nova))))), info_row("Child", "@ravo", Some(Link::Agent(Box::new(Subject::from_agent(&sibling)))))]);
 
     let mut replacement = replay.app.data.clone();
     replacement.agents[2] = super::test_helpers::make_test_agent("ravo", 5.0);
