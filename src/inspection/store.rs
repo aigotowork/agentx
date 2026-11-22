@@ -105,11 +105,10 @@ fn snapshot(context: &RequestContext, mut ledger: Ledger) -> Response {
     let now = crate::shared::time::now_epoch_i64();
     if ledger.settings.enabled
         && let Some(last) = ledger.coverage.observed_at.or(ledger.settings.collected_from)
+        && now.saturating_sub(last) > COLLECTION_GAP_SECONDS
     {
-        if now.saturating_sub(last) > COLLECTION_GAP_SECONDS {
-            ledger.coverage.discovery_complete = false;
-            gap(&mut ledger, last, None, "collector_not_observed_recently");
-        }
+        ledger.coverage.discovery_complete = false;
+        gap(&mut ledger, last, None, "collector_not_observed_recently");
     }
     Response::Snapshot(Snapshot {
         generation: context.database_generation.clone(),
@@ -241,11 +240,10 @@ fn collect(db: &AgentxDb, context: &RequestContext, ledger: &mut Ledger, samples
         ledger.observations.push(Observation { id: uuid::Uuid::new_v4().to_string(), at: now, agent: reference, session_id: row.session_id.clone(), status, model_request: row.model_request.as_deref().cloned(), sample });
         if ledger.settings.recovery.enabled
             && let Some(episode) = recovery::episode(&row)
+            && recovery::eligible(db, &row, &ledger.settings.recovery, &episode, now).is_ok()
         {
-            if recovery::eligible(db, &row, &ledger.settings.recovery, &episode, now).is_ok() {
-                // Admission errors propagate: do not conceal storage/send failures as successful collection.
-                continuation(db, context, ledger, episode, now)?;
-            }
+            // Admission errors propagate: do not conceal storage/send failures as successful collection.
+            continuation(db, context, ledger, episode, now)?;
         }
         if row.model_request.as_ref().is_some_and(|s| s.phase == crate::agents::model_request::RequestPhase::Completed && s.error.is_none()) {
             for attempt in &mut ledger.attempts {
