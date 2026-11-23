@@ -27,6 +27,7 @@ export function operationIssue(receipt: Receipt): string | undefined {
 
 /** Own one mounted real supply; no operation is automatically submitted or repeated. */
 export class LiveSpace {
+  readonly kind = 'native';
   descriptor?: ReadonlyValue<Descriptor>;
   supply: AgentSpaceSupply = emptySupply();
   receipts = loadJournal();
@@ -542,7 +543,7 @@ export class LiveSpace {
     await this.submit('launch:new', prepared, () => scope.launch(prepared));
     this.checkLaunch(id);
   }
-  async launch(post: Post, prompt: string, title = '', directory = post.office === '$global' ? this.descriptor?.project ?? '' : post.office) {
+  async launch(post: Post, prompt: string, title = '', directory = post.office === '$global' ? this.descriptor?.project ?? '' : post.office, receiptKey = post.id) {
     const descriptor = this.descriptor, scope = this.domain?.scope;
     if (!scope || !descriptor || this.connection === 'reset' || !this.posts.some(current => current.id === post.id)) throw new Error('岗位已失效');
     const resolved = directory.trim();
@@ -553,7 +554,7 @@ export class LiveSpace {
     const id = requestId();
     const workspace = scope.workspace(post.office === '$global' ? 'global' : post.office);
     const prepared = workspace.prepareLaunch({ labels: {}, role: post.name, directory: resolved, tool: null, profile: null, prompt: prompt || null, title: title.trim() || null }, id);
-    await this.submit(post.id, prepared, () => workspace.launch(prepared));
+    await this.submit(receiptKey, prepared, () => workspace.launch(prepared));
     this.checkLaunch(id);
   }
   async preview(directory: string) {

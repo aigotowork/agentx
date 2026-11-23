@@ -133,6 +133,18 @@ pub(in crate::cloud) struct SendMessage {
     pub thread: Option<String>,
 }
 
+/// Submit an operator message to one exact Agent registration.
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub(in crate::cloud) struct SendHumanMessage {
+    pub generation: String,
+    #[schema(min_length = 1, max_length = 128)]
+    pub request_id: String,
+    pub to: AgentView,
+    /// Nonblank message text, at most 64 KiB of UTF-8.
+    pub body: String,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, ToSchema)]
 pub(in crate::cloud) struct MessageView {
     pub id: String,

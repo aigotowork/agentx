@@ -1,21 +1,9 @@
-/* Cloud mode inherits the Space token and artwork scope. The cloud classes are absent from native Space. */
+/* The admitted workbench uses the same styles as native Space. */
 @scope (.space-system) {
-  .office-workspace:has(.cloud-brand) { grid-template-rows: auto auto minmax(0, 1fr); }
-  .office-workspace:has(.cloud-brand) .space-overview:empty { display: none; }
-  .office-workspace:has(.cloud-brand):not(:has(.cloud-session)) { grid-template-rows: auto minmax(0, 1fr); }
-
-  .cloud-brand, .cloud-header-actions, .cloud-toolbar, .cloud-session, .cloud-filter, .cloud-host-facts,
-  .cloud-row-actions, .cloud-pager, .cloud-reader-heading, .cloud-read-bar, .cloud-message > header,
-  .cloud-admin-agent { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
-  .cloud-brand { flex-wrap: wrap; }
-  .cloud-brand h1 { font-size: var(--text-base); font-weight: var(--weight-semibold); white-space: nowrap; }
-  .cloud-brand code, .cloud-session code { color: var(--muted); overflow-wrap: anywhere; }
-  .cloud-header-actions { flex: none; }
-  .cloud-header-actions a { white-space: nowrap; }
-  .cloud-session { padding: var(--space-1) 0; gap: var(--space-3); flex-wrap: wrap; }
-  .cloud-session span, .cloud-note { color: var(--muted); }
-  .cloud-session code { margin-inline-start: auto; max-width: 100%; }
-
+  .office-workspace:has(.cloud-entry) { grid-template-rows: auto minmax(0, 1fr); }
+  .office-workspace:has(.cloud-entry) .space-overview:empty { display: none; }
+  .cloud-deployment-link { white-space: nowrap; }
+  .cloud-note { color: var(--muted); }
   .cloud-entry { height: 100%; overflow: auto; padding: var(--space-5) var(--space-3); }
   .cloud-connect { display: grid; gap: var(--space-3); max-width: 360px; margin: clamp(12px, 7vh, 64px) auto 0;
     padding: var(--space-5); background: var(--surface); border: var(--border) solid var(--line); border-radius: var(--radius);
@@ -25,107 +13,10 @@
   .cloud-connect label { display: grid; gap: var(--space-1); }
   .cloud-connect .cloud-primary { justify-self: start; min-width: 5rem; }
 
-  .cloud-workbench { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100%; min-width: 0; }
-  .cloud-toolbar { padding: var(--space-2) var(--space-3); justify-content: space-between; background: var(--surface);
-    border-bottom: var(--border) solid var(--line); }
-  .cloud-grid { display: grid; grid-template-columns: minmax(190px, 252px) minmax(0, 1fr); overflow: hidden; min-width: 0; }
-  .cloud-grid.cloud-with-reader { grid-template-columns: minmax(186px, 232px) minmax(0, 1fr) minmax(260px, 350px); }
-  .cloud-grid.cloud-list-view { grid-template-columns: minmax(240px, 38%) minmax(0, 1fr); background: var(--surface); }
-  .cloud-rail { display: grid; grid-template-rows: auto minmax(0, 1fr); border-inline-end: var(--border) solid var(--line);
-    background: var(--surface-subtle); min-height: 0; min-width: 0; }
-  .cloud-rail-nav { display: flex; padding-inline: var(--space-2); border-block-end: var(--border) solid var(--line); gap: var(--space-1); }
-  .cloud-rail-nav button { background: transparent; border: 0; border-radius: 0; border-block-end: 2px solid transparent; }
-  .cloud-rail-nav button[aria-pressed="true"] { color: var(--accent); border-block-end-color: var(--accent); font-weight: var(--weight-semibold); }
-  .cloud-rail-content { overflow: auto; min-width: 0; min-height: 0; }
-  .cloud-filter, .cloud-host-facts, .cloud-admin-agent { justify-content: space-between; flex-wrap: wrap; }
-  .cloud-filter { padding: var(--space-2) var(--space-3); border-block-end: var(--border) solid var(--line); }
-  .cloud-inventory, .cloud-messages { margin: 0; padding: 0; list-style: none; }
-  .cloud-inventory > li { border-block-end: var(--border) solid var(--line); }
-  .cloud-agent-row { display: grid; grid-template-columns: minmax(0,1fr); gap: var(--space-1); width: 100%;
-    background: transparent; text-align: start; border: 0; box-shadow: inset 3px 0 transparent; min-height: var(--touch); }
-  .office-workspace .cloud-agent-row { padding: var(--space-2) var(--space-3); border-radius: 0; }
-  .cloud-agent-row:hover, .cloud-agent-row[aria-pressed="true"] { background: var(--surface); }
-  .cloud-agent-row[aria-pressed="true"] { box-shadow: inset 3px 0 var(--accent); }
-  .cloud-agent-row :is(code, strong), .cloud-host-row :is(strong, time), .cloud-filter code { overflow-wrap: anywhere; }
-  .cloud-agent-row code, .cloud-host-row time { font-size: var(--text-xs); color: var(--muted); }
-  .cloud-host-row { display: grid; padding: var(--space-2) var(--space-3); gap: var(--space-1); }
-  .cloud-host-facts span { font-size: var(--text-xs); }
-  .cloud-host-facts span::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%;
-    background: var(--muted); margin-inline-end: var(--space-1); }
-  .cloud-host-facts span[data-online="true"]::before { background: var(--accent); }
-  .cloud-row-actions { flex-wrap: wrap; }
-  .cloud-row-actions button { font-size: var(--text-xs); }
-  .cloud-pager { justify-content: space-between; padding: var(--space-2) var(--space-3); }
-  .cloud-scene { position: relative; min-width: 0; min-height: 0; }
-  .cloud-reader { min-width: 0; overflow: auto; background: var(--surface); border-inline-start: var(--border) solid var(--line); }
-  .cloud-reader-heading { position: sticky; z-index: 1; top: 0; padding: var(--space-3); justify-content: space-between;
-    border-bottom: var(--border) solid var(--line); background: var(--surface); }
-  .cloud-reader-heading h2 { font-size: var(--text-base); }
-  .cloud-reader-heading :is(h2, code) { overflow-wrap: anywhere; }
-  .cloud-read-bar { padding: var(--space-2) var(--space-3); flex-wrap: wrap; justify-content: space-between; }
-  .cloud-read-bar span, .cloud-message > header, .cloud-message summary { font-size: var(--text-xs); color: var(--muted); }
-  .cloud-read-bar button { margin-inline-start: auto; }
-  .cloud-message { display: grid; gap: var(--space-2); padding: var(--space-3); border-block-end: var(--border) solid var(--line); }
-  .cloud-message > header { flex-wrap: wrap; }
-  .cloud-message time { margin-inline-start: auto; }
-  .cloud-message strong { color: var(--ink); overflow-wrap: anywhere; }
-  .cloud-direction { color: var(--accent); }
-  .cloud-message .markdown { line-height: 1.6; }
-  .cloud-message summary { cursor: pointer; }
-  .cloud-message dl, .cloud-control dl { margin: var(--space-2) 0 0; }
-  .cloud-facts div, .cloud-control dl > div { display: grid; grid-template-columns: 5.5em minmax(0, 1fr); gap: var(--space-2); }
-  .cloud-facts dd, .cloud-control dd { margin: 0; overflow-wrap: anywhere; }
-  .cloud-facts dt, .cloud-control dt { color: var(--muted); }
-  .cloud-older, .cloud-reader > .cloud-note { margin: var(--space-3); }
-  .cloud-admin-agent { align-items: flex-start; padding: var(--space-3); }
-  .cloud-empty, .cloud-reader-placeholder, .cloud-control .deployment-receipt-search { padding: var(--space-3); }
-  .cloud-reader-placeholder { align-self: center; justify-self: center; color: var(--muted); }
-  .cloud-workbench :is(time, code), .cloud-pager { font-variant-numeric: tabular-nums; }
-  .cloud-workbench :focus-visible, .cloud-connect :focus-visible, .cloud-header-actions :focus-visible {
-    outline: var(--focus-width) solid var(--accent); outline-offset: -2px;
-  }
-
-  /* Reuse the Deployment forms and behavior in the Space palette, without importing its console layout. */
-  .cloud-control .interaction-dialog { width: min(34rem, calc(100% - 24px)); max-height: calc(100dvh - 24px);
-    padding: 0; color: var(--ink); background: var(--surface); border: var(--border) solid var(--line);
-    border-radius: var(--radius); box-shadow: var(--shadow); }
-  .cloud-control .interaction-dialog::backdrop { background: rgb(22 25 22 / .54); }
-  .cloud-control .dialog-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-2);
-    padding: var(--space-3); border-bottom: var(--border) solid var(--line); }
-  .cloud-control .dialog-heading h2 { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-base); }
-  .cloud-control .dialog-heading p, .cloud-control code { overflow-wrap: anywhere; }
-  .cloud-control .dialog-heading svg { width: 16px; height: 16px; }
-  .cloud-control .dialog-body, .cloud-control .dialog-actions { padding: var(--space-3); }
-  .cloud-control .dialog-actions { border-top: var(--border) solid var(--line); }
-  .cloud-control :is(form, label, .deployment-write-note, .deployment-control-catalogue) { display: grid; gap: var(--space-2); }
-  .cloud-control .dialog-buttons, .cloud-control .deployment-control-identity { display: flex; gap: var(--space-2); flex-wrap: wrap; }
-  .cloud-control .deployment-control-identity label { flex: 1 1 8rem; }
-  .cloud-control .dialog-buttons { justify-content: flex-end; }
-  .cloud-connect .cloud-primary, .cloud-control .primary { background: var(--accent); color: var(--accent-ink, #fff); }
-  .cloud-danger, .cloud-control .danger, .cloud-control .deployment-error, .cloud-connect [role="alert"] { color: var(--office-failure); }
-
-  @media (max-width: 900px) {
-    .cloud-grid.cloud-with-reader:not(.cloud-list-view) { grid-template-columns: minmax(160px, 34%) minmax(0, 1fr); }
-    .cloud-with-reader:not(.cloud-list-view) .cloud-scene { display: none; }
-  }
+  .cloud-connect .cloud-primary { background: var(--accent); color: var(--accent-ink, #fff); }
+  .cloud-connect [role="alert"] { color: var(--office-failure); }
   @media (max-width: 620px) {
-    .office-workspace:has(.cloud-brand) .office-hud { flex-wrap: wrap; padding-block: var(--space-1); }
-    .cloud-header-actions { gap: var(--space-1); }
-    .cloud-session > span { flex-basis: 100%; }
-    .cloud-session { column-gap: var(--space-2); row-gap: var(--space-1); }
-    .cloud-session code { margin-inline-start: 0; font-size: var(--text-xs); }
-    .cloud-grid, .cloud-grid.cloud-list-view, .cloud-grid.cloud-with-reader:not(.cloud-list-view) {
-      display: flex; flex-direction: column; overflow: auto;
-    }
-    .cloud-rail { flex: none; border-inline-end: none; border-block-end: var(--border) solid var(--line); }
-    .cloud-rail-content { max-height: 30dvh; }
-    .cloud-scene { flex: 1 0 320px; }
-    .cloud-reader { flex: 1 0 auto; order: -1; border-inline-start: none; border-block-end: var(--border) solid var(--line); overflow: visible; }
-    .cloud-with-reader .cloud-rail { order: 1; }
-    .cloud-reader-placeholder { padding: var(--space-6); }
-    .cloud-workbench button:not(.office-actor), .cloud-header-actions button,
-    .cloud-connect :is(input, select, button), .cloud-header-actions > a { min-height: var(--touch); }
-    .cloud-header-actions > a { display: inline-flex; align-items: center; padding-inline: var(--space-1); }
-    .cloud-connect :is(input, select), .cloud-control :is(input, select, textarea) { font-size: 16px; }
+    .cloud-connect :is(input, select, button) { min-height: var(--touch); }
+    .cloud-connect :is(input, select) { font-size: 16px; }
   }
 }

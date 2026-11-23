@@ -33,10 +33,10 @@ export function Directory({ agents, selectedId, drafts, onSelect, onReset, scrol
     const state = HALL_STATE_LABEL[agent.state], signal = studio ? studioSignal(agent) : null;
     const label = studio ? studioSignalLabel(agent) : agent.attention ? "未读" : null;
     const status = label && label !== state ? `${state} · ${label}` : state;
-    const role = studio && agent.launchTitle ? agent.launchTitle : adoptedRoleLabel(agent.role);
-    return <button type="button" className="office-conversation-link hall-directory-person" key={agent.id} data-agent-key={agent.id} data-studio-signal={signal ?? undefined} aria-current={selectedId === agent.id ? "true" : undefined} aria-label={`${agent.title} · ${studio ? status : state}`} onClick={() => onSelect(agent.id)}>
+    const role = agent.ref.host ?? (studio && agent.launchTitle ? agent.launchTitle : adoptedRoleLabel(agent.role));
+    return <button type="button" className="office-conversation-link hall-directory-person" key={agent.id} data-agent-key={agent.id} data-studio-signal={signal ?? undefined} aria-current={selectedId === agent.id ? "true" : undefined} aria-label={`${agent.title} · ${agent.ref.host ? `${agent.ref.host} · ${agent.ref.incarnation}` : studio ? status : state}`} onClick={() => onSelect(agent.id)}>
       <AgentAvatar agent={agent} studio={studio} /><span className="hall-person-copy"><strong>{agent.title}</strong>
-        <span className="hall-person-preview"><small>{drafts[agent.id]?.trim() ? "[草稿] " : ""}{role} · {agent.ref.record === "stopped" ? "停止历史" : "当前实例"}</small><span className="hall-person-state" data-attention={signal === "attention" || agent.attention}>{status}</span></span>
+        <span className="hall-person-preview"><small>{drafts[agent.id]?.trim() ? "[草稿] " : ""}{role} · {agent.ref.host ? agent.ref.incarnation : agent.ref.record === "stopped" ? "停止历史" : "当前实例"}</small><span className="hall-person-state" data-attention={signal === "attention" || agent.attention}>{status}</span></span>
       </span>
     </button>;
   });

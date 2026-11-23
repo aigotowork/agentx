@@ -1,12 +1,12 @@
 import type { AgentResource, RosterCoverage } from '../offline/model';
-import type { LiveSpace } from './controller';
+import type { SpaceLive } from './workbench';
 
 /** @aiPurpose Show the active Office's observed subset and page recovery at its chooser.
  * @aiUsage Supply the published roster, never exact reader subjects; unconfigured pages do not get SDK controls.
  */
-export function SpaceReadStatus({ live, roster, rows }: { live: LiveSpace; roster?: RosterCoverage; rows: readonly AgentResource[] }) {
+export function SpaceReadStatus({ live, roster, rows }: { live: SpaceLive; roster?: RosterCoverage; rows: readonly AgentResource[] }) {
   const disabled = live.connection === 'reset';
-  const catalog = live.catalogError && <span className="space-read-status" role="status">办公室读取失败：{live.catalogError} <button type="button" disabled={disabled} onClick={live.retryCatalog}>重试办公室</button></span>;
+  const catalog = live.catalogError && <span className="space-read-status" role="status">{live.kind === 'cloud' ? '主机目录' : '办公室'}读取失败：{live.catalogError} <button type="button" disabled={disabled} onClick={live.retryCatalog}>重试办公室</button></span>;
   if (!roster) return catalog || null;
   const count = rows.filter(row => row.ref.record === 'current').length;
   const projected = roster.kind === 'global-agent-page';

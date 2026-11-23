@@ -1,8 +1,9 @@
 /** Copyable navigation values; no drafts, effects or camera memory. */
 import type { SpaceSnapshot } from '../offline/controller';
 import { findConversation, type AgentSpaceSupply, type RecordChannel } from '../offline/model';
-export interface RouteTarget { scope: string; generation: string; name: string; incarnation: string | null; stopped_event: string | null; record: 'current' | 'stopped' }
+export interface RouteTarget { scope: string; generation: string; host?: string; name: string; incarnation: string | null; stopped_event: string | null; record: 'current' | 'stopped' }
 export type SpaceRoute = Pick<SpaceSnapshot, 'workspaceId' | 'presentation' | 'officeView' | 'postId' | 'query' | 'state' | 'panel' | 'detail' | 'mail' | 'before'> & { inferOffice?: boolean; target: RouteTarget | null; channel: RecordChannel };
+export type NavigationCodec = { parse(search: string): ParsedRoute; search(search: string, route: SpaceRoute): string; normalize?(search: string, route: SpaceRoute): string };
 export type ParsedRoute = { route: SpaceRoute; issue: string };
 const owned = ['office', 'view', 'tab', 'post', 'q', 'state', 'scope', 'generation', 'agent', 'incarnation', 'stopped_event', 'record', 'channel', 'panel', 'detail', 'mail', 'before'];
 export const defaultRoute = (): SpaceRoute => ({ workspaceId: '', presentation: 'scene', officeView: 'members', postId: null, query: '', state: '', target: null, channel: 'messages', panel: '', detail: false, mail: 'pending', before: '' });
@@ -47,7 +48,7 @@ export function parseRoute(search: string): ParsedRoute {
 /** Snapshot exact supplied identity only while its reader is open. */
 export function routeFromState(state: SpaceSnapshot, supply: AgentSpaceSupply): SpaceRoute {
   const agent = state.reading ? findConversation(supply, state.selectedId) : undefined;
-  const target = agent ? { scope: agent.ref.scope, generation: agent.ref.generation, name: agent.name, incarnation: agent.ref.incarnation, stopped_event: agent.ref.stopped_event ?? null, record: agent.ref.record } : null;
+  const target = agent ? { scope: agent.ref.scope, generation: agent.ref.generation, ...(agent.ref.host === undefined ? {} : { host: agent.ref.host }), name: agent.name, incarnation: agent.ref.incarnation, stopped_event: agent.ref.stopped_event ?? null, record: agent.ref.record } : null;
   return { workspaceId: state.workspaceId, presentation: state.presentation, officeView: state.officeView, postId: state.officeView === 'posts' ? state.postId : null, query: state.query, state: state.state, target, channel: agent ? state.channels[agent.id] ?? 'messages' : 'messages', panel: state.presentation === 'scene' ? state.panel : '', detail: !!target && state.detail, mail: state.mail, before: state.before };
 }
 /** Replace only owned keys; preserve embedding/supply/host hints and fragment at the caller. */

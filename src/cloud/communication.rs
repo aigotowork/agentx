@@ -96,7 +96,7 @@ pub(super) fn payload<T>(input: Result<Json<T>, JsonRejection>) -> store::Result
     input.map(|Json(value)| value).map_err(|error| if error.status() == StatusCode::PAYLOAD_TOO_LARGE { Error::PayloadTooLarge } else { Error::Invalid("request body is not valid for this endpoint") })
 }
 
-fn query<T>(input: Result<Query<T>, QueryRejection>) -> store::Result<T> {
+pub(super) fn query<T>(input: Result<Query<T>, QueryRejection>) -> store::Result<T> {
     input.map(|Query(value)| value).map_err(|_| Error::Invalid("request query is not valid for this endpoint"))
 }
 
@@ -118,26 +118,30 @@ struct OperationPath {
     request_id: String,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy)]
 enum Access {
     Read,
     Write,
     WriteAndWake,
+    AdminRead,
+    AdminWriteAndWake,
 }
 
 async fn run<T: Send + 'static>(scope: ScopeContext, access: Access, action: impl FnOnce(&rusqlite::Connection, i64) -> store::Result<T> + Send + 'static) -> store::Result<T> {
+    let scope_bearer = !matches!(access, Access::AdminRead | Access::AdminWriteAndWake);
+    let write = !matches!(access, Access::Read | Access::AdminRead);
     let active = scope.clone();
     let result = tokio::task::spawn_blocking(move || {
-        let result = store::transaction(&scope.root, &scope.generation, access != Access::Read, || scope.valid(), action)?;
+        let result = store::transaction(&scope.root, &scope.generation, write, || !scope_bearer || scope.valid(), action)?;
         // Publish only after commit, even if the HTTP caller disconnected during dispatch.
-        if access == Access::WriteAndWake {
+        if matches!(access, Access::WriteAndWake | Access::AdminWriteAndWake) {
             scope.current.send_modify(|_| {});
         }
         Ok::<_, Error>(result)
     })
     .await
     .map_err(|_| Error::Worker)??;
-    if !active.valid() {
+    if scope_bearer && !active.valid() {
         return Err(Error::Credential);
     }
     Ok(result)
@@ -148,6 +152,20 @@ pub(super) fn fence(scope: &ScopeContext, generation: &str) -> store::Result<()>
         return Err(Error::Generation);
     }
     Ok(())
+}
+
+async fn message_history(scope: ScopeContext, access: Access, input: MessageHistoryQuery) -> store::Result<MessageHistoryPage> {
+    fence(&scope, &input.generation)?;
+    run(scope, access, move |conn, _| store::list_messages(conn, input)).await
+}
+
+pub(super) async fn admin_message_history(scope: ScopeContext, input: MessageHistoryQuery) -> store::Result<MessageHistoryPage> {
+    message_history(scope, Access::AdminRead, input).await
+}
+
+pub(super) async fn admin_send_human_message(scope: ScopeContext, input: SendHumanMessage) -> store::Result<MessageView> {
+    fence(&scope, &input.generation)?;
+    run(scope, Access::AdminWriteAndWake, move |conn, now| store::send_human_message(conn, now, input)).await
 }
 
 #[utoipa::path(get, path = "/descriptor", operation_id = "scopeDescribe", security(("scopeBearer" = [])), responses(
@@ -215,9 +233,7 @@ async fn retire_agent(Extension(scope): Extension<ScopeContext>, parts: Result<A
     (status = "default", body = ScopeError)
 ))]
 async fn list_messages(Extension(scope): Extension<ScopeContext>, input: Result<Query<MessageHistoryQuery>, QueryRejection>) -> store::Result<Json<MessageHistoryPage>> {
-    let input = query(input)?;
-    fence(&scope, &input.generation)?;
-    run(scope, Access::Read, move |conn, _| store::list_messages(conn, input)).await.map(Json)
+    message_history(scope, Access::Read, query(input)?).await.map(Json)
 }
 
 #[utoipa::path(post, path = "/messages", operation_id = "scopeSendMessage", request_body = SendMessage, security(("scopeBearer" = [])), responses(
@@ -338,5 +354,27 @@ mod tests {
         assert_eq!(schemas["MessageView"]["properties"]["created_at"]["format"], "int64");
         assert_eq!(schemas["InboxBatch"]["properties"]["next"]["type"], serde_json::json!(["string", "null"]));
         assert!(schemas["InboxBatch"]["required"].as_array().unwrap().contains(&serde_json::json!("next")));
+    }
+
+    #[test]
+    fn admin_openapi_projects_the_same_history_and_exact_human_send() {
+        let admin = super::super::admin::document();
+        let scope = document();
+        let route = &admin["paths"]["/api/v1/admin/scopes/{id}/messages"];
+        let query: Vec<_> = route["get"]["parameters"].as_array().unwrap().iter().filter(|param| param["in"] == "query").cloned().collect();
+        assert_eq!(query, *scope["paths"]["/messages"]["get"]["parameters"].as_array().unwrap());
+        assert_eq!(admin["security"], serde_json::json!([{ "adminBearer": [] }]));
+        assert_eq!(route["get"]["operationId"], "listAdminScopeMessages");
+        assert_eq!(route["post"]["operationId"], "sendAdminScopeMessage");
+        assert_eq!(route["get"]["responses"]["200"]["content"]["application/json"]["schema"]["$ref"], "#/components/schemas/MessageHistoryPage");
+        assert_eq!(route["post"]["responses"]["200"]["content"]["application/json"]["schema"]["$ref"], "#/components/schemas/MessageView");
+        assert_eq!(route["post"]["requestBody"]["content"]["application/json"]["schema"]["$ref"], "#/components/schemas/SendHumanMessage");
+        let schemas = &admin["components"]["schemas"];
+        for contract in ["AgentView", "MessageHistoryPage", "MessageView"] {
+            assert!(schemas[contract].is_object());
+            assert_eq!(schemas[contract], scope["components"]["schemas"][contract]);
+        }
+        assert_eq!(schemas["SendHumanMessage"]["properties"]["to"]["$ref"], "#/components/schemas/AgentView");
+        assert_eq!(schemas["SendHumanMessage"]["required"], serde_json::json!(["generation", "request_id", "to", "body"]));
     }
 }

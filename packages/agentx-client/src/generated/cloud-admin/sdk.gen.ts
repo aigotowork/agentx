@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client/index.js';
-import type { CreateAdminControlOperationData, CreateAdminControlOperationErrors, CreateAdminControlOperationResponses, GetAdminControlOperationData, GetAdminControlOperationErrors, GetAdminControlOperationResponses, GetAdminHostCapabilitiesData, GetAdminHostCapabilitiesErrors, GetAdminHostCapabilitiesResponses, GetAdminOverviewData, GetAdminOverviewErrors, GetAdminOverviewResponses, GetAdminScopeData, GetAdminScopeErrors, GetAdminScopeResponses, ListAdminScopeAgentsData, ListAdminScopeAgentsErrors, ListAdminScopeAgentsResponses, ListAdminScopeHostsData, ListAdminScopeHostsErrors, ListAdminScopeHostsResponses, ListAdminScopesData, ListAdminScopesErrors, ListAdminScopesResponses, PutAdminScopeData, PutAdminScopeErrors, PutAdminScopeResponses, RotateAdminScopeTokenData, RotateAdminScopeTokenErrors, RotateAdminScopeTokenResponses } from './types.gen.js';
+import type { CreateAdminControlOperationData, CreateAdminControlOperationErrors, CreateAdminControlOperationResponses, GetAdminControlOperationData, GetAdminControlOperationErrors, GetAdminControlOperationResponses, GetAdminHostCapabilitiesData, GetAdminHostCapabilitiesErrors, GetAdminHostCapabilitiesResponses, GetAdminOverviewData, GetAdminOverviewErrors, GetAdminOverviewResponses, GetAdminScopeData, GetAdminScopeErrors, GetAdminScopeResponses, ListAdminScopeAgentsData, ListAdminScopeAgentsErrors, ListAdminScopeAgentsResponses, ListAdminScopeHostsData, ListAdminScopeHostsErrors, ListAdminScopeHostsResponses, ListAdminScopeMessagesData, ListAdminScopeMessagesErrors, ListAdminScopeMessagesResponses, ListAdminScopesData, ListAdminScopesErrors, ListAdminScopesResponses, PutAdminScopeData, PutAdminScopeErrors, PutAdminScopeResponses, RotateAdminScopeTokenData, RotateAdminScopeTokenErrors, RotateAdminScopeTokenResponses, SendAdminScopeMessageData, SendAdminScopeMessageErrors, SendAdminScopeMessageResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -62,6 +62,22 @@ export const getAdminHostCapabilities = <ThrowOnError extends boolean = false>(o
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/admin/scopes/{id}/hosts/{host}/capabilities',
     ...options
+});
+
+export const listAdminScopeMessages = <ThrowOnError extends boolean = false>(options: Options<ListAdminScopeMessagesData, ThrowOnError>): RequestResult<ListAdminScopeMessagesResponses, ListAdminScopeMessagesErrors, ThrowOnError> => (options.client ?? client).get<ListAdminScopeMessagesResponses, ListAdminScopeMessagesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/admin/scopes/{id}/messages',
+    ...options
+});
+
+export const sendAdminScopeMessage = <ThrowOnError extends boolean = false>(options: Options<SendAdminScopeMessageData, ThrowOnError>): RequestResult<SendAdminScopeMessageResponses, SendAdminScopeMessageErrors, ThrowOnError> => (options.client ?? client).post<SendAdminScopeMessageResponses, SendAdminScopeMessageErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/admin/scopes/{id}/messages',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 export const createAdminControlOperation = <ThrowOnError extends boolean = false>(options: Options<CreateAdminControlOperationData, ThrowOnError>): RequestResult<CreateAdminControlOperationResponses, CreateAdminControlOperationErrors, ThrowOnError> => (options.client ?? client).post<CreateAdminControlOperationResponses, CreateAdminControlOperationErrors, ThrowOnError>({

@@ -18,7 +18,7 @@ docker compose logs --tail=20 cloud
 
 ## 打开云端 Space
 
-在包含云端 Space 的镜像中，从部署控制台选中 scope，点击「打开 Space」，也可以直接访问 `/scopes/{id}/space/`。使用 Admin token 可选择主机和角色、启动 Agent、停止选定实例并查询回执。启动已排队时，等回执显示执行成功，再刷新清单。使用该 scope 的 token 可查看主机、Agent 和选定实例的云端消息。登录时可选择仅本次、30 天或 90 天。记住登录会在当前浏览器保存对应令牌，断开会清除已保存的登录。详见 [Space 使用说明](../web/agent-space/README.md#云端-space)。
+在包含云端 Space 的镜像中，从部署控制台选中 scope，点击「打开 Space」，也可以直接访问 `/scopes/{id}/space/`。使用 Admin token 可选择主机和角色、启动 Agent、停止选定实例并查询回执。在 Space 打开一个确切实例后，可用 Admin 身份在共用输入框发送文字。回执表示云端已接受消息，Agent 的回复作为另一条记录出现在同一会话。使用该 scope 的 token 可查看主机、Agent 和选定实例的云端消息。登录时可选择仅本次、30 天或 90 天。记住登录会在当前浏览器保存对应令牌，断开会清除已保存的登录。详见 [Space 使用说明](../web/agent-space/README.md#云端-space)。
 
 ## 让其他机器接入
 

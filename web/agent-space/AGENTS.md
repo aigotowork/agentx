@@ -1,4 +1,4 @@
-For scoped Cloud Space and its separate bearer audiences, read [cloud mode](src/cloud/AGENTS.md) and [usage](README.md#云端-space). Cloud routes share the theme and scene without opening native management.
+For scoped Cloud Space, read [cloud mode](src/cloud/AGENTS.md) and [usage](README.md#云端-space). After authentication, Cloud Space mounts the shared App with a separate SDK adapter and exact host-aware links.
 
 For the latest-first [Space conversation workbench](../../.controller/space-conversation-workbench/AGENTS.md), follow the [frontend contract and evidence](../../.controller/space-conversation-workbench/space.task.md). `src/live/domain-office.ts` selects backward history only on the pinned descriptor capability and separates live and older cursors. `uiux/systems/space/layouts/useConversationScroll.ts` owns the semantic viewport and new-message count; drafts remain exact and page-owned. Relation disclosure and Fork browse exact references using the existing operation journal. The previous forward-reader guidance below still applies to old services.
 

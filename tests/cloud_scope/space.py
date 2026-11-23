@@ -1,4 +1,4 @@
-"""Verify the embedded Space entry, its admission boundary and exact cloud message history."""
+"""Verify the embedded Space entry and the authenticated cloud conversation."""
 
 from contextlib import closing
 from html.parser import HTMLParser
@@ -70,10 +70,15 @@ def run(fixture, provision):
     urls = assets(fixture, "alpha", generation)
     base = "/scopes/alpha/api/v1"
     history = base + "/messages"
+    admin_scope = fixture.admin + "/scopes/alpha"
+    admin_messages = admin_scope + "/messages"
     operations = fixture.admin + "/scopes/alpha/operations"
 
     def call(method, path, body=None, **options):
         return fixture.expect(method, base + path, token, body, **options)
+
+    def operator_call(method, payload=None, **options):
+        return fixture.expect(method, admin_messages, fixture.admin_token, payload, **options)
 
     def install(host):
         station = {"generation": generation, "installation_id": str(uuid.uuid4())}
@@ -120,6 +125,53 @@ def run(fixture, provision):
     status, headers, _ = resource(fixture, "GET", history)
     require(status == 401 and headers["cache-control"] == "no-store", "Auth errors must not cache")
 
+    human_input = {"generation": generation, "request_id": message_request, "to": reader, "body": "Operator asks 雪"}
+    for denied in (None, token, other["token"]):
+        fixture.expect("GET", admin_messages, denied, query=query, statuses=(401,))
+        fixture.expect("POST", admin_messages, denied, human_input, statuses=(401,))
+    call("POST", "/messages", human_input, statuses=(400,))
+    require(operator_call("GET", query={**query, "generation": "stale"}, statuses=(409,))["code"] == "stale_generation",
+            "Admin history must use the member generation fence")
+    require(operator_call("POST", {**human_input, "generation": "stale"}, statuses=(409,))["code"] == "stale_generation",
+            "Admin send must require the current generation")
+    operator_call("POST", {**human_input, "from": counterpart}, statuses=(400,))
+    operator_call("POST", {**human_input, "to": {**reader, "host": "east"}}, statuses=(409,))
+    human_message = operator_call("POST", human_input)
+    operator = human_message["from"]
+    operator_address = f"@{operator['host']}/{operator['name']}"
+    require(human_message["to"] == reader and human_message["body"] == human_input["body"]
+            and human_message["intent"] == "request" and human_message["id"] != first["id"]
+            and human_message["reply_to"] is None and human_message["thread"] is None,
+            "Human admission must assign its own sender and a separate ID from a scope send with the same request ID")
+    require(call("GET", f"/operations/{message_request}")["message"] == first,
+            "Admin admission must not replace a scope member's replay receipt")
+    call("PUT", f"/hosts/{operator['host']}", west, statuses=(400,))
+    call("PUT", f"/agents/{operator['name']}", {**west, "host": "west", "incarnation": operator["incarnation"]}, statuses=(400,))
+    call("POST", "/messages", {**west, "request_id": str(uuid.uuid4()), "from": operator, "to": "@reader",
+                               "body": "spoofed operator", "intent": "request"}, statuses=(400,))
+    require(operator not in call("GET", "/agents")["items"]
+            and {row["name"] for row in call("GET", "/hosts")["items"]} == {"west", "east"},
+            "The server-owned operator must not appear as a host or Agent")
+    inventory = fixture.expect("GET", admin_scope, fixture.admin_token)
+    require((inventory["hosts"], inventory["online_hosts"], inventory["agents"]) == (2, 2, 3),
+            "Server-owned operator must not affect inventory counts")
+    inbox = call("POST", "/inbox/claim", {**west, "agent": reader, "claim_id": str(uuid.uuid4())})
+    require(human_message in inbox["items"], "Operator messages must arrive through the ordinary inbox")
+
+    answer_input = {**west, "request_id": str(uuid.uuid4()), "from": reader, "to": operator_address,
+                    "body": "Answer for the operator", "intent": "ack", "reply_to": human_message["id"]}
+    call("POST", "/messages", {**answer_input, "reply_to": None}, statuses=(400,))
+    call("POST", "/messages", {**answer_input, "from": counterpart, "installation_id": east["installation_id"]}, statuses=(404,))
+    answer = call("POST", "/messages", answer_input)
+    require(answer["to"] == operator and answer["from"] == reader and answer["reply_to"] == human_message["id"],
+            "The regular send path must persist the related Agent reply")
+    require(call("GET", f"/operations/{answer_input['request_id']}")["status"] == "confirmed",
+            "The operator reply is delivered directly to history")
+    sent_page = operator_call("GET", query={**query, "limit": 2})
+    require(sent_page == {"items": [answer, human_message], "next": human_message["id"]}
+            and sent_page == call("GET", "/messages", query={**query, "limit": 2}),
+            "Both read paths must expose the same durable conversation and cursor")
+
     call("POST", "/agents/reader/retire", {**west, "host": "west", "incarnation": "first"})
     replacement = register(east, "east", "reader", "replacement")
     replacement_query = {**replacement, "generation": generation}
@@ -127,6 +179,11 @@ def run(fixture, provision):
             "A namesake on another host must not inherit the old history")
     require(call("GET", "/messages", query={**query, "before": first_page["next"]}) == older,
             "An exact retired registration must still resolve its own rows")
+    require(operator_call("POST", human_input) == human_message, "Exact replay after retirement must return the original message")
+    require(operator_call("POST", {**human_input, "body": "Different"}, statuses=(409,))["code"] == "conflict",
+            "Changed replay must report a conflict even after the target retires")
+    require(operator_call("POST", {**human_input, "request_id": str(uuid.uuid4())}, statuses=(409,))["code"] == "stale_agent",
+            "A new human message must never follow an exact retired target to its namesake")
 
     # Cross the byte cap using valid UTF-8 bodies. Avoid journaling large fixture payloads.
     large = []
@@ -149,6 +206,8 @@ def run(fixture, provision):
     fixture.start()
     require(call("GET", "/messages", query={**query, "before": first_page["next"]}) == older,
             "Reopening a pre-Space scope must establish the additive indexes without losing messages")
+    require(operator_call("GET", query={**query, "limit": 2}) == sent_page and operator_call("POST", human_input) == human_message,
+            "Restart must preserve both sides of the conversation and operator replay identity")
     new_token = fixture.token()
     fixture.expect("POST", fixture.admin + "/scopes/alpha/token-rotations", fixture.admin_token,
                    {"request_id": str(uuid.uuid4()), "expected_version": 1, "token": new_token})
@@ -156,4 +215,5 @@ def run(fixture, provision):
     require(fixture.expect("GET", history, new_token, query={**query, "before": first_page["next"]}) == older,
             "Rotated bearer must see the same history for the same generation")
     return {"assets": urls, "exact_agent": reader, "message_ids": [first["id"], reply["id"], self_send["id"]],
+            "operator_message_ids": [human_message["id"], answer["id"]],
             "rotation_and_additive_upgrade": True, "deployment_starts": fixture.boots}

@@ -1,14 +1,14 @@
 /** @aiPurpose Presentation-local supplied facts; these declarations are not AgentX HTTP contracts. */
 import type { AgentRef, Attachment, FileBindingView } from "../../../management/api/native";
 export type AgentState = "running" | "idle" | "ready" | "closed" | "failed" | "unknown";
-export type Membership = { kind: "directory"; path: string } | { kind: "global" } | { kind: "unknown" } | { kind: "legacy" };
-export interface Office { id: string; title: string; origin: "role-marker" | "explicit-membership"; sources?: readonly string[]; }
+export type Membership = { kind: "directory"; path: string } | { kind: "host"; host: string } | { kind: "global" } | { kind: "unknown" } | { kind: "legacy" };
+export interface Office { id: string; title: string; origin: "role-marker" | "explicit-membership" | "cloud-host"; sources?: readonly string[]; }
 export interface Post { id: string; office: string; name: string; origin: "本地" | "继承" | "全局"; source: string; description: string; profile: string; revision: string; }
 export type AdoptedRole = { kind: "adopted"; name: string; source: string; profile: string; revision: string; description?: string | null } | { kind: "none" } | { kind: "unknown" };
 export interface AgentResource {
   fileBindings?: readonly FileBindingView[];
   id: string; name: string; title: string; launchTitle?: string | null; nativeStatus?: string; statusContext?: string; storedStatus?: string; requestError?: { reason: string; source: string } | null; pendingMessages?: number | bigint | null; arrival?: string; description: string; state: AgentState; attention: boolean;
-  ref: { scope: string; generation: string; name: string; incarnation: string | null; stopped_event?: string | null; record: "current" | "stopped" };
+  ref: { scope: string; generation: string; host?: string; name: string; incarnation: string | null; stopped_event?: string | null; record: "current" | "stopped" };
   membership: Membership; role: AdoptedRole; cwd: string | null; model: string | null; tool: string; profile: string | null;
   source: { id: string; title: string }; createdAt: string;
 }
@@ -33,7 +33,7 @@ export interface SceneMessage { id: string; from: string; to: string; receivedAt
 export type RosterCoverage = {
   office: string; phase: "loading" | "ready" | "error"; error?: string;
   more: boolean; exhausted: boolean; emptyPage: boolean;
-} & ({ kind: "native-workspace-members" } | { kind: "global-agent-page"; scanned: number; legacy: number; unavailable: number });
+} & ({ kind: "native-workspace-members" | "cloud-registration" } | { kind: "global-agent-page"; scanned: number; legacy: number; unavailable: number });
 export interface AgentSpaceSupply {
   readonly roster?: RosterCoverage;
   /** Exact reader-only subjects never contribute to roster counts, filters or seats. */
@@ -42,19 +42,20 @@ export interface AgentSpaceSupply {
   readonly population?: { revision: number; complete: boolean };
   readonly activity?: readonly SceneMessage[];
   readonly mode: "offline" | "live";
-  readonly scope: { id: string; generation: string; listener?: string; coverage: string };
+  readonly scope: { cloud?: true; id: string; generation: string; listener?: string; coverage: string };
   readonly workspaces: readonly Office[];
   readonly posts: readonly Post[];
   readonly agents: readonly AgentResource[];
   records(agentId: string, channel: RecordChannel): SuppliedRecords;
 }
+export const hostGroup = (host: string) => `host:${host}`;
 export const GLOBAL_OFFICE = "$global", UNKNOWN_OFFICE = "$unknown", LEGACY_OFFICE = "$legacy";
 /** Exact supplied membership; unknown never inherits the global bucket. */
 export function membershipKey(agent: AgentResource): string {
-  return agent.membership.kind === "directory" ? agent.membership.path : agent.membership.kind === "global" ? GLOBAL_OFFICE : agent.membership.kind === "legacy" ? LEGACY_OFFICE : UNKNOWN_OFFICE;
+  return agent.membership.kind === "directory" ? agent.membership.path : agent.membership.kind === "host" ? hostGroup(agent.membership.host) : agent.membership.kind === "global" ? GLOBAL_OFFICE : agent.membership.kind === "legacy" ? LEGACY_OFFICE : UNKNOWN_OFFICE;
 }
 export function adoptedRoleLabel(role: AdoptedRole): string { return role.kind === "adopted" ? role.name : role.kind === "none" ? "未采用 Role" : "岗位未知"; }
-export function exactAgentKey(ref: AgentResource["ref"]): string { return JSON.stringify([ref.scope, ref.generation, ref.name, ref.incarnation, ref.stopped_event ?? null, ref.record]); }
+export function exactAgentKey(ref: AgentResource["ref"]): string { return JSON.stringify([ref.scope, ref.generation, ref.name, ref.incarnation, ref.stopped_event ?? null, ref.record, ...(ref.host === undefined ? [] : [ref.host])]); }
 
 export function findConversation(supply: AgentSpaceSupply, id: string | null) {
   return supply.subjects?.find(agent => agent.id === id) ?? supply.agents.find(agent => agent.id === id);

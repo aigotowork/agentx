@@ -14,10 +14,14 @@ export type SchemaTypes = {
   "HostCapabilities": Types.HostCapabilities;
   "HostPage": Types.HostPage;
   "HostView": Types.HostView;
+  "Intent": Types.Intent;
+  "MessageHistoryPage": Types.MessageHistoryPage;
+  "MessageView": Types.MessageView;
   "RoleCapability": Types.RoleCapability;
   "RotateToken": Types.RotateTokenWritable;
   "ScopePage": Types.ScopePage;
   "ScopeReceipt": Types.ScopeReceipt;
   "ScopeRow": Types.ScopeRow;
+  "SendHumanMessage": Types.SendHumanMessage;
   "WorkspaceCapability": Types.WorkspaceCapability;
 };

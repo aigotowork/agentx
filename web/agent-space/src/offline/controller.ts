@@ -44,6 +44,7 @@ export class SpaceController {
   };
   getSnapshot = () => this.snapshot;
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
+  noteBrowserNavigation() { return ++this.navigationRevision; }
   /** Hydrate navigation atomically without changing exact draft/upload ownership. */
   restoreNavigation = (patch: Partial<SpaceSnapshot>) => {
     if (!this.windowed) return this.update(patch, false);

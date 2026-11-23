@@ -46,6 +46,35 @@ test('admin SDK binds bearer to one root and decodes actual long integers and cu
   assert.equal(calls, 3);
 });
 
+test('operator message replay retains its exact target and history rejects a replacement', async () => {
+  const to = { host: 'west', name: 'worker', incarnation: 'first' };
+  const input = { generation: 'generation-1', request_id: 'web-1', to, body: 'Check status' };
+  const message = { id: '11', to, from: { host: '~space', name: 'operator', incarnation: 'human' },
+    body: input.body, intent: 'request', reply_to: null, thread: null, created_at: 1700000000 };
+  let posts = 0;
+  let item = message;
+  const client = createCloudAdminClient({ baseUrl: 'https://cloud.example', token: adminToken, fetch: async request => {
+    const url = new URL(request.url);
+    assert.equal(url.pathname, '/api/v1/admin/scopes/office/messages');
+    assert.equal(request.headers.get('authorization'), 'Bearer ' + adminToken);
+    if (request.method === 'POST') {
+      assert.deepEqual(await request.json(), input);
+      if (++posts === 1) throw new Error('response lost');
+      return Response.json(message);
+    }
+    assert.deepEqual(Object.fromEntries(url.searchParams), { generation: input.generation, ...to });
+    return Response.json({ items: [item], next: null });
+  } });
+  await assert.rejects(client.sendHumanMessage('office', input), CloudAdminOutcomeUnknown);
+  assert.equal(posts, 1);
+  const result = await client.sendHumanMessage('office', input);
+  assert.equal(result.created_at, 1700000000n);
+  const query = { generation: input.generation, ...to };
+  assert.equal((await client.listMessages('office', query)).items[0].id, result.id);
+  item = { ...message, to: { ...to, incarnation: 'replacement' } };
+  await assert.rejects(client.listMessages('office', query));
+});
+
 test('admin SDK keeps credentials out of failures and does not retry an uncertain mutation', async () => {
   let response;
   let calls = 0;

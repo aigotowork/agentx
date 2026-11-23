@@ -100,6 +100,27 @@ export type HostView = {
     online: boolean;
 };
 
+export type Intent = 'request' | 'inform' | 'ack';
+
+/**
+ * Durable scope traffic, in descending message ID order. This is not a Provider transcript.
+ */
+export type MessageHistoryPage = {
+    items: Array<MessageView>;
+    next: string | null;
+};
+
+export type MessageView = {
+    body: string;
+    created_at: bigint;
+    from: AgentView;
+    id: string;
+    intent: Intent;
+    reply_to: string | null;
+    thread: string | null;
+    to: AgentView;
+};
+
 export type RoleCapability = {
     available: boolean;
     name: string;
@@ -133,6 +154,19 @@ export type ScopeRow = {
     id: string;
     online_hosts: number;
     scope_url: string;
+};
+
+/**
+ * Submit an operator message to one exact Agent registration.
+ */
+export type SendHumanMessage = {
+    /**
+     * Nonblank message text, at most 64 KiB of UTF-8.
+     */
+    body: string;
+    generation: string;
+    request_id: string;
+    to: AgentView;
 };
 
 export type WorkspaceCapability = {
@@ -467,6 +501,108 @@ export type GetAdminHostCapabilitiesResponses = {
 };
 
 export type GetAdminHostCapabilitiesResponse = GetAdminHostCapabilitiesResponses[keyof GetAdminHostCapabilitiesResponses];
+
+export type ListAdminScopeMessagesData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query: {
+        generation: string;
+        host: string;
+        name: string;
+        incarnation: string;
+        /**
+         * Exclusive positive decimal message ID; omit to start with the latest messages.
+         */
+        before?: string;
+        limit?: number;
+    };
+    url: '/api/v1/admin/scopes/{id}/messages';
+};
+
+export type ListAdminScopeMessagesErrors = {
+    /**
+     * Invalid input
+     */
+    400: ApiError;
+    /**
+     * Invalid admin credential
+     */
+    401: ApiError;
+    /**
+     * Unknown scope
+     */
+    404: ApiError;
+    /**
+     * Conflict
+     */
+    409: ApiError;
+    /**
+     * Storage error
+     */
+    500: ApiError;
+    /**
+     * Unavailable
+     */
+    503: ApiError;
+};
+
+export type ListAdminScopeMessagesError = ListAdminScopeMessagesErrors[keyof ListAdminScopeMessagesErrors];
+
+export type ListAdminScopeMessagesResponses = {
+    200: MessageHistoryPage;
+};
+
+export type ListAdminScopeMessagesResponse = ListAdminScopeMessagesResponses[keyof ListAdminScopeMessagesResponses];
+
+export type SendAdminScopeMessageData = {
+    body: SendHumanMessage;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/scopes/{id}/messages';
+};
+
+export type SendAdminScopeMessageErrors = {
+    /**
+     * Invalid input
+     */
+    400: ApiError;
+    /**
+     * Invalid admin credential
+     */
+    401: ApiError;
+    /**
+     * Unknown scope
+     */
+    404: ApiError;
+    /**
+     * Conflict
+     */
+    409: ApiError;
+    /**
+     * Payload too large
+     */
+    413: ApiError;
+    /**
+     * Storage error
+     */
+    500: ApiError;
+    /**
+     * Unavailable
+     */
+    503: ApiError;
+};
+
+export type SendAdminScopeMessageError = SendAdminScopeMessageErrors[keyof SendAdminScopeMessageErrors];
+
+export type SendAdminScopeMessageResponses = {
+    200: MessageView;
+};
+
+export type SendAdminScopeMessageResponse = SendAdminScopeMessageResponses[keyof SendAdminScopeMessageResponses];
 
 export type CreateAdminControlOperationData = {
     body: CreateControlOperation;

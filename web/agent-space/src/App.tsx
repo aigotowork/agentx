@@ -23,6 +23,9 @@ import { SpaceReadStatus } from './live/ReadStatus';
 import { defaultRoute, routeSearch } from './navigation/route';
 import { readAppearance, saveAppearance } from "./navigation/appearance";
 import { LiveSpace } from "./live/controller";
+import type { SpaceLive } from "./live/workbench";
+import type { CloudWorkbench } from "./cloud/workbench";
+import type { AgentSpaceSupply } from "./offline/model";
 import { emptySupply } from "./live/projection";
 import { installNavigation } from "./navigation/browser";
 import type { SpaceInspection } from "./inspection";
@@ -34,12 +37,13 @@ import { visibleWindows, type ConversationWindows } from "./workspace/windows";
 import { WorkspaceSoundToggle, useWorkspaceFeedback } from "./workspace/feedback";
 import "./workspace/integration.css";
 
-/** @aiPurpose Present actual offices, named Agent instances, posts and separate record channels.
- * @aiUsage The selected style changes presentation independently of the trusted SDK host. Without a host, supply=studio selects a synthetic office.
+type CloudBinding = (publish: (supply: AgentSpaceSupply) => void) => CloudWorkbench;
+/** @aiPurpose Present actual offices, named Agent instances and separate record channels.
+ * @aiUsage Pass the trusted native host or an admitted cloud binding; unconfigured local paths may select a sample.
  */
-export function App({ inspection, host, previewCaption }: { inspection?: SpaceInspection; host?: SpaceHostBinding; previewCaption?: string }) {
+export function App({ inspection, host, previewCaption, cloud, onCloudDisconnect }: { inspection?: SpaceInspection; host?: SpaceHostBinding; previewCaption?: string; cloud?: CloudBinding; onCloudDisconnect?(): void }) {
   const [session, setSession] = useState(0);
-  const allowSample = !host;
+  const allowSample = !host && !cloud;
   const [appearance, setAppearance] = useState(() => readAppearance(allowSample));
   const { style, legacyStudio } = appearance;
   const studio = !!legacyStudio || usesStudioArt(style);
@@ -55,6 +59,7 @@ export function App({ inspection, host, previewCaption }: { inspection?: SpaceIn
     window.dispatchEvent(new Event("agentx:location-changed"));
   }
   function reconnect(presentation: Presentation) {
+    if (cloud) { onCloudDisconnect?.(); return; }
     const search = routeSearch(location.search, { ...defaultRoute(), presentation });
     history.replaceState(null, '', `${location.pathname}${search}${location.hash}`);
     window.dispatchEvent(new Event('agentx:location-changed'));
@@ -62,15 +67,15 @@ export function App({ inspection, host, previewCaption }: { inspection?: SpaceIn
   }
   const styleControls = <SpaceStyleSwitch value={style} onChange={chooseStyle} />;
   const readerStyleControls = <SpaceStyleSwitch value={style} onChange={chooseStyle} compact />;
-  return <SpaceTheme style={style}><SpaceInteractions><SpaceApp key={session} studio={studio} inspection={inspection} host={host} previewCaption={previewCaption} reconnect={reconnect} styleControls={styleControls} readerStyleControls={readerStyleControls} /></SpaceInteractions></SpaceTheme>;
+  return <SpaceTheme style={style}><SpaceInteractions><SpaceApp key={session} studio={studio} inspection={inspection} host={host} cloud={cloud} onCloudDisconnect={onCloudDisconnect} previewCaption={previewCaption} reconnect={reconnect} styleControls={styleControls} readerStyleControls={readerStyleControls} /></SpaceInteractions></SpaceTheme>;
 }
-function SpaceApp({ studio, inspection, host, previewCaption, reconnect, styleControls, readerStyleControls }: { studio: boolean; inspection?: SpaceInspection; host?: SpaceHostBinding; previewCaption?: string; reconnect(view: Presentation): void; styleControls: ReactNode; readerStyleControls: ReactNode }) {
+function SpaceApp({ studio, inspection, host, cloud, onCloudDisconnect, previewCaption, reconnect, styleControls, readerStyleControls }: { studio: boolean; inspection?: SpaceInspection; host?: SpaceHostBinding; cloud?: CloudBinding; onCloudDisconnect?(): void; previewCaption?: string; reconnect(view: Presentation): void; styleControls: ReactNode; readerStyleControls: ReactNode }) {
   const [entry] = useState(() => new URLSearchParams(location.search));
-  const sample = !host && entry.get("supply");
+  const sample = !host && !cloud && entry.get("supply");
   const windowed = entry.get("workspace") !== "classic";
   const studioSample = sample === "studio";
   const [controller] = useState(() => new SpaceController(studioSample ? createStudioSupply() : sample === "demo" ? createOfflineSupply() : emptySupply(), windowed));
-  const [live] = useState(() => controller.supply.mode === "live" ? new LiveSpace(controller.replaceSupply, host) : undefined);
+  const [live] = useState(() => controller.supply.mode === "live" ? cloud?.(controller.replaceSupply) ?? new LiveSpace(controller.replaceSupply, host) : undefined);
   const [contextIssue, setContextIssue] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const contextId = useId();
@@ -97,7 +102,7 @@ function SpaceApp({ studio, inspection, host, previewCaption, reconnect, styleCo
     return () => observer.disconnect();
   }, [windowed]);
   useEffect(() => {
-    const uninstall = installNavigation(controller, setContextIssue, live ? (target, signal, office) => live.openReference({ name: target.name, incarnation: target.incarnation, stopped_event: target.stopped_event }, target, signal, office) : undefined);
+    const uninstall = installNavigation(controller, setContextIssue, live?.kind === "cloud" ? live.openReference : live ? (target, signal, office) => live.openReference({ name: target.name, incarnation: target.incarnation, stopped_event: target.stopped_event }, target, signal, office) : undefined, live?.kind === "cloud" ? live.navigation : undefined);
     function sync() {
       if (!live) return;
       const state = controller.getSnapshot();
@@ -111,7 +116,7 @@ function SpaceApp({ studio, inspection, host, previewCaption, reconnect, styleCo
     const stop = live?.start();
     return () => { uninstall(); unsubscribe(); stop?.(); };
   }, [controller, live, windowed]);
-  useEffect(() => installContext(controller, live, setContextIssue), [controller, live]);
+  useEffect(() => live?.kind === "cloud" ? undefined : installContext(controller, live, setContextIssue), [controller, live]);
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot), supply = controller.supply;
   const capacity = paneCapacity(width, state.presentation);
   useEffect(() => {
@@ -119,7 +124,7 @@ function SpaceApp({ studio, inspection, host, previewCaption, reconnect, styleCo
     const current = controller.getSnapshot();
     live.selectReaders(current.reading ? visibleWindows(current.windows, capacity) : [], current.reading ? current.selectedId : null);
   }, [capacity, controller, live, windowed]);
-  useEffect(() => { live?.mailbox(state.mail === 'pending', state.before); }, [live, state.mail, state.before, supply]);
+  useEffect(() => { if (live?.kind === 'native') live.mailbox(state.mail === 'pending', state.before); }, [live, state.mail, state.before, supply]);
   const human = supply.human ? { ...supply.human, history: live ? (pending: boolean) => controller.mailbox(pending ? 'pending' : 'all', '') : supply.human.history, page: live ? (older: boolean) => controller.mailbox(state.mail, older ? supply.human?.nextBefore ?? '' : '') : supply.human.page } : undefined;
   const memories = useRef(new Map<string, { current: SceneMemory | null }>());
   if (!memories.current.has(state.workspaceId)) memories.current.set(state.workspaceId, { current: null });
@@ -127,7 +132,7 @@ function SpaceApp({ studio, inspection, host, previewCaption, reconnect, styleCo
   const names = useMemo(() => {
     const entries = supply.workspaces.filter(office => !state.workspaceId || office.id === state.workspaceId).map(office => [office.id, studio ? office.title : `${office.title} · ${office.id}`] as const);
     const map = new Map<string, string>(entries);
-    if (!studioSample) {
+    if (!studioSample && !supply.scope.cloud) {
       if (!state.workspaceId || state.workspaceId === GLOBAL_OFFICE) map.set(GLOBAL_OFFICE, "全局成员");
       if (!state.workspaceId || state.workspaceId === UNKNOWN_OFFICE) map.set(UNKNOWN_OFFICE, "归属未知");
       if (!state.workspaceId || state.workspaceId === LEGACY_OFFICE) map.set(LEGACY_OFFICE, "旧记录 · 未记录归属");
@@ -192,7 +197,7 @@ function SpaceApp({ studio, inspection, host, previewCaption, reconnect, styleCo
     const visible = shown.includes(pane.id);
     const reader = visible ? (controls: ReactNode) => <Conversation workspace workspaceControls={controls} studio={studio} key={pane.id} agent={agent} records={supply.records(pane.id, recordChannel)} channel={recordChannel} onChannel={value => controller.channel(pane.id, value)} draft={state.drafts[pane.id] ?? ""} onDraft={text => controller.writeDraft(pane.id, text)} onBack={() => closePane(pane.id)} onOpenRelated={id => openRelated(id, pane.id)} live={live} controller={controller} scrollPositions={scrollPositions.current} /> : undefined;
     const duplicate = windowAgents.some(other => other.pane.id !== pane.id && other.agent.title === agent.title);
-    const title = duplicate ? `${agent.title} · ${agent.ref.record === "stopped" ? "历史" : "当前"} ${agent.ref.stopped_event ?? agent.ref.incarnation ?? ""}` : agent.title;
+    const title = duplicate ? `${agent.title} · ${agent.ref.record === "stopped" ? "历史" : "当前"} ${agent.ref.host ? agent.ref.host + " · " : ""}${agent.ref.stopped_event ?? agent.ref.incarnation ?? ""}` : agent.title;
     return { ...pane, title, visible, reader };
   });
   const windows = windowed ? <WorkspaceWindows panes={panes} activeId={state.windows.activeId} focused={state.windows.focused} overlay={state.presentation === "scene"}
@@ -201,16 +206,16 @@ function SpaceApp({ studio, inspection, host, previewCaption, reconnect, styleCo
     onFocus={controller.focusWindow}
     onMinimize={id => { controller.minimizeWindow(id); cue(id, "minimize"); }}
     onClose={closePane} /> : undefined;
-  const resources = isResources && <OfficeResources controller={controller} live={live} />;
+  const resources = isResources && <OfficeResources controller={controller} live={live?.kind === "native" ? live : undefined} />;
   const content = !windowed && resources ? resources : state.presentation === "scene"
-    ? <SceneSpace studio={studio} studioSample={studioSample} awaitStudioRoster={awaitStudioRoster} key={state.workspaceId} memory={memory} layoutMemory={layoutMemory.current} population={supply.population} identityScope={`${supply.scope.id}:${supply.scope.generation}`} messages={supply.activity} human={human} agents={scoped} names={names} visibleKeys={visibleKeys} selectedId={state.selectedId} reading={state.reading} reader={reader} workspace={windows} directory={directory} scope={state.workspaceId} showEmpty={!roster || !!(state.query || state.state) || studio && roster.phase === "ready" && roster.exhausted} onSelect={id => open(id, "actor")} onClose={controller.close} onCabinet={() => controller.historyDirectory()} onReset={controller.clearFilters} onHumanNavigate={openRelated} panel={state.panel} onPanel={controller.panel} />
+    ? <SceneSpace studio={studio} studioSample={studioSample} awaitStudioRoster={awaitStudioRoster} key={state.workspaceId} memory={memory} layoutMemory={layoutMemory.current} population={supply.population} identityScope={`${supply.scope.id}:${supply.scope.generation}`} messages={supply.activity} human={human} agents={scoped} names={names} visibleKeys={visibleKeys} selectedId={state.selectedId} reading={state.reading} reader={reader} workspace={windows} directory={directory} scope={state.workspaceId} showEmpty={!roster || !!(state.query || state.state) || studio && roster.phase === "ready" && roster.exhausted} onSelect={id => open(id, "actor")} onClose={controller.close} onCabinet={() => live?.kind === "cloud" ? controller.panel("directory") : controller.historyDirectory()} onReset={controller.clearFilters} onHumanNavigate={openRelated} panel={state.panel} onPanel={controller.panel} />
     : <ChatLayout directory={directory} reader={state.reading ? reader : <ReaderEmpty />} workspace={windows} hasWindows={panes.length > 0} reading={state.reading} onReturnFallback={focusWorkspace} />;
-  const contextStatus = contextIssue ? <div className="context-error" role="alert">{contextIssue}{live?.more && !roster && <button type="button" onClick={live.loadMore}>加载更多成员</button>}{host && contextIssue.startsWith('精确目标不可用') && <button type="button" onClick={() => window.dispatchEvent(new PopStateEvent('popstate'))}>重试精确会话</button>}</div> : null;
+  const contextStatus = contextIssue ? <div className="context-error" role="alert">{contextIssue}{live?.more && !roster && <button type="button" onClick={live.loadMore}>加载更多成员</button>}{(host || cloud) && contextIssue.startsWith('精确目标不可用') && <button type="button" onClick={() => window.dispatchEvent(new PopStateEvent('popstate'))}>重试精确会话</button>}</div> : null;
   const sound = windowed && <WorkspaceSoundToggle enabled={feedback.enabled} onToggle={feedback.toggle} />;
   const compactReading = windowed && state.reading;
   const filters = compactReading && <button className="workspace-filter-trigger" type="button" aria-expanded={filtersOpen} aria-controls={contextId} onClick={() => setFiltersOpen(value => !value)}>筛选</button>;
-  const header = <SpaceHeader studio={studioSample} previewCaption={studio && host ? previewCaption : undefined} presentation={state.presentation} onPresentation={controller.presentation} live={live} inspection={inspection} onReconnect={() => reconnect(state.presentation)} styleControls={<>{styleControls}{sound}</>} windowed={windowed} filters={filters} />;
-  const context = <>{contextStatus}<OfficeContext studio={studioSample} controller={controller} matchedCount={filtered.length} actions={live && <DirectoryContact key={state.workspaceId} live={live} office={state.workspaceId} />} />{live && <SpaceReadStatus live={live} roster={roster} rows={scoped} />}</>;
+  const header = <SpaceHeader studio={studioSample} previewCaption={studio && host ? previewCaption : undefined} presentation={state.presentation} onPresentation={controller.presentation} live={live} inspection={inspection} onReconnect={() => reconnect(state.presentation)} onCloudDisconnect={onCloudDisconnect} styleControls={<>{styleControls}{sound}</>} windowed={windowed} filters={filters} />;
+  const context = <>{contextStatus}<OfficeContext studio={studioSample} controller={controller} matchedCount={filtered.length} actions={live?.kind === "native" && <DirectoryContact key={state.workspaceId} live={live} office={state.workspaceId} />} />{live && <SpaceReadStatus live={live} roster={roster} rows={scoped} />}</>;
   const studioReader = !windowed && studio && !isResources && state.reading && selected ? state.presentation : undefined;
   const resourceWindow = windowed && resources && <ResourceWindow title={state.officeView === "skills" ? "办公室技能" : "办公室岗位"} compact={state.officeView === "skills"} onClose={controller.closeResources}>{resources}</ResourceWindow>;
   return <AgentCommands live={live} controller={controller} onSearch={windowed ? focusSearch : undefined}><OfficeLayout studio={studio} studioSample={studioSample} studioReader={studioReader} windowed={windowed} compactReading={compactReading} filtersOpen={filtersOpen} header={header} context={context} contextId={contextId}><SpaceLayout contentRef={contentRef} navigation={<OfficeNavigation studio={studioSample} controller={controller} />}>{content}{resourceWindow}</SpaceLayout></OfficeLayout></AgentCommands>;
@@ -218,13 +223,13 @@ function SpaceApp({ studio, inspection, host, previewCaption, reconnect, styleCo
 function paneCapacity(width: number, presentation: Presentation): 1 | 2 {
   return width >= (presentation === "scene" ? 800 : 1000) ? 2 : 1;
 }
-function SpaceHeader({ studio, previewCaption, presentation, onPresentation, live, inspection, onReconnect, styleControls, windowed, filters }: { studio: boolean; previewCaption?: string; presentation: Presentation; onPresentation(value: Presentation): void; live?: LiveSpace; inspection?: SpaceInspection; onReconnect(): void; styleControls?: ReactNode; windowed?: boolean; filters?: ReactNode }) {
+function SpaceHeader({ studio, previewCaption, presentation, onPresentation, live, inspection, onReconnect, onCloudDisconnect, styleControls, windowed, filters }: { studio: boolean; previewCaption?: string; presentation: Presentation; onPresentation(value: Presentation): void; live?: SpaceLive; inspection?: SpaceInspection; onReconnect(): void; onCloudDisconnect?(): void; styleControls?: ReactNode; windowed?: boolean; filters?: ReactNode }) {
   const [inspecting, setInspecting] = useState(false);
   function toggleInspection() { const visible = !inspecting; inspection?.setVisible(visible); setInspecting(visible); }
   const inspectionDismiss = inspecting && createPortal(<button type="button" className="space-inspection-dismiss" aria-label="收起页面检查" onClick={toggleInspection}>收起检查 ×</button>, document.body);
   const inspectionButton = inspection && <button type="button" aria-label="检查页面" aria-pressed={inspecting} title="打开或收起页面检查工具" onClick={toggleInspection}>检查</button>;
   const displayOptions = windowed ? <details className="workspace-display-menu"><summary aria-label="显示与反馈" title="显示与反馈"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16M8 4v4m8 2v4m-6 2v4" /></svg></summary><div>{styleControls}{inspectionButton}</div></details> : <>{styleControls}{inspectionButton}</>;
-  return <>{inspectionDismiss}<div className="office-brand"><strong>{previewCaption || "Agent 空间"}</strong></div><nav className="presentation-switch" aria-label="呈现方式"><button type="button" aria-pressed={presentation === "scene"} onClick={() => onPresentation("scene")}>场景</button><button type="button" aria-pressed={presentation === "chat"} onClick={() => onPresentation("chat")}>聊天</button></nav>{filters}{displayOptions}{live ? <><NewAgentButton /><LiveStatus live={live} onReconnect={onReconnect} /></> : <details className="offline-info"><summary aria-label="离线样例说明">{studio ? "工作室样例 ⓘ" : "离线样例 ⓘ"}</summary><div><strong>合成样例</strong><p>成员、目录和消息均为样例。草稿不会发送。</p><a href="./NOTICE.md" target="_blank" rel="noreferrer">素材与许可</a></div></details>}</>;
+  return <>{inspectionDismiss}<div className="office-brand"><strong>{previewCaption || (live?.kind === "cloud" ? "云端 Space" : "Agent 空间")}</strong></div><nav className="presentation-switch" aria-label="呈现方式"><button type="button" aria-pressed={presentation === "scene"} onClick={() => onPresentation("scene")}>场景</button><button type="button" aria-pressed={presentation === "chat"} onClick={() => onPresentation("chat")}>聊天</button></nav>{filters}{displayOptions}{live ? <><NewAgentButton disabled={live.kind === "cloud" && (live.access !== "admin" || live.connection === "reset")} /><LiveStatus live={live} onReconnect={onReconnect} onCloudDisconnect={onCloudDisconnect} /></> : <details className="offline-info"><summary aria-label="离线样例说明">{studio ? "工作室样例 ⓘ" : "离线样例 ⓘ"}</summary><div><strong>合成样例</strong><p>成员、目录和消息均为样例。草稿不会发送。</p><a href="./NOTICE.md" target="_blank" rel="noreferrer">素材与许可</a></div></details>}</>;
 }
 function ReaderEmpty() {
   return <div className="reader-empty"><span className="reader-empty-glyph" aria-hidden="true">▤</span><strong>选择一位 Agent</strong></div>;

@@ -2,7 +2,9 @@ import { findConversation } from "../offline/model";
 import { createContext, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { AgentResource } from "../offline/model";
 import type { SpaceController } from "../offline/controller";
-import { operationIssue, type LiveSpace } from "../live/controller";
+import { operationIssue } from "../live/controller";
+import type { SpaceLive } from "../live/workbench";
+import type { CloudHostCapabilities } from "@agentx/client";
 import { useOverlay, useSpaceShortcuts } from "./SpaceInteractions";
 import { CommandSurface } from "../../uiux/systems/space/space.web";
 import "../conversation/compact-surfaces.css";
@@ -16,7 +18,7 @@ const LABELS: Record<Action, string> = { new: "新建 Agent", "stop-participatio
  * @aiUsage Wrap Space content once with its LiveSpace/controller; offline supply offers no native mutations.
  * @aiBehavior Menu/dialog opening is inert. Existing native capabilities, confirmations and receipt journal own effects.
  */
-export function AgentCommands({ live, controller, children, onSearch }: { live?: LiveSpace; controller: SpaceController; children: ReactNode; onSearch?(): void }) {
+export function AgentCommands({ live, controller, children, onSearch }: { live?: SpaceLive; controller: SpaceController; children: ReactNode; onSearch?(): void }) {
   const [dialog, setDialog] = useState<{ action: Action; agent?: AgentResource; opener: HTMLElement | null }>();
   const [menu, setMenu] = useState<{ agent: AgentResource; x: number; y: number; anchor: HTMLElement }>();
   const commandInvoker = useRef<HTMLElement | null>(null);
@@ -30,7 +32,7 @@ export function AgentCommands({ live, controller, children, onSearch }: { live?:
     }
   }, [dialog]);
   function request(action: Action, agent?: AgentResource, invoker?: HTMLElement) {
-    if (!live || (action !== "new" && !agent)) return;
+    if (!live || (action !== "new" && !agent) || (live.kind === "cloud" && (live.access !== "admin" || live.connection === "reset"))) return;
     const opener = invoker ?? menu?.anchor ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
     setMenu(undefined); setDialog({ action, agent, opener });
   }
@@ -57,18 +59,20 @@ export function useAgentCommands(): Commands | null { return useContext(Context)
 /** @aiPurpose Expose the native new-Agent dialog from a compact labeled action.
  * @aiUsage Place under AgentCommands on a live Space toolbar; the command owns submission and focus return.
  */
-export function NewAgentButton() {
+export function NewAgentButton({ disabled }: { disabled?: boolean }) {
   const commands = useAgentCommands();
-  return <button type="button" className="space-new-agent" aria-label="新建 Agent" aria-haspopup="dialog" title="新建 Agent · Ctrl / ⌘ + Shift + N" onClick={event => commands?.request("new", undefined, event.currentTarget)}>
+  return <button type="button" className="space-new-agent" disabled={disabled} aria-label="新建 Agent" aria-haspopup="dialog" title="新建 Agent · Ctrl / ⌘ + Shift + N" onClick={event => commands?.request("new", undefined, event.currentTarget)}>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg><span>新建<span className="space-new-agent-suffix"> Agent</span></span>
   </button>;
 }
 
-function ActorMenu({ anchor, live, agent, x, y, onAction, onClose }: { anchor: HTMLElement; live: LiveSpace; agent: AgentResource; x: number; y: number; onAction(action: Action): void; onClose(): void }) {
+function ActorMenu({ anchor, live, agent, x, y, onAction, onClose }: { anchor: HTMLElement; live: SpaceLive; agent: AgentResource; x: number; y: number; onAction(action: Action): void; onClose(): void }) {
   const root = useRef<HTMLDivElement>(null), close = useOverlay(true, onClose, 60, root, false, anchor);
   const native = live.capabilities(agent.id), blocked = live.blocked(agent.id);
   const style = { "--command-menu-x": `${x}px`, "--command-menu-y": `${y}px` } as CSSProperties;
-  const items: { action: Action; available: boolean; reason: string }[] = [
+  const items: { action: Action; available: boolean; reason: string }[] = live.kind === "cloud" ? [
+    { action: "kill", available: !!native?.can_stop, reason: "停止此精确云端实例，继续前需要确认" },
+  ] : [
     { action: "stop-participation", available: !!native?.can_stop_participation, reason: "停止 AgentX 参与；具体进程处置由原生生命周期决定" },
     { action: "fork", available: !!native?.can_fork, reason: native?.can_fork ? "从此精确会话分叉新 Agent" : "原生工具或会话不支持分叉" },
     { action: "kill", available: !!native?.can_stop, reason: "终止此精确实例的进程，继续前需要确认" },
@@ -86,36 +90,66 @@ function ActorMenu({ anchor, live, agent, x, y, onAction, onClose }: { anchor: H
     event.preventDefault(); buttons[index]?.focus();
   }
   return <div ref={root} className="actor-action-menu" role="menu" aria-label={`${agent.title} 操作`} style={style} onKeyDown={keys}>
-    <strong>{agent.title}</strong>{items.map(item => <button role="menuitem" type="button" key={item.action} disabled={blocked || !item.available} title={item.reason} onClick={() => onAction(item.action)}>{LABELS[item.action]}</button>)}
+    <strong>{agent.title}</strong>{items.map(item => <button role="menuitem" type="button" key={item.action} disabled={blocked || !item.available} title={item.reason} onClick={() => onAction(item.action)}>{live.kind === "cloud" ? "停止 Agent" : LABELS[item.action]}</button>)}
     <button role="menuitem" type="button" onClick={close}>关闭</button>
   </div>;
 }
 
-function AgentCommandDialog({ opener, live, controller, action, agent, onClose }: { opener: HTMLElement | null; live: LiveSpace; controller: SpaceController; action: Action; agent?: AgentResource; onClose(): void }) {
+function AgentCommandDialog({ opener, live, controller, action, agent, onClose }: { opener: HTMLElement | null; live: SpaceLive; controller: SpaceController; action: Action; agent?: AgentResource; onClose(): void }) {
+  const cloud = live.kind === 'cloud' ? live : undefined, local = live.kind === 'native' ? live : undefined;
   const scope = useRef(live.descriptor), [busy, setBusy] = useState(false), [error, setError] = useState("");
-  const mounted = useRef(false), profileInput = useRef<HTMLSelectElement>(null), errorTarget = useRef<HTMLDivElement>(null);
+  const mounted = useRef(false), input = useRef<HTMLSelectElement>(null), errorTarget = useRef<HTMLDivElement>(null);
   const closeAfterReceipt = useRef<(() => void) | undefined>(undefined);
   const [receiptId, setReceiptId] = useState<string>();
-  const [title, setTitle] = useState(""), [prompt, setPrompt] = useState("");
-  const [directory, setDirectory] = useState(() => controller.getSnapshot().workspaceId.startsWith("/") ? controller.getSnapshot().workspaceId : live.descriptor?.project ?? "");
-  const [profile, setProfile] = useState(live.descriptor?.profiles[0]?.name ?? "");
-  const isNew = action === "new", profiles = live.descriptor?.profiles ?? [];
+  const [title, setTitle] = useState(""), [prompt, setPrompt] = useState(""), [name, setName] = useState("");
+  const office = useRef(controller.getSnapshot().workspaceId).current;
+  const [directory, setDirectory] = useState(() => office.startsWith("/") ? office : local?.descriptor?.project ?? "");
+  const [profile, setProfile] = useState(local?.descriptor?.profiles[0]?.name ?? "");
+  const [hostChoice, setHost] = useState(() => office.startsWith('host:') ? office.slice(5) : "");
+  const [workspaceChoice, setWorkspace] = useState("");
+  const [role, setRole] = useState("");
+  const [catalog, setCatalog] = useState<CloudHostCapabilities>();
+  const [catalogError, setCatalogError] = useState("");
+  const [catalogRevision, retryCatalog] = useState(0);
+  const isNew = action === "new", profiles = local?.descriptor?.profiles ?? [];
+  const host = cloud ? (agent?.ref.host || hostChoice || cloud.hosts[0]?.name || "") : "";
+  const selectedCatalog = catalog?.host === host ? catalog : undefined;
+  const workspaces = selectedCatalog?.workspaces ?? [];
+  const workspace = workspaces.find(item => item.alias === (workspaceChoice || workspaces[0]?.alias));
+  const posts = local ? controller.supply.posts.filter(post => !office || post.office === office || post.office === '$global') : [];
+  const post = posts.find(item => item.id === role);
   const native = agent && live.capabilities(agent.id);
-  const supported = isNew ? profiles.some(item => item.name === profile) : action === "fork" ? !!native?.can_fork : action === "kill" ? !!native?.can_stop : !!native?.can_stop_participation;
+  const taskTooLong = !!cloud && new TextEncoder().encode(prompt).length > 16 * 1024;
+  const supported = cloud ? !!selectedCatalog?.online && !!selectedCatalog.installation_id && (isNew
+    ? !!workspace && (role ? workspace.roles.some(item => item.name === role && item.available) : workspace.default_available) && !taskTooLong
+    : !!native?.can_stop && action === 'kill')
+    : isNew ? (role ? !!post && !!directory.trim() : profiles.some(item => item.name === profile))
+      : action === "fork" ? !!native?.can_fork : action === "kill" ? !!native?.can_stop : !!native?.can_stop_participation;
   const blocked = agent ? live.blocked(agent.id) : live.blocked("launch:new");
-  const stale = !scope.current || live.descriptor?.scope !== scope.current.scope || live.descriptor.generation !== scope.current.generation;
-  const latestReceipt = isNew ? live.latestLaunch("launch:new")
-    : action === "fork" && agent ? live.latestReceipt("fork", agent.id) : undefined;
+  const stale = !scope.current || live.connection === 'reset' || live.descriptor?.scope !== scope.current.scope || live.descriptor.generation !== scope.current.generation;
+  const latestReceipt = isNew ? local?.latestLaunch("launch:new")
+    : action === "fork" && agent ? local?.latestReceipt("fork", agent.id) : undefined;
   const receipt = latestReceipt && (latestReceipt.id === receiptId || blocked) ? latestReceipt : undefined;
   const receiptIssue = receipt && operationIssue(receipt);
   const confirmed = receipt?.id === receiptId && receipt?.operation?.status === "Succeeded";
   const enabled = supported && !blocked && !stale && !busy && !confirmed;
-  const feedback = stale ? "数据范围已变化，请关闭后重新选择。" : receiptIssue || error;
+  const feedback = stale ? "数据范围已变化，请关闭后重新选择。" : receiptIssue || error || catalogError;
   useEffect(() => {
     mounted.current = true;
-    profileInput.current?.focus({ preventScroll: true });
+    input.current?.focus({ preventScroll: true });
     return () => { mounted.current = false; };
   }, []);
+  useEffect(() => {
+    if (!cloud || !host) return;
+    const request = new AbortController();
+    setCatalog(undefined); setCatalogError("");
+    void cloud.catalogue(host, request.signal).then(value => {
+      if (!request.signal.aborted) setCatalog(value);
+    }, failure => {
+      if (!request.signal.aborted) setCatalogError(failure instanceof Error ? failure.message : "无法读取主机目录。");
+    });
+    return () => request.abort();
+  }, [cloud, host, catalogRevision]);
   useEffect(() => { if (feedback) errorTarget.current?.focus({ preventScroll: false }); }, [feedback]);
   useEffect(() => { if (confirmed && !stale) closeAfterReceipt.current?.(); }, [confirmed, stale]);
   async function submit(event: React.FormEvent, close: () => void) {
@@ -123,12 +157,22 @@ function AgentCommandDialog({ opener, live, controller, action, agent, onClose }
     const previous = latestReceipt?.id;
     setBusy(true); setError(""); setReceiptId(undefined);
     try {
-      if (isNew) await live.launchNew({ title: title || null, prompt: prompt || null, profile, directory: directory || null, role: null, workspace: null, tool: null }, scope.current!);
-      else if (agent) {
-        const succeeded = await live.target(action, agent.id);
+      if (cloud && selectedCatalog) {
+        if (isNew && workspace) {
+          const navigation = controller.navigationRevision;
+          await cloud.control(selectedCatalog, { kind: 'launch', workspace: workspace.alias, role: role || null, name: name || null, title: title || null, initial_prompt: prompt || null }, undefined, project => {
+            if (controller.navigationRevision === navigation) controller.openExact(project());
+          });
+        }
+        else if (agent?.ref.incarnation) await cloud.control(selectedCatalog, { kind: 'stop', name: agent.name, incarnation: agent.ref.incarnation }, agent.id);
+      } else if (local && isNew) {
+        if (post) await local.launch(post, prompt, title, directory, 'launch:new');
+        else await local.launchNew({ title: title || null, prompt: prompt || null, profile, directory: directory || null, role: null, workspace: null, tool: null }, scope.current!);
+      } else if (local && agent && action !== 'new') {
+        const succeeded = await local.target(action, agent.id);
         if (action === "fork" && !succeeded) {
           if (!mounted.current) return;
-          const original = live.latestReceipt("fork", agent.id);
+          const original = local.latestReceipt("fork", agent.id);
           if (original && original.id !== previous) {
             closeAfterReceipt.current = close;
             setReceiptId(original.id);
@@ -140,32 +184,55 @@ function AgentCommandDialog({ opener, live, controller, action, agent, onClose }
       if (mounted.current) close();
     } catch (failure) {
       if (!mounted.current) return;
-      const current = isNew ? live.latestLaunch("launch:new") : undefined;
+      const current = isNew ? local?.latestLaunch("launch:new") : undefined;
       if (current && current.id !== previous && operationIssue(current)) {
         closeAfterReceipt.current = close;
         setReceiptId(current.id);
-      }
-      else setError(failure instanceof Error ? failure.message : String(failure));
+      } else setError(failure instanceof Error ? failure.message : String(failure));
     } finally { if (mounted.current) setBusy(false); }
   }
-  const consequence = action === "kill" ? "终止此精确实例的进程。历史记录会保留。" : action === "stop-participation" ? "停止此实例参与 AgentX；原生生命周期按会话类型处置进程。" : action === "fork" ? "使用原生工具从此精确会话创建分叉，原会话保持独立。" : "";
-  const submitLabel = busy ? "提交中…" : isNew ? "启动" : `确认${LABELS[action]}`;
-  const availability = confirmed ? "原操作已成功。" : !supported ? (isNew ? "请选择可用的启动配置。" : "此实例当前不支持该操作。") : (isNew || action === "fork") && blocked && !busy && !stale && !feedback
-    ? (receipt?.operation ? `原操作 · ${receipt.operation.status}` : "操作暂不可用 · 查看连接与回执") : "";
-  return <CommandSurface title={LABELS[action]} opener={opener} onClose={onClose} onSubmit={submit} submitLabel={submitLabel} disabled={!enabled} danger={action === "kill" || action === "stop-participation"}>
-      {agent ? <div className="command-identity"><strong>{action === "fork" ? "来源 · " : ""}{agent.title}</strong><small className="command-exact-ref">{agent.ref.stopped_event != null ? `停止历史 #${agent.ref.stopped_event}` : `当前实例 · ${agent.ref.incarnation}`}</small><p>{consequence}</p></div> : <div className="launch-form">
+  const label = cloud && action === 'kill' ? '停止 Agent' : LABELS[action];
+  const consequence = action === "kill" ? (cloud ? "停止此精确实例。云端对话仍可通过原链接读取。" : "终止此精确实例的进程。历史记录会保留。") : action === "stop-participation" ? "停止此实例参与 AgentX；原生生命周期按会话类型处置进程。" : action === "fork" ? "使用原生工具从此精确会话创建分叉，原会话保持独立。" : "";
+  const submitLabel = busy ? "提交中…" : isNew ? "启动" : `确认${label}`;
+  const cloudAvailability = !host ? "没有可选主机。" : !selectedCatalog ? (catalogError ? "" : "正在读取主机目录…")
+    : !selectedCatalog.online || !selectedCatalog.installation_id ? "主机管理离线。" : taskTooLong ? "启动任务超过 16 KiB。"
+    : !supported ? (isNew ? "请选择可用的工作区和岗位。" : "此实例当前不可停止。") : "";
+  const availability = confirmed ? "原操作已成功。" : cloud && cloudAvailability ? cloudAvailability
+    : !supported ? (cloud ? "" : isNew ? "请选择可用的启动配置。" : "此实例当前不支持该操作。")
+    : blocked && !busy && !stale && !feedback ? (receipt?.operation ? `原操作 · ${receipt.operation.status}` : "操作暂不可用 · 查看连接与回执") : "";
+  const roles = cloud ? (workspace?.roles ?? []).map(item => ({ id: item.name, label: item.name, disabled: !item.available, reason: item.reason }))
+    : posts.map(item => ({ id: item.id, label: `${item.name} · ${item.office}` }));
+  return <CommandSurface title={label} opener={opener} onClose={onClose} onSubmit={submit} submitLabel={submitLabel} disabled={!enabled} danger={action === "kill" || action === "stop-participation"}>
+      {agent ? <div className="command-identity"><strong>{action === "fork" ? "来源 · " : ""}{agent.title}</strong><small className="command-exact-ref">{agent.ref.host && `${agent.ref.host} · `}{agent.ref.stopped_event != null ? `停止历史 #${agent.ref.stopped_event}` : `实例 · ${agent.ref.incarnation}`}</small>{selectedCatalog && <small className="command-exact-ref">{selectedCatalog.installation_id}</small>}<p>{consequence}</p></div> : <div className="launch-form">
+        {cloud && <div className="launch-field-pair">
+          <label>主机<select ref={input} aria-label="新 Agent 主机" value={host} disabled={busy} onChange={event => { setHost(event.target.value); setWorkspace(""); setRole(""); }}><option value="" disabled>请选择</option>{cloud.hosts.map(item => <option key={item.name} value={item.name}>{item.name}{item.online ? '' : ' · 心跳离线'}</option>)}</select></label>
+          <label>工作区<select aria-label="新 Agent 工作区" value={workspace?.alias ?? ""} disabled={busy || !workspaces.length} onChange={event => { setWorkspace(event.target.value); setRole(""); }}><option value="" disabled>请选择</option>{workspaces.map(item => <option key={item.alias}>{item.alias}</option>)}</select></label>
+        </div>}
         <div className="launch-field-pair">
-          <label>启动配置<select ref={profileInput} required aria-label="新 Agent 启动配置" value={supported ? profile : ""} onChange={event => setProfile(event.target.value)}>{!supported && <option value="">{profiles.length ? "请选择" : "无可用配置"}</option>}{profiles.map(item => <option key={item.name} value={item.name}>{item.name} · {item.tool}</option>)}</select></label>
+          <LaunchRolePicker roles={roles} value={role} onChange={setRole} disabled={busy} defaultLabel={cloud ? '默认 Codex' : '按启动配置'} defaultDisabled={!!cloud && !workspace?.default_available} />
+          {!cloud && !role && <label>启动配置<select ref={input} required aria-label="新 Agent 启动配置" value={profile} onChange={event => setProfile(event.target.value)}>{!profiles.length && <option value="">无可用配置</option>}{profiles.map(item => <option key={item.name} value={item.name}>{item.name} · {item.tool}</option>)}</select></label>}
           <label><span>职责标题 <small>可选</small></span><input aria-label="新 Agent 职责标题" maxLength={160} value={title} onChange={event => setTitle(event.target.value)} /></label>
         </div>
+        {cloud && <label><span>名称 <small>可选</small></span><input aria-label="新 Agent 名称" value={name} maxLength={64} pattern="[a-z0-9_\-]{1,64}" onChange={event => setName(event.target.value)} /></label>}
         <label><span>启动任务 <small>可选</small></span><textarea aria-label="新 Agent 任务" value={prompt} onChange={event => setPrompt(event.target.value)} /></label>
-        <details className="launch-directory">
+        {!cloud && <details className="launch-directory">
           <summary><span>工作目录</span><code title={directory}>{directory || "使用默认目录"}</code></summary>
           <label><span className="visually-hidden">新 Agent 工作目录</span><input aria-label="新 Agent 目录" value={directory} onChange={event => setDirectory(event.target.value)} /></label>
-        </details>
+        </details>}
       </div>}
       {feedback && <div className="command-result" role="alert" ref={errorTarget} tabIndex={-1}>{feedback}</div>}
       {availability && <div className="command-result" role="status">{availability}</div>}
-      {receipt && !busy && !stale && (blocked || receiptIssue) && <div className="command-receipt"><button type="button" disabled={!live.canLookup(receipt)} onClick={() => { setReceiptId(receipt.id); void live.lookup(receipt); }}>查询原回执</button></div>}
+      {cloud && catalogError && !stale && <button type="button" onClick={() => retryCatalog(value => value + 1)}>重试主机目录</button>}
+      {local && receipt && !busy && !stale && (blocked || receiptIssue) && <div className="command-receipt"><button type="button" disabled={!local.canLookup(receipt)} onClick={() => { setReceiptId(receipt.id); void local.lookup(receipt); }}>查询原回执</button></div>}
   </CommandSurface>;
+}
+
+function LaunchRolePicker({ roles, value, onChange, disabled, defaultLabel, defaultDisabled }: {
+  roles: readonly { id: string; label: string; disabled?: boolean; reason?: string | null }[];
+  value: string; onChange(value: string): void; disabled: boolean; defaultLabel: string; defaultDisabled: boolean;
+}) {
+  return <label>岗位<select aria-label="新 Agent 岗位" value={value} disabled={disabled} onChange={event => onChange(event.target.value)}>
+    <option value="" disabled={defaultDisabled}>{defaultLabel}</option>
+    {roles.map(role => <option key={role.id} value={role.id} disabled={role.disabled}>{role.label}{role.disabled ? ` · ${role.reason || '不可用'}` : ''}</option>)}
+  </select></label>;
 }

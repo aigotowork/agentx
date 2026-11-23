@@ -1,6 +1,6 @@
 import { CloudAdminError, createCloudAdminClient, createCloudScopeClient, type CloudAdminClient, type CloudScopeClient, type CloudScopeTypes } from '@agentx/client';
-import type { AgentResource } from '../offline/model';
-import { exactKey, sameAgent, type Access, type CloudAgent } from './route';
+import { exactAgentKey, type AgentResource } from '../offline/model';
+import { sameAgent, type Access, type CloudAgent } from './route';
 
 export type CloudHost = CloudScopeTypes['HostView'];
 export type Session = { scope: string; generation: string } & (
@@ -10,8 +10,8 @@ export type PageQuery = { after?: string; limit: number };
 export const cloudPageSize = 20;
 export const tokenPattern = /^[A-Za-z0-9_-]{32,256}$/;
 
-class ScopeChanged extends Error {}
-class ScopeUnavailable extends Error {}
+export class ScopeChanged extends Error {}
+export class ScopeUnavailable extends Error {}
 
 function originFetch(input: RequestInfo | URL, init?: RequestInit) {
   const url = new URL(input instanceof Request ? input.url : input, location.origin);
@@ -60,16 +60,17 @@ export function agentsPage(session: Session, query: PageQuery & { host?: string 
     : session.client.listAgents(query, { signal }));
 }
 
-export function resolveAdminAgent(session: Session & { access: 'admin' }, selected: CloudAgent, signal: AbortSignal) {
+export function resolveAgent(session: Session, selected: CloudAgent, signal: AbortSignal) {
   return fenced(session, signal, async () => {
     let after: string | undefined;
     do {
-      const page = await session.client.listAgents(session.scope, { host: selected.host, after, limit: 100 }, { signal });
+      const query = { host: selected.host, after, limit: 100 };
+      const page = await (session.access === 'admin' ? session.client.listAgents(session.scope, query, { signal }) : session.client.listAgents(query, { signal }));
       const found = page.items.find(agent => sameAgent(agent, selected));
       if (found) return found;
       // The cloud directory contains only one active tuple per name and pages by name.
       if (!page.next || page.items.some(row => row.name >= selected.name)) return null;
-      if (after && page.next <= after) throw new TypeError('Directory cursor did not advance');
+      if (after && page.next === after) throw new TypeError('Directory cursor did not advance');
       after = page.next;
     } while (!signal.aborted);
     signal.throwIfAborted();
@@ -77,11 +78,12 @@ export function resolveAdminAgent(session: Session & { access: 'admin' }, select
   });
 }
 
-export function projectCloudAgent(agent: CloudAgent, session: Session, room: string): AgentResource {
+export function projectCloudAgent(agent: CloudAgent, session: Session): AgentResource {
+  const ref = { scope: session.scope, generation: session.generation, ...agent, record: 'current' as const };
   return {
-    id: exactKey(agent), name: agent.name, title: agent.name, state: 'unknown', attention: false,
-    ref: { scope: session.scope, generation: session.generation, name: agent.name, incarnation: agent.incarnation, record: 'current' },
-    membership: { kind: 'directory', path: room }, role: { kind: 'unknown' },
+    id: exactAgentKey(ref), name: agent.name, title: `@${agent.name}`, state: 'unknown', attention: false,
+    ref,
+    membership: { kind: 'host', host: agent.host }, role: { kind: 'unknown' },
     description: agent.host, cwd: null, model: null, tool: '', profile: null,
     source: { id: agent.host, title: agent.host }, createdAt: '',
   };

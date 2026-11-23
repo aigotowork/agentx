@@ -34,12 +34,15 @@ class Model:
     launch_prompt = "cloud-acceptance-sender-start"
     message = "cloud-acceptance-native-request-雪"
     reply = "cloud-acceptance-native-related-reply"
+    operator_message = "cloud-acceptance-space-operator-request-雪"
+    operator_reply = "cloud-acceptance-space-agent-answer-雪"
     sender = "@west/sender"
     receiver = "@east/receiver"
 
     def __init__(self, fixture):
         self.fixture = fixture
         self.request_id, self.reply_id = str(uuid.uuid4()), str(uuid.uuid4())
+        self.operator_reply_id = str(uuid.uuid4())
         self.observed = {}
         self.errors = []
         self.lock = threading.Lock()
@@ -119,6 +122,12 @@ class Model:
                     "Receiver's Codex must observe the exact request and its numeric reply reference")
             return action("reply", ["send", self.sender, "--request-id", self.reply_id,
                                     "--intent", "ack", "--reply-to", reference[1], "--thread", "native-proof", "--", self.reply])
+        if self.operator_message in latest:
+            before = latest.partition(self.operator_message)[0]
+            envelope = re.search(r"request #([0-9]+)\] (@[^\s]+) -> " + re.escape(self.receiver), before)
+            require(envelope, "Provider must receive the normal exact address and reply ID for the operator")
+            return action("operator-reply", ["send", envelope[2], "--request-id", self.operator_reply_id,
+                                             "--intent", "ack", "--reply-to", envelope[1], "--", self.operator_reply])
         if self.launch_prompt in latest:
             return action("request", ["send", self.receiver, "--request-id", self.request_id,
                                       "--intent", "request", "--thread", "native-proof", "--", self.message])
@@ -259,9 +268,22 @@ def run(fixture, credential, certificate=None):
             require(request["from"] == reply["to"] and request["to"] == reply["from"]
                     and reply["reply_to"] == request["id"] and request["thread"] == reply["thread"] == "native-proof",
                     "Scope receipts must preserve the exact native request, reply and thread relation")
+            generation = fixture.expect("GET", admin_path, fixture.admin_token)["generation"]
+            conversation = admin_path + "/messages"
+            operator_message = fixture.expect("POST", conversation, fixture.admin_token,
+                                              {"generation": generation, "request_id": str(uuid.uuid4()),
+                                               "to": request["to"], "body": model.operator_message})
+            wait_for("Real Codex receives the operator request and finishes its reply tool call",
+                     lambda: model.seen("operator-reply-complete"), 30)
+            answer = wait_for("Operator response reaches durable history", lambda: confirmed(model.operator_reply_id))
+            page = fixture.expect("GET", conversation, fixture.admin_token, query={**request["to"], "generation": generation, "limit": 2})
+            require(page["items"] == [answer, operator_message] and answer["from"] == operator_message["to"]
+                    and answer["to"] == operator_message["from"] and answer["reply_to"] == operator_message["id"]
+                    and answer["body"] == model.operator_reply,
+                    "Admin history must expose the actual Codex host's persisted answer")
             return {"codex_version": version, "model": "scripted localhost Responses stream", "agents": agents,
                     "transport": "verified private HTTPS" if certificate else "loopback HTTP",
-                    "messages": [request, reply], "provider_evidence": "model-observations.json"}
+                    "messages": [request, reply, operator_message, answer], "provider_evidence": "model-observations.json"}
     finally:
         try:
             stop_private_processes(fixture, [env["HOME"] for env in hosts.values()])

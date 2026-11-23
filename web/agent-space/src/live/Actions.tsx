@@ -2,13 +2,18 @@ import { stringifyJson } from '@agentx/client';
 /** Compact actions remain beside their office, post, or exact Agent subject. */
 import { useAgentCommands } from '../interactions/AgentCommands';
 import { useState } from 'react';
+import { controlPending, controlStatus } from '../cloud/operations';
+import type { CloudWorkbench } from '../cloud/workbench';
+import type { SpaceLive } from './workbench';
 import type { AgentResource, Post } from '../offline/model';
 import { operationIssue, type LiveSpace, type Receipt } from './controller';
 
 /** @aiPurpose Display live connection, paging, and durable original-operation recovery.
  * @aiUsage Mount in the existing header; recovery only queries receipts and never repeats effects.
  */
-export function LiveStatus({ live, onReconnect }: { live: LiveSpace; onReconnect?: () => void }) {
+export function LiveStatus({ live, onReconnect, onCloudDisconnect }: { live: SpaceLive; onReconnect?: () => void; onCloudDisconnect?(): void }) {
+  if (live.kind === 'cloud') return <CloudStatus live={live} onDisconnect={onCloudDisconnect} />;
+
   const descriptor = live.descriptor;
   const scopedReceipts = live.receipts.filter(receipt => live.ownsReceipt(receipt));
   const pending = scopedReceipts.filter(receipt => !receipt.operation || ['Accepted', 'Running', 'Unknown'].includes(receipt.operation.status)).length;
@@ -22,6 +27,40 @@ export function LiveStatus({ live, onReconnect }: { live: LiveSpace; onReconnect
     : <button type="button" className="live-toolbar-refresh" onClick={live.refreshData} aria-label="刷新真实数据" title="刷新真实数据">↻</button>}{live.more && <button type="button" onClick={live.loadMore}>更多成员</button>}{(issues.length > 0 || operationFeedback.length > 0) && <span className="live-error" role="status">{issues.join(' · ')}{operationFeedback}</span>}<details className="live-receipts"><summary aria-label={issues.length ? "连接异常 · 回执" : "连接 · 回执"} data-issue={!!issues.length || undefined}>{issues.length ? "连接异常" : <><span className="live-receipt-context">连接 · </span>回执</>} {pending || ''} ⓘ</summary><div>{live.connection === 'pinned' && <button type="button" className="live-receipt-refresh" onClick={live.refreshData}>刷新真实数据</button>}{issues.map(issue => <span key={issue} className="live-error" role="status">{issue}</span>)}<code>{descriptor?.scope || '连接中'}</code><small>{descriptor?.generation}</small>{live.receipts.map(receipt => <section key={receipt.id}><strong>{receipt.kind} · {receipt.operation?.status ?? '未确认'}</strong><code>{receipt.id}</code><small>{receipt.scope} · {receipt.body.generation}</small>{receipt.issue && <p role="status">{receipt.issue}</p>}{receipt.operation?.error && <p role="status">{receipt.operation.error}</p>}{receipt.operation?.result && <pre>{stringifyJson(receipt.operation.result)}</pre>}<button type="button" disabled={!live.canLookup(receipt)} onClick={() => void live.lookup(receipt)}>查询原回执</button></section>)}{!live.receipts.length && <span>暂无操作</span>}<a href="./NOTICE.md" target="_blank" rel="noreferrer">素材与许可</a></div></details></div>;
 }
 
+function CloudStatus({ live, onDisconnect }: { live: CloudWorkbench; onDisconnect?(): void }) {
+  const { scope, generation } = live.descriptor;
+  const entries = live.operations?.entries ?? [];
+  const pending = entries.filter(controlPending).length;
+  const issue = live.error || live.actionError;
+  return <div className="live-status">
+    {live.connection === 'reset'
+      ? <button type="button" onClick={onDisconnect}>重新连接</button>
+      : <button type="button" className="live-toolbar-refresh" onClick={live.refreshData} aria-label="刷新真实数据" title="刷新真实数据">↻</button>}
+    {issue && <span className="live-error" role="status">{issue}</span>}
+    <details className="live-receipts">
+      <summary aria-label="连接 · 回执">{live.access === 'admin' ? '回执' : 'Scope 只读'} {pending || ''} ⓘ</summary>
+      <div>
+        <code>{scope}</code><small>{generation}</small>
+        <small>{live.access === 'admin' ? '管理员访问' : 'Scope 访问 · 只读'}</small>
+        {entries.map(entry => {
+          const { identity, receipt } = entry;
+          const result = receipt?.outcome;
+          return <section key={identity.request_id}>
+            <strong>{identity.kind === 'launch' ? '启动' : '停止'} · {controlStatus(entry)}</strong>
+            <code>{identity.request_id}</code><small>{identity.host} · {identity.installation_id}</small>
+            {result?.status === 'succeeded' && <code>@{result.agent.name} · {result.agent.host} · {result.agent.incarnation}</code>}
+            {result && result.status !== 'succeeded' && <code>{result.code}</code>}
+            {entry.issue && <small role="status">{entry.issue}</small>}
+            <button type="button" disabled={entry.busy || live.connection === 'reset'} onClick={() => void live.lookupControl(entry)}>查询原回执</button>
+          </section>;
+        })}
+        {live.operations && !entries.length && <span>暂无操作</span>}
+        <a href="/deployment">部署管理</a><button type="button" onClick={onDisconnect}>断开</button>
+      </div>
+    </details>
+  </div>;
+}
+
 /** Keep native errors and original-receipt recovery beside their operation subject. */
 function OperationFeedback({ live, receipt }: { live: LiveSpace; receipt: Receipt }) {
   const issue = operationIssue(receipt);
@@ -33,9 +72,11 @@ function OperationFeedback({ live, receipt }: { live: LiveSpace; receipt: Receip
 /** @aiPurpose Offer native capabilities for one exact current or stopped Agent.
  * @aiUsage Mount inside the existing reader; target is captured by exact id, never display name.
  */
-export function AgentActions({ live, agent }: { live: LiveSpace; agent: AgentResource }) {
+export function AgentActions({ live, agent }: { live: SpaceLive; agent: AgentResource }) {
   const native = live.capabilities(agent.id), blocked = live.blocked(agent.id);
   const commands = useAgentCommands();
+  if (live.kind === 'cloud') return <div className="live-agent-actions"><button type="button" disabled={blocked || !native?.can_stop}
+    title="停止此精确云端实例" onClick={() => commands?.request('kill', agent)}>停止 Agent</button></div>;
   if (!native) return null;
   return <div className="live-agent-actions">{native?.can_stop_participation && <button type="button" disabled={blocked} onClick={() => commands?.request("stop-participation", agent)}>停止参与</button>}{!native.can_fork && <small>原生工具或会话不支持 Fork 新 Agent</small>}{native?.can_stop && <button type="button" disabled={blocked} title="终止进程 · Ctrl / ⌘ + Shift + K" onClick={() => commands?.request("kill", agent)}>终止进程</button>}{native?.can_resume && <button type="button" disabled={blocked} onClick={() => void live.act(() => live.target('resume', agent.id))}>恢复</button>}</div>;
 }

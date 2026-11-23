@@ -17,6 +17,7 @@ export interface ConversationComposerProps {
   draftOnly?: boolean;
   uploading?: boolean;
   canAttach?: boolean;
+  attachmentUnavailable?: string;
   readOnly?: boolean;
   canSend: boolean;
   maxText?: number;
@@ -36,7 +37,7 @@ export interface ConversationComposerProps {
  * @aiUsage Keep draft, attachments, capabilities and delivery result in the page/controller owner; this component owns only input mechanics and accessible feedback.
  * @aiBehavior onSubmit reports deliberate intent; the product receipt adapter alone decides when the exact sent revision may be cleared.
  */
-export function ConversationComposer({ draft, onDraft, attachments, draftOnly = false, uploading = false, canSend, maxText = 200_000, status, contextError, onSubmit, onAddFiles, onRemoveAttachment, options, canAttach = false, readOnly = false, editorSize, onEditorSize, editorMemory, receiptAction }: ConversationComposerProps) {
+export function ConversationComposer({ draft, onDraft, attachments, draftOnly = false, uploading = false, canSend, maxText = 200_000, status, contextError, onSubmit, onAddFiles, onRemoveAttachment, options, canAttach = false, attachmentUnavailable, readOnly = false, editorSize, onEditorSize, editorMemory, receiptAction }: ConversationComposerProps) {
   const feedbackId = useId();
   const disclosure = useId();
   const lock = useRef(false);
@@ -130,7 +131,7 @@ export function ConversationComposer({ draft, onDraft, attachments, draftOnly = 
     {contextError && <div className="composer-feedback"><Feedback error>{contextError}</Feedback></div>}
     <label className="composer-editor" data-draft={size === "auto" ? draft : undefined}><span className="visually-hidden">当前精确 Agent 的本页草稿</span><textarea id={editorId} ref={input} rows={2} readOnly={readOnly} aria-label="Agent 消息草稿" aria-describedby={feedbackId} value={draft} maxLength={maxText} onChange={event => onDraft(event.target.value)} placeholder={placeholder} onScroll={event => storePosition(event.currentTarget)} onSelect={event => storePosition(event.currentTarget)} onBlur={event => storePosition(event.currentTarget)} onKeyDown={keyDown} onCompositionStart={() => { composing.current = true; }} onCompositionEnd={() => { composing.current = false; }} onPaste={paste} /></label>
     <div className="composer-toolbar">
-      {!draftOnly && <><input ref={picker} type="file" multiple hidden aria-label="选择附件" onChange={event => { void addFiles(Array.from(event.target.files ?? [])); event.target.value = ""; }} /><Button variant="icon" className="conversation-icon" aria-label="添加附件" title="添加图片或文件" disabled={!attachmentEnabled} onClick={() => picker.current?.click()}><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round"><path d="m8 12 5.5-5.5a3 3 0 0 1 4.3 4.3l-7.3 7.3a4.3 4.3 0 0 1-6.1-6.1l7.3-7.3m-4 8.4 5.5-5.5" /></svg></Button></>}
+      {!draftOnly && <><input ref={picker} type="file" multiple hidden aria-label="选择附件" onChange={event => { void addFiles(Array.from(event.target.files ?? [])); event.target.value = ""; }} /><Button variant="icon" className="conversation-icon" aria-label="添加附件" title={attachmentUnavailable || "添加图片或文件"} disabled={!attachmentEnabled} onClick={() => picker.current?.click()}><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round"><path d="m8 12 5.5-5.5a3 3 0 0 1 4.3 4.3l-7.3 7.3a4.3 4.3 0 0 1-6.1-6.1l7.3-7.3m-4 8.4 5.5-5.5" /></svg></Button></>}
       <div className="composer-status"><Feedback id={feedbackId}>{submitting ? "提交中…" : !validSize ? "消息超过原生字节上限" : status}</Feedback>{receiptAction}</div>
       {!readOnly && <details className="composer-size" name={disclosure} ref={sizeMenu}>
         <summary ref={sizeTrigger} aria-label="调整草稿高度" title="调整草稿高度"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M5 4h14M5 20h14m-7-13v10m-3-7 3-3 3 3m-6 4 3 3 3-3" /></svg></summary>

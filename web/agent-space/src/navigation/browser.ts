@@ -1,9 +1,9 @@
 /** Page-lifetime URL/state synchronization; supply retries never create history. */
 import { conversationSubjects, GLOBAL_OFFICE, membershipKey } from '../offline/model';
 import type { SpaceController } from '../offline/controller';
-import { defaultRoute, parseRoute, routeFromState, routeSearch, type SpaceRoute, type RouteTarget } from './route';
+import { defaultRoute, parseRoute, routeFromState, routeSearch, type SpaceRoute, type RouteTarget, type NavigationCodec } from './route';
 /** Install once per page; user navigation cancels pending targets, drafts/supply do not. */
-export function installNavigation(controller: SpaceController, report: (issue: string) => void, resolveTarget?: (target: RouteTarget, signal: AbortSignal, office: string) => Promise<unknown>): () => void {
+export function installNavigation(controller: SpaceController, report: (issue: string) => void, resolveTarget?: (target: RouteTarget, signal: AbortSignal, office: string) => Promise<unknown>, codec: NavigationCodec = { parse: parseRoute, search: routeSearch }): () => void {
   let applying = false, revision = controller.navigationRevision, pending: SpaceRoute | null = null;
   let previous = defaultRoute(), syntaxIssue = '';
   let supplied = controller.supply;
@@ -17,7 +17,7 @@ export function installNavigation(controller: SpaceController, report: (issue: s
     let workspaceId = route.workspaceId;
     const domainOffice = !!supply.scope.listener && (workspaceId === GLOBAL_OFFICE || workspaceId.startsWith('/'));
     const known = !domainOffice || workspaceId === GLOBAL_OFFICE || supply.workspaces.some(office => office.id === workspaceId);
-    if (workspaceId && !['$global', '$legacy', '$unknown'].includes(workspaceId) && !supply.workspaces.some(office => office.id === workspaceId)) issue ||= '办公室尚未加载或不存在';
+    if (workspaceId && !supply.scope.cloud && !['$global', '$legacy', '$unknown'].includes(workspaceId) && !supply.workspaces.some(office => office.id === workspaceId)) issue ||= '办公室尚未加载或不存在';
     if (route.target) {
       const target = route.target;
       // Synthetic demo records can explicitly retain an older generation; native targets cannot.
@@ -25,8 +25,8 @@ export function installNavigation(controller: SpaceController, report: (issue: s
       else if (target.scope !== supply.scope.id || supply.mode !== 'offline' && target.generation !== supply.scope.generation) issue ||= '目标 scope / generation 已失效；不会转向同名实例';
       else {
         const candidates = domainOffice && supply.roster?.office !== workspaceId ? supply.subjects ?? [] : conversationSubjects(supply);
-        const matches = candidates.filter(agent => agent.ref.scope === target.scope && agent.ref.generation === target.generation && agent.name === target.name && agent.ref.incarnation === target.incarnation && (agent.ref.stopped_event ?? null) === target.stopped_event && agent.ref.record === target.record);
-        if (supply.scope.listener && request?.phase === 'loading') issue ||= '正在读取精确会话';
+        const matches = candidates.filter(agent => agent.ref.scope === target.scope && agent.ref.generation === target.generation && agent.ref.host === target.host && agent.name === target.name && agent.ref.incarnation === target.incarnation && (agent.ref.stopped_event ?? null) === target.stopped_event && agent.ref.record === target.record);
+        if ((supply.scope.listener || supply.scope.cloud) && request?.phase === 'loading') issue ||= '正在读取精确会话';
         else if (request?.phase === 'error') issue ||= `精确目标不可用：@${target.name} · ${target.record === 'stopped' ? '停止历史' : '当前实例'}（${target.incarnation ?? target.stopped_event}） · ${request.error}；不会转向同名实例`;
         else if (matches.length !== 1) issue ||= '精确目标未加载、已失效或不唯一；不会转向同名实例';
         else if (workspaceId && workspaceId !== membershipKey(matches[0])) issue ||= 'office 与精确 Agent 归属不匹配';
@@ -39,7 +39,13 @@ export function installNavigation(controller: SpaceController, report: (issue: s
     controller.restoreNavigation({ workspaceId, presentation: route.presentation, officeView: route.officeView, postId: route.postId, query: route.query, state: route.state, panel: route.panel, detail: route.detail, mail: route.mail, before: route.before, selectedId, reading: !!selectedId, channels: selectedId ? { ...state.channels, [selectedId]: route.channel } : state.channels });
     applying = false; previous = route; report(issue);
     // Keep unresolved resource intent until supply arrives or a deliberate navigation supersedes it.
-    if (!issue) pending = null;
+    if (!issue) {
+      pending = null;
+      const search = codec.normalize?.(location.search, route);
+      if (search !== undefined && search !== location.search) {
+        history.replaceState(history.state, '', `${location.pathname}${search}${location.hash}`);
+      }
+    }
     const target = route.target;
     if (target && known && !selectedId && resolveTarget && target.scope === supply.scope.id && target.generation === supply.scope.generation) {
       if (!request) {
@@ -62,7 +68,8 @@ export function installNavigation(controller: SpaceController, report: (issue: s
     }
   }
   function read() {
-    const parsed = parseRoute(location.search); syntaxIssue = parsed.issue; pending = parsed.route; cancel(); restore();
+    revision = controller.noteBrowserNavigation();
+    const parsed = codec.parse(location.search); syntaxIssue = parsed.issue; pending = parsed.route; cancel(); restore();
   }
   read();
   const unsubscribe = controller.subscribe(() => {
@@ -77,7 +84,7 @@ export function installNavigation(controller: SpaceController, report: (issue: s
     }
     revision = controller.navigationRevision; pending = null; cancel(); syntaxIssue = ''; report('');
     const route = routeFromState(controller.getSnapshot(), controller.supply);
-    const search = routeSearch(location.search, route);
+    const search = codec.search(location.search, route);
     if (search !== location.search) {
       const onlyFilters = JSON.stringify({ ...previous, query: '', state: '' }) === JSON.stringify({ ...route, query: '', state: '' });
       window.history[onlyFilters ? 'replaceState' : 'pushState'](null, '', `${location.pathname}${search}${location.hash}`);

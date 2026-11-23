@@ -100,7 +100,7 @@ The [DancingAI importer](scripts/vendor-dancingai.mjs) removes only the final in
 
 | 令牌 | 可用功能 |
 | --- | --- |
-| 管理员 | 查看注册主机和 Agent，在「主机」中查阅工作区及角色目录、启动 Agent，在实例详情中精确停止 Agent。提交后可在「回执」中按原请求 ID 查询。 |
-| Scope | 查看注册清单与精确实例的已接收云端消息，可继续读较早记录。浏览器不发送消息；云端记录不代表 Provider 对话或已送达。 |
+| 管理员 | 查看注册主机和 Agent，使用「新建 Agent」选择主机、工作区和岗位。成功回执会打开新实例的会话；如果已切换页面内的目标，会保留当前选择。可在会话中发消息，在「会话详情」精确停止实例，并在「回执」查询原操作。 |
+| Scope | 查看注册清单与精确实例的云端消息，可继续读较早记录。该访问方式只读。 |
 
-界面上的主机心跳反映云端注册连接；主机是否能接收启动和停止操作由其管理租约决定。接口与权限细节见 [Cloud Space wire](../../.controller/cloud-space/wire.md)。
+云端消息已保存时会显示消息 ID，送达状态由 AgentX 单独处理。云端暂不提供附件、Fork 和 Provider Transcript。主机是否能接收启动和停止操作由其管理租约决定。接口与权限细节见 [Cloud Space wire](../../.controller/cloud-space/wire.md)。

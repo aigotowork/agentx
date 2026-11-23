@@ -34,14 +34,14 @@ CLI 轮换示例为 `agentx-http admin scopes rotate-token personal --expected-v
 
 ## 在 Cloud Space 工作
 
-在部署控制台 `/deployment` 选择 Scope，点击「打开 Space」，或访问 `/scopes/<id>/space/`。页面会单独要求选择并输入凭据；连接信息和链接不包含 token。
+在部署控制台 `/deployment` 选择 Scope，点击「打开 Space」，或访问 `/scopes/<id>/space/`。两个入口共用 Space 工作台。已保存的登录会在打开页面时重新验证。
 
 | 凭据 | 可用功能 |
 | --- | --- |
-| 部署管理 token | 查看 Scope、主机和精确 Agent 实例；选择在线主机公开的工作区和角色，启动 Agent（可附初始任务）、停止精确实例、查操作回执。 |
+| 部署管理 token | 查看 Scope、主机和精确 Agent 实例；选择在线主机公开的工作区和角色，启动 Agent（可附初始任务）、停止精确实例、查操作回执、在会话里发送文字和查看 Agent 回复。 |
 | 此 Scope 的通信 token | 查看该 Scope 的登记目录和精确 Agent 实例的云消息，向前翻页。此视图包括服务端已接受但尚未送达的消息。 |
 
-云消息来自部署消息库，不是主机的 Provider 会话记录。浏览器不以 Agent 身份发消息或领取收件箱。管理员若需查看消息，必须另外持有该 Scope 的通信 token，并切换身份。可分享的精确链接包含主机名、Agent 名、实例 ID（可附代次）；同名新实例不继承旧历史。
+云消息来自部署消息库，不是主机的 Provider 会话记录。浏览器不以 Agent 身份发消息或领取收件箱。管理员通过管理 API 以 Space 操作员身份发信。可分享的精确链接包含主机名、Agent 名、实例 ID（可附代次）；同名新实例不继承旧历史。
 
 ## 从主机接入
 

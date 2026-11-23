@@ -24,8 +24,8 @@ const codec = createSchemaCodec(wireDocument);
 /** @aiPurpose Distinguish an uncertain admin effect without exposing credentials. @aiUsage If retrying, reuse the original endpoint, scope and complete request body. */
 export class CloudAdminOutcomeUnknown extends Error {
   readonly code = 'OutcomeUnknown';
-  constructor(readonly operation: 'putScope' | 'rotateScopeToken' | 'submitControlOperation', readonly scopeId: string, readonly requestId: string) {
-    super(operation === 'submitControlOperation'
+  constructor(readonly operation: 'putScope' | 'rotateScopeToken' | 'submitControlOperation' | 'sendHumanMessage', readonly scopeId: string, readonly requestId: string) {
+    super(operation === 'sendHumanMessage' ? 'Cloud message submission is unconfirmed; retry only with the original request identity and input' : operation === 'submitControlOperation'
       ? 'Cloud operation submission is unconfirmed; look up the original receipt before replaying its exact input'
       : 'Cloud scope change outcome is unknown; retry only with the original request identity and input');
     this.name = 'CloudAdminOutcomeUnknown';
@@ -119,6 +119,33 @@ export function createCloudAdminClient(options: CloudAdminOptions) {
     getScope: (id: string, opts?: CallOptions) => read('ScopeRow', wire.getAdminScope(withScope(id, opts))),
     listHosts: (id: string, query?: Page, opts?: CallOptions) => read('HostPage', wire.listAdminScopeHosts({ ...withScope(id, opts), query })),
     listAgents: (id: string, query?: AgentPage, opts?: CallOptions) => read('AgentPage', wire.listAdminScopeAgents({ ...withScope(id, opts), query })),
+    listMessages(id: string, query: W.ListAdminScopeMessagesData['query'], opts?: CallOptions) {
+      const same = (agent: SchemaTypes['AgentView']) => agent.host === query.host && agent.name === query.name && agent.incarnation === query.incarnation;
+      return cloudResponse(wire.listAdminScopeMessages({ ...withScope(id, opts), query }), text => {
+        const page = codec.parse('MessageHistoryPage', text) as SchemaTypes['MessageHistoryPage'];
+        if (!page.items.every(message => same(message.from) || same(message.to))) throw new TypeError('Cloud history target mismatch');
+        return page;
+      }, secrets);
+    },
+    async sendHumanMessage(id: string, input: SchemaTypes['SendHumanMessage'], opts?: CallOptions) {
+      const scope = withScope(id, opts);
+      const encoded = codec.stringify('SendHumanMessage', input);
+      const body = JSON.parse(encoded) as SchemaTypes['SendHumanMessage'];
+      assertControlRequestId(body.request_id);
+      opts?.signal?.throwIfAborted();
+      try {
+        return await cloudResponse(wire.sendAdminScopeMessage({ ...scope, body }), text => {
+          const message = codec.parse('MessageView', text) as SchemaTypes['MessageView'];
+          if (message.to.host !== body.to.host || message.to.name !== body.to.name || message.to.incarnation !== body.to.incarnation
+            || message.body !== body.body) throw new TypeError('Cloud message receipt mismatch');
+          return message;
+        }, secrets);
+      } catch (error) {
+        if (isCloudRejection(error) && ![408, 425, 429].includes(error.status!)) throw error;
+        const publicId = body.request_id.includes(options.token) ? '[redacted]' : body.request_id;
+        throw new CloudAdminOutcomeUnknown('sendHumanMessage', id, publicId);
+      }
+    },
     getHostCapabilities(id: string, host: string, opts?: CallOptions) {
       const scope = withScope(id, opts);
       if (!/^[a-z0-9][a-z0-9_.-]{0,252}$/.test(host)) throw new TypeError('Invalid cloud host name');
