@@ -1,6 +1,6 @@
 ---
 schema: task
-status: active
+status: completed
 agents: [{"scope":"/home/long/works/longwork/agentx/.agentx","generation":"a6195a5b-1dd4-4a6d-87d4-1f18f1b664fb","participant":{"canonical_name":"mamuva","incarnation_bits":4745317378358057615}},{"scope":"/home/long/works/longwork/agentx/.agentx","generation":"a6195a5b-1dd4-4a6d-87d4-1f18f1b664fb","participant":{"canonical_name":"laloza","incarnation_bits":4745317378419909487}}]
 ---
 # Online workspace registration
@@ -21,3 +21,5 @@ The [control wire](../../cloud-daemon/wire.md) distinguishes eligible configured
 ## Consumer and end-to-end evidence
 
 The [operator guide](../../../.docs/architecture/cloud-daemon.md#在云端添加项目工作区) describes the Space and HTTP CLI entry points. The [shared HTTPS fixture](../../../tests/cloud_scope/shared_workbench.py) and its browser script created one new project, registered a second existing project, launched a real Codex supervisor with a role defined only in the second project, verified its subdirectory via procfs, and recovered both projects on host restart. The evidence is in `/tmp/cloud-workspace-accept-1/result.json`. The SDK's receipt test checks mismatched aliases, paths, creation flags and command kinds.
+
+The focused native cloud suite passed 39 tests and the SDK suite passed 34. The release image for the feature is tracked by [the commit-specific build](https://github.com/aigotowork/agentx/actions/runs/45154102311).
