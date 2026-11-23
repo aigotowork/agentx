@@ -1,12 +1,13 @@
 //! Deployment metadata and admin route composition. Typed host control lives in `cloud::control`.
+use super::changes::{ChangeQuery, SpaceChanges};
 use super::*;
 use axum::extract::{
     Path as Param, Query,
     rejection::{JsonRejection, PathRejection, QueryRejection},
 };
 use communication::{
-    AgentView, HostView,
-    types::{MessageHistoryPage, MessageHistoryQuery, MessageView, SendHumanMessage},
+    HostView,
+    types::{CloudAgentSummary, MessageHistoryPage, MessageHistoryQuery, MessageView, SendHumanMessage, TranscriptHistoryPage, TranscriptHistoryQuery},
 };
 use utoipa::OpenApi;
 
@@ -71,7 +72,7 @@ struct HostPage {
 }
 #[derive(Serialize, ToSchema)]
 struct AgentPage {
-    items: Vec<AgentView>,
+    items: Vec<CloudAgentSummary>,
     #[schema(required = true)]
     next: Option<String>,
 }
@@ -186,6 +187,7 @@ struct AgentQuery {
     after: Option<String>,
     limit: Option<u32>,
     host: Option<String>,
+    facts: Option<bool>,
 }
 
 #[utoipa::path(get,path="/api/v1/admin/scopes/{id}/agents",operation_id="listAdminScopeAgents",params(("id"=String,Path),AgentQuery),responses((status=200,body=AgentPage)))]
@@ -194,7 +196,7 @@ async fn agents(State(state): State<Deployment>, Param(id): Param<String>, query
     let (after, limit) = PageQuery::parse(Ok(Query(PageQuery { after: q.after, limit: q.limit })))?;
     let (scope, root, _) = scope_meta(&state, id).await?;
     let cursor = (!after.is_empty()).then_some(after);
-    let page = read_scope(move || communication::agent_page(&root, &scope.generation, cursor, limit as u32, q.host)).await?;
+    let page = read_scope(move || communication::agent_page(&root, &scope.generation, cursor, limit as u32, q.host, q.facts)).await?;
     Ok(Json(AgentPage { items: page.items, next: page.next }))
 }
 
@@ -222,11 +224,24 @@ pub(super) async fn scope_context(state: Deployment, id: String) -> Result<Scope
         .map_err(AdminError::Deployment)
 }
 
+#[utoipa::path(get,path="/api/v1/admin/scopes/{id}/changes",operation_id="adminSpaceChanges",params(("id"=String,Path),ChangeQuery),responses((status=200,body=SpaceChanges)))]
+async fn admin_changes(State(state): State<Deployment>, Param(id): Param<String>, input: Result<Query<ChangeQuery>, QueryRejection>) -> Result<Json<SpaceChanges>, AdminError> {
+    let query = communication::query(input).map_err(AdminError::Scope)?;
+    changes::wait(scope_context(state, id).await?, query, false).await.map(Json).map_err(AdminError::Scope)
+}
+
 #[utoipa::path(get,path="/api/v1/admin/scopes/{id}/messages",operation_id="listAdminScopeMessages",params(("id"=String,Path),MessageHistoryQuery),responses((status=200,body=MessageHistoryPage)))]
 async fn list_messages(State(state): State<Deployment>, id: Result<Param<String>, PathRejection>, query: Result<Query<MessageHistoryQuery>, QueryRejection>) -> Result<Json<MessageHistoryPage>, AdminError> {
     let query = communication::query(query).map_err(AdminError::Scope)?;
     let scope = scope_context(state, communication::path(id).map_err(AdminError::Scope)?).await?;
     communication::admin_message_history(scope, query).await.map(Json).map_err(AdminError::Scope)
+}
+
+#[utoipa::path(get,path="/api/v1/admin/scopes/{id}/transcript",operation_id="listAdminScopeTranscript",params(("id"=String,Path),TranscriptHistoryQuery),responses((status=200,body=TranscriptHistoryPage)))]
+async fn list_transcript(State(state): State<Deployment>, id: Result<Param<String>, PathRejection>, query: Result<Query<TranscriptHistoryQuery>, QueryRejection>) -> Result<Json<TranscriptHistoryPage>, AdminError> {
+    let query = communication::query(query).map_err(AdminError::Scope)?;
+    let scope = scope_context(state, communication::path(id).map_err(AdminError::Scope)?).await?;
+    communication::admin_transcript_history(scope, query).await.map(Json).map_err(AdminError::Scope)
 }
 
 #[utoipa::path(post,path="/api/v1/admin/scopes/{id}/messages",operation_id="sendAdminScopeMessage",params(("id"=String,Path)),request_body=SendHumanMessage,responses((status=200,body=MessageView),(status=413,description="Payload too large",body=ApiError)))]
@@ -255,11 +270,13 @@ async fn rotate(State(state): State<Deployment>, Param(id): Param<String>, body:
 
 pub(super) fn router(state: Deployment) -> Router {
     Router::new()
+        .route("/scopes/{id}/changes", get(admin_changes))
         .route("/overview", get(overview))
         .route("/scopes", get(list_scopes))
         .route("/scopes/{id}", get(show).put(create))
         .route("/scopes/{id}/hosts", get(hosts))
         .route("/scopes/{id}/agents", get(agents))
+        .route("/scopes/{id}/transcript", get(list_transcript))
         .route("/scopes/{id}/messages", get(list_messages).post(send_message).layer(DefaultBodyLimit::max(512 * 1024)))
         .route("/scopes/{id}/token-rotations", axum::routing::post(rotate))
         .merge(super::control::admin_router())
@@ -268,7 +285,7 @@ pub(super) fn router(state: Deployment) -> Router {
 
 pub(super) fn document() -> serde_json::Value {
     #[derive(OpenApi)]
-    #[openapi(paths(overview, list_scopes, show, hosts, agents, list_messages, send_message, create, rotate), components(schemas(ApiError)))]
+    #[openapi(paths(admin_changes, overview, list_scopes, show, hosts, agents, list_transcript, list_messages, send_message, create, rotate), components(schemas(ApiError)))]
     struct AdminApi;
     let mut api = AdminApi::openapi();
     api.merge(super::control::admin_document());

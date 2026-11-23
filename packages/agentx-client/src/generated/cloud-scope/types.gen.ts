@@ -5,7 +5,7 @@ export type ClientOptions = {
 };
 
 export type AgentPage = {
-    items: Array<AgentView>;
+    items: Array<CloudAgentSummary>;
     next: string | null;
 };
 
@@ -31,6 +31,30 @@ export type ClaimInbox = {
     wait_ms?: number | null;
 };
 
+export type CloudAgentFacts = {
+    cwd: string;
+    role: string | null;
+    status: CloudAgentStatus;
+    title: string | null;
+};
+
+export type CloudAgentStatus = 'active' | 'idle' | 'error' | 'unknown' | 'stopped';
+
+export type CloudAgentSummary = {
+    facts?: null | CloudAgentFacts;
+    host: string;
+    incarnation: string;
+    name: string;
+};
+
+export type CloudTranscriptRecord = {
+    id: string;
+    role: CloudTranscriptRole;
+    text: string;
+};
+
+export type CloudTranscriptRole = 'user' | 'assistant';
+
 export type ConfirmInbox = {
     agent: AgentView;
     claim_id: string;
@@ -40,11 +64,19 @@ export type ConfirmInbox = {
 };
 
 export type ControlCommand = {
+    /**
+     * Create the final component if absent. Parents must already exist.
+     */
+    create_directory?: boolean | null;
     initial_prompt?: string | null;
     kind: 'launch';
     name?: string | null;
     role?: string | null;
     title?: string | null;
+    /**
+     * Slash-separated path relative to the workspace export. Omit or send an empty string for its root.
+     */
+    working_directory?: string | null;
     workspace: string;
 } | {
     incarnation: string;
@@ -87,6 +119,10 @@ export type Descriptor = {
 };
 
 export type HostCapabilities = {
+    /**
+     * This control lease accepts workspace-relative launch directories.
+     */
+    directory_launch?: boolean | null;
     generation: string;
     host: string;
     installation_id: string;
@@ -157,6 +193,23 @@ export type PollControlOperation = {
     wait_ms?: number | null;
 };
 
+export type PublishTranscript = {
+    agent: AgentView;
+    facts: CloudAgentFacts;
+    generation: string;
+    installation_id: string;
+    items: Array<PublishTranscriptRecord>;
+};
+
+export type PublishTranscriptRecord = {
+    /**
+     * Host-generated digest of the exact Provider item identity, used only for retries.
+     */
+    key: string;
+    role: CloudTranscriptRole;
+    text: string;
+};
+
 export type RecoverInbox = {
     agent: AgentView;
     claim_id: string;
@@ -204,6 +257,22 @@ export type SendMessage = {
     to: string;
 };
 
+export type SpaceChanges = {
+    epoch: string;
+    messages: number;
+    roster: number;
+    transcript: number;
+};
+
+export type TranscriptHistoryPage = {
+    agent: AgentView;
+    available: boolean;
+    facts: null | CloudAgentFacts;
+    items: Array<CloudTranscriptRecord>;
+    latest: string | null;
+    next: string | null;
+};
+
 export type WorkspaceCapability = {
     alias: string;
     default_available: boolean;
@@ -218,6 +287,10 @@ export type ScopeListAgentsData = {
         after?: string;
         limit?: number;
         host?: string;
+        /**
+         * Include host-reported Agent facts. Omit for identity-only legacy clients.
+         */
+        facts?: boolean;
     };
     url: '/agents';
 };
@@ -275,6 +348,28 @@ export type ScopeRetireAgentResponses = {
 };
 
 export type ScopeRetireAgentResponse = ScopeRetireAgentResponses[keyof ScopeRetireAgentResponses];
+
+export type ScopeSpaceChangesData = {
+    body?: never;
+    path?: never;
+    query: {
+        generation: string;
+        cursor?: string;
+    };
+    url: '/changes';
+};
+
+export type ScopeSpaceChangesErrors = {
+    default: ScopeError;
+};
+
+export type ScopeSpaceChangesError = ScopeSpaceChangesErrors[keyof ScopeSpaceChangesErrors];
+
+export type ScopeSpaceChangesResponses = {
+    200: SpaceChanges;
+};
+
+export type ScopeSpaceChangesResponse = ScopeSpaceChangesResponses[keyof ScopeSpaceChangesResponses];
 
 export type ScopeDescribeData = {
     body?: never;
@@ -343,7 +438,12 @@ export type ScopeRenewControlLeaseData = {
     path: {
         host: string;
     };
-    query?: never;
+    query?: {
+        /**
+         * Advertises native support for scoped working-directory launch.
+         */
+        directory_launch?: boolean;
+    };
     url: '/hosts/{host}/control/lease';
 };
 
@@ -468,6 +568,10 @@ export type ScopeListMessagesData = {
         name: string;
         incarnation: string;
         /**
+         * Exclusive forward cursor. Zero starts at the beginning. Forward pages use ascending IDs.
+         */
+        after?: string;
+        /**
          * Exclusive positive decimal message ID; omit to start with the latest messages.
          */
         before?: string;
@@ -527,3 +631,55 @@ export type ScopeGetOperationResponses = {
 };
 
 export type ScopeGetOperationResponse = ScopeGetOperationResponses[keyof ScopeGetOperationResponses];
+
+export type ScopeListTranscriptData = {
+    body?: never;
+    path?: never;
+    query: {
+        generation: string;
+        host: string;
+        name: string;
+        incarnation: string;
+        /**
+         * Exclusive positive decimal cursor for older records, newest first.
+         */
+        before?: string;
+        /**
+         * Exclusive decimal cursor for newer records, oldest first. Use 0 to follow an empty transcript.
+         */
+        after?: string;
+        limit?: number;
+    };
+    url: '/transcript';
+};
+
+export type ScopeListTranscriptErrors = {
+    default: ScopeError;
+};
+
+export type ScopeListTranscriptError = ScopeListTranscriptErrors[keyof ScopeListTranscriptErrors];
+
+export type ScopeListTranscriptResponses = {
+    200: TranscriptHistoryPage;
+};
+
+export type ScopeListTranscriptResponse = ScopeListTranscriptResponses[keyof ScopeListTranscriptResponses];
+
+export type ScopePublishTranscriptData = {
+    body: PublishTranscript;
+    path?: never;
+    query?: never;
+    url: '/transcript';
+};
+
+export type ScopePublishTranscriptErrors = {
+    default: ScopeError;
+};
+
+export type ScopePublishTranscriptError = ScopePublishTranscriptErrors[keyof ScopePublishTranscriptErrors];
+
+export type ScopePublishTranscriptResponses = {
+    200: boolean;
+};
+
+export type ScopePublishTranscriptResponse = ScopePublishTranscriptResponses[keyof ScopePublishTranscriptResponses];

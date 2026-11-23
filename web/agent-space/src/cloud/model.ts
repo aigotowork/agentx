@@ -1,8 +1,10 @@
 import { CloudAdminError, createCloudAdminClient, createCloudScopeClient, type CloudAdminClient, type CloudScopeClient, type CloudScopeTypes } from '@agentx/client';
-import { exactAgentKey, type AgentResource } from '../offline/model';
+import { exactAgentKey, type AgentResource, type AgentState } from '../offline/model';
 import { sameAgent, type Access, type CloudAgent } from './route';
 
 export type CloudHost = CloudScopeTypes['HostView'];
+export type CloudRosterAgent = CloudScopeTypes['CloudAgentSummary'];
+export type CloudAgentFacts = CloudScopeTypes['CloudAgentFacts'];
 export type Session = { scope: string; generation: string } & (
   { access: 'admin'; client: CloudAdminClient } | { access: 'scope'; client: CloudScopeClient }
 );
@@ -17,7 +19,7 @@ function originFetch(input: RequestInfo | URL, init?: RequestInit) {
   const url = new URL(input instanceof Request ? input.url : input, location.origin);
   if (url.origin !== location.origin) throw new TypeError('Cloud Space only connects to its own origin');
   const caller = init?.signal ?? (input instanceof Request ? input.signal : undefined);
-  const timeout = AbortSignal.timeout(15_000);
+  const timeout = AbortSignal.timeout(url.pathname.endsWith("/changes") ? 35_000 : 15_000);
   return fetch(input, { ...init, signal: caller ? AbortSignal.any([caller, timeout]) : timeout,
     mode: 'same-origin', credentials: 'omit', cache: 'no-store', redirect: 'error', referrerPolicy: 'no-referrer' });
 }
@@ -49,15 +51,25 @@ export async function fenced<T>(session: Session, signal: AbortSignal, run: () =
 }
 
 export function hostsPage(session: Session, query: PageQuery, signal: AbortSignal) {
-  return fenced(session, signal, () => session.access === 'admin'
+  return session.access === 'admin'
     ? session.client.listHosts(session.scope, query, { signal })
-    : session.client.listHosts(query, { signal }));
+    : session.client.listHosts(query, { signal });
 }
 
-export function agentsPage(session: Session, query: PageQuery & { host?: string }, signal: AbortSignal) {
-  return fenced(session, signal, () => session.access === 'admin'
-    ? session.client.listAgents(session.scope, query, { signal })
-    : session.client.listAgents(query, { signal }));
+const legacyRoster = new WeakSet<Session>();
+export async function agentsPage(session: Session, query: PageQuery & { host?: string }, signal: AbortSignal) {
+  const read = (facts?: true) => session.access === 'admin'
+    ? session.client.listAgents(session.scope, { ...query, facts }, { signal })
+    : session.client.listAgents({ ...query, facts }, { signal });
+  if (legacyRoster.has(session)) return read();
+  try { return await read(true); }
+  catch (error) {
+    // Old deployments reject unknown roster query fields. The exact read identity is unchanged.
+    if (!(error instanceof CloudAdminError) || error.status !== 400) throw error;
+    const page = await read();
+    legacyRoster.add(session);
+    return page;
+  }
 }
 
 export function resolveAgent(session: Session, selected: CloudAgent, signal: AbortSignal) {
@@ -65,7 +77,7 @@ export function resolveAgent(session: Session, selected: CloudAgent, signal: Abo
     let after: string | undefined;
     do {
       const query = { host: selected.host, after, limit: 100 };
-      const page = await (session.access === 'admin' ? session.client.listAgents(session.scope, query, { signal }) : session.client.listAgents(query, { signal }));
+      const page = await agentsPage(session, query, signal);
       const found = page.items.find(agent => sameAgent(agent, selected));
       if (found) return found;
       // The cloud directory contains only one active tuple per name and pages by name.
@@ -78,14 +90,20 @@ export function resolveAgent(session: Session, selected: CloudAgent, signal: Abo
   });
 }
 
-export function projectCloudAgent(agent: CloudAgent, session: Session): AgentResource {
-  const ref = { scope: session.scope, generation: session.generation, ...agent, record: 'current' as const };
+const factStates: Record<CloudAgentFacts['status'], AgentState> = { active: 'running', idle: 'idle', error: 'failed', unknown: 'unknown', stopped: 'closed' };
+
+export function projectCloudAgent(agent: CloudRosterAgent, session: Session, supplied?: CloudAgentFacts | null, retired = false): AgentResource {
+  const { host, name, incarnation } = agent;
+  const facts = supplied ?? agent.facts;
+  const ref = { scope: session.scope, generation: session.generation, host, name, incarnation, record: 'current' as const };
+  const state = retired ? 'closed' : facts ? factStates[facts.status] : 'unknown';
   return {
-    id: exactAgentKey(ref), name: agent.name, title: `@${agent.name}`, state: 'unknown', attention: false,
+    id: exactAgentKey(ref), name, title: facts?.title || `@${name}`, launchTitle: facts?.title, state, attention: state === 'failed',
     ref,
-    membership: { kind: 'host', host: agent.host }, role: { kind: 'unknown' },
-    description: agent.host, cwd: null, model: null, tool: '', profile: null,
-    source: { id: agent.host, title: agent.host }, createdAt: '',
+    membership: { kind: 'host', host }, role: facts?.role ? { kind: 'adopted', name: facts.role, source: '', profile: '', revision: '' }
+      : facts ? { kind: 'none' } : { kind: 'unknown' },
+    description: host, cwd: facts?.cwd ?? null, model: null, tool: facts ? 'codex' : '', profile: null,
+    source: { id: host, title: host }, createdAt: '',
   };
 }
 

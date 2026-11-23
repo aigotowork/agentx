@@ -16,7 +16,7 @@ export type AdminOverview = {
 };
 
 export type AgentPage = {
-    items: Array<AgentView>;
+    items: Array<CloudAgentSummary>;
     next: string | null;
 };
 
@@ -31,12 +31,44 @@ export type ApiError = {
     message: string;
 };
 
+export type CloudAgentFacts = {
+    cwd: string;
+    role: string | null;
+    status: CloudAgentStatus;
+    title: string | null;
+};
+
+export type CloudAgentStatus = 'active' | 'idle' | 'error' | 'unknown' | 'stopped';
+
+export type CloudAgentSummary = {
+    facts?: null | CloudAgentFacts;
+    host: string;
+    incarnation: string;
+    name: string;
+};
+
+export type CloudTranscriptRecord = {
+    id: string;
+    role: CloudTranscriptRole;
+    text: string;
+};
+
+export type CloudTranscriptRole = 'user' | 'assistant';
+
 export type ControlCommand = {
+    /**
+     * Create the final component if absent. Parents must already exist.
+     */
+    create_directory?: boolean | null;
     initial_prompt?: string | null;
     kind: 'launch';
     name?: string | null;
     role?: string | null;
     title?: string | null;
+    /**
+     * Slash-separated path relative to the workspace export. Omit or send an empty string for its root.
+     */
+    working_directory?: string | null;
     workspace: string;
 } | {
     incarnation: string;
@@ -81,6 +113,10 @@ export type CreateScope = {
 };
 
 export type HostCapabilities = {
+    /**
+     * This control lease accepts workspace-relative launch directories.
+     */
+    directory_launch?: boolean | null;
     generation: string;
     host: string;
     installation_id: string;
@@ -167,6 +203,22 @@ export type SendHumanMessage = {
     generation: string;
     request_id: string;
     to: AgentView;
+};
+
+export type SpaceChanges = {
+    epoch: string;
+    messages: number;
+    roster: number;
+    transcript: number;
+};
+
+export type TranscriptHistoryPage = {
+    agent: AgentView;
+    available: boolean;
+    facts: null | CloudAgentFacts;
+    items: Array<CloudTranscriptRecord>;
+    latest: string | null;
+    next: string | null;
 };
 
 export type WorkspaceCapability = {
@@ -371,6 +423,7 @@ export type ListAdminScopeAgentsData = {
         after?: string;
         limit?: number;
         host?: string;
+        facts?: boolean;
     };
     url: '/api/v1/admin/scopes/{id}/agents';
 };
@@ -409,6 +462,53 @@ export type ListAdminScopeAgentsResponses = {
 };
 
 export type ListAdminScopeAgentsResponse = ListAdminScopeAgentsResponses[keyof ListAdminScopeAgentsResponses];
+
+export type AdminSpaceChangesData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query: {
+        generation: string;
+        cursor?: string;
+    };
+    url: '/api/v1/admin/scopes/{id}/changes';
+};
+
+export type AdminSpaceChangesErrors = {
+    /**
+     * Invalid input
+     */
+    400: ApiError;
+    /**
+     * Invalid admin credential
+     */
+    401: ApiError;
+    /**
+     * Unknown scope
+     */
+    404: ApiError;
+    /**
+     * Conflict
+     */
+    409: ApiError;
+    /**
+     * Storage error
+     */
+    500: ApiError;
+    /**
+     * Unavailable
+     */
+    503: ApiError;
+};
+
+export type AdminSpaceChangesError = AdminSpaceChangesErrors[keyof AdminSpaceChangesErrors];
+
+export type AdminSpaceChangesResponses = {
+    200: SpaceChanges;
+};
+
+export type AdminSpaceChangesResponse = AdminSpaceChangesResponses[keyof AdminSpaceChangesResponses];
 
 export type ListAdminScopeHostsData = {
     body?: never;
@@ -512,6 +612,10 @@ export type ListAdminScopeMessagesData = {
         host: string;
         name: string;
         incarnation: string;
+        /**
+         * Exclusive forward cursor. Zero starts at the beginning. Forward pages use ascending IDs.
+         */
+        after?: string;
         /**
          * Exclusive positive decimal message ID; omit to start with the latest messages.
          */
@@ -736,3 +840,61 @@ export type RotateAdminScopeTokenResponses = {
 };
 
 export type RotateAdminScopeTokenResponse = RotateAdminScopeTokenResponses[keyof RotateAdminScopeTokenResponses];
+
+export type ListAdminScopeTranscriptData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query: {
+        generation: string;
+        host: string;
+        name: string;
+        incarnation: string;
+        /**
+         * Exclusive positive decimal cursor for older records, newest first.
+         */
+        before?: string;
+        /**
+         * Exclusive decimal cursor for newer records, oldest first. Use 0 to follow an empty transcript.
+         */
+        after?: string;
+        limit?: number;
+    };
+    url: '/api/v1/admin/scopes/{id}/transcript';
+};
+
+export type ListAdminScopeTranscriptErrors = {
+    /**
+     * Invalid input
+     */
+    400: ApiError;
+    /**
+     * Invalid admin credential
+     */
+    401: ApiError;
+    /**
+     * Unknown scope
+     */
+    404: ApiError;
+    /**
+     * Conflict
+     */
+    409: ApiError;
+    /**
+     * Storage error
+     */
+    500: ApiError;
+    /**
+     * Unavailable
+     */
+    503: ApiError;
+};
+
+export type ListAdminScopeTranscriptError = ListAdminScopeTranscriptErrors[keyof ListAdminScopeTranscriptErrors];
+
+export type ListAdminScopeTranscriptResponses = {
+    200: TranscriptHistoryPage;
+};
+
+export type ListAdminScopeTranscriptResponse = ListAdminScopeTranscriptResponses[keyof ListAdminScopeTranscriptResponses];

@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client/index.js';
-import type { ScopeClaimInboxData, ScopeClaimInboxErrors, ScopeClaimInboxResponses, ScopeConfirmInboxData, ScopeConfirmInboxErrors, ScopeConfirmInboxResponses, ScopeDescribeData, ScopeDescribeErrors, ScopeDescribeResponses, ScopeGetOperationData, ScopeGetOperationErrors, ScopeGetOperationResponses, ScopeListAgentsData, ScopeListAgentsErrors, ScopeListAgentsResponses, ScopeListHostsData, ScopeListHostsErrors, ScopeListHostsResponses, ScopeListMessagesData, ScopeListMessagesErrors, ScopeListMessagesResponses, ScopePollControlOperationData, ScopePollControlOperationErrors, ScopePollControlOperationResponses, ScopeRecoverInboxData, ScopeRecoverInboxErrors, ScopeRecoverInboxResponses, ScopeRegisterAgentData, ScopeRegisterAgentErrors, ScopeRegisterAgentResponses, ScopeRenewControlLeaseData, ScopeRenewControlLeaseErrors, ScopeRenewControlLeaseResponses, ScopeRenewHostData, ScopeRenewHostErrors, ScopeRenewHostResponses, ScopeReportControlOperationData, ScopeReportControlOperationErrors, ScopeReportControlOperationResponses, ScopeRetireAgentData, ScopeRetireAgentErrors, ScopeRetireAgentResponses, ScopeSendMessageData, ScopeSendMessageErrors, ScopeSendMessageResponses } from './types.gen.js';
+import type { ScopeClaimInboxData, ScopeClaimInboxErrors, ScopeClaimInboxResponses, ScopeConfirmInboxData, ScopeConfirmInboxErrors, ScopeConfirmInboxResponses, ScopeDescribeData, ScopeDescribeErrors, ScopeDescribeResponses, ScopeGetOperationData, ScopeGetOperationErrors, ScopeGetOperationResponses, ScopeListAgentsData, ScopeListAgentsErrors, ScopeListAgentsResponses, ScopeListHostsData, ScopeListHostsErrors, ScopeListHostsResponses, ScopeListMessagesData, ScopeListMessagesErrors, ScopeListMessagesResponses, ScopeListTranscriptData, ScopeListTranscriptErrors, ScopeListTranscriptResponses, ScopePollControlOperationData, ScopePollControlOperationErrors, ScopePollControlOperationResponses, ScopePublishTranscriptData, ScopePublishTranscriptErrors, ScopePublishTranscriptResponses, ScopeRecoverInboxData, ScopeRecoverInboxErrors, ScopeRecoverInboxResponses, ScopeRegisterAgentData, ScopeRegisterAgentErrors, ScopeRegisterAgentResponses, ScopeRenewControlLeaseData, ScopeRenewControlLeaseErrors, ScopeRenewControlLeaseResponses, ScopeRenewHostData, ScopeRenewHostErrors, ScopeRenewHostResponses, ScopeReportControlOperationData, ScopeReportControlOperationErrors, ScopeReportControlOperationResponses, ScopeRetireAgentData, ScopeRetireAgentErrors, ScopeRetireAgentResponses, ScopeSendMessageData, ScopeSendMessageErrors, ScopeSendMessageResponses, ScopeSpaceChangesData, ScopeSpaceChangesErrors, ScopeSpaceChangesResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -42,6 +42,12 @@ export const scopeRetireAgent = <ThrowOnError extends boolean = false>(options: 
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+export const scopeSpaceChanges = <ThrowOnError extends boolean = false>(options: Options<ScopeSpaceChangesData, ThrowOnError>): RequestResult<ScopeSpaceChangesResponses, ScopeSpaceChangesErrors, ThrowOnError> => (options.client ?? client).get<ScopeSpaceChangesResponses, ScopeSpaceChangesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/changes',
+    ...options
 });
 
 export const scopeDescribe = <ThrowOnError extends boolean = false>(options?: Options<ScopeDescribeData, ThrowOnError>): RequestResult<ScopeDescribeResponses, ScopeDescribeErrors, ThrowOnError> => (options?.client ?? client).get<ScopeDescribeResponses, ScopeDescribeErrors, ThrowOnError>({
@@ -146,4 +152,20 @@ export const scopeGetOperation = <ThrowOnError extends boolean = false>(options:
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/operations/{request_id}',
     ...options
+});
+
+export const scopeListTranscript = <ThrowOnError extends boolean = false>(options: Options<ScopeListTranscriptData, ThrowOnError>): RequestResult<ScopeListTranscriptResponses, ScopeListTranscriptErrors, ThrowOnError> => (options.client ?? client).get<ScopeListTranscriptResponses, ScopeListTranscriptErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/transcript',
+    ...options
+});
+
+export const scopePublishTranscript = <ThrowOnError extends boolean = false>(options: Options<ScopePublishTranscriptData, ThrowOnError>): RequestResult<ScopePublishTranscriptResponses, ScopePublishTranscriptErrors, ThrowOnError> => (options.client ?? client).post<ScopePublishTranscriptResponses, ScopePublishTranscriptErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/transcript',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });

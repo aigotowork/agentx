@@ -61,7 +61,7 @@ def tls_front(fixture, drop_method=None, drop_path=None, observed_polls=None):
             headers = {key: value for key, value in self.headers.items() if key.lower() not in omit}
             observe = observed_polls is not None and self.path.endswith("/control/poll")
             began = time.monotonic()
-            connection = http.client.HTTPConnection("127.0.0.1", fixture.port, timeout=35 if observe else 10)
+            connection = http.client.HTTPConnection("127.0.0.1", fixture.port, timeout=35 if observe or self.path.partition("?")[0].endswith("/changes") else 10)
             try:
                 connection.request(self.command, self.path, self.rfile.read(size) if size else None, headers)
                 response = connection.getresponse()

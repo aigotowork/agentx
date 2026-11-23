@@ -20,6 +20,13 @@ const current = { ...old, incarnation: '18446744073709551614' };
 const launched = { host: current.host, name: 'cloud_worker', incarnation: '18446744073709551613' };
 const unattended = { ...launched, name: 'unattended', incarnation: '18446744073709551611' };
 const replacement = { ...launched, incarnation: '18446744073709551612' };
+const launchFacts = { role: 'reviewer', title: 'Cloud review', cwd: '/srv/work/review', status: 'active' };
+const facts = new Map([[launched.incarnation, launchFacts], [old.incarnation, { ...launchFacts, title: null, status: 'stopped' }]]);
+const transcripts = new Map([
+  [launched.incarnation, [{ id: '1', role: 'user', text: 'Read the scoped notes.' }]],
+  [old.incarnation, [{ id: '4', role: 'user', text: 'Earlier model input' }, { id: '5', role: 'assistant', text: 'Retired model result' }]],
+  [replacement.incarnation, [{ id: '6', role: 'assistant', text: 'Replacement model result' }]],
+]);
 const peer = { host: 'runner-02', name: 'peer', incarnation: 'peer-v1' };
 const human = { host: '~space', name: 'operator', incarnation: '~human' };
 const agents = [current, ...Array.from({ length: 20 }, (_, i) => ({ ...peer, name: `worker-${String(i + 2).padStart(2, '0')}` }))];
@@ -33,6 +40,10 @@ const messages = [
   message('9223372036854775803', old, peer, 'Retired instance earlier message'),
   message('9223372036854775804', peer, old, '**Retired instance only**'),
 ];
+const observers = new EventTarget();
+const revisions = { epoch: 'fixture', roster: 0, messages: 0, transcript: 0 };
+function signalMessage() { revisions.messages++; observers.dispatchEvent(new Event('change')); }
+function signalTranscript() { revisions.transcript++; observers.dispatchEvent(new Event('change')); }
 const assetTypes = { '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
 const csp = "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'";
 const complete = (input, agent) => operations.set(input.request_id, { ...input, status: 'succeeded', claim_id: 'fixture-claim', outcome: { status: 'succeeded', agent } });
@@ -70,12 +81,25 @@ const server = createServer(async (request, response) => {
     calls.push({ path, method: request.method, query: Object.fromEntries(url.searchParams), audience });
     if (!isAdmin && !isScope) return fail(404, 'unsupported_path');
     if (isAdmin ? audience !== 'admin' : audience !== 'scope') return fail(401, 'unauthorized');
+    if (path.endsWith('/changes')) {
+      if (url.searchParams.get('generation') !== scopeGeneration) return fail(409, 'stale_generation');
+      if (url.searchParams.get('cursor') === Object.values(revisions).join('.')) {
+        await new Promise(resolve => {
+          const finish = () => { clearTimeout(timer); observers.removeEventListener('change', finish); resolve(); };
+          const timer = setTimeout(finish, 25_000);
+          response.once('close', finish); observers.addEventListener('change', finish, { once: true });
+        });
+      }
+      if (!response.destroyed) send(revisions);
+      return;
+    }
     if (path === `${scopeApi}/descriptor`) return send({ scope_id: scope, generation: scopeGeneration, protocol_version: 1 });
     if (path === adminApi) return send({ id: scope, scope_url: `http://127.0.0.1:${server.address().port}${scopePath}`, generation: scopeGeneration,
       available: true, credential_version: 1, created_at: now, agents: agents.length, hosts: hosts.length, online_hosts: 1 });
     if (/\/(hosts|agents)$/.test(path)) {
       const host = url.searchParams.get('host');
-      return page(path.endsWith('/hosts') ? hosts : agents.filter(agent => !host || agent.host === host));
+      return page(path.endsWith('/hosts') ? hosts : agents.filter(agent => !host || agent.host === host)
+        .map(agent => url.searchParams.get('facts') === 'true' && facts.has(agent.incarnation) ? { ...agent, facts: facts.get(agent.incarnation) } : agent));
     }
     if (path === `${adminApi}/hosts/${current.host}/capabilities`) return send({
       host: current.host, generation: scopeGeneration, installation_id: installation, online: true, observed_at: now,
@@ -93,14 +117,30 @@ const server = createServer(async (request, response) => {
       const value = operations.get(decodeURIComponent(path.split('/').at(-1)));
       return value ? send(value) : fail(404, 'not_found');
     }
+    if (path.endsWith('/transcript') && request.method === 'GET') {
+      if (url.searchParams.get('generation') !== scopeGeneration) return fail(409, 'stale_generation');
+      const exact = { host: url.searchParams.get('host'), name: url.searchParams.get('name'), incarnation: url.searchParams.get('incarnation') };
+      if (![old, launched, ...agents].some(item => match(exact, item))) return fail(404, 'not_found');
+      const before = url.searchParams.get('before'), after = url.searchParams.get('after');
+      const all = transcripts.get(exact.incarnation) ?? [];
+      const sorted = all.filter(item => (!before || BigInt(item.id) < BigInt(before)) && (!after || BigInt(item.id) > BigInt(after)));
+      if (!after) sorted.reverse();
+      const limit = match(exact, old) ? 1 : Number(url.searchParams.get('limit'));
+      const items = sorted.slice(0, limit);
+      return send({ agent: exact, available: facts.has(exact.incarnation), items,
+        next: items.length < sorted.length ? items.at(-1).id : null,
+        latest: all.at(-1)?.id ?? null, facts: facts.get(exact.incarnation) ?? null });
+    }
     if (path.endsWith('/messages') && request.method === 'GET') {
       if (url.searchParams.get('generation') !== scopeGeneration) return fail(409, 'stale_generation');
       const exact = { host: url.searchParams.get('host'), name: url.searchParams.get('name'), incarnation: url.searchParams.get('incarnation') };
       if (![old, launched, ...agents].some(item => match(exact, item))) return fail(404, 'not_found');
       const before = url.searchParams.get('before');
-      const sorted = messages.filter(item => (!before || BigInt(item.id) < BigInt(before)) && (match(exact, item.from) || match(exact, item.to)))
+      const after = url.searchParams.get('after');
+      const sorted = messages.filter(item => (!before || BigInt(item.id) < BigInt(before)) && (!after || BigInt(item.id) > BigInt(after)) && (match(exact, item.from) || match(exact, item.to)))
         .sort((a, b) => BigInt(a.id) < BigInt(b.id) ? 1 : -1);
-      const rows = match(old, exact) ? sorted.slice(0, 1) : sorted;
+      const limit = Number(url.searchParams.get('limit') ?? '20');
+      const rows = sorted.slice(0, match(old, exact) ? 1 : limit);
       return send({ items: rows, next: rows.length < sorted.length ? rows.at(-1).id : null });
     }
     if (path === `${adminApi}/messages` && request.method === 'POST') {
@@ -115,7 +155,7 @@ const server = createServer(async (request, response) => {
       if (!agents.some(agent => match(agent, input.to))) return fail(404, 'not_found');
       const row = message('9223372036854775806', human, input.to, input.body);
       accepted.set(input.request_id, { input, row });
-      messages.push(row);
+      messages.push(row); signalMessage();
       if (loseSend) { loseSend = false; return fail(503, 'fixture_unconfirmed'); }
       return send(row);
     }
@@ -188,6 +228,9 @@ try {
   await button('聊天', '.presentation-switch');
   await button('加载更多成员');
   await text('.hall-directory-items', '@worker-21');
+  const idle = calls.length;
+  await new Promise(resolve => setTimeout(resolve, 6200));
+  assert.deepEqual(calls.slice(idle).filter(call => !call.path.endsWith('/changes')), [], 'An idle roster does not refetch loaded members, hosts or their scope metadata');
   await page.select('[aria-label="工作区范围"]', 'host:runner-01');
   await text('.hall-directory-items', '@worker-01');
   assert(!await page.$eval('.hall-directory-items', row => row.textContent.includes('@worker-21')));
@@ -202,27 +245,41 @@ try {
   assert.equal(await page.$eval(`${dialog} button[type=submit]`, node => node.disabled), true, 'Unavailable default role');
   await page.select(`${dialog} [aria-label="新 Agent 岗位"]`, 'reviewer');
   await page.type(`${dialog} [aria-label="新 Agent 名称"]`, launched.name);
+  await page.type(`${dialog} [aria-label="新 Agent 职责标题"]`, launchFacts.title);
   await page.type(`${dialog} textarea`, 'Read the scoped notes.');
   await screenshot('cloud-space-launch');
   await openCommand('启动');
   await page.waitForSelector(dialog, { hidden: true });
   const [launch] = controls;
   assert.deepEqual(launch, { generation, host: current.host, installation_id: installation,
-    request_id: launch.request_id, command: { kind: 'launch', workspace: 'studio', role: 'reviewer', name: launched.name, title: null, initial_prompt: 'Read the scoped notes.' } });
+    request_id: launch.request_id, command: { kind: 'launch', workspace: 'studio', role: 'reviewer', name: launched.name, title: launchFacts.title, initial_prompt: 'Read the scoped notes.' } });
   await page.click('.live-receipts summary');
   await button('查询原回执', '.live-receipts');
   await text('.live-receipts', '等待主机接收');
   assert.equal(controls.length, 1);
   complete(launch, launched);
   agents.push(launched);
-  await button('查询原回执', '.live-receipts');
   await text('.live-receipts', '启动 · 已完成');
   await page.click('.live-receipts summary');
   // The exact successful receipt itself opens the launched reader.
-  await page.waitForFunction(label => [...document.querySelectorAll('.workspace-reader h1')].some(node => node.textContent === label), {}, '@' + launched.name);
+  const pane = `[aria-label="${launchFacts.title}"] ${reader}`;
+  await text(`${pane} h1`, launchFacts.title);
   assertRoute(launched);
-  await button('刷新真实数据', '.live-status');
-  await text('.hall-directory-items', '@' + launched.name);
+  assert.equal(new URL(page.url()).searchParams.get('channel'), 'model');
+  await text('.hall-directory-items', launchFacts.title);
+  await text(pane, 'Read the scoped notes.');
+  await text(`${pane} .reader-state`, '工作中');
+  await page.click(`${pane} [aria-label="会话详情"]`);
+  await text(`${pane} .reader-facts`, launchFacts.cwd);
+  await text(`${pane} .reader-facts`, launchFacts.role);
+  await page.click(`${pane} [aria-label="会话详情"]`);
+  const beforeProgress = calls.length;
+  transcripts.get(launched.incarnation).push({ id: '2', role: 'assistant', text: 'Checking the scoped notes.' });
+  signalTranscript();
+  await text(pane, 'Checking the scoped notes.');
+  const progressReads = calls.slice(beforeProgress).filter(call => call.path.endsWith('/transcript'));
+  assert(progressReads.length && progressReads.every(call => call.query.after === '1' && call.query.incarnation === launched.incarnation));
+  await button('消息', pane);
 
   stage = 'late launch receipt respects deliberate navigation';
   loseControl = true;
@@ -245,15 +302,17 @@ try {
   assertRoute(current);
   assert.equal(controls.length, 2);
   await page.click('.live-receipts summary');
-  await button(`@${launched.name} · ${launched.host} · ${launched.incarnation}`, '.hall-directory');
+  await button(`${launchFacts.title} · ${launched.host} · ${launched.incarnation}`, '.hall-directory');
 
   stage = 'shared composer, replay identity and agent reply';
-  const pane = `[aria-label="@${launched.name}"] ${reader}`;
   await page.waitForSelector(`${pane} ${draft}`);
   assert.equal(await page.$eval(`${pane} [aria-label="添加附件"]`, node => node.disabled), true);
-  assert.equal(await page.$eval(`${pane} .record-channels button:last-child`, node => node.disabled), true);
   const outgoing = 'Please review the scoped change.';
   await page.type(`${pane} ${draft}`, outgoing);
+  await button('Transcript', pane);
+  await text(pane, 'Checking the scoped notes.');
+  await button('消息', pane);
+  assert.equal(await page.$eval(`${pane} ${draft}`, node => node.value), outgoing);
   await button('发送 AgentX 消息', pane);
   await text(pane, '发送结果未确定');
   assert.equal(await page.$eval(`${pane} ${draft}`, node => node.value), outgoing);
@@ -264,9 +323,16 @@ try {
   assert.deepEqual(sends[0], { generation, request_id: sends[0].request_id, to: launched, body: outgoing });
   assert.equal(accepted.size, 1);
   assert.equal(await page.$eval(`${pane} ${draft}`, node => node.value), '');
+  await page.waitForFunction(selector => document.querySelector(selector)?.textContent.includes('Please review the scoped change.'), {}, `${pane} .conversation-history`);
+  // Allow the post-send catch-up to finish. The next reply must arrive via the selected reader alone.
+  await new Promise(resolve => setTimeout(resolve, 300));
+  const beforeReply = calls.length;
   messages.push(message('9223372036854775807', launched, human, 'Agent reply persisted.', '9223372036854775806'));
-  await button('刷新真实数据', '.live-status');
-  await text(pane, 'Agent reply persisted.');
+  signalMessage();
+  await page.waitForFunction(selector => document.querySelector(selector)?.textContent.includes('Agent reply persisted.'), { timeout: 20_000 }, pane);
+  const replyReads = calls.slice(beforeReply).filter(call => !call.path.endsWith('/changes'));
+  assert(replyReads.length > 0 && replyReads.every(call => call.path === `${adminApi}/messages` && call.query.incarnation === launched.incarnation));
+  assert.equal(replyReads[0].query.after, '9223372036854775806', 'Waking the selected reader fetches only newer messages');
   await text(pane, outgoing);
   await screenshot('cloud-space-chat');
 
@@ -314,7 +380,7 @@ try {
   await openInfo();
   assert.equal(await page.$eval(`${reader} .reader-facts button`, node => node.disabled), true);
   assert.equal(await page.$eval(`${reader} ${draft}`, node => node.readOnly), true);
-  assert(!calls.some(call => call.path.endsWith('/messages') && call.query.incarnation === replacement.incarnation));
+  assert(!calls.some(call => /\/(messages|transcript)$/.test(call.path) && call.query.incarnation === replacement.incarnation));
 
   stage = 'read-only scoped link, mobile layout, older records';
   await page.setViewport({ width: 320, height: 720, isMobile: true, hasTouch: true });
@@ -329,6 +395,12 @@ try {
   await button('查看更早消息', reader);
   await text(reader, 'Retired instance earlier message');
   assert(calls.some(call => call.path === `${scopeApi}/messages` && call.query.before === '9223372036854775804' && call.query.incarnation === old.incarnation));
+  await button('Transcript', reader);
+  await text(reader, 'Retired model result');
+  await button('查看更早记录', reader);
+  await text(reader, 'Earlier model input');
+  assert(calls.some(call => call.path === `${scopeApi}/transcript` && call.query.before === '5' && call.query.incarnation === old.incarnation));
+  assert(!await page.$eval(reader, node => node.textContent.includes('Replacement model result')));
   await page.reload();
   await page.waitForSelector('.cloud-connect input');
 

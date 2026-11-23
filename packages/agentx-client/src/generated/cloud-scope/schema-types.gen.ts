@@ -5,6 +5,11 @@ export type SchemaTypes = {
   "AgentRegistration": Types.AgentRegistration;
   "AgentView": Types.AgentView;
   "ClaimInbox": Types.ClaimInbox;
+  "CloudAgentFacts": Types.CloudAgentFacts;
+  "CloudAgentStatus": Types.CloudAgentStatus;
+  "CloudAgentSummary": Types.CloudAgentSummary;
+  "CloudTranscriptRecord": Types.CloudTranscriptRecord;
+  "CloudTranscriptRole": Types.CloudTranscriptRole;
   "ConfirmInbox": Types.ConfirmInbox;
   "ControlCommand": Types.ControlCommand;
   "ControlOutcome": Types.ControlOutcome;
@@ -24,11 +29,15 @@ export type SchemaTypes = {
   "MessageView": Types.MessageView;
   "OperationStatus": Types.OperationStatus;
   "PollControlOperation": Types.PollControlOperation;
+  "PublishTranscript": Types.PublishTranscript;
+  "PublishTranscriptRecord": Types.PublishTranscriptRecord;
   "RecoverInbox": Types.RecoverInbox;
   "RenewControlLease": Types.RenewControlLease;
   "ReportControlOperation": Types.ReportControlOperation;
   "RoleCapability": Types.RoleCapability;
   "ScopeError": Types.ScopeError;
   "SendMessage": Types.SendMessage;
+  "SpaceChanges": Types.SpaceChanges;
+  "TranscriptHistoryPage": Types.TranscriptHistoryPage;
   "WorkspaceCapability": Types.WorkspaceCapability;
 };

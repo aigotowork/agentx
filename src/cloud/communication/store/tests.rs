@@ -74,7 +74,7 @@ fn natural_reply_replays_or_defers_to_the_exact_explicit_answer() {
     let natural = send_reply(&luna, "space-final:second", &second.id, "Generated result").unwrap();
     assert_eq!(send_reply(&luna, "space-final:second", &second.id, "Generated result").unwrap(), natural);
     assert!(matches!(send_reply(&luna, "space-final:second", &second.id, "Changed replay"), Err(Error::Conflict(_))));
-    let history = apply(root, |db, _| list_messages(db, MessageHistoryQuery { generation: GEN.into(), host: luna.host.clone(), name: luna.name.clone(), incarnation: luna.incarnation.clone(), before: None, limit: None })).unwrap();
+    let history = apply(root, |db, _| list_messages(db, MessageHistoryQuery { generation: GEN.into(), host: luna.host.clone(), name: luna.name.clone(), incarnation: luna.incarnation.clone(), after: None, before: None, limit: None })).unwrap();
     assert_eq!(history.items, [natural, second, explicit, first]);
 }
 
@@ -97,8 +97,11 @@ fn offline_target_keeps_its_name_and_mailbox_then_replies_from_its_exact_host() 
     let page = super::super::host_page(root, GEN, page.next, 1).unwrap();
     assert_eq!(page.items.iter().map(|h| (h.name.as_str(), h.online)).collect::<Vec<_>>(), [("laptop", true)]);
     assert!(page.next.is_none());
-    let page = super::super::agent_page(root, GEN, None, 1, Some("desktop".into())).unwrap();
-    assert_eq!(page.items.as_slice(), std::slice::from_ref(&nova));
+    let page = super::super::agent_page(root, GEN, None, 1, Some("desktop".into()), None).unwrap();
+    assert_eq!(page.items.len(), 1);
+    let row = &page.items[0];
+    assert_eq!((&row.host, &row.name, &row.incarnation), (&nova.host, &nova.name, &nova.incarnation));
+    assert!(row.facts.is_none());
     assert!(page.next.is_none());
 
     let message = apply(root, |db, now| send(db, now, send_input(&luna, "@desktop/nova", "send-1"))).unwrap();
@@ -165,7 +168,8 @@ fn retirement_fences_claims_and_replayed_send_never_changes_targets() {
     let successor = apply(root, |db, now| register_agent(db, now, "nova".into(), agent("desktop", "nova-two"))).unwrap();
 
     apply(root, |db, now| retire_agent(db, now, "nova".into(), agent("desktop", "nova-one"))).unwrap();
-    assert_eq!(super::super::agent_page(root, GEN, None, 50, None).unwrap().items, [luna.clone(), successor.clone()]);
+    let directory = super::super::agent_page(root, GEN, None, 50, None, None).unwrap();
+    assert_eq!(serde_json::to_value(directory.items).unwrap(), serde_json::json!([luna, successor]));
     let (batch, reusable) = apply(root, |db, now| claim(db, now, &claim_input(&successor, "new-claim"))).unwrap();
     assert!(batch.items.is_empty());
     assert!(reusable);
@@ -239,4 +243,54 @@ fn terminal_control_characters_do_not_create_a_send_receipt_or_mail() {
     let accepted = apply(root, |db, now| send(db, now, input)).unwrap();
     let (batch, _) = apply(root, |db, now| claim(db, now, &claim_input(&nova, "safe-claim"))).unwrap();
     assert_eq!(batch.items, [accepted]);
+}
+
+#[test]
+fn cloud_transcript_is_incremental_idempotent_and_bound_to_the_exact_registration() {
+    let (root, luna, nova) = scenario();
+    let root = root.path();
+    let facts = CloudAgentFacts { role: Some("worker".into()), title: Some("North".into()), cwd: "/work/north".into(), status: CloudAgentStatus::Active };
+    let publish_input = |target: &AgentView, installation: &str, item_ids: &[u8]| PublishTranscript {
+        generation: GEN.into(),
+        installation_id: installation.into(),
+        agent: target.clone(),
+        facts: facts.clone(),
+        items: item_ids.iter().map(|id| PublishTranscriptRecord { key: format!("{id:064x}"), role: CloudTranscriptRole::User, text: format!("Item {id}") }).collect(),
+    };
+    let query =
+        |agent: &AgentView, before: Option<String>, after: Option<String>| TranscriptHistoryQuery { generation: GEN.into(), host: agent.host.clone(), name: agent.name.clone(), incarnation: agent.incarnation.clone(), before, after, limit: Some(1) };
+    apply(root, |db, now| {
+        let empty = transcript::history(db, now, query(&luna, None, None))?;
+        assert!(!empty.available && empty.latest.is_none());
+        assert!(matches!(transcript::publish(db, now, publish_input(&luna, "desktop-installation", &[1])), Err(Error::Installation)));
+        assert_eq!(transcript::publish(db, now, publish_input(&luna, "laptop-installation", &[1, 2]))?, (true, true));
+        assert_eq!(transcript::publish(db, now, publish_input(&luna, "laptop-installation", &[1, 2]))?, (false, false));
+        let latest = transcript::history(db, now, query(&luna, None, None))?;
+        assert_eq!(latest.items[0].text, "Item 2");
+        assert_eq!(latest.facts, Some(facts.clone()));
+        let old = transcript::history(db, now, query(&luna, latest.next, None))?;
+        assert_eq!(old.items[0].text, "Item 1");
+        assert!(old.next.is_none());
+        assert_eq!(transcript::publish(db, now, publish_input(&luna, "laptop-installation", &[2, 3, 4]))?, (true, false));
+        let newer = transcript::history(db, now, query(&luna, None, latest.latest))?;
+        assert_eq!(newer.items[0].text, "Item 3");
+        let newest = transcript::history(db, now, query(&luna, None, newer.next))?;
+        assert_eq!(newest.items[0].text, "Item 4");
+        assert!(newest.next.is_none());
+        assert!(!transcript::history(db, now, query(&nova, None, None))?.available);
+        let wrong = AgentView { host: nova.host.clone(), ..luna.clone() };
+        assert!(matches!(transcript::history(db, now, query(&wrong, None, None)), Err(Error::NotFound(_))));
+        assert_eq!(transcript::history(db, now + 100, query(&luna, None, None))?.facts.unwrap().status, CloudAgentStatus::Unknown);
+        let legacy = agents(db, now, AgentQuery { after: None, limit: Some(1), host: None, facts: None })?;
+        assert_eq!(serde_json::to_value(&legacy.items[0])?, serde_json::to_value(&luna)?);
+        let roster = agents(db, now, AgentQuery { after: None, limit: Some(1), host: None, facts: Some(true) })?;
+        assert_eq!(roster.items[0].facts, Some(facts.clone()));
+        retire_agent(db, now, luna.name.clone(), agent(&luna.host, &luna.incarnation))?;
+        let replacement = register_agent(db, now, luna.name.clone(), agent(&luna.host, "luna-two"))?;
+        assert!(matches!(transcript::publish(db, now, publish_input(&luna, "laptop-installation", &[5])), Err(Error::Agent)));
+        assert_eq!(transcript::history(db, now, query(&luna, None, None))?.facts.unwrap().status, CloudAgentStatus::Stopped);
+        assert!(!transcript::history(db, now, query(&replacement, None, None))?.available);
+        Ok(())
+    })
+    .unwrap();
 }

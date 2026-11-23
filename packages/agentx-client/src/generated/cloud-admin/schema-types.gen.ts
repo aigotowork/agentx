@@ -5,6 +5,11 @@ export type SchemaTypes = {
   "AgentPage": Types.AgentPage;
   "AgentView": Types.AgentView;
   "ApiError": Types.ApiError;
+  "CloudAgentFacts": Types.CloudAgentFacts;
+  "CloudAgentStatus": Types.CloudAgentStatus;
+  "CloudAgentSummary": Types.CloudAgentSummary;
+  "CloudTranscriptRecord": Types.CloudTranscriptRecord;
+  "CloudTranscriptRole": Types.CloudTranscriptRole;
   "ControlCommand": Types.ControlCommand;
   "ControlOutcome": Types.ControlOutcome;
   "ControlReceipt": Types.ControlReceipt;
@@ -23,5 +28,7 @@ export type SchemaTypes = {
   "ScopeReceipt": Types.ScopeReceipt;
   "ScopeRow": Types.ScopeRow;
   "SendHumanMessage": Types.SendHumanMessage;
+  "SpaceChanges": Types.SpaceChanges;
+  "TranscriptHistoryPage": Types.TranscriptHistoryPage;
   "WorkspaceCapability": Types.WorkspaceCapability;
 };

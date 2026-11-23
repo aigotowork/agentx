@@ -8,8 +8,8 @@ use crate::cloud::{
 use axum::{
     Extension, Json, Router,
     extract::{
-        Path, State,
-        rejection::{JsonRejection, PathRejection},
+        Path, Query, State,
+        rejection::{JsonRejection, PathRejection, QueryRejection},
     },
     routing::{get, post, put},
 };
@@ -49,6 +49,12 @@ struct AdminOperationPath {
 struct HostPath {
     host: String,
 }
+#[derive(Deserialize, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
+struct LeaseFeatures {
+    /// Advertises native support for scoped working-directory launch.
+    directory_launch: Option<bool>,
+}
 #[derive(Deserialize)]
 struct ReportPath {
     host: String,
@@ -74,6 +80,7 @@ async fn run<T: Send + 'static>(scope: ScopeContext, access: Access, operation: 
             scope.control_changed.send_replace(());
         }
         if matches!(access, Access::ScopeReport) {
+            scope.space_changed.send_modify(|snapshot| snapshot.roster = snapshot.roster.wrapping_add(1));
             scope.current.send_modify(|_| {});
         }
         Ok::<_, Error>(output)
@@ -115,13 +122,19 @@ async fn admin_get(State(state): State<Deployment>, parts: Result<Path<AdminOper
 }
 
 #[utoipa::path(put, path="/hosts/{host}/control/lease", operation_id="scopeRenewControlLease",
-    params(("host"=String,Path)), request_body=RenewControlLease, security(("scopeBearer"=[])),
+    params(("host"=String,Path), LeaseFeatures), request_body=RenewControlLease, security(("scopeBearer"=[])),
     responses((status=200,body=HostCapabilities),(status="default",body=ScopeError)))]
-async fn renew_lease(Extension(scope): Extension<ScopeContext>, parts: Result<Path<HostPath>, PathRejection>, input: Result<Json<RenewControlLease>, JsonRejection>) -> Result<Json<HostCapabilities>, Error> {
+async fn renew_lease(
+    Extension(scope): Extension<ScopeContext>,
+    parts: Result<Path<HostPath>, PathRejection>,
+    features: Result<Query<LeaseFeatures>, QueryRejection>,
+    input: Result<Json<RenewControlLease>, JsonRejection>,
+) -> Result<Json<HostCapabilities>, Error> {
     let HostPath { host } = path(parts)?;
+    let directory_launch = features.map_err(|_| Error::Invalid("invalid control lease features"))?.directory_launch.unwrap_or_default();
     let input = payload(input)?;
     fence(&scope, &input.generation)?;
-    run(scope, Access::ScopeRenew, move |db, now| store::renew(db, now, host.clone(), &input)).await.map(Json)
+    run(scope, Access::ScopeRenew, move |db, now| store::renew(db, now, host.clone(), &input, directory_launch)).await.map(Json)
 }
 
 #[utoipa::path(post, path="/hosts/{host}/control/poll", operation_id="scopePollControlOperation",

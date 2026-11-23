@@ -63,6 +63,7 @@ function validateControlReceipt(receipt: CloudControlReceipt, requestId: string,
     const expected = input.command, actual = receipt.command;
     const sameCommand = expected.kind === 'launch' ? actual.kind === 'launch' && actual.workspace === expected.workspace
       && (actual.role ?? null) === (expected.role ?? null) && (actual.name ?? null) === (expected.name ?? null)
+      && (actual.working_directory ?? null) === (expected.working_directory ?? null) && (actual.create_directory ?? null) === (expected.create_directory ?? null)
       && (actual.title ?? null) === (expected.title ?? null) && (actual.initial_prompt ?? null) === (expected.initial_prompt ?? null)
       : actual.kind === 'stop' && actual.name === expected.name && actual.incarnation === expected.incarnation;
     if (receipt.generation !== input.generation || receipt.host !== input.host || receipt.installation_id !== input.installation_id || !sameCommand) {
@@ -119,11 +120,23 @@ export function createCloudAdminClient(options: CloudAdminOptions) {
     getScope: (id: string, opts?: CallOptions) => read('ScopeRow', wire.getAdminScope(withScope(id, opts))),
     listHosts: (id: string, query?: Page, opts?: CallOptions) => read('HostPage', wire.listAdminScopeHosts({ ...withScope(id, opts), query })),
     listAgents: (id: string, query?: AgentPage, opts?: CallOptions) => read('AgentPage', wire.listAdminScopeAgents({ ...withScope(id, opts), query })),
+    spaceChanges: (id: string, query: W.AdminSpaceChangesData['query'], opts?: CallOptions) =>
+      read('SpaceChanges', wire.adminSpaceChanges({ ...withScope(id, opts), query })),
     listMessages(id: string, query: W.ListAdminScopeMessagesData['query'], opts?: CallOptions) {
       const same = (agent: SchemaTypes['AgentView']) => agent.host === query.host && agent.name === query.name && agent.incarnation === query.incarnation;
       return cloudResponse(wire.listAdminScopeMessages({ ...withScope(id, opts), query }), text => {
         const page = codec.parse('MessageHistoryPage', text) as SchemaTypes['MessageHistoryPage'];
         if (!page.items.every(message => same(message.from) || same(message.to))) throw new TypeError('Cloud history target mismatch');
+        return page;
+      }, secrets);
+    },
+    /** Read the bounded visible model records for one exact registration. */
+    listTranscript(id: string, query: W.ListAdminScopeTranscriptData['query'], opts?: CallOptions) {
+      const { host, name, incarnation } = query;
+      return cloudResponse(wire.listAdminScopeTranscript({ ...withScope(id, opts), query }), text => {
+        const page = codec.parse('TranscriptHistoryPage', text) as SchemaTypes['TranscriptHistoryPage'];
+        if (page.agent.host !== host || page.agent.name !== name || page.agent.incarnation !== incarnation)
+          throw new TypeError('Cloud transcript target mismatch');
         return page;
       }, secrets);
     },

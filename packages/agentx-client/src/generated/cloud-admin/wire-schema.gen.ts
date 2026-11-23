@@ -58,7 +58,7 @@ export const wireDocument = {
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/AgentView"
+              "$ref": "#/components/schemas/CloudAgentSummary"
             },
             "type": "array"
           },
@@ -110,10 +110,112 @@ export const wireDocument = {
         ],
         "type": "object"
       },
+      "CloudAgentFacts": {
+        "additionalProperties": false,
+        "properties": {
+          "cwd": {
+            "type": "string"
+          },
+          "role": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/CloudAgentStatus"
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "role",
+          "title",
+          "cwd",
+          "status"
+        ],
+        "type": "object"
+      },
+      "CloudAgentStatus": {
+        "enum": [
+          "active",
+          "idle",
+          "error",
+          "unknown",
+          "stopped"
+        ],
+        "type": "string"
+      },
+      "CloudAgentSummary": {
+        "properties": {
+          "facts": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CloudAgentFacts"
+              }
+            ]
+          },
+          "host": {
+            "type": "string"
+          },
+          "incarnation": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "host",
+          "incarnation"
+        ],
+        "type": "object"
+      },
+      "CloudTranscriptRecord": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/CloudTranscriptRole"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "text"
+        ],
+        "type": "object"
+      },
+      "CloudTranscriptRole": {
+        "enum": [
+          "user",
+          "assistant"
+        ],
+        "type": "string"
+      },
       "ControlCommand": {
         "oneOf": [
           {
             "properties": {
+              "create_directory": {
+                "description": "Create the final component if absent. Parents must already exist.",
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
               "initial_prompt": {
                 "maxLength": 16384,
                 "type": [
@@ -140,6 +242,14 @@ export const wireDocument = {
                 ]
               },
               "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "working_directory": {
+                "description": "Slash-separated path relative to the workspace export. Omit or send an empty string for its root.",
+                "maxLength": 1024,
                 "type": [
                   "string",
                   "null"
@@ -348,6 +458,13 @@ export const wireDocument = {
       },
       "HostCapabilities": {
         "properties": {
+          "directory_launch": {
+            "description": "This control lease accepts workspace-relative launch directories.",
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
           "generation": {
             "type": "string"
           },
@@ -675,6 +792,82 @@ export const wireDocument = {
           "request_id",
           "to",
           "body"
+        ],
+        "type": "object"
+      },
+      "SpaceChanges": {
+        "properties": {
+          "epoch": {
+            "type": "string"
+          },
+          "messages": {
+            "format": "u-int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "roster": {
+            "format": "u-int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "transcript": {
+            "format": "u-int32",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "epoch",
+          "roster",
+          "messages",
+          "transcript"
+        ],
+        "type": "object"
+      },
+      "TranscriptHistoryPage": {
+        "properties": {
+          "agent": {
+            "$ref": "#/components/schemas/AgentView"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "facts": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CloudAgentFacts"
+              }
+            ]
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CloudTranscriptRecord"
+            },
+            "type": "array"
+          },
+          "latest": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "agent",
+          "available",
+          "items",
+          "next",
+          "latest",
+          "facts"
         ],
         "type": "object"
       },
@@ -1127,6 +1320,14 @@ export const wireDocument = {
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "facts",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -1135,6 +1336,110 @@ export const wireDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AgentPage"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Invalid input"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Invalid admin credential"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unknown scope"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Storage error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unavailable"
+          }
+        },
+        "tags": []
+      }
+    },
+    "/api/v1/admin/scopes/{id}/changes": {
+      "get": {
+        "operationId": "adminSpaceChanges",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "generation",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpaceChanges"
                 }
               }
             },
@@ -1446,6 +1751,15 @@ export const wireDocument = {
             "in": "query",
             "name": "incarnation",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exclusive forward cursor. Zero starts at the beginning. Forward pages use ascending IDs.",
+            "in": "query",
+            "name": "after",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -1875,6 +2189,155 @@ export const wireDocument = {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ScopeReceipt"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Invalid input"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Invalid admin credential"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unknown scope"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Storage error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unavailable"
+          }
+        },
+        "tags": []
+      }
+    },
+    "/api/v1/admin/scopes/{id}/transcript": {
+      "get": {
+        "operationId": "listAdminScopeTranscript",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "generation",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "host",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "incarnation",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exclusive positive decimal cursor for older records, newest first.",
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exclusive decimal cursor for newer records, oldest first. Use 0 to follow an empty transcript.",
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "format": "u-int32",
+              "maximum": 50,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptHistoryPage"
                 }
               }
             },

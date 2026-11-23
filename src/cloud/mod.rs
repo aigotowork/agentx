@@ -1,10 +1,13 @@
 //! HTTP deployment boundary. Only this router publishes cloud operations.
 mod admin;
 mod catalog;
+mod changes;
 pub(crate) mod client;
 mod communication;
 pub(crate) mod connection;
 mod control;
+#[cfg(target_os = "linux")]
+mod directory;
 mod space;
 mod tui;
 pub(crate) mod uplink;
@@ -34,6 +37,7 @@ pub(super) struct ScopeContext {
     pub(super) generation: String,
     pub(super) credential_version: u32,
     current: tokio::sync::watch::Sender<u32>,
+    space_changed: tokio::sync::watch::Sender<changes::SpaceChanges>,
     control_changed: tokio::sync::watch::Sender<()>,
 }
 impl ScopeContext {

@@ -21,8 +21,18 @@ impl Fixture {
     }
 
     fn enroll(&self, now: i64, lease_id: &str, previous_lease_id: Option<&str>, workspaces: Vec<WorkspaceCapability>) -> Result<HostCapabilities> {
+        self.enroll_features(now, lease_id, previous_lease_id, workspaces, false)
+    }
+
+    fn enroll_features(&self, now: i64, lease_id: &str, previous_lease_id: Option<&str>, workspaces: Vec<WorkspaceCapability>, directory_launch: bool) -> Result<HostCapabilities> {
         self.at(now, |db, now| {
-            renew(db, now, HOST.into(), &RenewControlLease { generation: GEN.into(), installation_id: INSTALLATION.into(), lease_id: lease_id.into(), previous_lease_id: previous_lease_id.map(str::to_owned), workspaces: workspaces.clone() })
+            renew(
+                db,
+                now,
+                HOST.into(),
+                &RenewControlLease { generation: GEN.into(), installation_id: INSTALLATION.into(), lease_id: lease_id.into(), previous_lease_id: previous_lease_id.map(str::to_owned), workspaces: workspaces.clone() },
+                directory_launch,
+            )
         })
     }
 
@@ -51,6 +61,56 @@ impl Fixture {
     }
 }
 
+#[test]
+fn directory_launch_requires_support_and_replays_only_the_original_path() {
+    let f = Fixture::new();
+    let command = |path: &str, create: bool| {
+        let mut command = launch(None, None);
+        if let ControlCommand::Launch { working_directory, create_directory, .. } = &mut command {
+            *working_directory = Some(path.into());
+            *create_directory = create.then_some(true);
+        }
+        command
+    };
+    assert_eq!(f.enroll(100, FIRST, None, catalogue()).unwrap().directory_launch, None);
+    let legacy = launch(None, None);
+    assert!(serde_json::to_value(&legacy).unwrap().get("working_directory").is_none());
+    assert_eq!(f.submit(100, "legacy", legacy).unwrap().status, ControlStatus::Queued);
+    assert!(matches!(f.submit(100, "new", command("subdir", true)), Err(Error::Capability)));
+    assert_eq!(f.enroll_features(101, FIRST, None, catalogue(), true).unwrap().directory_launch, Some(true));
+    for path in ["", "../external", "/absolute"] {
+        assert!(matches!(f.submit(101, "new", command(path, true)), Err(Error::Invalid(_))));
+    }
+    let first = f.submit(101, "new", command("subdir", true)).unwrap();
+    assert_eq!(f.submit(101, "new", command("subdir", true)).unwrap(), first);
+    assert!(matches!(f.submit(101, "new", command("different", true)), Err(Error::Conflict(_))));
+    assert!(matches!(f.submit(101, "new", command("subdir", false)), Err(Error::Conflict(_))));
+}
+
+#[test]
+fn directory_capability_upgrade_preserves_legacy_leases_and_receipts() {
+    let f = Fixture::new();
+    f.enroll(100, FIRST, None, catalogue()).unwrap();
+    let command = launch(None, None);
+    let queued = f.submit(100, "before-upgrade", command.clone()).unwrap();
+    store::transaction(
+        f.0.path(),
+        GEN,
+        true,
+        || true,
+        |db, _| {
+            db.execute_batch("ALTER TABLE control_leases DROP COLUMN directory_launch; PRAGMA user_version=1;")?;
+            Ok(())
+        },
+    )
+    .unwrap();
+
+    let legacy = transaction(f.0.path(), GEN, false, || true, |db, _| capabilities(db, 101, GEN.into(), HOST.into())).unwrap();
+    assert!(legacy.online);
+    assert_eq!(legacy.directory_launch, None);
+    assert_eq!(f.submit(101, "before-upgrade", command).unwrap(), queued);
+}
+
 fn catalogue() -> Vec<WorkspaceCapability> {
     vec![WorkspaceCapability {
         alias: "main".into(),
@@ -61,7 +121,15 @@ fn catalogue() -> Vec<WorkspaceCapability> {
 }
 
 fn launch(role: Option<&str>, name: Option<&str>) -> ControlCommand {
-    ControlCommand::Launch { workspace: "main".into(), role: role.map(str::to_owned), name: name.map(str::to_owned), title: Some("API verification".into()), initial_prompt: Some("Check the project snapshot.\nReport findings.".into()) }
+    ControlCommand::Launch {
+        workspace: "main".into(),
+        role: role.map(str::to_owned),
+        name: name.map(str::to_owned),
+        title: Some("API verification".into()),
+        initial_prompt: Some("Check the project snapshot.\nReport findings.".into()),
+        working_directory: None,
+        create_directory: None,
+    }
 }
 
 #[test]

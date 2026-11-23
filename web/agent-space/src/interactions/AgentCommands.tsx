@@ -1,10 +1,11 @@
 import { findConversation } from "../offline/model";
-import { createContext, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { AgentResource } from "../offline/model";
 import type { SpaceController } from "../offline/controller";
 import { operationIssue } from "../live/controller";
 import type { SpaceLive } from "../live/workbench";
 import type { CloudHostCapabilities } from "@agentx/client";
+import { controlPending, controlStatus, directoryLaunchIssue } from "../cloud/operations";
 import { useOverlay, useSpaceShortcuts } from "./SpaceInteractions";
 import { CommandSurface } from "../../uiux/systems/space/space.web";
 import "../conversation/compact-surfaces.css";
@@ -33,6 +34,7 @@ export function AgentCommands({ live, controller, children, onSearch }: { live?:
   }, [dialog]);
   function request(action: Action, agent?: AgentResource, invoker?: HTMLElement) {
     if (!live || (action !== "new" && !agent) || (live.kind === "cloud" && (live.access !== "admin" || live.connection === "reset"))) return;
+    if (action === "new" && live.kind === "cloud") live.retryCatalog();
     const opener = invoker ?? menu?.anchor ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
     setMenu(undefined); setDialog({ action, agent, opener });
   }
@@ -101,9 +103,12 @@ function AgentCommandDialog({ opener, live, controller, action, agent, onClose }
   const mounted = useRef(false), input = useRef<HTMLSelectElement>(null), errorTarget = useRef<HTMLDivElement>(null);
   const closeAfterReceipt = useRef<(() => void) | undefined>(undefined);
   const [receiptId, setReceiptId] = useState<string>();
+  const [cloudReceiptId, setCloudReceiptId] = useState<string>();
   const [title, setTitle] = useState(""), [prompt, setPrompt] = useState(""), [name, setName] = useState("");
   const office = useRef(controller.getSnapshot().workspaceId).current;
   const [directory, setDirectory] = useState(() => office.startsWith("/") ? office : local?.descriptor?.project ?? "");
+  const [cloudDirectory, setCloudDirectory] = useState("");
+  const [createCloudDirectory, setCreateCloudDirectory] = useState(false);
   const [profile, setProfile] = useState(local?.descriptor?.profiles[0]?.name ?? "");
   const [hostChoice, setHost] = useState(() => office.startsWith('host:') ? office.slice(5) : "");
   const [workspaceChoice, setWorkspace] = useState("");
@@ -120,6 +125,13 @@ function AgentCommandDialog({ opener, live, controller, action, agent, onClose }
   const post = posts.find(item => item.id === role);
   const native = agent && live.capabilities(agent.id);
   const taskTooLong = !!cloud && new TextEncoder().encode(prompt).length > 16 * 1024;
+  const invalidDirectory = cloudDirectoryIssue(cloudDirectory);
+  const directoryEnabled = !!workspace && !!selectedCatalog?.online && selectedCatalog.directory_launch === true;
+  const cloudReceipt = cloudReceiptId ? cloud?.operations?.entries.find(entry => entry.identity.request_id === cloudReceiptId) : undefined;
+  const cloudPending = !!cloudReceipt && controlPending(cloudReceipt);
+  const cloudResult = cloudReceipt?.receipt?.outcome;
+  const cloudIssue = cloudReceipt && cloudResult && cloudResult.status !== "succeeded"
+    ? directoryLaunchIssue(cloudResult.code) ?? `${controlStatus(cloudReceipt)}（${cloudResult.code}）` : cloudReceipt?.issue;
   const supported = cloud ? !!selectedCatalog?.online && !!selectedCatalog.installation_id && (isNew
     ? !!workspace && (role ? workspace.roles.some(item => item.name === role && item.available) : workspace.default_available) && !taskTooLong
     : !!native?.can_stop && action === 'kill')
@@ -131,9 +143,9 @@ function AgentCommandDialog({ opener, live, controller, action, agent, onClose }
     : action === "fork" && agent ? local?.latestReceipt("fork", agent.id) : undefined;
   const receipt = latestReceipt && (latestReceipt.id === receiptId || blocked) ? latestReceipt : undefined;
   const receiptIssue = receipt && operationIssue(receipt);
-  const confirmed = receipt?.id === receiptId && receipt?.operation?.status === "Succeeded";
-  const enabled = supported && !blocked && !stale && !busy && !confirmed;
-  const feedback = stale ? "数据范围已变化，请关闭后重新选择。" : receiptIssue || error || catalogError;
+  const confirmed = cloudResult?.status === "succeeded" || receipt?.id === receiptId && receipt?.operation?.status === "Succeeded";
+  const enabled = supported && !blocked && !stale && !busy && !confirmed && !invalidDirectory && (!cloudDirectory || directoryEnabled);
+  const feedback = stale ? "数据范围已变化，请关闭后重新选择。" : receiptIssue || error || catalogError || cloudIssue;
   useEffect(() => {
     mounted.current = true;
     input.current?.focus({ preventScroll: true });
@@ -152,17 +164,34 @@ function AgentCommandDialog({ opener, live, controller, action, agent, onClose }
   }, [cloud, host, catalogRevision]);
   useEffect(() => { if (feedback) errorTarget.current?.focus({ preventScroll: false }); }, [feedback]);
   useEffect(() => { if (confirmed && !stale) closeAfterReceipt.current?.(); }, [confirmed, stale]);
+  function clearCloudDirectory() {
+    setCloudDirectory("");
+    setCreateCloudDirectory(false);
+    setCloudReceiptId(undefined);
+    setError("");
+  }
   async function submit(event: React.FormEvent, close: () => void) {
     event.preventDefault(); if (!enabled) return;
     const previous = latestReceipt?.id;
-    setBusy(true); setError(""); setReceiptId(undefined);
+    setBusy(true); setError(""); setReceiptId(undefined); setCloudReceiptId(undefined);
     try {
       if (cloud && selectedCatalog) {
         if (isNew && workspace) {
           const navigation = controller.navigationRevision;
-          await cloud.control(selectedCatalog, { kind: 'launch', workspace: workspace.alias, role: role || null, name: name || null, title: title || null, initial_prompt: prompt || null }, undefined, project => {
-            if (controller.navigationRevision === navigation) controller.openExact(project());
+          const entry = await cloud.control(selectedCatalog, { kind: 'launch', workspace: workspace.alias, role: role || null, name: name || null, title: title || null, initial_prompt: prompt || null,
+            ...(cloudDirectory ? { working_directory: cloudDirectory } : {}),
+            ...(createCloudDirectory ? { create_directory: true } : {}) }, undefined, project => {
+            if (controller.navigationRevision === navigation) {
+              const id = project();
+              controller.channel(id, 'model');
+              controller.openExact(id);
+            }
           });
+          if (cloudDirectory && entry && mounted.current) {
+            closeAfterReceipt.current = close;
+            setCloudReceiptId(entry.identity.request_id);
+            return;
+          }
         }
         else if (agent?.ref.incarnation) await cloud.control(selectedCatalog, { kind: 'stop', name: agent.name, incarnation: agent.ref.incarnation }, agent.id);
       } else if (local && isNew) {
@@ -197,7 +226,7 @@ function AgentCommandDialog({ opener, live, controller, action, agent, onClose }
   const cloudAvailability = !host ? "没有可选主机。" : !selectedCatalog ? (catalogError ? "" : "正在读取主机目录…")
     : !selectedCatalog.online || !selectedCatalog.installation_id ? "主机管理离线。" : taskTooLong ? "启动任务超过 16 KiB。"
     : !supported ? (isNew ? "请选择可用的工作区和岗位。" : "此实例当前不可停止。") : "";
-  const availability = confirmed ? "原操作已成功。" : cloud && cloudAvailability ? cloudAvailability
+  const availability = confirmed ? "原操作已成功。" : cloudReceipt && cloudPending ? controlStatus(cloudReceipt) : cloud && cloudAvailability ? cloudAvailability
     : !supported ? (cloud ? "" : isNew ? "请选择可用的启动配置。" : "此实例当前不支持该操作。")
     : blocked && !busy && !stale && !feedback ? (receipt?.operation ? `原操作 · ${receipt.operation.status}` : "操作暂不可用 · 查看连接与回执") : "";
   const roles = cloud ? (workspace?.roles ?? []).map(item => ({ id: item.name, label: item.name, disabled: !item.available, reason: item.reason }))
@@ -205,9 +234,20 @@ function AgentCommandDialog({ opener, live, controller, action, agent, onClose }
   return <CommandSurface title={label} opener={opener} onClose={onClose} onSubmit={submit} submitLabel={submitLabel} disabled={!enabled} danger={action === "kill" || action === "stop-participation"}>
       {agent ? <div className="command-identity"><strong>{action === "fork" ? "来源 · " : ""}{agent.title}</strong><small className="command-exact-ref">{agent.ref.host && `${agent.ref.host} · `}{agent.ref.stopped_event != null ? `停止历史 #${agent.ref.stopped_event}` : `实例 · ${agent.ref.incarnation}`}</small>{selectedCatalog && <small className="command-exact-ref">{selectedCatalog.installation_id}</small>}<p>{consequence}</p></div> : <div className="launch-form">
         {cloud && <div className="launch-field-pair">
-          <label>主机<select ref={input} aria-label="新 Agent 主机" value={host} disabled={busy} onChange={event => { setHost(event.target.value); setWorkspace(""); setRole(""); }}><option value="" disabled>请选择</option>{cloud.hosts.map(item => <option key={item.name} value={item.name}>{item.name}{item.online ? '' : ' · 心跳离线'}</option>)}</select></label>
-          <label>工作区<select aria-label="新 Agent 工作区" value={workspace?.alias ?? ""} disabled={busy || !workspaces.length} onChange={event => { setWorkspace(event.target.value); setRole(""); }}><option value="" disabled>请选择</option>{workspaces.map(item => <option key={item.alias}>{item.alias}</option>)}</select></label>
+          <label>主机<select ref={input} aria-label="新 Agent 主机" value={host} disabled={busy || cloudPending} onChange={event => { setHost(event.target.value); setWorkspace(""); setRole(""); clearCloudDirectory(); }}><option value="" disabled>请选择</option>{cloud.hosts.map(item => <option key={item.name} value={item.name}>{item.name}{item.online ? '' : ' · 心跳离线'}</option>)}</select></label>
+          <label>工作区<select aria-label="新 Agent 工作区" value={workspace?.alias ?? ""} disabled={busy || cloudPending || !workspaces.length} onChange={event => { setWorkspace(event.target.value); setRole(""); clearCloudDirectory(); }}><option value="" disabled>请选择</option>{workspaces.map(item => <option key={item.alias}>{item.alias}</option>)}</select></label>
         </div>}
+        {cloud && workspace && <CloudLaunchDirectory value={cloudDirectory} create={createCloudDirectory} available={directoryEnabled}
+          disabled={busy || cloudPending || stale} workspace={workspace.alias} issue={invalidDirectory} onChange={value => {
+            setCloudDirectory(value);
+            if (!value) setCreateCloudDirectory(false);
+            setCloudReceiptId(undefined);
+            setError("");
+          }} onCreate={value => {
+            setCreateCloudDirectory(value);
+            setCloudReceiptId(undefined);
+            setError("");
+          }} />}
         <div className="launch-field-pair">
           <LaunchRolePicker roles={roles} value={role} onChange={setRole} disabled={busy} defaultLabel={cloud ? '默认 Codex' : '按启动配置'} defaultDisabled={!!cloud && !workspace?.default_available} />
           {!cloud && !role && <label>启动配置<select ref={input} required aria-label="新 Agent 启动配置" value={profile} onChange={event => setProfile(event.target.value)}>{!profiles.length && <option value="">无可用配置</option>}{profiles.map(item => <option key={item.name} value={item.name}>{item.name} · {item.tool}</option>)}</select></label>}
@@ -223,8 +263,35 @@ function AgentCommandDialog({ opener, live, controller, action, agent, onClose }
       {feedback && <div className="command-result" role="alert" ref={errorTarget} tabIndex={-1}>{feedback}</div>}
       {availability && <div className="command-result" role="status">{availability}</div>}
       {cloud && catalogError && !stale && <button type="button" onClick={() => retryCatalog(value => value + 1)}>重试主机目录</button>}
+      {cloud && cloudReceipt && cloudPending && cloudReceipt.issue && !stale && <div className="command-receipt"><button type="button" disabled={cloudReceipt.busy} onClick={() => void cloud.lookupControl(cloudReceipt)}>查询原回执</button></div>}
       {local && receipt && !busy && !stale && (blocked || receiptIssue) && <div className="command-receipt"><button type="button" disabled={!local.canLookup(receipt)} onClick={() => { setReceiptId(receipt.id); void local.lookup(receipt); }}>查询原回执</button></div>}
   </CommandSurface>;
+}
+
+function cloudDirectoryIssue(path: string) {
+  const encoder = new TextEncoder();
+  if (path && (encoder.encode(path).length > 1024 || path.split('/').some(part =>
+    !part || part === '.' || part === '..' || /[\\:\p{Cc}]/u.test(part) || encoder.encode(part).length > 255))) {
+    return "请输入工作区内的相对目录，例如 src/agentx。";
+  }
+}
+
+function CloudLaunchDirectory({ value, create, available, disabled, workspace, issue, onChange, onCreate }: {
+  value: string; create: boolean; available: boolean; disabled: boolean; workspace: string;
+  issue?: string; onChange(value: string): void; onCreate(value: boolean): void;
+}) {
+  const hint = useId(), path = value ? `${workspace}/${value}` : `${workspace}/`;
+  return <details className="launch-directory">
+    <summary><span>工作目录</span><code title={path}>{path}</code></summary>
+    {available ? <div className="launch-directory-fields">
+      <label><span>工作区内路径 <small>留空使用根目录</small></span><input aria-label="新 Agent 工作目录" value={value}
+        autoComplete="off" spellCheck={false} placeholder="例如 src/agentx" disabled={disabled} aria-invalid={!!issue}
+        aria-describedby={issue ? hint : undefined} onChange={event => onChange(event.target.value)} /></label>
+      {issue && <small id={hint} className="command-result" role="status" data-invalid>{issue}</small>}
+      <label className="launch-directory-create"><input type="checkbox" checked={create} disabled={disabled || !value || !!issue}
+        onChange={event => onCreate(event.target.checked)} />目录不存在时创建</label>
+    </div> : <small className="launch-directory-context">此主机仅支持从工作区根目录启动。</small>}
+  </details>;
 }
 
 function LaunchRolePicker({ roles, value, onChange, disabled, defaultLabel, defaultDisabled }: {

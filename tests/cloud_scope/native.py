@@ -57,12 +57,13 @@ class Model:
                     event, item, evidence = owner.respond(json.loads(self.rfile.read(size)))
                     with owner.lock:
                         owner.observed.setdefault(event, []).append(evidence)
-                    output = sse("resp_" + event.replace("-", "_"), item)
+                    chunks = owner.response_chunks(event, item)
                     self.send_response(200)
                     self.send_header("Content-Type", "text/event-stream")
-                    self.send_header("Content-Length", str(len(output)))
                     self.end_headers()
-                    self.wfile.write(output)
+                    for chunk in chunks:
+                        self.wfile.write(chunk)
+                        self.wfile.flush()
                 except (AssertionError, KeyError, ValueError) as error:
                     with owner.lock:
                         owner.errors.append(str(error))
@@ -83,6 +84,9 @@ class Model:
         self.server.server_close()
         self.thread.join()
         self.fixture.write("model-observations.json", {"events": self.observed, "errors": self.errors})
+
+    def response_chunks(self, event, item):
+        yield sse("resp_" + event.replace("-", "_"), item)
 
     def respond(self, request):
         inputs = request["input"]

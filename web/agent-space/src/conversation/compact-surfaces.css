@@ -305,8 +305,12 @@
 .launch-directory[open] > summary::before { rotate: 90deg; }
 .launch-directory > summary span { flex: none; font-weight: var(--weight-semibold); }
 .launch-directory > summary code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.launch-directory-fields { display: grid; gap: var(--space-1); }
+.launch-directory-context { color: var(--muted); font-size: var(--text-xs); }
+.space-system .agent-command-dialog .launch-form .launch-directory-create { display: flex; align-items: center; gap: var(--space-2); min-height: var(--touch); font-weight: var(--weight-normal); }
+.space-system .agent-command-dialog .launch-form .launch-directory-create input { width: auto; }
 .command-result { overflow-wrap: anywhere; font-size: var(--text-xs); }
-.command-result[role="alert"] { color: var(--danger); }
+.command-result[role="alert"], .command-result[data-invalid] { color: var(--danger); }
 .command-receipt { font-size: var(--text-xs); }
 
 @media (max-width: 360px) {

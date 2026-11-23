@@ -54,6 +54,33 @@ const IPC_CONTEXT: &str = "AGENTX_CLOUD_IPC_CONTEXT";
 const HOST_ENTRY: &str = "__cloud-host";
 const POLL: Duration = Duration::from_millis(350);
 
+enum MailboxPoll {
+    Empty,
+    Pending,
+    Delivered,
+}
+
+impl MailboxPoll {
+    // Only a successful empty claim is evidence that the remote inbox is idle.
+    fn next_delay(&self, previous: Duration) -> Duration {
+        match self {
+            Self::Empty => (previous * 2).min(Duration::from_secs(2)),
+            Self::Pending | Self::Delivered => POLL,
+        }
+    }
+}
+
+#[test]
+fn empty_mailbox_backoff_is_bounded_and_resets() {
+    let mut delay = POLL;
+    for expected in [700, 1400, 2000, 2000] {
+        delay = MailboxPoll::Empty.next_delay(delay);
+        assert_eq!(delay, Duration::from_millis(expected));
+    }
+    assert_eq!(MailboxPoll::Pending.next_delay(delay), POLL);
+    assert_eq!(MailboxPoll::Delivered.next_delay(delay), POLL);
+}
+
 #[derive(Clone, Deserialize, Serialize)]
 struct ManagedContext {
     root: PathBuf,
@@ -708,36 +735,40 @@ fn listen_command(argv: &[String], help: bool, explicit: Option<&str>, mode: Mod
     let actor = mode.resolve_actor(explicit, &scope)?;
     let timeout = Duration::from_secs(args.timeout.or(args.timeout_positional).unwrap_or(86_400));
     let start = Instant::now();
+    let mut delay = POLL;
     loop {
-        if let Some(mailbox) = Mailbox::try_open(&scope, &actor)?
-            && listen_once(&scope, &actor, &mailbox, args.json)?
-        {
+        let observation = match Mailbox::try_open(&scope, &actor)? {
+            Some(mailbox) => listen_once(&scope, &actor, &mailbox, args.json)?,
+            None => MailboxPoll::Pending,
+        };
+        if matches!(observation, MailboxPoll::Delivered) {
             return Ok(());
         }
         let remaining = timeout.saturating_sub(start.elapsed());
         if remaining.is_zero() {
             return Ok(());
         }
-        std::thread::sleep(POLL.min(remaining));
+        delay = observation.next_delay(delay);
+        std::thread::sleep(delay.min(remaining));
     }
 }
 
-fn listen_once(scope: &Scope, actor: &Actor, mailbox: &Mailbox, json: bool) -> Result<bool> {
+fn listen_once(scope: &Scope, actor: &Actor, mailbox: &Mailbox, json: bool) -> Result<MailboxPoll> {
     let mut claim = match mailbox.read()? {
         Some(claim) => claim,
         None => mailbox.begin()?,
     };
     if mailbox.complete(scope, actor, &claim)? {
-        return Ok(false);
+        return Ok(MailboxPoll::Pending);
     }
     match &claim.phase {
-        Phase::ProviderIssuing(_) | Phase::NaturalReplying(_) => return Ok(false),
+        Phase::ProviderIssuing(_) | Phase::NaturalReplying(_) => return Ok(MailboxPoll::Pending),
         Phase::ListenIssuing(_) => bail!("output for cloud claim {} is unresolved; it will not be printed again", claim.id),
         Phase::Reserved => {}
         _ => unreachable!("completed phases returned above"),
     }
     let batch = scope.claim(actor, &claim.id, 0).with_context(|| format!("cloud claim {}", claim.id))?;
-    let Some(message) = batch.items.first() else { return Ok(false) };
+    let Some(message) = batch.items.first() else { return Ok(MailboxPoll::Empty) };
     mailbox.transition(&mut claim, Phase::ListenIssuing(message.id.clone()))?;
     if json {
         print_json(message)?;
@@ -748,5 +779,5 @@ fn listen_once(scope: &Scope, actor: &Actor, mailbox: &Mailbox, json: bool) -> R
     }
     mailbox.transition(&mut claim, Phase::Confirming(message.id.clone()))?;
     mailbox.complete(scope, actor, &claim).with_context(|| format!("output written; cloud claim {} needs confirmation", claim.id))?;
-    Ok(true)
+    Ok(MailboxPoll::Delivered)
 }

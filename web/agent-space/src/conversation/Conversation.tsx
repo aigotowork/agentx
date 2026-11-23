@@ -1,5 +1,5 @@
 /** @aiPurpose Read AgentX messages and Provider transcripts for one exact Agent. */
-import { useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { adoptedRoleLabel, type AgentResource, type RecordChannel, type SuppliedRecords } from "../offline/model";
 import { HALL_STATE_LABEL } from "../scene/model";
 import { Button, ConversationBlock, ConversationComposer } from "../../uiux/systems/space/space.web";
@@ -41,7 +41,11 @@ export function Conversation({ agent, records, channel, onChannel, draft, onDraf
   const local = live?.kind === 'native' ? live : undefined;
   const stopped = agent.ref.record === 'stopped';
   const reset = live?.connection === 'reset';
-  const page = channel === 'messages' ? live?.messagePage(agent.id) : undefined;
+  const model = channel === 'model';
+  const page = model ? cloud?.transcriptPage(agent.id) : live?.messagePage(agent.id);
+  useEffect(() => {
+    if (model && cloud && !cloud.transcriptPage(agent.id)) void cloud.refreshTranscript(agent.id);
+  }, [model, cloud, agent.id]);
   const scrollKey = JSON.stringify([agent.id, channel]);
   const preserveScroll = !!live || workspace || !!controller.supply.roster;
   const forwardHistory = page?.mode === 'forward';
@@ -90,8 +94,9 @@ export function Conversation({ agent, records, channel, onChannel, draft, onDraf
     catch (error) { controller.contextError(agent.id, error instanceof Error ? error.message : String(error)); }
   }
   const recordKind = agent.ref.host ? agent.ref.host : agent.ref.record === "stopped" ? "停止历史" : "当前实例";
-  const identity = { title: agent.title, role: studio && agent.launchTitle ? agent.launchTitle : adoptedRoleLabel(agent.role), kind: stopped && workspace ? `历史 #${agent.ref.stopped_event ?? ''}` : recordKind, state: (studio && studioSignalLabel(agent)) || HALL_STATE_LABEL[agent.state], source: agent.source.title, avatar: <AgentAvatar agent={agent} studio={studio} /> };
-  const exactLabel = `${agent.title} · ${recordKind} ${agent.ref.stopped_event ?? agent.ref.incarnation ?? ''}`;
+  const identity = { title: agent.title, role: studio && !cloud && agent.launchTitle ? agent.launchTitle : adoptedRoleLabel(agent.role), kind: stopped && workspace ? `历史 #${agent.ref.stopped_event ?? ''}` : recordKind, state: (studio && studioSignalLabel(agent)) || HALL_STATE_LABEL[agent.state], source: agent.source.title, avatar: <AgentAvatar agent={agent} studio={studio} /> };
+  const displayIdentity = cloud && agent.title !== `@${agent.name}` ? `${agent.title} · @${agent.name}` : agent.title;
+  const exactLabel = `${displayIdentity} · ${recordKind} ${agent.ref.stopped_event ?? agent.ref.incarnation ?? ''}`;
   const options = canCompose && !cloud && <MessageOptions intent={intent} thread={thread} replyTo={replyTo} onEdit={patch => controller.editDraftDetails(agent.id, patch)} />;
   const editorMemory = { key: agent.id, positions: controller.editorPositions };
   const composer = channel === 'messages' && (!readOnly || !!cloud || draft || attachments.length > 0 || reset) && <ConversationComposer draft={draft} onDraft={onDraft} attachments={attachments} draftOnly={!canCompose} uploading={uploading} canSend={canSend} attachmentUnavailable={cloud ? "云端暂不支持附件" : undefined} canAttach={canCompose && !sendBlocked && !cloud} readOnly={readOnly} maxText={maxText} status={composerStatus} contextError={contextError} onSubmit={send} onAddFiles={addFiles} onRemoveAttachment={id => controller.removeAttachment(agent.id, id)} options={options} editorSize={height} onEditorSize={height => controller.editDraftDetails(agent.id, { height })} editorMemory={editorMemory} receiptAction={receiptAction} />;
@@ -112,20 +117,21 @@ export function Conversation({ agent, records, channel, onChannel, draft, onDraf
       const bookmark = controller.readerLatest.get(scrollKey);
       if (bookmark) bookmark.following = false;
     }
-    live?.moreMessagesFor(agent.id);
+    retryHistory();
   }
-  const retryHistory = () => live?.moreMessagesFor(agent.id);
-  const olderBoundary = latest && <OlderBoundary page={latest} reset={reset} onRead={continueHistory} onRetry={retryHistory} />;
+  const retryHistory = () => model ? cloud?.moreTranscriptFor(agent.id) : live?.moreMessagesFor(agent.id);
+  const recordLabel = model ? "记录" : "消息";
+  const olderBoundary = latest && <OlderBoundary page={latest} label={recordLabel} reset={reset} onRead={continueHistory} onRetry={retryHistory} />;
   const olderStatus = latest?.older?.phase === 'error' ? <>
-    <small title={latest.older.error}>更早消息读取失败</small>
+    <small title={latest.older.error}>更早{recordLabel}读取失败</small>
     <Button disabled={reset} onClick={event => {
       event.currentTarget.closest('.conversation-layout')?.querySelector<HTMLElement>('.conversation-history')?.focus({ preventScroll: true });
       retryHistory();
-    }}>重试更早消息</Button>
-  </> : latest?.older?.phase === 'loading' && <small>正在读取更早消息…</small>;
+    }}>重试更早{recordLabel}</Button>
+  </> : latest?.older?.phase === 'loading' && <small>正在读取更早{recordLabel}…</small>;
   const forwardBoundary = forwardHistory && <MessageBoundary phase={page.phase} more={page.more} visibleCount={items?.length ?? 0} error={items ? page.error : undefined} reset={reset} stopped={stopped} onRetry={retryHistory} />;
-  const liveIssue = latest?.live?.phase === 'error' && <Button title={latest.live.error} disabled={reset} onClick={() => live?.retryMessagesLive(agent.id)}>重试新消息</Button>;
-  const transcript = channel === 'model' && <TranscriptControls agent={agent} live={local} />;
+  const liveIssue = latest?.live?.phase === 'error' && <Button title={latest.live.error} disabled={reset} onClick={() => model ? void cloud?.refreshTranscript(agent.id) : live?.retryMessagesLive(agent.id)}>重试新{recordLabel}</Button>;
+  const transcript = model && local && <TranscriptControls agent={agent} live={local} />;
   const showRecords = !!cloud || !(channel === 'model' && live && records.status === 'unavailable');
   const legacyNotice = forwardHistory && <p className="history-order">当前服务无法直达最新 · 从最早记录开始</p>;
   const history = <>{olderBoundary}<BoundWork agent={agent} />{transcript}{legacyNotice}{showRecords && <RecordReader key={scrollKey} agent={agent} records={records} channel={channel} followEnd={!preserveScroll} sourceInFacts={workspace} match={searchOpen ? seek?.id : undefined} forward={forwardHistory} partial={page?.more} />}{forwardBoundary}</>;
@@ -138,10 +144,10 @@ export function Conversation({ agent, records, channel, onChannel, draft, onDraf
     beforeLayout: `${latest.more}:${latest.older?.phase}:${latest.emptyOlder}`, firstId: items?.[0]?.id, onOlder: continueHistory };
   const historyScroll = scrollPositions ? { key: scrollKey, positions: scrollPositions, anchors: controller.readerAnchors, ready: records.status === "available", forward: forwardHistory, onForward: forwardHistory ? continueHistory : undefined, seek, latest: latestScroll } : undefined;
   function chooseChannel(value: RecordChannel) { if (value !== channel) { setQuery(''); setSeek(undefined); onChannel(value); } }
-  return <ConversationBlock transcriptUnavailable={cloud ? "云端未提供 Provider Transcript" : undefined} workspace={workspace} workspaceControls={workspaceControls} identity={identity} exactLabel={exactLabel} channel={channel} onChannel={chooseChannel} onBack={onBack} backLabel={backLabel} presentationControl={presentationControl} facts={facts} primaryAction={fork} result={forkResult} relations={relations} history={history} olderStatus={olderStatus} liveIssue={liveIssue} composer={composer} historyScroll={historyScroll} historySearch={historySearch} searchTrigger={searchTrigger} />;
+  return <ConversationBlock workspace={workspace} workspaceControls={workspaceControls} identity={identity} exactLabel={exactLabel} channel={channel} onChannel={chooseChannel} onBack={onBack} backLabel={backLabel} presentationControl={presentationControl} facts={facts} primaryAction={fork} result={forkResult} relations={relations} history={history} olderStatus={olderStatus} liveIssue={liveIssue} composer={composer} historyScroll={historyScroll} historySearch={historySearch} searchTrigger={searchTrigger} />;
 }
 
-function OlderBoundary({ page, reset, onRead, onRetry }: { page: Extract<NonNullable<ReturnType<LiveSpace['messagePage']>>, { mode: 'latest' }>; reset: boolean; onRead(): void; onRetry(): void }) {
+function OlderBoundary({ page, label, reset, onRead, onRetry }: { label: string; page: Extract<NonNullable<ReturnType<LiveSpace['messagePage']>>, { mode: 'latest' }>; reset: boolean; onRead(): void; onRetry(): void }) {
   const root = useRef<HTMLDivElement>(null);
   const [short, setShort] = useState(false);
   useLayoutEffect(() => {
@@ -162,7 +168,7 @@ function OlderBoundary({ page, reset, onRead, onRetry }: { page: Extract<NonNull
   }, [page.token, page.phase, page.older?.phase, page.more]);
 
   if (page.phase === 'error') {
-    return <div className="history-boundary" data-state="error"><Button disabled={reset} onClick={onRetry}>重试消息</Button></div>;
+    return <div className="history-boundary" data-state="error"><Button disabled={reset} onClick={onRetry}>重试{label}</Button></div>;
   }
   if (!page.token) return null;
   const pending = page.older?.phase !== 'ready';
@@ -172,7 +178,7 @@ function OlderBoundary({ page, reset, onRead, onRetry }: { page: Extract<NonNull
     action();
   }
   return <div ref={root} className="history-older">
-    {showMore && <Button disabled={reset || pending} style={pending ? { visibility: 'hidden' } : undefined} onClick={() => demand(onRead)}>查看更早消息</Button>}
+    {showMore && <Button disabled={reset || pending} style={pending ? { visibility: 'hidden' } : undefined} onClick={() => demand(onRead)}>查看更早{label}</Button>}
   </div>;
 }
 
@@ -240,8 +246,8 @@ function AgentFacts({ agent, controller, group, syncDetail, source, provenance, 
     <div className={group ? "workspace-reader-panel reader-facts" : "hall-options-menu reader-facts"}>
       <strong>{agent.title} · {agent.ref.host ? "云端实例" : agent.ref.record === "stopped" ? "停止历史" : "当前实例"}</strong>
       {actions}
-      <p>{agent.description}</p>{agent.launchTitle && <p>职责 · {agent.launchTitle}</p>}{agent.role.kind === "adopted" && <p>岗位说明 · {agent.role.description || "岗位说明未提供"}</p>}
-      <dl>{agent.ref.host ? <><dt>主机</dt><dd>{agent.ref.host}</dd><dt>Scope 代次</dt><dd>{agent.ref.generation}</dd><dt>实例</dt><dd>{agent.ref.incarnation}</dd></> : source && <><dt>实例来源</dt><dd>{source}</dd></>}{provenance && <><dt>记录来源</dt><dd>{provenance}</dd></>}<dt>成员归属</dt><dd>{membership}</dd><dt>独立工作目录</dt><dd>{agent.cwd ?? "未提供"}</dd><dt>采用岗位</dt><dd>{adoptedRoleLabel(agent.role)}</dd>{agent.role.kind === "adopted" && <><dt>采用来源 / 快照</dt><dd>{agent.role.source}<br />{agent.role.revision}</dd><dt>Role 启动配置引用</dt><dd>{agent.role.profile}</dd></>}<dt>采用的启动配置</dt><dd>{agent.profile ?? "未提供"}</dd><dt>工具 / 观测模型</dt><dd>{agent.tool} / {agent.model ?? "模型未提供"}</dd><dt>精确引用</dt><dd><code>{agent.id}</code><CopyButton text={agent.id} /></dd></dl>
+      <p>{agent.description}</p>{agent.launchTitle && <p>职责 · {agent.launchTitle}</p>}{agent.role.kind === "adopted" && !agent.ref.host && <p>岗位说明 · {agent.role.description || "岗位说明未提供"}</p>}
+      <dl>{agent.ref.host ? <><dt>主机</dt><dd>{agent.ref.host}</dd><dt>Scope 代次</dt><dd>{agent.ref.generation}</dd><dt>实例</dt><dd>{agent.ref.incarnation}</dd></> : source && <><dt>实例来源</dt><dd>{source}</dd></>}{provenance && <><dt>记录来源</dt><dd>{provenance}</dd></>}<dt>成员归属</dt><dd>{membership}</dd><dt>独立工作目录</dt><dd>{agent.cwd ?? "未提供"}</dd><dt>采用岗位</dt><dd>{adoptedRoleLabel(agent.role)}</dd>{agent.role.kind === "adopted" && !agent.ref.host && <><dt>采用来源 / 快照</dt><dd>{agent.role.source}<br />{agent.role.revision}</dd><dt>Role 启动配置引用</dt><dd>{agent.role.profile}</dd></>}<dt>采用的启动配置</dt><dd>{agent.profile ?? "未提供"}</dd><dt>工具 / 观测模型</dt><dd>{agent.tool} / {agent.model ?? "模型未提供"}</dd><dt>精确引用</dt><dd><code>{agent.id}</code><CopyButton text={agent.id} /></dd></dl>
       {!group && <span>状态不代表任务验收。</span>}
     </div>
   </details>;

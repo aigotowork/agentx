@@ -12,6 +12,15 @@ export const controlStatus = (entry: ControlEntry) => ({
   queued: '等待主机接收', running: '主机正在执行', succeeded: '已完成', failed: '执行失败', uncertain: '执行结果未确认',
 }[entry.receipt?.status ?? 'uncertain']);
 
+const directoryIssues: Record<string, string> = {
+  directory_invalid: '工作目录必须是工作区内的相对路径。',
+  directory_missing: '工作目录不存在。请检查路径，或选择「目录不存在时创建」；父目录必须已存在。',
+  directory_unsafe: '工作目录不是普通目录，或路径中包含符号链接。',
+  directory_unavailable: '主机无法访问此工作目录。请检查目录权限。',
+  directory_create_failed: '主机无法创建此工作目录。请检查父目录权限。',
+};
+export const directoryLaunchIssue = (code: string) => Object.hasOwn(directoryIssues, code) ? directoryIssues[code] : undefined;
+
 function identity(input: CloudControlInput): ControlIdentity {
   const { request_id, generation, host, installation_id, command } = input;
   return { request_id, generation, host, installation_id, kind: command.kind,

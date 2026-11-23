@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client/index.js';
-import type { CreateAdminControlOperationData, CreateAdminControlOperationErrors, CreateAdminControlOperationResponses, GetAdminControlOperationData, GetAdminControlOperationErrors, GetAdminControlOperationResponses, GetAdminHostCapabilitiesData, GetAdminHostCapabilitiesErrors, GetAdminHostCapabilitiesResponses, GetAdminOverviewData, GetAdminOverviewErrors, GetAdminOverviewResponses, GetAdminScopeData, GetAdminScopeErrors, GetAdminScopeResponses, ListAdminScopeAgentsData, ListAdminScopeAgentsErrors, ListAdminScopeAgentsResponses, ListAdminScopeHostsData, ListAdminScopeHostsErrors, ListAdminScopeHostsResponses, ListAdminScopeMessagesData, ListAdminScopeMessagesErrors, ListAdminScopeMessagesResponses, ListAdminScopesData, ListAdminScopesErrors, ListAdminScopesResponses, PutAdminScopeData, PutAdminScopeErrors, PutAdminScopeResponses, RotateAdminScopeTokenData, RotateAdminScopeTokenErrors, RotateAdminScopeTokenResponses, SendAdminScopeMessageData, SendAdminScopeMessageErrors, SendAdminScopeMessageResponses } from './types.gen.js';
+import type { AdminSpaceChangesData, AdminSpaceChangesErrors, AdminSpaceChangesResponses, CreateAdminControlOperationData, CreateAdminControlOperationErrors, CreateAdminControlOperationResponses, GetAdminControlOperationData, GetAdminControlOperationErrors, GetAdminControlOperationResponses, GetAdminHostCapabilitiesData, GetAdminHostCapabilitiesErrors, GetAdminHostCapabilitiesResponses, GetAdminOverviewData, GetAdminOverviewErrors, GetAdminOverviewResponses, GetAdminScopeData, GetAdminScopeErrors, GetAdminScopeResponses, ListAdminScopeAgentsData, ListAdminScopeAgentsErrors, ListAdminScopeAgentsResponses, ListAdminScopeHostsData, ListAdminScopeHostsErrors, ListAdminScopeHostsResponses, ListAdminScopeMessagesData, ListAdminScopeMessagesErrors, ListAdminScopeMessagesResponses, ListAdminScopesData, ListAdminScopesErrors, ListAdminScopesResponses, ListAdminScopeTranscriptData, ListAdminScopeTranscriptErrors, ListAdminScopeTranscriptResponses, PutAdminScopeData, PutAdminScopeErrors, PutAdminScopeResponses, RotateAdminScopeTokenData, RotateAdminScopeTokenErrors, RotateAdminScopeTokenResponses, SendAdminScopeMessageData, SendAdminScopeMessageErrors, SendAdminScopeMessageResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -49,6 +49,12 @@ export const putAdminScope = <ThrowOnError extends boolean = false>(options: Opt
 export const listAdminScopeAgents = <ThrowOnError extends boolean = false>(options: Options<ListAdminScopeAgentsData, ThrowOnError>): RequestResult<ListAdminScopeAgentsResponses, ListAdminScopeAgentsErrors, ThrowOnError> => (options.client ?? client).get<ListAdminScopeAgentsResponses, ListAdminScopeAgentsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/admin/scopes/{id}/agents',
+    ...options
+});
+
+export const adminSpaceChanges = <ThrowOnError extends boolean = false>(options: Options<AdminSpaceChangesData, ThrowOnError>): RequestResult<AdminSpaceChangesResponses, AdminSpaceChangesErrors, ThrowOnError> => (options.client ?? client).get<AdminSpaceChangesResponses, AdminSpaceChangesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/admin/scopes/{id}/changes',
     ...options
 });
 
@@ -104,4 +110,10 @@ export const rotateAdminScopeToken = <ThrowOnError extends boolean = false>(opti
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+export const listAdminScopeTranscript = <ThrowOnError extends boolean = false>(options: Options<ListAdminScopeTranscriptData, ThrowOnError>): RequestResult<ListAdminScopeTranscriptResponses, ListAdminScopeTranscriptErrors, ThrowOnError> => (options.client ?? client).get<ListAdminScopeTranscriptResponses, ListAdminScopeTranscriptErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/admin/scopes/{id}/transcript',
+    ...options
 });

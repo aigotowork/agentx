@@ -59,6 +59,8 @@ export function createCloudScopeClient(options: CloudScopeOptions) {
     }
   }
   return {
+    spaceChanges: (query: Query<W.ScopeSpaceChangesData>, opts?: CallOptions) =>
+      read('SpaceChanges', wire.scopeSpaceChanges({ client, query, signal: opts?.signal })),
     describe: (opts?: CallOptions) => read('Descriptor', wire.scopeDescribe({ client, signal: opts?.signal }), result => result.scope_id === scopeId),
     listHosts: (query?: Query<W.ScopeListHostsData>, opts?: CallOptions) =>
       read('HostPage', wire.scopeListHosts({ client, query, signal: opts?.signal })),
@@ -70,6 +72,12 @@ export function createCloudScopeClient(options: CloudScopeOptions) {
       const isAgent = (agent: SchemaTypes['AgentView']) => agent.host === host && agent.name === name && agent.incarnation === incarnation;
       return read('MessageHistoryPage', wire.scopeListMessages({ client, query, signal: opts?.signal }),
         result => result.items.every(message => isAgent(message.from) || isAgent(message.to)));
+    },
+    /** Read the bounded visible model records for one exact registration. */
+    listTranscript(query: Query<W.ScopeListTranscriptData>, opts?: CallOptions) {
+      const { host, name, incarnation } = query;
+      return read('TranscriptHistoryPage', wire.scopeListTranscript({ client, query, signal: opts?.signal }),
+        ({ agent }) => agent.host === host && agent.name === name && agent.incarnation === incarnation);
     },
     renewHost(host: string, body: SchemaTypes['HostRegistration'], opts?: CallOptions) {
       requirePathSegment(host);

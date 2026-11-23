@@ -2,7 +2,7 @@ import { stringifyJson } from '@agentx/client';
 /** Compact actions remain beside their office, post, or exact Agent subject. */
 import { useAgentCommands } from '../interactions/AgentCommands';
 import { useState } from 'react';
-import { controlPending, controlStatus } from '../cloud/operations';
+import { controlPending, controlStatus, directoryLaunchIssue } from '../cloud/operations';
 import type { CloudWorkbench } from '../cloud/workbench';
 import type { SpaceLive } from './workbench';
 import type { AgentResource, Post } from '../offline/model';
@@ -45,11 +45,14 @@ function CloudStatus({ live, onDisconnect }: { live: CloudWorkbench; onDisconnec
         {entries.map(entry => {
           const { identity, receipt } = entry;
           const result = receipt?.outcome;
+          const command = receipt?.command ?? entry.original?.command;
+          const problem = result?.status === 'failed' ? directoryLaunchIssue(result.code) : undefined;
           return <section key={identity.request_id}>
             <strong>{identity.kind === 'launch' ? '启动' : '停止'} · {controlStatus(entry)}</strong>
             <code>{identity.request_id}</code><small>{identity.host} · {identity.installation_id}</small>
+            {command?.kind === 'launch' && <code>{command.workspace}/{command.working_directory}</code>}
             {result?.status === 'succeeded' && <code>@{result.agent.name} · {result.agent.host} · {result.agent.incarnation}</code>}
-            {result && result.status !== 'succeeded' && <code>{result.code}</code>}
+            {result && result.status !== 'succeeded' && <small title={result.code}>{problem || result.code}</small>}
             {entry.issue && <small role="status">{entry.issue}</small>}
             <button type="button" disabled={entry.busy || live.connection === 'reset'} onClick={() => void live.lookupControl(entry)}>查询原回执</button>
           </section>;

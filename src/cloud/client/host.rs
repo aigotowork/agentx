@@ -1,6 +1,8 @@
 //! One local Codex process and thread per hosted cloud Agent. A private socket
 //! serves the provider worker and optionally the local Codex terminal.
 
+mod transcript;
+
 use std::io::{BufRead, BufReader, IsTerminal, stdin, stdout};
 use std::os::unix::fs::PermissionsExt;
 use std::os::unix::process::CommandExt;
@@ -20,7 +22,8 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
-use crate::cloud::communication::types::{MAX_BODY_BYTES, NATURAL_REPLY_PREFIX, OPERATOR_HOST, OPERATOR_INCARNATION, OPERATOR_NAME};
+use crate::cloud::communication::types::{CloudAgentStatus, MAX_BODY_BYTES, NATURAL_REPLY_PREFIX, OPERATOR_HOST, OPERATOR_INCARNATION, OPERATOR_NAME};
+use crate::cloud::directory::WorkingDirectory;
 use crate::integrations::codex::{
     configuration::thread_overrides,
     mailbox_item_matches,
@@ -34,7 +37,7 @@ use crate::runtime::{
 };
 
 use super::mailbox::{Mailbox, NaturalReply, Phase};
-use super::{Actor, CONTEXT_FILE, Credentials, HOST_ENTRY, IPC_CONTEXT, LaunchOrigin, LocalSession, ManagedContext, Mode, OwnedProcess, Scope, ipc, message_text, ownership, port::Port, print_help, print_json, valid_name};
+use super::{Actor, CONTEXT_FILE, Credentials, HOST_ENTRY, IPC_CONTEXT, LaunchOrigin, LocalSession, MailboxPoll, ManagedContext, Mode, OwnedProcess, Scope, ipc, message_text, ownership, port::Port, print_help, print_json, valid_name};
 
 const RPC_TIMEOUT: Duration = Duration::from_secs(6);
 const HEARTBEAT: Duration = Duration::from_secs(12);
@@ -66,11 +69,14 @@ struct LaunchSpec {
     source: Source,
     name: Option<String>,
     cwd: PathBuf,
+    #[serde(default)]
+    inherited_cwd: bool,
     tool: PathBuf,
     initial: Option<String>,
     instructions: String,
     config: Value,
     title: Option<String>,
+    role: Option<String>,
     interactive: bool,
     recover: bool,
 }
@@ -128,7 +134,7 @@ pub(super) fn launch(argv: &[String], help: bool, go: bool, mode: Mode) -> Resul
     let cwd = origin.join(flags.dir.as_deref().unwrap_or("."));
     let json = flags.json;
     let spec = prepare(&root, &origin, &cwd, args.name, flags, args.tool.as_deref(), &args.selection, &native, interactive, args.recover, source)?;
-    let (worker, ready, log) = spawn(&spec, None)?;
+    let (worker, ready, log) = spawn(&spec, None, None)?;
     if json {
         print_json(&json!({"name":ready.agent.name,"host":ready.agent.host,"incarnation":ready.agent.incarnation,"agent":ready.agent,"pid":worker.id(),"session_id":ready.session_id,"log_file":log}))?;
     } else {
@@ -152,7 +158,7 @@ pub(super) fn launch(argv: &[String], help: bool, go: bool, mode: Mode) -> Resul
 pub(in crate::cloud) struct LaunchRejected(#[source] anyhow::Error);
 
 pub(in crate::cloud) fn check_headless(root: &Path, cwd: &Path, role: Option<&str>) -> Result<()> {
-    headless_plan(root, cwd, role, None, None, None).map(|_| ())
+    headless_plan(root, cwd, None, role, None, None, None).map(|_| ())
 }
 
 type Expected<'a> = (&'a str, &'a str, &'a str, &'a str);
@@ -160,7 +166,8 @@ type Expected<'a> = (&'a str, &'a str, &'a str, &'a str);
 #[expect(clippy::too_many_arguments, reason = "Control maps a typed launch request into the same local launcher; activation is separately fenced.")]
 pub(in crate::cloud) fn launch_headless(
     root: &Path,
-    cwd: &Path,
+    workspace: &Path,
+    directory: Option<&WorkingDirectory>,
     role: Option<&str>,
     name: Option<String>,
     initial: Option<String>,
@@ -180,12 +187,14 @@ pub(in crate::cloud) fn launch_headless(
         }
         let incarnation = Uuid::parse_str(incarnation)?.to_string();
         ensure!(ownership::record(client.root(), &incarnation)?.is_none(), "preselected cloud launch incarnation already has a supervisor record");
-        let plan = headless_plan(client.root(), cwd, role, name, initial, title)?;
+        let plan = headless_plan(client.root(), workspace, directory.map(WorkingDirectory::path), role, name, initial, title)?;
         let source = Source::Managed { root: client.root().to_owned(), incarnation, expected: client.info };
-        Ok::<_, anyhow::Error>(plan.into_spec(source))
+        let mut spec = plan.into_spec(source);
+        spec.inherited_cwd = directory.is_some();
+        Ok::<_, anyhow::Error>(spec)
     })()
     .map_err(LaunchRejected)?;
-    let (worker, ready, _) = spawn(&result, Some(cancel))?;
+    let (worker, ready, _) = spawn(&result, Some(cancel), directory)?;
     let pid = worker.id();
     let owned = ownership::owned_process(root, &ready.agent.incarnation);
     // A long-lived daemon originating the launch must reap its child after
@@ -196,17 +205,23 @@ pub(in crate::cloud) fn launch_headless(
     Ok(owned)
 }
 
-fn headless_plan(root: &Path, cwd: &Path, role: Option<&str>, name: Option<String>, initial: Option<String>, title: Option<String>) -> Result<Plan> {
-    let cwd = cwd.canonicalize().context("resolve exported cloud workspace")?;
+fn headless_plan(root: &Path, workspace: &Path, directory: Option<&Path>, role: Option<&str>, name: Option<String>, initial: Option<String>, title: Option<String>) -> Result<Plan> {
+    let canonical;
+    let workspace = if directory.is_some() {
+        workspace
+    } else {
+        canonical = workspace.canonicalize().context("resolve exported cloud workspace")?;
+        &canonical
+    };
     let flags = AgentxLaunchFlags {
         role: role.map(str::to_owned),
-        workspace: Some(cwd.to_str().context("exported cloud workspace path must be UTF-8")?.into()),
+        workspace: Some(workspace.to_str().context("exported cloud workspace path must be UTF-8")?.into()),
         headless: true,
         initial_prompt: initial,
         title: crate::agents::launch_title::normalize(title.as_deref()).map_err(anyhow::Error::msg)?,
         ..AgentxLaunchFlags::default()
     };
-    prepare_plan(root, &cwd, &cwd, name, flags, role.is_none().then_some("codex"), &LaunchSelection::default(), &[], false, false, role.is_none())
+    prepare_plan(root, workspace, directory.unwrap_or(workspace).to_owned(), name, flags, role.is_none().then_some("codex"), &LaunchSelection::default(), &[], false, false, role.is_none())
 }
 
 struct Plan {
@@ -217,30 +232,43 @@ struct Plan {
     instructions: String,
     config: Value,
     title: Option<String>,
+    role: Option<String>,
     interactive: bool,
     recover: bool,
 }
 
 impl Plan {
     fn into_spec(self, source: Source) -> LaunchSpec {
-        let Self { name, cwd, tool, initial, instructions, config, title, interactive, recover } = self;
-        LaunchSpec { source, name, cwd, tool, initial, instructions, config, title, interactive, recover }
+        let Self { name, cwd, tool, initial, instructions, config, title, role, interactive, recover } = self;
+        LaunchSpec { source, name, cwd, inherited_cwd: false, tool, initial, instructions, config, title, role, interactive, recover }
     }
 }
 
 #[expect(clippy::too_many_arguments, reason = "Both CLI and remote launch supply the frozen native flags and execution provenance.")]
 fn prepare(root: &Path, origin: &Path, cwd: &Path, name: Option<String>, flags: AgentxLaunchFlags, tool: Option<&str>, selection: &LaunchSelection, native: &[String], interactive: bool, recover: bool, source: Source) -> Result<LaunchSpec> {
+    let cwd = cwd.canonicalize().context("resolve local cloud launch directory")?;
+    ensure!(cwd.is_dir(), "cloud launch directory is not a directory");
     Ok(prepare_plan(root, origin, cwd, name, flags, tool, selection, native, interactive, recover, false)?.into_spec(source))
 }
 
 #[expect(clippy::too_many_arguments, reason = "Single preparation path for CLI, capability checks, and typed management launch.")]
-fn prepare_plan(root: &Path, origin: &Path, cwd: &Path, name: Option<String>, flags: AgentxLaunchFlags, tool: Option<&str>, selection: &LaunchSelection, native: &[String], interactive: bool, recover: bool, force_codex_default: bool) -> Result<Plan> {
+fn prepare_plan(
+    root: &Path,
+    origin: &Path,
+    cwd: PathBuf,
+    name: Option<String>,
+    flags: AgentxLaunchFlags,
+    tool: Option<&str>,
+    selection: &LaunchSelection,
+    native: &[String],
+    interactive: bool,
+    recover: bool,
+    force_codex_default: bool,
+) -> Result<Plan> {
     let mut environment: std::collections::HashMap<String, String> = std::env::vars().collect();
     if force_codex_default {
         environment.remove("AGENTX_PROFILE");
     }
-    let cwd = cwd.canonicalize().context("resolve local cloud launch directory")?;
-    ensure!(cwd.is_dir(), "cloud launch directory is not a directory");
     let default_tool = if selection.profile.is_none() && flags.role.is_none() && !environment.contains_key("AGENTX_PROFILE") { Some("codex") } else { None };
     let (collaboration, resolved) = prepare_with_role(root, origin, &environment, &flags, tool.or(default_tool), selection, native)?;
     ensure!(resolved.tool == "codex", "cloud launch currently supports Codex only");
@@ -256,13 +284,14 @@ fn prepare_plan(root: &Path, origin: &Path, cwd: &Path, name: Option<String>, fl
     if let Some(name) = &name {
         valid_name(name)?;
     }
+    let role = collaboration.role.as_ref().map(|role| role.name.clone());
     let instructions = [collaboration.role.map(|role| role.prompt), flags.system_prompt].into_iter().flatten().collect::<Vec<_>>().join("\n\n");
     let initial = match (flags.initial_prompt, native_prompt) {
         (Some(first), Some(second)) => Some(format!("{first}\n\n{second}")),
         (first, second) => first.or(second),
     };
     ensure!(!recover || initial.is_none(), "--recover cannot repeat an initial Codex prompt");
-    Ok(Plan { name, cwd, tool, initial, instructions, config, title: flags.title, interactive, recover })
+    Ok(Plan { name, cwd, tool, initial, instructions, config, title: flags.title, role, interactive, recover })
 }
 
 fn native_config(args: &[String], interactive: bool) -> Result<(Value, Option<String>)> {
@@ -310,7 +339,7 @@ fn bootstrap(host: &str, name: &str, extra: &str) -> Result<String> {
     ))
 }
 
-fn spawn(spec: &LaunchSpec, cancel: Option<&AtomicBool>) -> Result<(Child, Ready, PathBuf)> {
+fn spawn(spec: &LaunchSpec, cancel: Option<&AtomicBool>, directory: Option<&WorkingDirectory>) -> Result<(Child, Ready, PathBuf)> {
     if cancel.is_some_and(|cancel| cancel.load(Ordering::Acquire)) {
         return Err(LaunchRejected(anyhow::anyhow!("scope daemon is stopping")).into());
     }
@@ -321,10 +350,19 @@ fn spawn(spec: &LaunchSpec, cancel: Option<&AtomicBool>) -> Result<(Child, Ready
     super::private_directory(&state)?;
     let log = state.join(format!("{}-{}.log", spec.name.as_deref().unwrap_or("codex"), &Uuid::new_v4().simple().to_string()[..10]));
     let stderr = crate::sys::fs::create_private_new(&log)?;
+    let mut command = Command::new(std::env::current_exe()?);
+    if let Some(directory) = directory {
+        let fd = directory.raw_fd();
+        // SAFETY: the caller holds the descriptor until spawn returns and fchdir is async-signal-safe.
+        unsafe {
+            command.pre_exec(move || if libc::fchdir(fd) == 0 { Ok(()) } else { Err(std::io::Error::last_os_error()) });
+        }
+    } else {
+        command.current_dir(&spec.cwd);
+    }
     let mut child = StopWorker(Some(
-        Command::new(std::env::current_exe()?)
+        command
             .arg(HOST_ENTRY)
-            .current_dir(&spec.cwd)
             .env_remove(super::SCOPE_TOKEN)
             .env_remove(CONTEXT_FILE)
             .env_remove(IPC_CONTEXT)
@@ -406,6 +444,9 @@ pub(super) fn supervise() -> Result<()> {
 }
 
 fn run(mut spec: LaunchSpec, started: &mut bool) -> Result<()> {
+    if spec.inherited_cwd {
+        ensure!(std::env::current_dir()? == spec.cwd, "selected cloud working directory moved before activation");
+    }
     let stop = Arc::new(AtomicBool::new(false));
     for signal in [signal_hook::consts::SIGTERM, signal_hook::consts::SIGINT] {
         signal_hook::flag::register(signal, stop.clone())?;
@@ -461,11 +502,20 @@ fn run(mut spec: LaunchSpec, started: &mut bool) -> Result<()> {
             IPC_CONTEXT
         }
     };
-    let thread = registration.run.session.as_ref().map(|session| session.thread.as_str());
-    let (mut native, mut provider) = Codex::start(&spec, &socket, context_key, &context, &stop, thread)?;
+    let thread = registration.run.session.as_ref().map(|session| session.thread.clone());
+    let (mut native, mut provider) = Codex::start(&spec, &socket, context_key, &context, &stop, thread.as_deref())?;
     registration.run.session = Some(LocalSession { thread: native.thread.clone(), cwd: spec.cwd.clone() });
     registration.persist()?;
     registration.publish_session(&native.thread, false)?;
+    match transcript::Projection::start(scope.port.clone(), registration.run.actor.clone(), &spec, native.status) {
+        Ok(projection) => {
+            native.projection = Some(projection);
+            if thread.is_some() && transcript::Projection::recover(&mut native).is_err() {
+                eprintln!("Cloud transcript recovery tail unavailable; new turns will still publish");
+            }
+        }
+        Err(_) => eprintln!("Cloud transcript publisher could not start"),
+    }
     let mut next_heartbeat = Instant::now() + HEARTBEAT;
     if let Some(prompt) = &spec.initial {
         native.start_turn(prompt, None).context("start initial Codex turn")?;
@@ -475,6 +525,7 @@ fn run(mut spec: LaunchSpec, started: &mut bool) -> Result<()> {
     *started = true;
     registration.retire_on_drop = false;
     let mut next_mailbox = Instant::now();
+    let mut mailbox_delay = super::POLL;
     let mut last_error = None;
     while !stop.load(Ordering::Relaxed) {
         if Instant::now() >= next_heartbeat {
@@ -490,16 +541,22 @@ fn run(mut spec: LaunchSpec, started: &mut bool) -> Result<()> {
             }
         }
         if Instant::now() >= next_mailbox {
-            if let Err(error) = pump(&scope, &registration.run.actor, &mut native) {
-                let message = format!("{error:#}");
-                if last_error.as_ref() != Some(&message) {
-                    eprintln!("Cloud mailbox: {message}");
+            let observation = match pump(&scope, &registration.run.actor, &mut native) {
+                Ok(observation) => {
+                    last_error = None;
+                    observation
                 }
-                last_error = Some(message);
-            } else {
-                last_error = None;
-            }
-            next_mailbox = Instant::now() + super::POLL;
+                Err(error) => {
+                    let message = format!("{error:#}");
+                    if last_error.as_ref() != Some(&message) {
+                        eprintln!("Cloud mailbox: {message}");
+                    }
+                    last_error = Some(message);
+                    MailboxPoll::Pending
+                }
+            };
+            mailbox_delay = observation.next_delay(mailbox_delay);
+            next_mailbox = Instant::now() + mailbox_delay;
         }
         if provider.0.try_wait()?.is_some() {
             bail!("private Codex app-server exited");
@@ -520,19 +577,19 @@ fn clean_private_dir(dir: &Path) {
     }
 }
 
-fn pump(scope: &Scope, actor: &Actor, native: &mut Codex) -> Result<()> {
-    let Some(mailbox) = Mailbox::try_open(scope, actor)? else { return Ok(()) };
+fn pump(scope: &Scope, actor: &Actor, native: &mut Codex) -> Result<MailboxPoll> {
+    let Some(mailbox) = Mailbox::try_open(scope, actor)? else { return Ok(MailboxPoll::Pending) };
     let previous = mailbox.read()?;
     if let Some(claim) = &previous
         && mailbox.complete(scope, actor, claim)?
     {
-        return Ok(());
+        return Ok(MailboxPoll::Pending);
     }
     let idle = native.idle;
     let mut claim = match previous {
         Some(claim) => claim,
         None if idle => mailbox.begin()?,
-        None => return Ok(()),
+        None => return Ok(MailboxPoll::Pending),
     };
     match &claim.phase {
         Phase::ListenIssuing(_) => bail!("explicit listener output is unresolved for claim {}; it will not be replayed", claim.id),
@@ -543,7 +600,7 @@ fn pump(scope: &Scope, actor: &Actor, native: &mut Codex) -> Result<()> {
         }
         Phase::NaturalReplying(reply) => {
             if Instant::now() < native.retry_reply_at || (reply.body.is_none() && !native.idle && native.completed_turn.as_ref().is_none_or(|(turn, _)| turn != &reply.turn_id)) {
-                return Ok(());
+                return Ok(MailboxPoll::Pending);
             }
             let batch = scope.recover(actor, &claim.id)?;
             let message = batch.items.iter().find(|message| message.id == reply.message_id).context("natural reply claim did not contain its outstanding message")?;
@@ -552,7 +609,7 @@ fn pump(scope: &Scope, actor: &Actor, native: &mut Codex) -> Result<()> {
         }
         Phase::Reserved if idle => {
             let batch = scope.claim(actor, &claim.id, CLAIM_WAIT_MS)?;
-            let Some(message) = batch.items.first() else { return Ok(()) };
+            let Some(message) = batch.items.first() else { return Ok(MailboxPoll::Empty) };
             let text = delivery_text(message);
             mailbox.transition(&mut claim, Phase::ProviderIssuing(message.id.clone()))?;
             match native.start_turn(&text, Some(&correlation(&claim.id))) {
@@ -560,11 +617,11 @@ fn pump(scope: &Scope, actor: &Actor, native: &mut Codex) -> Result<()> {
                 Err(error) => Err(error).with_context(|| format!("Codex acceptance of claim {} is unknown", claim.id)),
             }
         }
-        _ => Ok(()),
+        _ => Ok(MailboxPoll::Pending),
     }
 }
 
-fn settle_provider(scope: &Scope, actor: &Actor, native: &mut Codex, mailbox: &Mailbox, claim: &mut super::mailbox::Claim, message: &super::MessageView, expected_turn: Option<String>) -> Result<()> {
+fn settle_provider(scope: &Scope, actor: &Actor, native: &mut Codex, mailbox: &Mailbox, claim: &mut super::mailbox::Claim, message: &super::MessageView, expected_turn: Option<String>) -> Result<MailboxPoll> {
     // A turn ID only acknowledges the request. Exact native user-input evidence
     // is required before persisting permission to confirm the cloud delivery.
     let turn_id = native.find_input(&correlation(&claim.id), &delivery_text(message))?.with_context(|| format!("waiting for exact Codex user input for cloud claim {}", claim.id))?;
@@ -572,18 +629,18 @@ fn settle_provider(scope: &Scope, actor: &Actor, native: &mut Codex, mailbox: &M
     if is_operator_message(message) {
         let reply = NaturalReply { message_id: message.id.clone(), thread_id: native.thread.clone(), turn_id, body: None, failures: 0 };
         mailbox.transition(claim, Phase::NaturalReplying(reply))?;
-        return Ok(());
+        return Ok(MailboxPoll::Pending);
     }
     confirm_delivery(scope, actor, mailbox, claim, message)
 }
 
-fn confirm_delivery(scope: &Scope, actor: &Actor, mailbox: &Mailbox, claim: &mut super::mailbox::Claim, message: &super::MessageView) -> Result<()> {
+fn confirm_delivery(scope: &Scope, actor: &Actor, mailbox: &Mailbox, claim: &mut super::mailbox::Claim, message: &super::MessageView) -> Result<MailboxPoll> {
     mailbox.transition(claim, Phase::Confirming(message.id.clone()))?;
     mailbox.complete(scope, actor, claim)?;
-    Ok(())
+    Ok(MailboxPoll::Delivered)
 }
 
-fn settle_natural_reply(scope: &Scope, actor: &Actor, native: &mut Codex, mailbox: &Mailbox, claim: &mut super::mailbox::Claim, message: &super::MessageView, mut reply: NaturalReply) -> Result<()> {
+fn settle_natural_reply(scope: &Scope, actor: &Actor, native: &mut Codex, mailbox: &Mailbox, claim: &mut super::mailbox::Claim, message: &super::MessageView, mut reply: NaturalReply) -> Result<MailboxPoll> {
     ensure!(reply.thread_id == native.thread && is_operator_message(message) && message.to == actor.agent && actor.generation == scope.generation, "cloud natural reply binding changed");
     let result = (|| {
         if reply.body.is_none() {
@@ -601,7 +658,7 @@ fn settle_natural_reply(scope: &Scope, actor: &Actor, native: &mut Codex, mailbo
         Ok::<_, anyhow::Error>(true)
     })();
     match result {
-        Ok(false) => Ok(()),
+        Ok(false) => Ok(MailboxPoll::Pending),
         Ok(true) => confirm_delivery(scope, actor, mailbox, claim, message),
         Err(error) => {
             reply.failures += 1;
@@ -683,6 +740,8 @@ struct Codex {
     conn: Box<dyn NativeConnection>,
     thread: String,
     idle: bool,
+    status: CloudAgentStatus,
+    projection: Option<transcript::Projection>,
     completed_turn: Option<(String, String)>,
     retry_reply_at: Instant,
 }
@@ -690,7 +749,10 @@ struct Codex {
 impl Codex {
     fn start(spec: &LaunchSpec, socket: &Path, context_key: &str, context: &Path, stop: &AtomicBool, prior_thread: Option<&str>) -> Result<(Self, Provider)> {
         let mut command = Command::new(&spec.tool);
-        command.current_dir(&spec.cwd).stdin(Stdio::null()).stdout(Stdio::null()).process_group(0).arg("app-server").arg("--listen").arg(format!("unix://{}", socket.display()));
+        if !spec.inherited_cwd {
+            command.current_dir(&spec.cwd);
+        }
+        command.stdin(Stdio::null()).stdout(Stdio::null()).process_group(0).arg("app-server").arg("--listen").arg(format!("unix://{}", socket.display()));
         scrub_agentx(&mut command);
         command.env(context_key, context);
         let supervisor = std::process::id() as libc::pid_t;
@@ -721,7 +783,7 @@ impl Codex {
             ensure!(began.elapsed() < RPC_TIMEOUT, "private Codex app-server socket did not become ready");
             std::thread::sleep(Duration::from_millis(50));
         };
-        let mut client = Self { conn, thread: String::new(), idle: false, completed_turn: None, retry_reply_at: Instant::now() };
+        let mut client = Self { conn, thread: String::new(), idle: false, status: CloudAgentStatus::Unknown, projection: None, completed_turn: None, retry_reply_at: Instant::now() };
         client.call("initialize", json!({"clientInfo":{"name":"agentx-cloud-host","version":env!("CARGO_PKG_VERSION")},"capabilities":{"experimentalApi":true}}))?;
         client.send(&json!({"method":"initialized"}))?;
         let mut config = spec.config.clone();
@@ -743,7 +805,12 @@ impl Codex {
         let path = std::env::var_os("PATH").unwrap_or_default();
         let path = std::env::join_paths(std::iter::once(parent.to_owned()).chain(std::env::split_paths(&path)))?;
         set["PATH"] = json!(path.to_string_lossy());
-        let mut params = json!({"cwd":spec.cwd,"developerInstructions":spec.instructions,"config":config,"historyMode":"paginated"});
+        // A restricted launch inherits the pinned cwd; do not make Codex resolve the original
+        // pathname again, since a path component may have been replaced after supervisor startup.
+        let mut params = json!({"developerInstructions":spec.instructions,"config":config,"historyMode":"paginated"});
+        if !spec.inherited_cwd {
+            params["cwd"] = json!(spec.cwd);
+        }
         let method = match prior_thread {
             Some(thread) => {
                 params["threadId"] = json!(thread);
@@ -755,9 +822,13 @@ impl Codex {
             }
         };
         let result = client.call(method, params)?;
+        if spec.inherited_cwd {
+            ensure!(result["cwd"].as_str().map(Path::new) == Some(spec.cwd.as_path()), "Codex did not open the selected cloud working directory");
+        }
         client.thread = result["thread"]["id"].as_str().filter(|id| !id.is_empty()).context("Codex returned no thread ID")?.to_owned();
         ensure!(prior_thread.is_none_or(|expected| expected == client.thread), "Codex resumed a different thread");
         client.idle = result["thread"]["status"]["type"] == "idle";
+        client.set_status(thread_status(&result["thread"]["status"]));
         client.call("thread/name/set", json!({"threadId":client.thread,"name":spec.title.as_deref().context("missing Codex thread title")?}))?;
         Ok((client, child))
     }
@@ -791,6 +862,13 @@ impl Codex {
         bail!("Codex {method} timed out; outcome may be unknown")
     }
 
+    fn set_status(&mut self, status: CloudAgentStatus) {
+        self.status = status;
+        if let Some(projection) = &self.projection {
+            projection.status(status);
+        }
+    }
+
     fn start_turn(&mut self, text: &str, client_id: Option<&str>) -> Result<String> {
         self.idle = false;
         self.completed_turn = None;
@@ -799,6 +877,9 @@ impl Codex {
             params["clientUserMessageId"] = json!(id);
         }
         let outcome = self.call("turn/start", params);
+        if outcome.is_ok() && self.completed_turn.is_none() {
+            self.set_status(CloudAgentStatus::Active);
+        }
         if outcome.as_ref().is_err_and(|error| error.downcast_ref::<NativeRejection>().is_some())
             && let Ok(result) = self.call("thread/read", json!({"threadId":self.thread}))
         {
@@ -893,14 +974,35 @@ impl Codex {
         let params = &frame["params"];
         if params["threadId"] == self.thread {
             match frame["method"].as_str() {
-                Some("thread/status/changed") => self.idle = params["status"]["type"] == "idle",
-                Some("turn/started") => self.idle = false,
+                Some("thread/status/changed") => {
+                    self.idle = params["status"]["type"] == "idle";
+                    self.set_status(thread_status(&params["status"]));
+                }
+                Some("thread/name/updated") => {
+                    if let Some(projection) = &self.projection {
+                        projection.title(params["threadName"].as_str());
+                    }
+                }
+                Some("turn/started") => {
+                    self.idle = false;
+                    self.set_status(CloudAgentStatus::Active);
+                }
+                Some(method @ ("item/started" | "item/completed")) => {
+                    if let (Some(turn), Some(projection)) = (params["turnId"].as_str(), &mut self.projection) {
+                        projection.item(turn, &params["item"], method == "item/started");
+                    }
+                }
                 Some("turn/completed") => {
                     self.idle = true;
                     if let Some(turn) = params.get("turn")
                         && let (Some(id), Some(status)) = (turn["id"].as_str(), turn["status"].as_str())
                     {
                         self.completed_turn = Some((id.to_owned(), status.to_owned()));
+                        self.set_status(match status {
+                            "failed" => CloudAgentStatus::Error,
+                            "completed" | "interrupted" => CloudAgentStatus::Idle,
+                            _ => CloudAgentStatus::Unknown,
+                        });
                     }
                 }
                 _ => {}
@@ -913,6 +1015,15 @@ impl Codex {
             self.send(&json!({"id":id,"error":{"code":-32601,"message":"This connection does not handle interactive requests"}}))?;
         }
         Ok(())
+    }
+}
+
+fn thread_status(value: &Value) -> CloudAgentStatus {
+    match value["type"].as_str() {
+        Some("active") => CloudAgentStatus::Active,
+        Some("idle") => CloudAgentStatus::Idle,
+        Some("systemError") => CloudAgentStatus::Error,
+        _ => CloudAgentStatus::Unknown,
     }
 }
 
@@ -1008,7 +1119,7 @@ mod tests {
     }
 
     fn native(responses: Vec<(&'static str, Value)>) -> Codex {
-        Codex { conn: Box::new(History { responses: responses.into(), frame: None }), thread: "operator-thread".into(), idle: true, completed_turn: None, retry_reply_at: Instant::now() }
+        Codex { conn: Box::new(History { responses: responses.into(), frame: None }), thread: "operator-thread".into(), idle: true, status: CloudAgentStatus::Idle, projection: None, completed_turn: None, retry_reply_at: Instant::now() }
     }
 
     fn user() -> Value {

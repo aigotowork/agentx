@@ -112,10 +112,24 @@ def run(fixture, provision):
     for override in ({"incarnation": "other"}, {"host": "east"}):
         call("GET", "/messages", query={**query, **override}, statuses=(404,))
 
-    first, message_request = send(east, counterpart, reader, "inbound")
+    from concurrent.futures import ThreadPoolExecutor
+    change_query = {"generation": generation}
+    revisions = call("GET", "/changes", query=change_query)
+    cursor = ".".join(str(revisions[k]) for k in ("epoch", "roster", "messages", "transcript"))
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        waiting = pool.submit(fixture.expect, "GET", admin_scope + "/changes", fixture.admin_token,
+                              query={**change_query, "cursor": cursor})
+        first, message_request = send(east, counterpart, reader, "inbound")
+        changed = waiting.result(timeout=5)
+    require(changed["messages"] > revisions["messages"] and changed["roster"] == revisions["roster"],
+            "Both bearers observe the committed message without invalidating directory pages")
     send(east, counterpart, unrelated, "not part of this reader history")
     reply, _ = send(west, reader, counterpart, "reply", intent="ack", reply_to=first["id"], thread="history")
     self_send, _ = send(west, reader, reader, "self")
+    newer = call("GET", "/messages", query={**query, "after": first["id"], "limit": 1})
+    require(newer == {"items": [reply], "next": reply["id"]}, "Forward reads must exclude the watermark and keep ascending order")
+    require(call("GET", "/messages", query={**query, "after": newer["next"]}) == {"items": [self_send], "next": None},
+            "Forward cursor must neither lose nor duplicate rows")
     first_page = call("GET", "/messages", query={**query, "limit": 2})
     require(first_page == {"items": [self_send, reply], "next": reply["id"]}, "History must merge directions in descending ID order without duplicate self-sends")
     send(west, reader, counterpart, "new after first page")
