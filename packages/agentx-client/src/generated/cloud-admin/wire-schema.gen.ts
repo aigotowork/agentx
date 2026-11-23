@@ -286,6 +286,42 @@ export const wireDocument = {
               "kind"
             ],
             "type": "object"
+          },
+          {
+            "properties": {
+              "alias": {
+                "description": "New workspace alias to publish on this host.",
+                "type": "string"
+              },
+              "create_directory": {
+                "description": "Create only the final component if absent. Parents must already exist.",
+                "type": "boolean"
+              },
+              "directory": {
+                "description": "Nonempty slash-separated path relative to the parent export.",
+                "maxLength": 1024,
+                "minLength": 1,
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "add_workspace"
+                ],
+                "type": "string"
+              },
+              "parent": {
+                "description": "Alias of an eligible configured export.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "parent",
+              "directory",
+              "alias",
+              "create_directory",
+              "kind"
+            ],
+            "type": "object"
           }
         ]
       },
@@ -305,6 +341,24 @@ export const wireDocument = {
             },
             "required": [
               "agent",
+              "status"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "alias": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "workspace_added"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "alias",
               "status"
             ],
             "type": "object"
@@ -483,6 +537,13 @@ export const wireDocument = {
           },
           "online": {
             "type": "boolean"
+          },
+          "workspace_management": {
+            "description": "This active control lease accepts remote workspace registration.",
+            "type": [
+              "boolean",
+              "null"
+            ]
           },
           "workspaces": {
             "items": {
@@ -883,6 +944,14 @@ export const wireDocument = {
           "default_reason": {
             "type": [
               "string",
+              "null"
+            ]
+          },
+          "managed_parent": {
+            "description": "This configured export is eligible as a parent for remote workspace registration. Set by the server from the lease header.",
+            "readOnly": true,
+            "type": [
+              "boolean",
               "null"
             ]
           },

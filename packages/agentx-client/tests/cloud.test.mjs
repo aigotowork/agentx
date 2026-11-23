@@ -147,6 +147,23 @@ test('control SDK binds catalogue and original receipt to exact identities', asy
   ]);
 });
 
+test('workspace control recovery verifies the registered alias and original project directory', async () => {
+  const original = { ...control, command: { kind: 'add_workspace', parent: 'default', alias: 'backend', directory: 'projects/backend', create_directory: true } };
+  const receipt = { ...original, status: 'succeeded', claim_id: 'claim', outcome: { status: 'workspace_added', alias: 'backend' } };
+  let response = receipt;
+  const api = createCloudAdminClient({ baseUrl: 'https://cloud.example', token: adminToken, fetch: async () => Response.json(response) });
+  assert.deepEqual(await api.recoverControlOperation('office', original), receipt);
+  for (const altered of [
+    { outcome: { ...receipt.outcome, alias: 'other' } },
+    { command: { ...original.command, directory: 'other' } },
+    { command: { ...original.command, create_directory: false } },
+    { command: control.command },
+  ]) {
+    response = { ...receipt, ...altered };
+    await assert.rejects(api.recoverControlOperation('office', original), error => error.code === 'InvalidReceipt');
+  }
+});
+
 test('control CLI retains admission intent and only replays after an exact lookup misses', async t => {
   const directory = await mkdtemp(join(tmpdir(), 'agentx-control-cli-'));
   t.after(() => rm(directory, { recursive: true, force: true }));

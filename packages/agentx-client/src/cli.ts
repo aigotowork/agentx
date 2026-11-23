@@ -67,6 +67,7 @@ admin scopes list [--after CURSOR --limit N] | admin scopes show ID
 admin scopes hosts ID [--after CURSOR --limit N]
 admin scopes agents ID [--host HOST --after CURSOR --limit N]
 admin hosts capabilities SCOPE --host HOST
+admin operations add-workspace SCOPE CONTROL --workspace ALIAS --parent ROOT_ALIAS --directory PATH [--create-directory]
 admin operations launch SCOPE CONTROL --workspace ALIAS [--role ROLE --name NAME --title TITLE --task TEXT]
 admin operations stop SCOPE CONTROL --name NAME --incarnation INCARNATION
 admin operations show SCOPE --request-id ID

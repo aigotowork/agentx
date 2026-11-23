@@ -11,6 +11,7 @@ use axum::{
         Path, Query, State,
         rejection::{JsonRejection, PathRejection, QueryRejection},
     },
+    http::HeaderMap,
     routing::{get, post, put},
 };
 use rusqlite::Connection;
@@ -51,7 +52,7 @@ struct HostPath {
 }
 #[derive(Deserialize, utoipa::IntoParams)]
 #[into_params(parameter_in = Query)]
-struct LeaseFeatures {
+struct LeaseQuery {
     /// Advertises native support for scoped working-directory launch.
     directory_launch: Option<bool>,
 }
@@ -59,6 +60,16 @@ struct LeaseFeatures {
 struct ReportPath {
     host: String,
     request_id: String,
+}
+
+fn header_items<'a>(headers: &'a HeaderMap, name: &str) -> impl Iterator<Item = &'a str> {
+    headers.get_all(name).iter().filter_map(|value| value.to_str().ok()).flat_map(|value| value.split(',').map(str::trim)).filter(|item| !item.is_empty())
+}
+
+fn lease_features(headers: &HeaderMap, query: LeaseQuery) -> store::LeaseFeatures {
+    let workspace_management = header_items(headers, LEASE_FEATURES_HEADER).any(|item| item == WORKSPACE_MANAGEMENT_FEATURE);
+    let managed_parents = if workspace_management { header_items(headers, WORKSPACE_PARENTS_HEADER).map(str::to_owned).collect() } else { Default::default() };
+    store::LeaseFeatures { directory_launch: query.directory_launch.unwrap_or_default(), workspace_management, managed_parents }
 }
 
 #[derive(Clone, Copy)]
@@ -122,19 +133,24 @@ async fn admin_get(State(state): State<Deployment>, parts: Result<Path<AdminOper
 }
 
 #[utoipa::path(put, path="/hosts/{host}/control/lease", operation_id="scopeRenewControlLease",
-    params(("host"=String,Path), LeaseFeatures), request_body=RenewControlLease, security(("scopeBearer"=[])),
+    params(("host"=String,Path), LeaseQuery,
+        ("X-AgentX-Features"=Option<String>,Header,description="Comma-separated supported features. Advertise workspace_management to accept remote workspace registration."),
+        ("X-AgentX-Workspace-Parents"=Option<String>,Header,description="Comma-separated aliases of configured parent exports present in the lease catalogue; used with workspace_management.")),
+    request_body=RenewControlLease, security(("scopeBearer"=[])),
     responses((status=200,body=HostCapabilities),(status="default",body=ScopeError)))]
 async fn renew_lease(
     Extension(scope): Extension<ScopeContext>,
     parts: Result<Path<HostPath>, PathRejection>,
-    features: Result<Query<LeaseFeatures>, QueryRejection>,
+    query: Result<Query<LeaseQuery>, QueryRejection>,
+    headers: HeaderMap,
     input: Result<Json<RenewControlLease>, JsonRejection>,
 ) -> Result<Json<HostCapabilities>, Error> {
     let HostPath { host } = path(parts)?;
-    let directory_launch = features.map_err(|_| Error::Invalid("invalid control lease features"))?.directory_launch.unwrap_or_default();
+    let Query(query) = query.map_err(|_| Error::Invalid("invalid control lease features"))?;
+    let features = lease_features(&headers, query);
     let input = payload(input)?;
     fence(&scope, &input.generation)?;
-    run(scope, Access::ScopeRenew, move |db, now| store::renew(db, now, host.clone(), &input, directory_launch)).await.map(Json)
+    run(scope, Access::ScopeRenew, move |db, now| store::renew(db, now, host.clone(), &input, &features)).await.map(Json)
 }
 
 #[utoipa::path(post, path="/hosts/{host}/control/poll", operation_id="scopePollControlOperation",
@@ -192,4 +208,49 @@ pub(in crate::cloud) fn scope_document() -> openapi::OpenApi {
     #[openapi(paths(renew_lease, poll_operation, report_operation))]
     struct ControlScopeApi;
     ControlScopeApi::openapi()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::http::HeaderValue;
+
+    #[test]
+    fn lease_features_are_optional_and_independently_negotiated() {
+        let mut headers = HeaderMap::new();
+        headers.insert(WORKSPACE_PARENTS_HEADER, HeaderValue::from_static("main, east"));
+        let legacy = lease_features(&headers, LeaseQuery { directory_launch: Some(true) });
+        assert!(legacy.directory_launch);
+        assert!(!legacy.workspace_management);
+        assert!(legacy.managed_parents.is_empty());
+
+        headers.append(LEASE_FEATURES_HEADER, HeaderValue::from_static("future_workspace_management"));
+        headers.append(LEASE_FEATURES_HEADER, HeaderValue::from_static("another_feature, workspace_management"));
+        let negotiated = lease_features(&headers, LeaseQuery { directory_launch: None });
+        assert!(!negotiated.directory_launch);
+        assert!(negotiated.workspace_management);
+        assert_eq!(negotiated.managed_parents, ["east".into(), "main".into()].into());
+    }
+
+    #[test]
+    fn cloud_openapi_exposes_compatible_workspace_negotiation_and_receipts() {
+        let scope = serde_json::to_value(scope_document()).unwrap();
+        let admin = serde_json::to_value(admin_document()).unwrap();
+        let params = scope["paths"]["/hosts/{host}/control/lease"]["put"]["parameters"].as_array().unwrap();
+        for header in [LEASE_FEATURES_HEADER, WORKSPACE_PARENTS_HEADER] {
+            assert!(params.iter().any(|p| p["name"] == header && p["in"] == "header" && p["required"] == false));
+        }
+        for name in ["ControlCommand", "ControlOutcome", "HostCapabilities", "WorkspaceCapability"] {
+            let schemas = &scope["components"]["schemas"];
+            assert!(schemas[name].is_object());
+            assert_eq!(schemas[name], admin["components"]["schemas"][name]);
+        }
+        let schemas = &scope["components"]["schemas"];
+        let add = schemas["ControlCommand"]["oneOf"].as_array().unwrap().iter().find(|variant| variant["properties"]["kind"]["enum"][0] == "add_workspace").unwrap();
+        assert_eq!(add["required"].as_array().unwrap().len(), 5);
+        assert!(["kind", "parent", "directory", "alias", "create_directory"].iter().all(|name| add["required"].as_array().unwrap().contains(&serde_json::json!(name))));
+        let added = schemas["ControlOutcome"]["oneOf"].as_array().unwrap().iter().find(|variant| variant["properties"]["status"]["enum"][0] == "workspace_added").unwrap();
+        assert!(added["required"].as_array().unwrap().contains(&serde_json::json!("alias")));
+        assert_eq!(schemas["WorkspaceCapability"]["properties"]["managed_parent"]["readOnly"], true);
+    }
 }

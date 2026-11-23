@@ -9,7 +9,7 @@ use std::{collections::HashSet, path::Path};
 
 const LEASE_SECONDS: i64 = 30;
 const MAX_PENDING: i64 = 64;
-const SCHEMA_VERSION: i64 = 2;
+const SCHEMA_VERSION: i64 = 3;
 
 // Upgrade old scope databases on first control access. Normal control reads remain read-only.
 pub(super) fn transaction<T>(root: &Path, generation: &str, write: bool, authorized: impl Fn() -> bool, action: impl Fn(&Connection, i64) -> Result<T>) -> Result<T> {
@@ -17,7 +17,7 @@ pub(super) fn transaction<T>(root: &Path, generation: &str, write: bool, authori
     if !write {
         let value = store::transaction(root, generation, false, &authorized, |conn, now| match schema_version(conn)? {
             SCHEMA_VERSION => action(conn, now).map(Some),
-            0 | 1 => Ok(None),
+            0..=2 => Ok(None),
             _ => Err(Error::Conflict("unsupported scope storage schema")),
         })?;
         if let Some(value) = value {
@@ -27,7 +27,12 @@ pub(super) fn transaction<T>(root: &Path, generation: &str, write: bool, authori
     store::transaction(root, generation, true, authorized, |conn, now| {
         match schema_version(conn)? {
             0 => conn.execute_batch(include_str!("schema.sql"))?,
-            1 => conn.execute_batch("ALTER TABLE control_leases ADD COLUMN directory_launch INTEGER NOT NULL DEFAULT 0 CHECK(directory_launch IN (0,1)); PRAGMA user_version=2;")?,
+            version @ (1 | 2) => {
+                if version == 1 {
+                    conn.execute_batch("ALTER TABLE control_leases ADD COLUMN directory_launch INTEGER NOT NULL DEFAULT 0 CHECK(directory_launch IN (0,1));")?;
+                }
+                conn.execute_batch("ALTER TABLE control_leases ADD COLUMN workspace_management INTEGER NOT NULL DEFAULT 0 CHECK(workspace_management IN (0,1)); PRAGMA user_version=3;")?;
+            }
             SCHEMA_VERSION => (),
             _ => return Err(Error::Conflict("unsupported scope storage schema")),
         }
@@ -35,16 +40,26 @@ pub(super) fn transaction<T>(root: &Path, generation: &str, write: bool, authori
     })
 }
 
+#[derive(Default)]
+pub(super) struct LeaseFeatures {
+    pub directory_launch: bool,
+    pub workspace_management: bool,
+    pub managed_parents: HashSet<String>,
+}
+
 struct Lease {
     id: String,
     expires_at: i64,
     workspaces: Vec<WorkspaceCapability>,
     directory_launch: bool,
+    workspace_management: bool,
 }
 
 fn current_lease(conn: &Connection, host: &str) -> Result<Option<Lease>> {
-    let row = conn.query_row("SELECT lease_id,expires_at,workspaces,directory_launch FROM control_leases WHERE host=?1 AND is_current=1", [host], |row| Ok((row.get(0)?, row.get(1)?, row.get::<_, String>(2)?, row.get(3)?))).optional()?;
-    row.map(|(id, expires_at, workspaces, directory_launch)| Ok(Lease { id, expires_at, workspaces: serde_json::from_str(&workspaces)?, directory_launch })).transpose()
+    let row = conn
+        .query_row("SELECT lease_id,expires_at,workspaces,directory_launch,workspace_management FROM control_leases WHERE host=?1 AND is_current=1", [host], |row| Ok((row.get(0)?, row.get(1)?, row.get::<_, String>(2)?, row.get(3)?, row.get(4)?)))
+        .optional()?;
+    row.map(|(id, expires_at, workspaces, directory_launch, workspace_management)| Ok(Lease { id, expires_at, workspaces: serde_json::from_str(&workspaces)?, directory_launch, workspace_management })).transpose()
 }
 
 fn installation(conn: &Connection, host: &str) -> Result<String> {
@@ -72,8 +87,9 @@ fn capability_view(generation: String, host: String, installation_id: String, no
     let online = lease.as_ref().is_some_and(|lease| lease.expires_at > now);
     let observed_at = lease.as_ref().map(|lease| lease.expires_at - LEASE_SECONDS);
     let directory_launch = lease.as_ref().is_some_and(|lease| lease.directory_launch).then_some(true);
+    let workspace_management = (online && lease.as_ref().is_some_and(|lease| lease.workspace_management)).then_some(true);
     let workspaces = lease.map(|lease| lease.workspaces).unwrap_or_default();
-    HostCapabilities { generation, host, installation_id, online, observed_at, workspaces, directory_launch }
+    HostCapabilities { generation, host, installation_id, online, observed_at, workspaces, directory_launch, workspace_management }
 }
 
 pub(super) fn capabilities(conn: &Connection, now: i64, generation: String, host: String) -> Result<HostCapabilities> {
@@ -125,20 +141,29 @@ fn validate_request_id(id: &str) -> Result<()> {
     Ok(())
 }
 
-pub(super) fn renew(conn: &Connection, now: i64, host: String, input: &RenewControlLease, directory_launch: bool) -> Result<HostCapabilities> {
+pub(super) fn renew(conn: &Connection, now: i64, host: String, input: &RenewControlLease, features: &LeaseFeatures) -> Result<HostCapabilities> {
     let RenewControlLease { generation, installation_id, lease_id, previous_lease_id, workspaces } = input;
     store::opaque(lease_id)?;
     if let Some(previous) = previous_lease_id {
         store::opaque(previous)?;
     }
     validate_catalogue(workspaces)?;
+    let LeaseFeatures { directory_launch, workspace_management, managed_parents } = features;
+    if *workspace_management && (managed_parents.len() > workspaces.len() || managed_parents.iter().any(|alias| !workspaces.iter().any(|workspace| workspace.alias == *alias))) {
+        return Err(Error::Invalid("managed parent aliases must be published in the lease catalogue"));
+    }
+    let mut workspaces = workspaces.clone();
+    for workspace in &mut workspaces {
+        // The header is authoritative; a nested body flag cannot widen parent admission.
+        workspace.managed_parent = (*workspace_management && managed_parents.contains(&workspace.alias)).then_some(true);
+    }
     store::renew_host(conn, now, host.clone(), HostRegistration { generation: generation.clone(), installation_id: installation_id.clone() })?;
     let current = current_lease(conn, &host)?;
     let expires_at = now + LEASE_SECONDS;
-    let encoded = serde_json::to_string(workspaces)?;
+    let encoded = serde_json::to_string(&workspaces)?;
     match current {
         Some(lease) if lease.id == *lease_id && lease.expires_at > now => {
-            conn.execute("UPDATE control_leases SET expires_at=?3,workspaces=?4,directory_launch=?5 WHERE host=?1 AND lease_id=?2", params![host, lease_id, expires_at, encoded, directory_launch])?;
+            conn.execute("UPDATE control_leases SET expires_at=?3,workspaces=?4,directory_launch=?5,workspace_management=?6 WHERE host=?1 AND lease_id=?2", params![host, lease_id, expires_at, encoded, directory_launch, workspace_management])?;
         }
         active => {
             if active.as_ref().is_some_and(|lease| lease.expires_at > now && previous_lease_id.as_deref() != Some(&lease.id)) {
@@ -149,10 +174,13 @@ pub(super) fn renew(conn: &Connection, now: i64, host: String, input: &RenewCont
                 return Err(Error::Lease);
             }
             conn.execute("UPDATE control_leases SET is_current=0 WHERE host=?1 AND is_current=1", [&host])?;
-            conn.execute("INSERT INTO control_leases(host,lease_id,expires_at,is_current,workspaces,directory_launch) VALUES(?1,?2,?3,1,?4,?5)", params![host, lease_id, expires_at, encoded, directory_launch])?;
+            conn.execute(
+                "INSERT INTO control_leases(host,lease_id,expires_at,is_current,workspaces,directory_launch,workspace_management) VALUES(?1,?2,?3,1,?4,?5,?6)",
+                params![host, lease_id, expires_at, encoded, directory_launch, workspace_management],
+            )?;
         }
     }
-    Ok(capability_view(generation.clone(), host, installation_id.clone(), now, Some(Lease { id: lease_id.clone(), expires_at, workspaces: workspaces.clone(), directory_launch })))
+    Ok(capability_view(generation.clone(), host, installation_id.clone(), now, Some(Lease { id: lease_id.clone(), expires_at, workspaces, directory_launch: *directory_launch, workspace_management: *workspace_management })))
 }
 
 fn validate_command(command: &ControlCommand) -> Result<()> {
@@ -178,6 +206,13 @@ fn validate_command(command: &ControlCommand) -> Result<()> {
             store::name(name)?;
             store::opaque(incarnation)?;
         }
+        ControlCommand::AddWorkspace { parent, directory, alias, .. } => {
+            validate_workspace(parent)?;
+            validate_workspace(alias)?;
+            if directory.is_empty() || !valid_working_directory(directory) {
+                return Err(Error::Invalid("directory must be a nonempty workspace-relative path"));
+            }
+        }
     }
     Ok(())
 }
@@ -201,6 +236,14 @@ fn check_command(conn: &Connection, host: &str, lease: &Lease, command: &Control
         ControlCommand::Stop { name, incarnation } => {
             if store::active_agent(conn, name)?.is_none_or(|agent| agent.host != host || agent.incarnation != *incarnation) {
                 return Err(Error::Agent);
+            }
+        }
+        ControlCommand::AddWorkspace { parent, alias, .. } => {
+            if !lease.workspace_management || !lease.workspaces.iter().any(|workspace| workspace.alias == *parent && workspace.managed_parent == Some(true)) {
+                return Err(Error::Capability);
+            }
+            if lease.workspaces.iter().any(|workspace| workspace.alias == *alias) {
+                return Err(Error::WorkspaceAliasTaken);
             }
         }
     }
@@ -233,7 +276,7 @@ impl Operation {
             Some(ControlOutcome::Failed { code: "host_lease_lost".into() })
         };
         let status = match &outcome {
-            Some(ControlOutcome::Succeeded { .. }) => ControlStatus::Succeeded,
+            Some(ControlOutcome::Succeeded { .. } | ControlOutcome::WorkspaceAdded { .. }) => ControlStatus::Succeeded,
             Some(ControlOutcome::Failed { .. }) => ControlStatus::Failed,
             Some(ControlOutcome::Uncertain { .. }) => ControlStatus::Uncertain,
             None if self.claim.is_some() => ControlStatus::Running,
@@ -296,6 +339,7 @@ pub(super) fn poll(conn: &Connection, now: i64, host: &str, input: &PollControlO
             let failure = match check_command(conn, host, &lease, &command) {
                 Ok(()) => None,
                 Err(Error::Capability) => Some("capability_unavailable"),
+                Err(Error::WorkspaceAliasTaken) => Some("workspace_alias_taken"),
                 Err(Error::Agent) => Some("stale_agent"),
                 Err(Error::Conflict(_)) => Some("agent_name_taken"),
                 Err(error) => return Err(error),
@@ -317,13 +361,13 @@ fn persist_outcome(conn: &Connection, request_id: &str, outcome: &ControlOutcome
     Ok(())
 }
 
-fn confirm_success(conn: &Connection, now: i64, generation: &str, op: &Operation, agent: &AgentView) -> Result<()> {
-    let command: ControlCommand = serde_json::from_str(&op.command)?;
+fn confirm_agent_success(conn: &Connection, now: i64, generation: &str, op: &Operation, command: &ControlCommand, agent: &AgentView) -> Result<()> {
     store::name(&agent.name)?;
     store::opaque(&agent.incarnation)?;
-    let matches = match &command {
+    let matches = match command {
         ControlCommand::Launch { name, .. } => name.as_ref().is_none_or(|name| *name == agent.name),
         ControlCommand::Stop { name, incarnation } => *name == agent.name && *incarnation == agent.incarnation,
+        ControlCommand::AddWorkspace { .. } => return Err(Error::Invalid("workspace registration requires a workspace_added outcome")),
     };
     if !matches || agent.host != op.host {
         return Err(Error::Agent);
@@ -344,7 +388,7 @@ fn confirm_success(conn: &Connection, now: i64, generation: &str, op: &Operation
 pub(super) fn report(conn: &Connection, now: i64, host: &str, id: &str, input: &ReportControlOperation) -> Result<ControlReceipt> {
     validate_request_id(id)?;
     store::opaque(&input.claim_id)?;
-    live_lease(conn, now, host, &input.installation_id, Some(&input.lease_id))?;
+    let lease = live_lease(conn, now, host, &input.installation_id, Some(&input.lease_id))?;
     let mut op = lookup(conn, id)?.filter(|op| op.host == host && op.installation_id == input.installation_id).ok_or(Error::NotFound("control operation was not found on this installation"))?;
     if op.claim.as_deref() != Some(&input.claim_id) {
         return Err(Error::ControlClaim);
@@ -357,7 +401,15 @@ pub(super) fn report(conn: &Connection, now: i64, host: &str, id: &str, input: &
         return op.receipt(&input.generation, true);
     }
     match &input.outcome {
-        ControlOutcome::Succeeded { agent } => confirm_success(conn, now, &input.generation, &op, agent)?,
+        ControlOutcome::Succeeded { agent } => confirm_agent_success(conn, now, &input.generation, &op, &serde_json::from_str(&op.command)?, agent)?,
+        ControlOutcome::WorkspaceAdded { alias } => {
+            if !matches!(serde_json::from_str(&op.command)?, ControlCommand::AddWorkspace { alias: requested, .. } if requested == *alias) {
+                return Err(Error::Invalid("workspace outcome must match the requested workspace alias"));
+            }
+            if !lease.workspaces.iter().any(|workspace| workspace.alias == *alias) {
+                return Err(Error::Capability);
+            }
+        }
         ControlOutcome::Failed { code } | ControlOutcome::Uncertain { code } => store::opaque(code)?,
     }
     persist_outcome(conn, id, &input.outcome)?;

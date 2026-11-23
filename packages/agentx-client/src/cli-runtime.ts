@@ -21,7 +21,7 @@ export function parseCli() {
     text: string, file: string, input: string, intent: string, 'reply-to': string, thread: string, attachment: repeat,
     'request-id': string, 'command-id': string, pending: string, wait: flag, sent: flag,
     'poll-seconds': string, 'wait-timeout-seconds': string,
-    workspace: string, directory: string, tool: string, profile: string, role: repeat, title: string, prompt: string,
+    workspace: string, parent: string, 'create-directory': flag, directory: string, tool: string, profile: string, role: repeat, title: string, prompt: string,
     set: repeat, remove: repeat, 'if-revision': string, name: string, 'media-type': string, output: string,
     'pending-only': flag, enabled: flag, disabled: flag, 'recovery-enabled': flag, 'recovery-disabled': flag,
     'error-duration-seconds': string, observation: repeat, episode: string,

@@ -113,6 +113,8 @@ export function cloudProblem(error: unknown, fallback: string): string {
   if (error instanceof CloudAdminError) {
     if (error.status === 401 || error.status === 403) return '令牌无效或权限不足，请核对访问方式与令牌。';
     if (error.status === 404) return '此 Scope 或精确实例不存在。';
+    if (error.code === 'workspace_alias_taken') return '此工作区名称已被使用，请换一个名称。';
+    if (error.code === 'capability_unavailable') return '所选主机能力已变化，请重新选择工作区或岗位。';
     if (error.status === 409) return 'Scope 或实例已变化，请重新连接核对。';
   }
   return fallback;

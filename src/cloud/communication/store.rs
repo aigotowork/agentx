@@ -46,6 +46,8 @@ pub(in crate::cloud) enum Error {
     Lease,
     #[error("requested workspace or role is unavailable")]
     Capability,
+    #[error("the workspace alias is already published on this host")]
+    WorkspaceAliasTaken,
     #[error("report does not match the exact control claim")]
     ControlClaim,
     #[error("control claim already has a different terminal outcome")]

@@ -357,7 +357,8 @@ export class CloudWorkbench {
   }
   blocked(key: string) {
     return this.session.access !== 'admin' || this.connection !== 'pinned' || this.sends.has(key)
-      || !!this.operations?.entries.some(entry => controlPending(entry) && (entry.identity.kind === 'launch' ? key === 'launch:new'
+      || !!this.operations?.entries.some(entry => controlPending(entry) && (entry.identity.kind === 'add_workspace' ? key === 'workspace:' + entry.identity.host
+        : entry.identity.kind === 'launch' ? key === 'launch:new'
         : !!entry.identity.target && this.id({ ...entry.identity.target, host: entry.identity.host }) === key));
   }
   canSendTo(id: string) { return this.session.access === 'admin' && this.connection === 'pinned' && !!this.currentAgent(id); }
@@ -429,7 +430,7 @@ export class CloudWorkbench {
   }
   async control(captured: CloudHostCapabilities, command: CloudControlInput['command'], id?: string, followLaunch?: (project: () => string) => void) {
     const signal = this.active();
-    const key = id ?? 'launch:new';
+    const key = command.kind === 'add_workspace' ? 'workspace:' + captured.host : id ?? 'launch:new';
     if (!this.operations || this.blocked(key)) throw new Error('操作不可用或原回执尚未确定。');
     const value = await this.catalogue(captured.host, signal);
     if (!value.online || !value.installation_id || captured.host !== value.host || captured.generation !== value.generation
@@ -438,6 +439,8 @@ export class CloudWorkbench {
       const workspace = value.workspaces.find(item => item.alias === command.workspace);
       if (!workspace || !(command.role ? workspace.roles.some(role => role.name === command.role && role.available) : workspace.default_available)) throw new Error('所选工作区或岗位已不可用。');
       if ((command.working_directory != null || command.create_directory != null) && value.directory_launch !== true) throw new Error('此主机仅支持从工作区根目录启动。');
+    } else if (command.kind === 'add_workspace') {
+      if (!value.workspace_management || !value.workspaces.some(item => item.alias === command.parent && item.managed_parent)) throw new Error('此主机无法在所选位置添加工作区。');
     } else {
       const agent = id && this.currentAgent(id);
       if (!agent || !sameAgent(agent, { host: captured.host, name: command.name, incarnation: command.incarnation })

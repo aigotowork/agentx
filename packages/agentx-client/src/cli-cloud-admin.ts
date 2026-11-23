@@ -141,12 +141,14 @@ export async function runCloudAdmin(ctx: CliContext): Promise<CliResult> {
       allow(['request-id'], 4);
       return output(await api.getControlOperation(scope_id, required(v['request-id'], '--request-id'), opts));
     }
-    if (action === 'launch' || action === 'stop') {
+    if (action === 'launch' || action === 'stop' || action === 'add-workspace') {
       allow(['generation', 'host', 'installation-id', 'request-id', 'pending',
-        ...(action === 'launch' ? ['workspace', 'role', 'title', 'name', 'task'] : ['name', 'incarnation'])], 4);
+        ...(action === 'launch' ? ['workspace', 'role', 'title', 'name', 'task'] : action === 'add-workspace' ? ['parent', 'directory', 'workspace', 'create-directory'] : ['name', 'incarnation'])], 4);
       if (v.role && v.role.length !== 1) throw new UsageError('Select at most one --role for a cloud launch');
       const command: CloudControlInput['command'] = action === 'launch'
         ? { kind: 'launch', workspace: required(v.workspace, '--workspace'), role: v.role?.[0], name: v.name, title: v.title, initial_prompt: v.task }
+        : action === 'add-workspace'
+        ? { kind: 'add_workspace', alias: required(v.workspace, '--workspace'), parent: required(v.parent, '--parent'), directory: required(v.directory, '--directory'), create_directory: !!v['create-directory'] }
         : { kind: 'stop', name: required(v.name, '--name'), incarnation: required(v.incarnation, '--incarnation') };
       const body = snapshotControlInput({
         request_id: v['request-id'] ?? newId(), generation: required(v.generation, '--generation'),

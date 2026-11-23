@@ -87,6 +87,7 @@ impl IntoResponse for Error {
             Self::Agent => failure(StatusCode::CONFLICT, "stale_agent", "exact agent registration is no longer current"),
             Self::Lease => failure(StatusCode::CONFLICT, "stale_lease", "exact daemon lease is no longer current"),
             Self::Capability => failure(StatusCode::CONFLICT, "capability_unavailable", "requested workspace or role is unavailable"),
+            Self::WorkspaceAliasTaken => failure(StatusCode::CONFLICT, "workspace_alias_taken", self.to_string()),
             Self::ControlClaim => failure(StatusCode::CONFLICT, "control_claim_conflict", "report does not match the exact control claim"),
             Self::ControlOutcome => failure(StatusCode::CONFLICT, "control_outcome_conflict", "control claim already has a different terminal outcome"),
             Self::PayloadTooLarge => failure(StatusCode::PAYLOAD_TOO_LARGE, "payload_too_large", "request body exceeds the scope size limit"),

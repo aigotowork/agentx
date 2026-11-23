@@ -5,6 +5,7 @@ CREATE TABLE control_leases (
     is_current INTEGER NOT NULL CHECK(is_current IN (0,1)),
     workspaces TEXT NOT NULL,
     directory_launch INTEGER NOT NULL DEFAULT 0 CHECK(directory_launch IN (0,1)),
+    workspace_management INTEGER NOT NULL DEFAULT 0 CHECK(workspace_management IN (0,1)),
     PRIMARY KEY(host,lease_id)
 ) WITHOUT ROWID;
 CREATE UNIQUE INDEX control_current_lease ON control_leases(host) WHERE is_current=1;
@@ -20,4 +21,4 @@ CREATE TABLE control_operations (
     FOREIGN KEY(host,execution_lease_id) REFERENCES control_leases(host,lease_id)
 );
 CREATE INDEX control_pending ON control_operations(host,execution_lease_id,ordinal) WHERE outcome IS NULL;
-PRAGMA user_version=2;
+PRAGMA user_version=3;

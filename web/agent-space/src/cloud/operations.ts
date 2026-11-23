@@ -3,7 +3,7 @@ import type { Session } from './model';
 
 type AdminSession = Extract<Session, { access: 'admin' }>;
 type ControlIdentity = Pick<CloudControlInput, 'request_id' | 'generation' | 'host' | 'installation_id'> & {
-  kind: 'launch' | 'stop'; target?: { name: string; incarnation: string };
+  kind: CloudControlInput['command']['kind']; target?: { name: string; incarnation: string };
 };
 export type ControlEntry = { identity: ControlIdentity; original?: CloudControlInput; receipt?: CloudControlReceipt; issue?: string; busy?: boolean };
 const terminal = (entry: ControlEntry) => entry.receipt && ['succeeded', 'failed', 'uncertain'].includes(entry.receipt.status);
@@ -13,6 +13,9 @@ export const controlStatus = (entry: ControlEntry) => ({
 }[entry.receipt?.status ?? 'uncertain']);
 
 const directoryIssues: Record<string, string> = {
+  workspace_alias_invalid: '工作区名称格式无效。',
+  workspace_alias_taken: '此工作区名称已被使用，请换一个名称。',
+  workspace_limit_reached: '主机已达到工作区数量上限。',
   directory_invalid: '工作目录必须是工作区内的相对路径。',
   directory_missing: '工作目录不存在。请检查路径，或选择「目录不存在时创建」；父目录必须已存在。',
   directory_unsafe: '工作目录不是普通目录，或路径中包含符号链接。',
@@ -43,7 +46,7 @@ export class CloudOperations {
       if (Array.isArray(stored)) for (const value of stored.slice(0, 60)) {
         if (value?.generation === session.generation && typeof value.request_id === 'string'
           && typeof value.host === 'string' && typeof value.installation_id === 'string'
-          && ['launch', 'stop'].includes(value.kind)) this.entries.push({ identity: value });
+          && ['launch', 'stop', 'add_workspace'].includes(value.kind)) this.entries.push({ identity: value });
       }
     } catch { /* The current workbench retains receipts in memory if storage is unavailable. */ }
   }
@@ -65,7 +68,7 @@ export class CloudOperations {
     } catch (error) {
       if (signal.aborted || error instanceof CloudAdminOutcomeUnknown) {
         entry.issue = '提交结果未确认，请查询原回执。';
-        if (!signal.aborted) throw new Error(entry.issue);
+        if (!signal.aborted && input.command.kind !== 'add_workspace') throw new Error(entry.issue);
       } else {
         this.entries.splice(this.entries.indexOf(entry), 1); this.save();
         this.failed(error);

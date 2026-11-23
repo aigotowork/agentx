@@ -41,8 +41,10 @@ fn check_receipt(receipt: ControlReceipt, scope: &ScopeTarget, id: &str, origina
                 && match &receipt.command {
                     ControlCommand::Stop { name, incarnation } => &agent.name == name && &agent.incarnation == incarnation,
                     ControlCommand::Launch { name, .. } => name.as_ref().is_none_or(|name| name == &agent.name),
+                    ControlCommand::AddWorkspace { .. } => false,
                 }
         }
+        (ControlStatus::Succeeded, Some(ControlOutcome::WorkspaceAdded { alias })) => receipt.claim_id.is_some() && matches!(&receipt.command, ControlCommand::AddWorkspace { alias: requested, .. } if requested == alias),
         (ControlStatus::Failed, Some(ControlOutcome::Failed { .. })) | (ControlStatus::Uncertain, Some(ControlOutcome::Uncertain { .. })) => true,
         _ => false,
     };
@@ -469,13 +471,39 @@ fn receipt_lines(receipt: &ControlReceipt) -> Vec<String> {
     match &receipt.command {
         ControlCommand::Launch { workspace, role, .. } => lines.push(format!("Launch: {} / {}", display(workspace), display(role.as_deref().unwrap_or("Default Codex")))),
         ControlCommand::Stop { name, incarnation } => lines.push(format!("Stop: @{} · {}", display(name), display(incarnation))),
+        ControlCommand::AddWorkspace { parent, directory, alias, .. } => lines.push(format!("Add workspace: {} / {} as {}", display(parent), display(directory), display(alias))),
     }
     if let Some(outcome) = &receipt.outcome {
         match outcome {
             ControlOutcome::Succeeded { agent } => lines.push(format!("Agent: @{} · {}", display(&agent.name), display(&agent.incarnation))),
+            ControlOutcome::WorkspaceAdded { alias } => lines.push(format!("Workspace added: {}", display(alias))),
             ControlOutcome::Failed { code } | ControlOutcome::Uncertain { code } => lines.push(format!("Code: {}", display(code))),
         }
     }
     lines.push(format!("{} · {}", display(&receipt.host), display(&receipt.installation_id)));
     lines
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn workspace_receipt_displays_registration_and_rejects_a_different_alias() {
+        let scope = ScopeTarget { id: "office".into(), generation: "generation".into() };
+        let mut receipt = ControlReceipt {
+            generation: scope.generation.clone(),
+            request_id: "operation-1".into(),
+            host: "worker".into(),
+            installation_id: "installation-1".into(),
+            command: ControlCommand::AddWorkspace { parent: "root".into(), directory: "projects/test".into(), alias: "test".into(), create_directory: false },
+            status: ControlStatus::Succeeded,
+            claim_id: Some("claim-1".into()),
+            outcome: Some(ControlOutcome::WorkspaceAdded { alias: "test".into() }),
+        };
+        let verified = check_receipt(receipt.clone(), &scope, "operation-1", None).unwrap();
+        assert!(receipt_lines(&verified).iter().any(|line| line == "Workspace added: test"));
+        receipt.outcome = Some(ControlOutcome::WorkspaceAdded { alias: "other".into() });
+        assert!(check_receipt(receipt, &scope, "operation-1", None).is_err());
+    }
 }

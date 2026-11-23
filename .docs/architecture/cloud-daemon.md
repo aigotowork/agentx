@@ -18,6 +18,22 @@ agentx daemon status --scope "$AGENTX_DIR"
 
 省略 `--workspace` 时，当前目录成为 `default` 工作区。重复指定该选项可以开放多个目录。主机默认使用系统名，可通过 `--host` 指定便于辨认的小名。登记命令会启动或重启选定 scope 的 daemon，使新配置生效；轮换通信凭据后，用新的 token 文件再次登记。配置以当前账户私有的 `cloud.toml` 保存在本地数据 scope 中。命令输出与连接状态不会显示 token。检查状态时同时看 `Daemon` 和 `Cloud`：本地 daemon 运行后，还要成功连接并发布能力，云端才会接受该主机的管理请求。
 
+## 在云端添加项目工作区
+
+本地 `--scope`（或 `AGENTX_DIR`）选定本机的 daemon 和运行数据。这个 daemon 使用保存的 `/scopes/ID` 地址和凭据加入云端命名空间。多台主机可以加入同一个云端 scope。执行项目操作时，先选主机，再选该主机的工作区。
+
+接入主机时可以省略 `--workspace`。在希望开放的项目父目录执行接入命令即可，该位置会以 `default` 显示。例如在 `/srv/projects` 接入，随后用 Admin 身份打开 Space → 新建 Agent → 选择主机 → 添加工作区。选择 `default`，填写项目目录 `backend` 和工作区名称 `backend`。已有项目可以直接加入；新建项目可以勾选「项目目录不存在时创建」，父目录须已存在。成功后会自动选中新工作区，并从该项目读取角色。保存工作区本身不会启动 Agent。
+
+同一台主机可以用同样方式添加 `frontend`。两个项目共用现有 daemon 和云端连接，登记在 daemon 重启后保留。启动 Agent 时的「工作目录」仍用于选择项目内的子目录。主机只接纳配置根目录内的项目；需要另外开放一块独立的文件系统位置时，可在接入配置中另加一个根目录。旧版主机不提供「添加工作区」入口。
+
+同一个操作也可以通过 HTTP CLI 发起：
+
+```sh
+agentx-http admin operations add-workspace personal --host desktop \
+  --generation "$generation" --installation-id "$installation_id" \
+  --parent default --directory backend --workspace backend --create-directory
+```
+
 ## Linux Codex 0.171 的工具通信权限
 
 后台在目标主机启动 Codex，以及宿主把来信交给 Codex，均可在工具禁止外网时工作。模型主动调用 `agentx send` 还需要工具进程能连接本地 daemon 的 Unix socket。实测 Codex 0.171.0 的 Linux restricted 配置拒绝 AF_UNIX connect；使用 managed network proxy 并只允许这个 socket 路径时，工具进程仍无法建立该连接。在这种配置下，管理后台看到消息已投递，也可能一直收不到模型的回复。主机终端可使用同一 scope 的 `agentx send --iam NAME`。具体系统调用观测见[隔离实验](../../.tmp/cloud-daemon/codex-unix-allow-probe/result.json)与[对应版本的上游测试](https://github.com/openai/codex/blob/rust-v0.171.0/codex-rs/linux-sandbox/tests/suite/managed_proxy_unix_sockets_tests.rs)。

@@ -7,3 +7,5 @@ The [verified cloud image build](https://github.com/aigotowork/agentx/actions/ru
 For local/cloud workbench convergence, see the [native conversation contract](shared/native.task.md), [shared workbench task](shared/web.task.md) and [host answer forwarding](shared/provider.task.md). The operator workflow runs through one App and one conversation/launch UI. Transport selection owns cloud authentication, host routing and exact agent addressing.
 
 For event-driven reads, active transcript, launch facts and target work directories see [refresh design](shared/refresh.task.md), [transcript delivery](shared/transcript.task.md) and [directory launch](shared/directory.task.md).
+
+For remotely adding host workspaces, read [online workspace registration](shared/workspace.task.md).

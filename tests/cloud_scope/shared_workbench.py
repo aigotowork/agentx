@@ -51,11 +51,13 @@ def exercise(fixture):
             use_https(fixture, ca)
             created, scope = provision(fixture, SCOPE)
             station.prepare_worker(scope["scope_url"], ca, created["token"], "east", model)
-            cold_start(station)
+            peer = cold_start(station)
             control = PublicControl(fixture, created["token"], scope["generation"])
             host = control.await_host("east")
             require(host.get("directory_launch") is True, "The native lease must advertise launch directories")
-            (station.workspace / "runs").mkdir()
+            role = station.workspace / "runs/.agentx/roles/project-worker.toml"
+            role.parent.mkdir(parents=True)
+            role.write_text('profile = "acceptance-codex"\nprompt = "Project workspace acceptance"\n')
             (station.workspace / "outside").symlink_to(station.root / "home", target_is_directory=True)
             control.reject(control.payload(host, {"kind": "launch", "workspace": "work", "working_directory": "../home"}),
                            "invalid_input", status=400)
@@ -77,6 +79,7 @@ def exercise(fixture):
                    "SPACE_REPLY": model.operator_reply, "SPACE_EVIDENCE": str(fixture.directory),
                    "SPACE_EXPECTED_CWD": str(station.workspace / "runs/first")}
             subprocess.run(["node", Path(__file__).with_suffix(".mjs")], env=env, check=True, timeout=180)
+            require((station.workspace / "frontend").is_dir(), "Space must create the second project directory on the host")
             require(model.seen("browser-final"), "Actual Provider must have received the browser message")
             agent, = control.agents()
             require(agent["host"] == "east" and agent["name"] == "receiver", "Only the selected fixture instance may launch")
@@ -86,12 +89,24 @@ def exercise(fixture):
             require(witness["ready"] and cwd == station.workspace / "runs/first" and cwd.is_dir(),
                     "The actual supervisor must start in the directory created from Space")
             fixture.write("launch-directory.json", {
-                "host": agent["host"], "workspace": "work", "working_directory": "runs/first",
+                "host": agent["host"], "workspace": "runs", "working_directory": "first",
                 "supervisor_cwd_verified": True, "symlink_refused": rejection["outcome"]["code"],
             })
             command = control.payload(host, {"kind": "stop", "name": agent["name"], "incarnation": agent["incarnation"]})
             control.submit(command)
             control.succeeded(command)
+            before = control.capabilities("east")
+            require(station.process("stop") == peer, "Adding a project must preserve the original daemon")
+            station.command("workspace-restart", "list", "--json")
+            def republished():
+                current = control.capabilities("east")
+                return current if current["online"] and current["observed_at"] > before["observed_at"] else False
+
+            after = wait_for("registered projects republished after daemon restart", republished, 45)
+            projects = {w["alias"]: w for w in after["workspaces"]}
+            require(set(projects) == {"work", "frontend", "runs"} and projects["work"].get("managed_parent")
+                    and any(r["name"] == "project-worker" and r["available"] for r in projects["runs"]["roles"]),
+                    "The host must recover both projects and rediscover project roles")
             return agent
     finally:
         station.close()

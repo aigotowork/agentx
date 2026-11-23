@@ -74,11 +74,32 @@ export type ControlCommand = {
     incarnation: string;
     kind: 'stop';
     name: string;
+} | {
+    /**
+     * New workspace alias to publish on this host.
+     */
+    alias: string;
+    /**
+     * Create only the final component if absent. Parents must already exist.
+     */
+    create_directory: boolean;
+    /**
+     * Nonempty slash-separated path relative to the parent export.
+     */
+    directory: string;
+    kind: 'add_workspace';
+    /**
+     * Alias of an eligible configured export.
+     */
+    parent: string;
 };
 
 export type ControlOutcome = {
     agent: AgentView;
     status: 'succeeded';
+} | {
+    alias: string;
+    status: 'workspace_added';
 } | {
     code: string;
     status: 'failed';
@@ -122,6 +143,10 @@ export type HostCapabilities = {
     installation_id: string;
     observed_at: bigint | null;
     online: boolean;
+    /**
+     * This active control lease accepts remote workspace registration.
+     */
+    workspace_management?: boolean | null;
     workspaces: Array<WorkspaceCapability>;
 };
 
@@ -225,6 +250,10 @@ export type WorkspaceCapability = {
     alias: string;
     default_available: boolean;
     default_reason: string | null;
+    /**
+     * This configured export is eligible as a parent for remote workspace registration. Set by the server from the lease header.
+     */
+    readonly managed_parent?: boolean | null;
     roles: Array<RoleCapability>;
 };
 
@@ -233,10 +262,34 @@ export type CreateScopeWritable = {
     token: string;
 };
 
+export type HostCapabilitiesWritable = {
+    /**
+     * This control lease accepts workspace-relative launch directories.
+     */
+    directory_launch?: boolean | null;
+    generation: string;
+    host: string;
+    installation_id: string;
+    observed_at: bigint | null;
+    online: boolean;
+    /**
+     * This active control lease accepts remote workspace registration.
+     */
+    workspace_management?: boolean | null;
+    workspaces: Array<WorkspaceCapabilityWritable>;
+};
+
 export type RotateTokenWritable = {
     expected_version: number;
     request_id: string;
     token: string;
+};
+
+export type WorkspaceCapabilityWritable = {
+    alias: string;
+    default_available: boolean;
+    default_reason: string | null;
+    roles: Array<RoleCapability>;
 };
 
 export type GetAdminOverviewData = {

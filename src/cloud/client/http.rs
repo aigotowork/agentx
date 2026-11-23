@@ -57,8 +57,15 @@ impl Http {
     }
 
     pub(crate) fn request<T: DeserializeOwned>(&self, method: &str, path: &str, body: Option<&Value>) -> Result<T> {
+        self.request_with_headers(method, path, body, &[])
+    }
+
+    pub(crate) fn request_with_headers<T: DeserializeOwned>(&self, method: &str, path: &str, body: Option<&Value>, headers: &[(&str, &str)]) -> Result<T> {
         ensure!(path.starts_with('/') && !path.starts_with("//"), "cloud HTTP path must be relative to the configured base");
         let mut request = ureq::http::Request::builder().method(method).uri(format!("{}{path}", self.base)).header("authorization", self.authorization.clone()).header("accept", "application/json");
+        for &(name, value) in headers {
+            request = request.header(name, value);
+        }
         let bytes = if let Some(body) = body {
             request = request.header("content-type", "application/json");
             serde_json::to_vec(body)?

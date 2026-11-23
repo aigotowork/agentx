@@ -17,11 +17,12 @@ function Receipt({ value }: { value: CloudControlReceipt }) {
   const command = value.command;
   const agent = outcome?.status === 'succeeded' ? outcome.agent : null;
   return <dl className="deployment-control-receipt" role="status">
-    <div><dt>状态</dt><dd><strong>{statusLabel[value.status]}</strong>{outcome && outcome.status !== 'succeeded' && <> · <code>{outcome.code}</code></>}</dd></div>
+    <div><dt>状态</dt><dd><strong>{statusLabel[value.status]}</strong>{outcome && 'code' in outcome && <> · <code>{outcome.code}</code></>}</dd></div>
     <div><dt>请求 ID</dt><dd><code>{value.request_id}</code></dd></div>
     <div><dt>主机</dt><dd><code>{value.host}</code> · <code>{value.installation_id}</code></dd></div>
-    <div><dt>{command.kind === 'launch' ? '启动' : '停止'}</dt><dd>{command.kind === 'launch'
+    <div><dt>{({ launch: '启动', stop: '停止', add_workspace: '添加工作区' })[command.kind]}</dt><dd>{command.kind === 'launch'
       ? <>{command.workspace} · {command.role ?? '默认 Codex'}{command.name && <> · <code>@{command.name}</code></>}</>
+      : command.kind === 'add_workspace' ? <code>{command.alias} · {command.parent}/{command.directory}</code>
       : <code>@{command.name} · {command.incarnation}</code>}</dd></div>
     {agent && <div><dt>Agent 实例</dt><dd><code>@{agent.name} · {agent.incarnation}</code></dd></div>}
   </dl>;

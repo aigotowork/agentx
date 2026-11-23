@@ -6,22 +6,30 @@ use std::path::{Path, PathBuf};
 
 use super::super::client::check_headless;
 use super::super::communication::store::opaque;
-use super::super::control::types::{MAX_ROLES, RoleCapability, WorkspaceCapability};
+use super::super::control::types::{MAX_ROLES, MAX_WORKSPACES, RoleCapability, WorkspaceCapability};
+use super::workspaces::{Exports, Registrations, resolve_export};
 
 pub(super) struct Catalogue {
     pub workspaces: Vec<WorkspaceCapability>,
+    pub managed_parents: Vec<String>,
     paths: BTreeMap<String, PathBuf>,
 }
 
 impl Catalogue {
-    pub(super) fn discover(root: &Path, exports: &BTreeMap<String, PathBuf>) -> Self {
+    pub(super) fn discover(root: &Path, exports: &Exports, registrations: &Registrations) -> Self {
+        let mut candidates: BTreeMap<_, _> = exports.iter().map(|(alias, path)| (alias, resolve_export(path))).collect();
+        let managed_parents = candidates.iter().filter(|(_, path)| path.is_some()).map(|(&alias, _)| alias.clone()).collect();
+        let slots = MAX_WORKSPACES.saturating_sub(candidates.len());
+        candidates.extend(registrations.iter().filter(|(alias, _)| !exports.contains_key(*alias)).take(slots).map(|(alias, registration)| (alias, registration.resolve(exports))));
         let mut paths = BTreeMap::new();
         let mut remaining_roles = MAX_ROLES;
-        let workspaces = exports
-            .iter()
-            .map(|(alias, export)| {
-                let Some(path) = resolve(export) else {
-                    return WorkspaceCapability { alias: alias.clone(), default_available: false, default_reason: Some("workspace_unavailable".into()), roles: vec![] };
+        let workspaces = candidates
+            .into_iter()
+            .map(|(alias, path)| {
+                // A separate renew header carries parent eligibility so old servers
+                // can still deserialize this original catalogue shape.
+                let Some(path) = path else {
+                    return WorkspaceCapability { alias: alias.clone(), default_available: false, default_reason: Some("workspace_unavailable".into()), roles: vec![], managed_parent: None };
                 };
                 let default_reason = unavailable(root, &path, None);
                 let roles: Vec<_> = crate::config::roles::list_roles(root, Some(&path), false)
@@ -40,13 +48,18 @@ impl Catalogue {
                     .unwrap_or_default();
                 remaining_roles -= roles.len();
                 paths.insert(alias.clone(), path);
-                WorkspaceCapability { alias: alias.clone(), default_available: default_reason.is_none(), default_reason, roles }
+                WorkspaceCapability { alias: alias.clone(), default_available: default_reason.is_none(), default_reason, roles, managed_parent: None }
             })
             .collect();
-        Self { workspaces, paths }
+        Self { workspaces, managed_parents, paths }
     }
 
-    pub(super) fn recheck(&self, root: &Path, configured: &BTreeMap<String, PathBuf>, alias: &str, role: Option<&str>) -> Option<PathBuf> {
+    pub(super) fn recheck_parent(&self, exports: &Exports, alias: &str) -> Option<PathBuf> {
+        let path = resolve_export(exports.get(alias)?)?;
+        (self.paths.get(alias)? == &path && self.managed_parents.iter().any(|parent| parent == alias)).then_some(path)
+    }
+
+    pub(super) fn recheck(&self, root: &Path, exports: &Exports, registrations: &Registrations, alias: &str, role: Option<&str>) -> Option<PathBuf> {
         let advertised = self.workspaces.iter().find(|workspace| workspace.alias == alias)?;
         let advertised_available = match role {
             Some(role) => advertised.roles.iter().any(|entry| entry.name == role && entry.available),
@@ -55,7 +68,10 @@ impl Catalogue {
         if !advertised_available {
             return None;
         }
-        let canonical = resolve(configured.get(alias)?)?;
+        let canonical = match exports.get(alias) {
+            Some(path) => resolve_export(path)?,
+            None => registrations.get(alias)?.resolve(exports)?,
+        };
         if self.paths.get(alias)? != &canonical {
             return None;
         }
@@ -66,11 +82,6 @@ impl Catalogue {
         }
         check_headless(root, &canonical, role).is_ok().then_some(canonical)
     }
-}
-
-fn resolve(path: &Path) -> Option<PathBuf> {
-    let canonical = path.canonicalize().ok()?;
-    (canonical.is_dir() && canonical.to_str().is_some()).then_some(canonical)
 }
 
 fn unavailable(root: &Path, cwd: &Path, role: Option<&str>) -> Option<String> {
@@ -91,13 +102,15 @@ mod tests {
         std::fs::create_dir(&after).unwrap();
         std::os::unix::fs::symlink(&before, &export).unwrap();
         let exports = BTreeMap::from([("example".into(), export.clone())]);
-        let mut published = Catalogue::discover(root.path(), &exports);
+        let registrations = Registrations::new();
+        let mut published = Catalogue::discover(root.path(), &exports, &registrations);
         // The advertised choice was previously available. Local launch still
         // must refuse to follow an export alias that now names a new directory.
         published.workspaces[0].default_available = true;
         published.workspaces[0].default_reason = None;
         std::fs::remove_file(&export).unwrap();
         std::os::unix::fs::symlink(&after, &export).unwrap();
-        assert!(published.recheck(root.path(), &exports, "example", None).is_none());
+        assert!(published.recheck_parent(&exports, "example").is_none());
+        assert!(published.recheck(root.path(), &exports, &registrations, "example", None).is_none());
     }
 }

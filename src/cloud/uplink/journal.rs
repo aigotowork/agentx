@@ -8,6 +8,9 @@ use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 
 use crate::cloud::communication::types::AgentView;
+use crate::cloud::directory::DirectoryError;
+
+use super::workspaces::{Registration, Registrations};
 
 pub(super) struct Journal(Connection);
 
@@ -36,6 +39,7 @@ pub(super) struct Pending {
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub(super) enum Outcome {
     Succeeded(AgentView),
+    WorkspaceAdded { alias: String },
     Failed(Failure),
     Unknown,
 }
@@ -53,6 +57,9 @@ pub(super) enum Failure {
     DirectoryUnsafe,
     DirectoryUnavailable,
     DirectoryCreateFailed,
+    WorkspaceAliasInvalid,
+    WorkspaceAliasConflict,
+    WorkspaceLimitReached,
 }
 
 impl Failure {
@@ -69,6 +76,21 @@ impl Failure {
             Self::DirectoryUnsafe => "directory_unsafe",
             Self::DirectoryUnavailable => "directory_unavailable",
             Self::DirectoryCreateFailed => "directory_create_failed",
+            Self::WorkspaceAliasInvalid => "workspace_alias_invalid",
+            Self::WorkspaceAliasConflict => "workspace_alias_taken",
+            Self::WorkspaceLimitReached => "workspace_limit_reached",
+        }
+    }
+}
+
+impl From<DirectoryError> for Failure {
+    fn from(error: DirectoryError) -> Self {
+        match error {
+            DirectoryError::Invalid => Self::DirectoryInvalid,
+            DirectoryError::Missing => Self::DirectoryMissing,
+            DirectoryError::Unsafe => Self::DirectoryUnsafe,
+            DirectoryError::Unavailable => Self::DirectoryUnavailable,
+            DirectoryError::CreateFailed => Self::DirectoryCreateFailed,
         }
     }
 }
@@ -93,6 +115,14 @@ impl Journal {
              CREATE TABLE IF NOT EXISTS latest_lease (
                  namespace TEXT PRIMARY KEY,
                  lease TEXT NOT NULL
+             );
+             CREATE TABLE IF NOT EXISTS registered_workspace (
+                 namespace TEXT NOT NULL,
+                 alias TEXT NOT NULL,
+                 parent TEXT NOT NULL,
+                 parent_path TEXT NOT NULL,
+                 directory TEXT NOT NULL,
+                 PRIMARY KEY (namespace, alias)
              );",
         )?;
         Ok(Self(db))
@@ -105,7 +135,7 @@ impl Journal {
         Ok(true)
     }
 
-    /// Commit before calling any code that could start or stop a process.
+    /// Commit before any effect, including directory creation.
     pub(super) fn start(&self, namespace: &str, id: &str, fingerprint: &str, claim: &str, local_generation: &str, recovery: &Recovery) -> Result<()> {
         self.0.execute("INSERT INTO operation (namespace, id, fingerprint, claim, local_generation, recovery) VALUES (?1, ?2, ?3, ?4, ?5, ?6)", params![namespace, id, fingerprint, claim, local_generation, serde_json::to_string(recovery)?])?;
         Ok(())
@@ -113,10 +143,21 @@ impl Journal {
 
     /// A terminal outcome stays final even if the upstream report is lost.
     pub(super) fn finish(&self, namespace: &str, id: &str, outcome: &Outcome) -> Result<()> {
-        ensure!(
-            self.0.execute("UPDATE operation SET outcome = ?3 WHERE namespace = ?1 AND id = ?2 AND (outcome IS NULL OR outcome = ?3)", params![namespace, id, serde_json::to_string(outcome)?])? == 1,
-            "cloud operation journal outcome conflicts or its entry is missing"
-        );
+        finish(&self.0, namespace, id, outcome)
+    }
+
+    pub(super) fn registrations(&self, namespace: &str) -> Result<Registrations> {
+        let mut statement = self.0.prepare("SELECT alias, parent, parent_path, directory FROM registered_workspace WHERE namespace = ?1")?;
+        statement.query_map([namespace], |row| Ok((row.get(0)?, Registration { parent: row.get(1)?, parent_path: row.get::<_, String>(2)?.into(), directory: row.get(3)? })))?.collect::<rusqlite::Result<_>>().map_err(Into::into)
+    }
+
+    /// A crash can leave a created directory, but cannot leave an alias without its exact successful receipt.
+    pub(super) fn register(&self, namespace: &str, id: &str, alias: String, registration: &Registration) -> Result<()> {
+        let path = registration.parent_path.to_str().ok_or_else(|| anyhow::anyhow!("workspace export is not UTF-8"))?;
+        let tx = self.0.unchecked_transaction()?;
+        tx.execute("INSERT INTO registered_workspace (namespace, alias, parent, parent_path, directory) VALUES (?1, ?2, ?3, ?4, ?5)", params![namespace, alias, registration.parent, path, registration.directory])?;
+        finish(&tx, namespace, id, &Outcome::WorkspaceAdded { alias })?;
+        tx.commit()?;
         Ok(())
     }
 
@@ -144,11 +185,19 @@ impl Journal {
 
     pub(super) fn replace_lease(&self, namespace: &str, lease: &str) -> Result<Option<String>> {
         let tx = self.0.unchecked_transaction()?;
-        let previous = tx.query_row("SELECT lease FROM latest_lease WHERE namespace = ?1", params![namespace], |row| row.get(0)).optional()?;
+        let previous = tx.query_row("SELECT lease FROM latest_lease WHERE namespace = ?1", [namespace], |row| row.get(0)).optional()?;
         tx.execute("INSERT INTO latest_lease VALUES (?1, ?2) ON CONFLICT(namespace) DO UPDATE SET lease = excluded.lease", params![namespace, lease])?;
         tx.commit()?;
         Ok(previous)
     }
+}
+
+fn finish(db: &Connection, namespace: &str, id: &str, outcome: &Outcome) -> Result<()> {
+    ensure!(
+        db.execute("UPDATE operation SET outcome = ?3 WHERE namespace = ?1 AND id = ?2 AND (outcome IS NULL OR outcome = ?3)", params![namespace, id, serde_json::to_string(outcome)?])? == 1,
+        "cloud operation journal outcome conflicts or its entry is missing"
+    );
+    Ok(())
 }
 
 #[cfg(test)]

@@ -22,7 +22,7 @@ Each case writes `result.json`, HTTP or consumer observations, and cleanup statu
 
 ### Shared Space workbench
 
-Run `python3 tests/cloud_scope/shared_workbench.py --candidate /absolute/path/to/agentx --evidence /tmp/new-space-evidence` on Linux with Chrome, Codex, OpenSSL and the checkout's Puppeteer dependencies. Over private HTTPS the embedded browser selects an exported role, handles a missing working directory, opts into creating it, and checks the actual role and cwd in the resulting conversation. The native fixture rejects traversal and symlink paths and verifies the exact supervisor's cwd. It also checks ordinary text and persisted replies from a real Codex process backed by a scripted loopback Responses endpoint. Cleanup stops the launched instance and its daemon.
+Run `python3 tests/cloud_scope/shared_workbench.py --candidate /absolute/path/to/agentx --evidence /tmp/new-space-evidence` on Linux with Chrome, Codex, OpenSSL and the checkout's Puppeteer dependencies. Over private HTTPS the embedded browser creates a project workspace, adds a second existing project, selects its project-specific role, handles a missing working directory, opts into creating it, and checks the actual role and cwd in the resulting conversation. The native fixture rejects traversal and symlink paths, verifies the exact supervisor's cwd, and checks that both projects survive a host daemon restart. It also checks ordinary text and persisted replies from a real Codex process backed by a scripted loopback Responses endpoint. Cleanup stops the launched instance and its daemon.
 
 ### Cloud-connected native daemon
 

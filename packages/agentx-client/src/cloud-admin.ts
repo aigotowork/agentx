@@ -49,12 +49,15 @@ export function snapshotControlInput(value: unknown): CloudControlInput {
 
 function validateControlReceipt(receipt: CloudControlReceipt, requestId: string, input?: CloudControlInput): CloudControlReceipt {
   if (receipt.request_id !== requestId
-    || (receipt.status === 'queued' || receipt.status === 'running' ? receipt.outcome !== null : receipt.outcome?.status !== receipt.status)
+    || (receipt.status === 'queued' || receipt.status === 'running' ? receipt.outcome !== null : (receipt.outcome?.status === 'workspace_added' ? 'succeeded' : receipt.outcome?.status) !== receipt.status)
     || (receipt.status === 'queued' && receipt.claim_id !== null)
     || (receipt.status === 'running' && !receipt.claim_id)) {
     throw new TypeError('Cloud operation receipt identity or state mismatch');
   }
-  if (receipt.outcome?.status === 'succeeded' && (receipt.outcome.agent.host !== receipt.host
+  if (receipt.outcome?.status === 'workspace_added' && (receipt.command.kind !== 'add_workspace' || receipt.outcome.alias !== receipt.command.alias)) {
+    throw new TypeError('Cloud operation workspace result mismatch');
+  }
+  if (receipt.outcome?.status === 'succeeded' && (receipt.command.kind === 'add_workspace' || receipt.outcome.agent.host !== receipt.host
     || (receipt.command.name != null && receipt.command.name !== receipt.outcome.agent.name)
     || (receipt.command.kind === 'stop' && receipt.command.incarnation !== receipt.outcome.agent.incarnation))) {
     throw new TypeError('Cloud operation result target mismatch');
@@ -65,6 +68,8 @@ function validateControlReceipt(receipt: CloudControlReceipt, requestId: string,
       && (actual.role ?? null) === (expected.role ?? null) && (actual.name ?? null) === (expected.name ?? null)
       && (actual.working_directory ?? null) === (expected.working_directory ?? null) && (actual.create_directory ?? null) === (expected.create_directory ?? null)
       && (actual.title ?? null) === (expected.title ?? null) && (actual.initial_prompt ?? null) === (expected.initial_prompt ?? null)
+      : expected.kind === 'add_workspace' ? actual.kind === 'add_workspace' && actual.alias === expected.alias && actual.parent === expected.parent
+        && actual.directory === expected.directory && actual.create_directory === expected.create_directory
       : actual.kind === 'stop' && actual.name === expected.name && actual.incarnation === expected.incarnation;
     if (receipt.generation !== input.generation || receipt.host !== input.host || receipt.installation_id !== input.installation_id || !sameCommand) {
       throw new TypeError('Cloud operation receipt differs from the original request');

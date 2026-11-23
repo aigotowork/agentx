@@ -15,10 +15,13 @@ use super::super::client::http::{Http, HttpError};
 use super::super::client::{IpcServer, LaunchRejected, exited_process, installation_id, launch_headless, owned_process, stop_exact};
 use super::super::communication::types::{AgentView, Descriptor};
 use super::super::connection::{Config, publish_status};
-use super::super::control::types::{ControlCommand, ControlOutcome, ControlPoll, ControlReceipt, ControlStatus, HostCapabilities, PollControlOperation, RenewControlLease, ReportControlOperation};
-use super::super::directory::{DirectoryError, WorkingDirectory};
+use super::super::control::types::{
+    ControlCommand, ControlOutcome, ControlPoll, ControlReceipt, ControlStatus, HostCapabilities, LEASE_FEATURES_HEADER, PollControlOperation, RenewControlLease, ReportControlOperation, WORKSPACE_MANAGEMENT_FEATURE, WORKSPACE_PARENTS_HEADER,
+};
+use super::super::directory::WorkingDirectory;
 use super::capabilities::Catalogue;
 use super::journal::{Entry, Failure, Journal, Outcome, Recovery};
+use super::workspaces::{Exports, Registration};
 use crate::daemon::ScopeLease;
 
 const RENEW_EVERY: Duration = Duration::from_secs(5);
@@ -138,9 +141,10 @@ impl<'a> Worker<'a> {
         }
         let session = self.session.as_mut().expect("control session constructed");
         if session.catalogue.is_none() || Instant::now() >= session.renew_at {
-            let catalogue = Catalogue::discover(self.lease.scope().root(), &self.config.workspaces);
+            let registrations = self.journal.registrations(&session.namespace).context(Fault("operation_journal_unavailable"))?;
+            let catalogue = Catalogue::discover(self.lease.scope().root(), &self.config.workspaces, &registrations);
             let started = Instant::now();
-            self.wire.renew(session, &catalogue)?;
+            session.workspace_management = self.wire.renew(session, &catalogue)?;
             session.catalogue = Some(catalogue);
             session.renew_at = started + RENEW_EVERY;
             // The service's expiration clock has whole-second resolution.
@@ -177,6 +181,9 @@ impl<'a> Worker<'a> {
         if let Some(operation) = self.wire.poll(session)? {
             let context = EffectContext { lease: self.lease, stop: self.stop, fresh_until: session.fresh_until };
             *active = prepare_effect(context, effects, &self.journal, session, &self.wire, &self.config.workspaces, operation)?;
+            if Instant::now() >= session.renew_at {
+                return Ok(Duration::ZERO);
+            }
         }
         self.status.set("online", None);
         Ok(POLL_PACE)
@@ -218,6 +225,7 @@ struct Session {
     renew_at: Instant,
     fresh_until: Instant,
     catalogue: Option<Catalogue>,
+    workspace_management: bool,
 }
 
 impl Session {
@@ -226,7 +234,7 @@ impl Session {
         let id = Uuid::new_v4().to_string();
         let previous = journal.replace_lease(&namespace, &id)?;
         let created = Instant::now();
-        Ok(Self { namespace, cloud_generation, native_generation, id, previous, created, renew_at: created, fresh_until: created, catalogue: None })
+        Ok(Self { namespace, cloud_generation, native_generation, id, previous, created, renew_at: created, fresh_until: created, catalogue: None, workspace_management: false })
     }
 }
 
@@ -252,12 +260,22 @@ impl Wire {
         Ok(descriptor)
     }
 
-    fn renew(&self, session: &Session, catalogue: &Catalogue) -> Result<()> {
+    fn renew(&self, session: &Session, catalogue: &Catalogue) -> Result<bool> {
         let body = RenewControlLease { generation: session.cloud_generation.clone(), installation_id: self.installation.clone(), lease_id: session.id.clone(), previous_lease_id: session.previous.clone(), workspaces: catalogue.workspaces.clone() };
-        // Older deployments ignore the query, preserving compatibility with ordinary launch.
-        let result: HostCapabilities = self.request("PUT", "/lease?directory_launch=true", &body)?;
+        let parents = catalogue.managed_parents.join(",");
+        let mut headers = vec![(LEASE_FEATURES_HEADER, WORKSPACE_MANAGEMENT_FEATURE)];
+        if !parents.is_empty() {
+            headers.push((WORKSPACE_PARENTS_HEADER, parents.as_str()));
+        }
+        // Older deployments ignore the query and headers. The JSON stays compatible.
+        let mut result: HostCapabilities = self.http.request_with_headers("PUT", &format!("{}/lease?directory_launch=true", self.host_path), Some(&serde_json::to_value(body)?), &headers)?;
+        let enabled = result.workspace_management == Some(true);
+        for workspace in &mut result.workspaces {
+            let eligible = enabled && catalogue.managed_parents.contains(&workspace.alias);
+            ensure!((workspace.managed_parent.take() == Some(true)) == eligible, Fault("lease_receipt_mismatch"));
+        }
         ensure!(self.matches(session, &result.generation, &result.host, &result.installation_id) && result.online && result.observed_at.is_some() && result.workspaces == catalogue.workspaces, Fault("lease_receipt_mismatch"));
-        Ok(())
+        Ok(enabled)
     }
 
     fn poll(&self, session: &Session) -> Result<Option<ControlReceipt>> {
@@ -275,13 +293,23 @@ impl Wire {
     fn report(&self, session: &Session, id: &str, claim: &str, outcome: Outcome) -> Result<()> {
         let outcome = match outcome {
             Outcome::Succeeded(agent) => ControlOutcome::Succeeded { agent },
+            Outcome::WorkspaceAdded { alias } => ControlOutcome::WorkspaceAdded { alias },
             Outcome::Failed(failure) => ControlOutcome::Failed { code: failure.code().into() },
             Outcome::Unknown => ControlOutcome::Uncertain { code: "local_execution_unknown".into() },
+        };
+        let expected_status = match &outcome {
+            ControlOutcome::Succeeded { .. } | ControlOutcome::WorkspaceAdded { .. } => ControlStatus::Succeeded,
+            ControlOutcome::Failed { .. } => ControlStatus::Failed,
+            ControlOutcome::Uncertain { .. } => ControlStatus::Uncertain,
         };
         let body = ReportControlOperation { generation: session.cloud_generation.clone(), installation_id: self.installation.clone(), lease_id: session.id.clone(), claim_id: claim.into(), outcome };
         let receipt: ControlReceipt = self.request("POST", &format!("/operations/{}/report", segment(id)), &body)?;
         ensure!(
-            self.matches(session, &receipt.generation, &receipt.host, &receipt.installation_id) && receipt.request_id == id && receipt.claim_id.as_deref() == Some(claim) && receipt.outcome.as_ref() == Some(&body.outcome),
+            self.matches(session, &receipt.generation, &receipt.host, &receipt.installation_id)
+                && receipt.request_id == id
+                && receipt.claim_id.as_deref() == Some(claim)
+                && receipt.status == expected_status
+                && receipt.outcome.as_ref() == Some(&body.outcome),
             Fault("report_receipt_mismatch")
         );
         Ok(())
@@ -354,15 +382,7 @@ impl EffectContext<'_> {
     }
 }
 
-fn prepare_effect<'effect, 'env>(
-    context: EffectContext<'env>,
-    threads: &'effect Scope<'effect, 'env>,
-    journal: &Journal,
-    session: &Session,
-    wire: &Wire,
-    exports: &std::collections::BTreeMap<String, std::path::PathBuf>,
-    operation: ControlReceipt,
-) -> Result<Option<Active<'effect>>> {
+fn prepare_effect<'effect, 'env>(context: EffectContext<'env>, threads: &'effect Scope<'effect, 'env>, journal: &Journal, session: &mut Session, wire: &Wire, exports: &Exports, operation: ControlReceipt) -> Result<Option<Active<'effect>>> {
     let id = operation.request_id;
     let claim = operation.claim_id.context(Fault("claim_receipt_mismatch"))?;
     let fingerprint = digest(&operation.command)?;
@@ -382,15 +402,19 @@ fn prepare_effect<'effect, 'env>(
         return reject(failure);
     }
     let root = context.lease.scope().root();
+    let catalogue = session.catalogue.as_ref().expect("operations require an accepted lease catalogue");
     let effect = match operation.command {
         ControlCommand::Launch { workspace, role, name, title, initial_prompt, working_directory, create_directory } => {
-            let Some(workspace) = session.catalogue.as_ref().and_then(|catalogue| catalogue.recheck(root, exports, &workspace, role.as_deref())) else {
+            let registrations = journal.registrations(ns).context(Fault("operation_journal_unavailable"))?;
+            let pin_directory = !exports.contains_key(&workspace);
+            let Some(workspace) = catalogue.recheck(root, exports, &registrations, &workspace, role.as_deref()) else {
                 return reject(Failure::CapabilityChanged);
             };
             let incarnation = Uuid::new_v4().to_string();
             record(&Recovery::Launch { incarnation: incarnation.clone(), name: name.clone() })?;
             Effect::Launch {
                 workspace,
+                pin_directory,
                 working_directory,
                 create_directory: create_directory.unwrap_or_default(),
                 role,
@@ -412,6 +436,29 @@ fn prepare_effect<'effect, 'env>(
             record(&Recovery::Stop { agent: agent.clone() })?;
             Effect::Stop(agent)
         }
+        ControlCommand::AddWorkspace { parent, directory, alias, create_directory } => {
+            if !session.workspace_management {
+                return reject(Failure::CapabilityChanged);
+            }
+            let registrations = journal.registrations(ns).context(Fault("operation_journal_unavailable"))?;
+            let registration = match Registration::prepare(catalogue, exports, &registrations, parent, directory, &alias) {
+                Ok(registration) => registration,
+                Err(failure) => return reject(failure),
+            };
+            record(&Recovery::NoEffect)?;
+            if let Some(failure) = context.refusal(native_generation) {
+                finish(&Outcome::Failed(failure))?;
+            } else if let Err(failure) = registration.open(create_directory) {
+                finish(&Outcome::Failed(failure))?;
+            } else if let Some(failure) = context.refusal(native_generation) {
+                finish(&Outcome::Failed(failure))?;
+            } else {
+                journal.register(ns, &id, alias, &registration).context(Fault("operation_journal_unavailable"))?;
+                // The next cycle renews before it reports the durable outcome.
+                session.renew_at = Instant::now();
+            }
+            return Ok(None);
+        }
     };
     let native_generation = native_generation.clone();
     let spawned = thread::Builder::new().name("agentx-cloud-effect".into()).spawn_scoped(threads, move || {
@@ -432,6 +479,7 @@ fn prepare_effect<'effect, 'env>(
 enum Effect {
     Launch {
         workspace: std::path::PathBuf,
+        pin_directory: bool,
         working_directory: Option<String>,
         create_directory: bool,
         role: Option<String>,
@@ -448,19 +496,11 @@ enum Effect {
 impl Effect {
     fn execute(self, root: &std::path::Path, daemon_instance: &str, native_generation: &str, stop: &AtomicBool) -> Outcome {
         match self {
-            Self::Launch { workspace, working_directory, create_directory, role, name, title, initial_prompt, incarnation, host, generation, installation } => {
-                let directory = if working_directory.is_some() || create_directory {
+            Self::Launch { workspace, pin_directory, working_directory, create_directory, role, name, title, initial_prompt, incarnation, host, generation, installation } => {
+                let directory = if pin_directory || working_directory.is_some() || create_directory {
                     match WorkingDirectory::open(&workspace, working_directory.as_deref().unwrap_or_default(), create_directory) {
                         Ok(directory) => Some(directory),
-                        Err(error) => {
-                            return Outcome::Failed(match error {
-                                DirectoryError::Invalid => Failure::DirectoryInvalid,
-                                DirectoryError::Missing => Failure::DirectoryMissing,
-                                DirectoryError::Unsafe => Failure::DirectoryUnsafe,
-                                DirectoryError::Unavailable => Failure::DirectoryUnavailable,
-                                DirectoryError::CreateFailed => Failure::DirectoryCreateFailed,
-                            });
-                        }
+                        Err(error) => return Outcome::Failed(error.into()),
                     }
                 } else {
                     None
@@ -502,3 +542,6 @@ fn recover(lease: &ScopeLease, wire: &Wire, session: &Session, native_generation
         Recovery::NoEffect => Outcome::Unknown,
     }
 }
+
+#[cfg(test)]
+mod tests;

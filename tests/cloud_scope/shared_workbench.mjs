@@ -33,18 +33,29 @@ try {
   await writeFile(join(process.env.SPACE_EVIDENCE, 'idle-requests.json'), JSON.stringify({ seconds: 27, calls: idleReads }));
   await button('新建 Agent');
   await page.waitForSelector('dialog[open] option[value="acceptance"]');
-  await page.select('[aria-label="新 Agent 岗位"]', 'acceptance');
+  for (const project of [{ path: 'frontend', create: true }, { path: 'runs', create: false }]) {
+    await button('添加工作区');
+    assert.equal(await page.$eval('[aria-label="新 Agent 工作区"]', node => node.value), 'work');
+    await page.type('[aria-label="项目目录"]', project.path);
+    await page.type('[aria-label="工作区名称"]', project.path);
+    if (project.create) await page.click('dialog[open] input[type=checkbox]');
+    await button('保存工作区');
+    await page.waitForFunction(alias => document.querySelector('[aria-label="新 Agent 工作区"]')?.value === alias
+      && !document.querySelector('[aria-label="项目目录"]'), {}, project.path);
+  }
+  await page.waitForSelector('dialog[open] option[value="project-worker"]');
+  await page.select('[aria-label="新 Agent 岗位"]', 'project-worker');
   await page.type('[aria-label="新 Agent 名称"]', 'receiver');
   assert.equal(await page.$eval('[aria-label="新 Agent 主机"]', node => node.value), 'east');
-  assert.equal(await page.$eval('[aria-label="新 Agent 工作区"]', node => node.value), 'work');
+  assert.equal(await page.$eval('[aria-label="新 Agent 工作区"]', node => node.value), 'runs');
   await page.click('dialog[open] .launch-directory summary');
   const path = 'dialog[open] [aria-label="新 Agent 工作目录"]';
   await page.type(path, '../home');
   assert.equal(await page.$eval(path, node => node.getAttribute('aria-invalid')), 'true');
   assert.equal(await page.$eval('dialog[open] button[type="submit"]', node => node.disabled), true);
   await page.$eval(path, node => node.select());
-  await page.keyboard.type('runs/first');
-  assert.equal(await page.$eval('dialog[open] .launch-directory summary code', node => node.textContent), 'work/runs/first');
+  await page.keyboard.type('first');
+  assert.equal(await page.$eval('dialog[open] .launch-directory summary code', node => node.textContent), 'runs/first');
   await button('启动');
   await page.waitForFunction(() => document.querySelector('dialog[open] [role="alert"]')?.textContent.includes('工作目录不存在'));
   await page.click('dialog[open] .launch-directory-create input');
@@ -61,7 +72,7 @@ try {
   await page.waitForFunction(cwd => {
     const facts = [...document.querySelectorAll('.workspace-reader .reader-facts dt')];
     return facts.some(node => node.textContent === '独立工作目录' && node.nextElementSibling?.textContent === cwd)
-      && facts.some(node => node.textContent === '采用岗位' && node.nextElementSibling?.textContent.includes('acceptance'));
+      && facts.some(node => node.textContent === '采用岗位' && node.nextElementSibling?.textContent.includes('project-worker'));
   }, {}, process.env.SPACE_EXPECTED_CWD);
   await page.click('.workspace-reader [aria-label="会话详情"]');
   await button('消息');
