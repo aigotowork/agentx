@@ -2,6 +2,7 @@
 use super::{store, types::*};
 use crate::cloud::{
     Deployment, ScopeContext,
+    admin::{AdminError, scope_context},
     communication::{fence, path, payload, store::Error, types::ScopeError},
 };
 use axum::{
@@ -10,7 +11,6 @@ use axum::{
         Path, State,
         rejection::{JsonRejection, PathRejection},
     },
-    response::{IntoResponse, Response},
     routing::{get, post, put},
 };
 use rusqlite::Connection;
@@ -55,30 +55,6 @@ struct ReportPath {
     request_id: String,
 }
 
-enum AdminError {
-    Deployment(crate::cloud::Failure),
-    Scope(Error),
-}
-
-impl IntoResponse for AdminError {
-    fn into_response(self) -> Response {
-        match self {
-            Self::Deployment(error) => error.into_response(),
-            Self::Scope(error) => error.into_response(),
-        }
-    }
-}
-
-async fn context(state: Deployment, id: String) -> Result<ScopeContext, AdminError> {
-    state
-        .catalog(move |db| {
-            let receipt = db.lookup(&id)?;
-            Ok(db.context(&id, receipt.generation, receipt.credential_version))
-        })
-        .await
-        .map_err(AdminError::Deployment)
-}
-
 #[derive(Clone, Copy)]
 enum Access {
     AdminRead,
@@ -114,7 +90,7 @@ async fn run<T: Send + 'static>(scope: ScopeContext, access: Access, operation: 
     params(("id"=String,Path),("host"=String,Path)), responses((status=200,body=HostCapabilities)))]
 async fn admin_capabilities(State(state): State<Deployment>, parts: Result<Path<AdminHostPath>, PathRejection>) -> Result<Json<HostCapabilities>, AdminError> {
     let AdminHostPath { id, host } = path(parts).map_err(AdminError::Scope)?;
-    let scope = context(state, id).await?;
+    let scope = scope_context(state, id).await?;
     let generation = scope.generation.clone();
     run(scope, Access::AdminRead, move |db, now| store::capabilities(db, now, generation.clone(), host.clone())).await.map(Json).map_err(AdminError::Scope)
 }
@@ -124,7 +100,7 @@ async fn admin_capabilities(State(state): State<Deployment>, parts: Result<Path<
 async fn admin_create(State(state): State<Deployment>, parts: Result<Path<AdminPath>, PathRejection>, input: Result<Json<CreateControlOperation>, JsonRejection>) -> Result<Json<ControlReceipt>, AdminError> {
     let AdminPath { id } = path(parts).map_err(AdminError::Scope)?;
     let input = payload(input).map_err(AdminError::Scope)?;
-    let scope = context(state, id).await?;
+    let scope = scope_context(state, id).await?;
     fence(&scope, &input.generation).map_err(AdminError::Scope)?;
     run(scope, Access::AdminSubmit, move |db, now| store::create(db, now, &input)).await.map(Json).map_err(AdminError::Scope)
 }
@@ -133,7 +109,7 @@ async fn admin_create(State(state): State<Deployment>, parts: Result<Path<AdminP
     params(("id"=String,Path),("request_id"=String,Path)), responses((status=200,body=ControlReceipt)))]
 async fn admin_get(State(state): State<Deployment>, parts: Result<Path<AdminOperationPath>, PathRejection>) -> Result<Json<ControlReceipt>, AdminError> {
     let AdminOperationPath { id, request_id } = path(parts).map_err(AdminError::Scope)?;
-    let scope = context(state, id).await?;
+    let scope = scope_context(state, id).await?;
     let generation = scope.generation.clone();
     run(scope, Access::AdminRead, move |db, now| store::get(db, now, &generation, &request_id)).await.map(Json).map_err(AdminError::Scope)
 }

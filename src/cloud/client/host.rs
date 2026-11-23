@@ -956,12 +956,20 @@ impl AnswerEvidence {
     }
 }
 
+fn floor_char_boundary(text: &str, mut offset: usize) -> usize {
+    offset = offset.min(text.len());
+    while !text.is_char_boundary(offset) {
+        offset -= 1;
+    }
+    offset
+}
+
 fn bounded_answer(text: &str) -> Option<String> {
     const TRUNCATED: &str = "\n\n[AgentX truncated this reply]";
     if text.trim().is_empty() {
         return None;
     }
-    let body = if text.len() > MAX_BODY_BYTES { format!("{}{TRUNCATED}", &text[..text.floor_char_boundary(MAX_BODY_BYTES - TRUNCATED.len())]) } else { text.to_owned() };
+    let body = if text.len() > MAX_BODY_BYTES { format!("{}{TRUNCATED}", &text[..floor_char_boundary(text, MAX_BODY_BYTES - TRUNCATED.len())]) } else { text.to_owned() };
     super::validate_message(&body).ok()?;
     Some(body)
 }
