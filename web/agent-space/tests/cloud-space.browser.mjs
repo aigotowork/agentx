@@ -277,6 +277,7 @@ try {
   transcripts.get(launched.incarnation).push({ id: '2', role: 'assistant', text: 'Checking the scoped notes.' });
   signalTranscript();
   await text(pane, 'Checking the scoped notes.');
+  assert(!await page.$eval(`${pane} .conversation-history`, node => node.textContent.includes('示例')));
   const progressReads = calls.slice(beforeProgress).filter(call => call.path.endsWith('/transcript'));
   assert(progressReads.length && progressReads.every(call => call.query.after === '1' && call.query.incarnation === launched.incarnation));
   await button('消息', pane);
@@ -428,7 +429,7 @@ try {
   assert(!nativeCalls.some(path => path.startsWith('/api/v1/admin/') || path.startsWith('/scopes/')));
   await native.close();
   assert.deepEqual(errors, []);
-  console.log('Cloud Space browser: shared App, role launch, real control receipts, message replay and reply, retained login, exact long identities, stop, older scope history and 320px reader.');
+  console.log('Cloud Space browser: shared App, role launch, real control receipts, message replay and reply, exact incremental transcript and Agent facts, retired paging and 320px reader.');
 } catch (error) {
   if (evidence) await page.screenshot({ path: join(evidence, 'cloud-space-failure.png') }).catch(() => {});
   throw new Error(`Cloud Space browser failed at ${stage} (${controls.length} controls, ${sends.length} sends)`, { cause: error });

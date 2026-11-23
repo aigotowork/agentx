@@ -8,6 +8,11 @@ const browser = await puppeteer.launch({executablePath: process.env.CHROME_BIN |
   args: ['--no-sandbox', '--no-proxy-server', '--disable-dev-shm-usage', '--ignore-certificate-errors-spki-list=' + process.env.SPACE_PIN]});
 try {
   const page = await browser.newPage();
+  const reads = [];
+  page.on('request', request => {
+    const { pathname } = new URL(request.url());
+    if (pathname.includes('/api/v1/')) reads.push(pathname.split('/').at(-1));
+  });
   await page.setViewport({ width: 1280, height: 800 });
   page.setDefaultTimeout(45000);
   const button = async label => {
@@ -19,6 +24,13 @@ try {
   await page.waitForSelector('.cloud-connect input');
   await page.type('.cloud-connect input', process.env.SPACE_TOKEN);
   await button('连接');
+  await page.waitForSelector('.space-new-agent');
+  await page.waitForFunction(() => performance.getEntriesByType('resource').some(entry => new URL(entry.name).pathname.endsWith('/hosts')));
+  const idle = reads.length;
+  await new Promise(resolve => setTimeout(resolve, 27_000));
+  const idleReads = reads.slice(idle);
+  assert(idleReads.every(resource => resource === 'changes') && idleReads.length <= 2, JSON.stringify(idleReads));
+  await writeFile(join(process.env.SPACE_EVIDENCE, 'idle-requests.json'), JSON.stringify({ seconds: 27, calls: idleReads }));
   await button('新建 Agent');
   await page.waitForSelector('dialog[open] option[value="acceptance"]');
   await page.select('[aria-label="新 Agent 岗位"]', 'acceptance');

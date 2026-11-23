@@ -76,7 +76,7 @@ export class CloudWorkbench {
           }
           const id = this.selected;
           const reader = id && this.readers.get(id);
-          if (reader && (reset || next.messages !== previous?.messages || reader.page.phase === 'error' || reader.page.live?.phase === 'error')) {
+          if (reader && (reset || next.messages !== previous?.messages || reader.page.phase === 'error' || reader.liveFailed)) {
             reader.incremental = true;
             await reader.update(signal, 'latest');
           }
@@ -230,6 +230,7 @@ export class CloudWorkbench {
     this.refreshMembers();
     this.retryCatalog();
     for (const id of this.desired) this.retryMessagesLive(id);
+    if (this.selected) void this.refreshTranscript(this.selected);
     void this.checkReceipts(this.signal);
   };
   private scheduleReceipts() {

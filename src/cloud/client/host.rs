@@ -211,6 +211,7 @@ fn headless_plan(root: &Path, workspace: &Path, directory: Option<&Path>, role: 
         workspace
     } else {
         canonical = workspace.canonicalize().context("resolve exported cloud workspace")?;
+        ensure!(canonical.is_dir(), "cloud launch directory is not a directory");
         &canonical
     };
     let flags = AgentxLaunchFlags {

@@ -222,9 +222,15 @@ def run(fixture, provision):
             "Reopening a pre-Space scope must establish the additive indexes without losing messages")
     require(operator_call("GET", query={**query, "limit": 2}) == sent_page and operator_call("POST", human_input) == human_message,
             "Restart must preserve both sides of the conversation and operator replay identity")
+    reopened = call("GET", "/changes", query={**change_query, "cursor": cursor})
+    require(reopened["epoch"] != revisions["epoch"], "A server restart invalidates an old change cursor")
+    cursor = ".".join(str(reopened[k]) for k in ("epoch", "roster", "messages", "transcript"))
     new_token = fixture.token()
-    fixture.expect("POST", fixture.admin + "/scopes/alpha/token-rotations", fixture.admin_token,
-                   {"request_id": str(uuid.uuid4()), "expected_version": 1, "token": new_token})
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        revoked = pool.submit(call, "GET", "/changes", query={**change_query, "cursor": cursor}, statuses=(401,))
+        fixture.expect("POST", fixture.admin + "/scopes/alpha/token-rotations", fixture.admin_token,
+                       {"request_id": str(uuid.uuid4()), "expected_version": 1, "token": new_token})
+        require(revoked.result(timeout=5)["code"] == "unauthorized", "A waiting member must be revoked on rotation")
     fixture.expect("GET", history, token, query=query, statuses=(401,))
     require(fixture.expect("GET", history, new_token, query={**query, "before": first_page["next"]}) == older,
             "Rotated bearer must see the same history for the same generation")

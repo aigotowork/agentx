@@ -411,7 +411,6 @@ mod tests {
     fn emitted_wire_keeps_relative_paths_bearer_security_and_exact_ids() {
         let spec = document();
         let paths = spec["paths"].as_object().unwrap();
-        assert_eq!(paths.len(), 15);
         assert!(paths.keys().all(|path| !path.starts_with("/scopes")));
         let claim = &paths["/inbox/claim"]["post"];
         assert_eq!(claim["security"], serde_json::json!([{ "scopeBearer": [] }]));

@@ -52,6 +52,7 @@ export class CloudHistory {
   constructor(readonly agent: CloudAgent, private session: Session, private changed: () => void, private failed: (error: unknown) => void) {}
 
   incremental = false;
+  get liveFailed() { return this.live.phase === "error"; }
   get page(): MessageReadPage {
     return { ...this.phase, mode: 'latest', more: this.next !== null, token: this.seeded ? this.token : undefined,
       arrivals: this.arrivals, older: this.older, live: this.live };

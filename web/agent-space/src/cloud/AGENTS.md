@@ -13,6 +13,7 @@ The scoped URL admits a bearer before mounting the same App, reader, composer, A
 | [model.ts](model.ts), [route.ts](route.ts) | Bind the SDK bearer to the same origin and map nonsecret host, name, incarnation and generation into shared navigation. Treat hosts as grouping, not native workspace membership. |
 | [workbench.ts](workbench.ts) | Project current registrations and independent exact readers into App. Use the host catalogue's aliases, roles and directory capability in the [shared launch dialog](../interactions/AgentCommands.tsx). Verify installation and exact registration before stop. |
 | [history.ts](history.ts), [operations.ts](operations.ts) | Keep older and live pages independent. Render authenticated durable messages and real cloud receipts; retain only control identities in session storage. Never automatically resubmit a write. |
+| [transcript.ts](transcript.ts) | Read the exact sanitized Codex projection, using a bounded latest page, independent older cursor and incremental watermark. Report host facts and keep record availability separate from the AgentX mailbox. |
 
 Scope bearer reads only. Admin can send text to a current exact registration and use the original receipt for control recovery. The accepted message ID is not a delivery acknowledgement. Retired registrations remain linkable when their exact histories remain available; never navigate to their replacements.
 

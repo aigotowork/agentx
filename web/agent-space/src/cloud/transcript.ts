@@ -32,7 +32,7 @@ async function page(session: Session, agent: CloudAgent, signal: AbortSignal, cu
 }
 
 function record(agent: CloudAgent, row: Page['items'][number]): HistoryRecord {
-  return { id: row.id, kind: 'message', role: row.role, text: row.text, at: '', author: row.role === 'assistant' ? exactLabel(agent) : '用户' };
+  return { id: row.id, kind: 'message', role: row.role, text: row.text, at: '', author: row.role === 'assistant' ? exactLabel(agent) : '用户', native: true };
 }
 
 /** One exact, bounded model reader: the initial tail, older pages and notification-driven additions share a scroll anchor. */
