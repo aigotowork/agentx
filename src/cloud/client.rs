@@ -414,6 +414,27 @@ impl Scope {
         ensure!(result.confirmed.iter().any(|id| id == message_id), "cloud confirmation omitted requested message {message_id}");
         Ok(())
     }
+
+    #[cfg(target_os = "linux")]
+    fn send_natural_reply(&self, actor: &Actor, request_id: String, message: &MessageView, body: String) -> Result<MessageView> {
+        let target = format!("@{}/{}", message.from.host, message.from.name);
+        let command = || {
+            Command::Send(SendMessage {
+                generation: actor.generation.clone(),
+                installation_id: actor.installation_id.clone(),
+                request_id: request_id.clone(),
+                from: actor.agent.clone(),
+                to: target.clone(),
+                body: body.clone(),
+                intent: Intent::Ack,
+                reply_to: Some(message.id.clone()),
+                thread: message.thread.clone(),
+            })
+        };
+        let sent: MessageView = retry_unknown(|| self.port.call(command()))?;
+        ensure!(sent.from == actor.agent && sent.to == message.from && sent.reply_to.as_deref() == Some(message.id.as_str()), "cloud natural reply returned an unrelated message");
+        Ok(sent)
+    }
 }
 
 #[cfg(target_os = "linux")]
@@ -710,7 +731,7 @@ fn listen_once(scope: &Scope, actor: &Actor, mailbox: &Mailbox, json: bool) -> R
         return Ok(false);
     }
     match &claim.phase {
-        Phase::ProviderIssuing(_) => return Ok(false),
+        Phase::ProviderIssuing(_) | Phase::NaturalReplying(_) => return Ok(false),
         Phase::ListenIssuing(_) => bail!("output for cloud claim {} is unresolved; it will not be printed again", claim.id),
         Phase::Reserved => {}
         _ => unreachable!("completed phases returned above"),

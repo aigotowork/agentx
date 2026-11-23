@@ -14,11 +14,6 @@ const DB_NAME: &str = "communication.sqlite3";
 const MESSAGE_HISTORY_INDEXES: &str = include_str!("store/message-history-indexes.sql");
 const LEASE_SECONDS: i64 = 60;
 const MESSAGE_COLUMNS: &str = "id,from_name,from_host,from_incarnation,to_name,to_host,to_incarnation,body,intent,reply_to,thread,created_at";
-// The reserved host and incarnation cannot pass member registration validation.
-const OPERATOR_HOST: &str = "~space";
-const OPERATOR_NAME: &str = "operator";
-const OPERATOR_INCARNATION: &str = "~human";
-
 fn operator() -> AgentView {
     AgentView { host: OPERATOR_HOST.into(), name: OPERATOR_NAME.into(), incarnation: OPERATOR_INCARNATION.into() }
 }
@@ -434,6 +429,10 @@ pub(super) fn send(conn: &Connection, now: i64, input: SendMessage) -> Result<Me
     }
     current_agent(conn, now, &input.from, &input.installation_id)?;
     let to = recipient(conn, &input.to, reply_to)?;
+    let natural = input.request_id.starts_with(NATURAL_REPLY_PREFIX);
+    if natural && (to.host != OPERATOR_HOST || input.intent != Intent::Ack || reply_to.is_none()) {
+        return Err(Error::Invalid("automatic reply requires an operator request"));
+    }
     if let Some(reply_id) = reply_to {
         let reverse: bool = conn.query_row(
             "SELECT EXISTS(SELECT 1 FROM messages WHERE id=?1 AND from_name=?2 AND from_incarnation=?3 AND to_name=?4 AND to_incarnation=?5)",
@@ -442,6 +441,22 @@ pub(super) fn send(conn: &Connection, now: i64, input: SendMessage) -> Result<Me
         )?;
         if !reverse {
             return Err(Error::NotFound("reply target does not belong to these exact participants"));
+        }
+        // A host may recover after an explicit Agent reply committed but before
+        // its local turn journal advanced. Treat the exact relation as the
+        // durable idempotency key so automatic natural forwarding cannot add a
+        // second answer when the tool's response was lost.
+        if natural {
+            let prior = conn
+                .query_row(
+                    &format!("SELECT {MESSAGE_COLUMNS} FROM messages WHERE reply_to=?1 AND to_host='~space' AND from_name=?2 AND from_host=?3 AND from_incarnation=?4 AND to_name=?5 AND to_incarnation=?6 ORDER BY id LIMIT 1"),
+                    params![reply_id, input.from.name, input.from.host, input.from.incarnation, to.name, to.incarnation],
+                    read_message,
+                )
+                .optional()?;
+            if let Some(message) = prior {
+                return Ok(message);
+            }
         }
     }
     insert_message(conn, now, &input.request_id, &fingerprint, NewMessage { from: input.from, to, body: input.body, intent: input.intent, reply_to, thread: input.thread })

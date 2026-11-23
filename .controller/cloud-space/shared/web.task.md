@@ -1,6 +1,6 @@
 ---
 schema: task
-status: active
+status: completed
 agents: [{"scope":"/home/long/works/longwork/agentx/.agentx","generation":"a6195a5b-1dd4-4a6d-87d4-1f18f1b664fb","participant":{"canonical_name":"salu","incarnation_bits":4745317318819039043}}]
 ---
 

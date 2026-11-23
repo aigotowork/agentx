@@ -15,8 +15,21 @@ use super::{Actor, Scope, read_json_file};
 pub(super) enum Phase {
     Reserved,
     ProviderIssuing(String),
+    NaturalReplying(NaturalReply),
     ListenIssuing(String),
     Confirming(String),
+}
+
+/// Durable fence for a provider turn that was started by an operator message.
+/// The turn ID is part of the recovery key so a later turn cannot publish an
+/// unrelated answer after the host restarts.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub(super) struct NaturalReply {
+    pub(super) message_id: String,
+    pub(super) thread_id: String,
+    pub(super) turn_id: String,
+    pub(super) body: Option<String>,
+    pub(super) failures: u8,
 }
 
 #[derive(Deserialize, Serialize)]

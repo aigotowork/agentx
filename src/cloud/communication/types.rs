@@ -4,8 +4,12 @@ use utoipa::{IntoParams, ToSchema};
 pub(super) const DIRECTORY_LIMIT: u32 = 200;
 pub(super) const BATCH_LIMIT: u32 = 100;
 pub(super) const MAX_WAIT_MS: u32 = 20_000;
-pub(super) const MAX_BODY_BYTES: usize = 64 * 1024;
+pub(in crate::cloud) const MAX_BODY_BYTES: usize = 64 * 1024;
 pub(super) const MAX_BATCH_BODY_BYTES: usize = 1024 * 1024;
+pub(in crate::cloud) const NATURAL_REPLY_PREFIX: &str = "space-final:";
+pub(in crate::cloud) const OPERATOR_HOST: &str = "~space";
+pub(in crate::cloud) const OPERATOR_NAME: &str = "operator";
+pub(in crate::cloud) const OPERATOR_INCARNATION: &str = "~human";
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub(in crate::cloud) struct Descriptor {

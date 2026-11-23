@@ -27,8 +27,10 @@ Space writes `generation` with the exact selection query to keep copied links ti
 
 Implementation shape: `cloud::space` owns finite HTML/asset routing and response policies, `cloud::communication` owns the GET method and its typed query, and `communication::store` owns an indexed read ordered by message ID. Existing scope databases need additive sender/recipient indexes so a sparse history page does not scan the mailbox. Deployment initialization upgrades these indexes while it owns the catalog lock; no data or protocol epoch changes. The Deployment scope header owns a single same-origin navigation link and reuses the active visual tokens.
 
-Considered and excluded: accepting admin tokens on member paths (would broaden admin admission to message bodies), reusing inbox claims for paging (would mutate delivery state), and issuing a browser Agent identity (would misstate human authority).
+Member and operator routes authenticate their own bearer. Browsing history uses a side-effect-free read. The browser sends on behalf of the authenticated operator.
 
 ## Operator conversation for the shared Space
 
 The deployment admin client reads and writes `/api/v1/admin/scopes/{id}/messages`. GET takes the same exact selection, generation and cursor as scope history. POST takes `{generation,request_id,to:{host,name,incarnation},body}` and returns the persisted MessageView. The server supplies the operator identity, fences the destination, and deduplicates exact retries. A successful write means accepted into the target mailbox. An Agent response is another persisted message from that exact instance. A lost response can be reconciled by replaying the original body and request ID. The browser never retries an ambiguous write under a new ID automatically.
+
+The cloud Agent host forwards the visible final answer of a completed Codex turn to the operator who initiated it. The host matches the thread, turn and recorded user input before sending an acknowledgement linked by `reply_to`. An already persisted explicit reply to that request satisfies automatic forwarding. Hidden reasoning and tool output stay on the host. Replies exceeding the message limit are truncated at a UTF-8 boundary and marked. New cloud Agents need the updated host executable for automatic replies. Previously launched processes keep their original behavior.

@@ -53,6 +53,32 @@ fn scenario() -> (tempfile::TempDir, AgentView, AgentView) {
 }
 
 #[test]
+fn natural_reply_replays_or_defers_to_the_exact_explicit_answer() {
+    let (root, luna, nova) = scenario();
+    let root = root.path();
+    let ask = |id: &str| apply(root, |db, now| send_human_message(db, now, SendHumanMessage { generation: GEN.into(), request_id: id.into(), to: luna.clone(), body: "Answer me".into() })).unwrap();
+    let send_reply = |actor: &AgentView, request_id: &str, reference: &str, body: &str| {
+        let mut reply = send_input(actor, "@~space/operator", request_id);
+        reply.intent = Intent::Ack;
+        reply.reply_to = Some(reference.into());
+        reply.body = body.into();
+        apply(root, |db, now| send(db, now, reply))
+    };
+
+    let first = ask("first");
+    let explicit = send_reply(&luna, "reply-tool", &first.id, "Explicit result").unwrap();
+    assert_eq!(send_reply(&luna, "space-final:first", &first.id, "Generated result").unwrap(), explicit);
+    assert!(matches!(send_reply(&nova, "space-final:wrong-agent", &first.id, "Wrong sender"), Err(Error::NotFound(_))));
+
+    let second = ask("second");
+    let natural = send_reply(&luna, "space-final:second", &second.id, "Generated result").unwrap();
+    assert_eq!(send_reply(&luna, "space-final:second", &second.id, "Generated result").unwrap(), natural);
+    assert!(matches!(send_reply(&luna, "space-final:second", &second.id, "Changed replay"), Err(Error::Conflict(_))));
+    let history = apply(root, |db, _| list_messages(db, MessageHistoryQuery { generation: GEN.into(), host: luna.host.clone(), name: luna.name.clone(), incarnation: luna.incarnation.clone(), before: None, limit: None })).unwrap();
+    assert_eq!(history.items, [natural, second, explicit, first]);
+}
+
+#[test]
 fn offline_target_keeps_its_name_and_mailbox_then_replies_from_its_exact_host() {
     let (root, luna, nova) = scenario();
     let root = root.path();
