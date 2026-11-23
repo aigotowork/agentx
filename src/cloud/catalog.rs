@@ -30,10 +30,20 @@ struct ScopeSignals {
     control: tokio::sync::watch::Sender<()>,
 }
 
+struct DeploymentLease(std::fs::File);
+
+impl Drop for DeploymentLease {
+    fn drop(&mut self) {
+        // A concurrent fork can briefly retain the open file description after close.
+        // Release ownership explicitly so a successor can open the catalog immediately.
+        let _ = self.0.unlock();
+    }
+}
+
 pub(super) struct Catalog {
     db: Connection,
     pub(super) deployment_id: String,
-    _lease: std::fs::File,
+    _lease: DeploymentLease,
     root: PathBuf,
     url: String,
     signals: std::collections::HashMap<String, ScopeSignals>,
@@ -45,6 +55,7 @@ impl Catalog {
         let root = root.canonicalize()?;
         let lease = std::fs::OpenOptions::new().read(true).write(true).create(true).truncate(false).open(root.join("deployment.lock"))?;
         lease.try_lock().map_err(|_| anyhow::anyhow!("cloud deployment directory is already owned"))?;
+        let lease = DeploymentLease(lease);
         private_dir(&root.join("scopes"))?;
         let db = Connection::open(root.join("deployment.sqlite3"))?;
         db.execute_batch(
@@ -185,6 +196,22 @@ impl Catalog {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(unix)]
+    #[test]
+    fn fork_inherited_descriptor_does_not_extend_deployment_ownership() {
+        let directory = tempfile::tempdir().unwrap();
+        let open = || Catalog::open(directory.path(), "https://cloud.example".into());
+        let owner = open().unwrap();
+        // dup and fork share the same underlying open file description on Unix.
+        let inherited = owner._lease.0.try_clone().unwrap();
+        assert!(open().is_err());
+        drop(owner);
+        let successor = open().unwrap();
+        drop(inherited);
+        assert!(open().is_err());
+        drop(successor);
+    }
 
     #[test]
     fn interrupted_provisioning_and_origin_change_keep_one_scope_and_original_receipt() {
