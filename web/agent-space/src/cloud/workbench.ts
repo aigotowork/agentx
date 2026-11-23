@@ -78,7 +78,7 @@ export class CloudWorkbench {
           const reader = id && this.readers.get(id);
           if (reader && (reset || next.messages !== previous?.messages || reader.page.phase === 'error' || reader.liveFailed)) {
             reader.incremental = true;
-            await reader.update(signal, 'latest');
+            await reader.update(signal, 'latest', true);
           }
           if (id && !signal.aborted && (reset || next.transcript !== previous?.transcript)) await this.refreshTranscript(id, signal);
         }, error => { this.failure(error); this.emit(); return this.connection === 'reset'; }, () => {

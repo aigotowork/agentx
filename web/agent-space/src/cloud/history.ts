@@ -81,13 +81,14 @@ export class CloudHistory {
     this.seeded = true;
     this.phase = { phase: 'ready' };
   }
-  async update(signal: AbortSignal, mode: 'latest' | 'older') {
+  async update(signal: AbortSignal, mode: 'latest' | 'older', invalidated = false) {
     if (signal.aborted) return;
     if (mode === 'older' && this.seeded) return this.read(signal, mode);
     const pending = this.latestRead;
     if (pending) {
       await pending.done;
-      if (pending.signal.aborted) await this.update(signal, 'latest');
+      // An invalidation may have committed after the in-flight read took its snapshot.
+      if (invalidated || pending.signal.aborted) await this.update(signal, 'latest');
       return;
     }
     const done = Promise.resolve().then(() => this.read(signal, 'latest'));
