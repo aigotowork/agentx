@@ -152,84 +152,18 @@ pub fn fetch_update_info() -> anyhow::Result<UpdateInfo> {
     Ok(UpdateInfo { current, latest, available: latest_version > current_version })
 }
 
-/// Structured argv preserves spaces in Python paths and avoids shell parsing.
-#[derive(Debug)]
-pub(crate) struct PackageUpdate {
-    pub program: PathBuf,
-    pub args: Vec<String>,
-    pub env: Vec<(&'static str, PathBuf)>,
-    pub park_entrypoint: Option<PathBuf>,
-    pub verify_exe: Option<PathBuf>,
-}
-impl PackageUpdate {
-    pub fn command(&self) -> Command {
-        let mut cmd = Command::new(&self.program);
-        cmd.args(&self.args);
-        for (key, value) in &self.env {
-            cmd.env(key, value);
-        }
-        cmd
-    }
-
-    pub fn execute(&self, mut command: Command) -> anyhow::Result<()> {
-        use anyhow::Context;
-
-        // Older uv releases copy over the Windows entrypoint in place. Park
-        // that image first; running agents keep using the renamed binary.
-        let parked = if let Some(entry) = self.park_entrypoint.as_ref().filter(|p| p.is_file()) {
-            let parent = entry.parent().ok_or_else(|| anyhow::anyhow!("Entrypoint has no parent"))?;
-            // Prepare an unmapped copy before parking, so agentx stays available
-            // to hooks while uv resolves/downloads the upgraded package.
-            let copy = tempfile::NamedTempFile::new_in(parent)?;
-            fs::copy(entry, copy.path())?;
-            if let Some(parent) = entry.parent()
-                && let Ok(entries) = fs::read_dir(parent)
-            {
-                for old in entries.flatten() {
-                    if old.file_name().to_string_lossy().starts_with("agentx.exe.update-old-") && old.path().is_file() {
-                        let _ = fs::remove_file(old.path());
-                    }
-                }
-            }
-            let backup = entry.with_file_name(format!("agentx.exe.update-old-{}", uuid::Uuid::new_v4()));
-            fs::rename(entry, &backup).with_context(|| format!("Could not park {}", entry.display()))?;
-            if let Err(error) = copy.persist(entry) {
-                fs::rename(&backup, entry)?;
-                return Err(error.error.into());
-            }
-            Some((entry, backup))
-        } else {
-            None
-        };
-        let mut result = command.status().context("Could not run package manager").and_then(|status| {
-            anyhow::ensure!(status.success(), "Package manager failed (exit {})", status.code().unwrap_or(-1));
-            Ok(())
-        });
-        if let Some((entry, backup)) = parked {
-            if result.is_ok() && !entry.is_file() {
-                result = Err(anyhow::anyhow!("Package manager did not recreate {}", entry.display()));
-            }
-            if result.is_ok() {
-                let _ = fs::remove_file(&backup);
-            } else {
-                fs::rename(&backup, entry).with_context(|| format!("Could not restore the previous entrypoint; it is at {}", backup.display()))?;
-            }
-        }
-        result
-    }
-}
-#[derive(Debug)]
-pub(crate) enum UpdateMethod {
-    Installer,
-    Package(PackageUpdate),
+/// GitHub updates may replace standalone executables only. Legacy installation
+/// metadata is read locally so we never overwrite files owned by another tool.
+pub(crate) fn ensure_standalone_install(exe: &Path) -> anyhow::Result<()> {
+    ensure_standalone_install_with_uv_dirs(exe, &uv_tool_dirs())
 }
 
-pub(crate) fn update_method() -> anyhow::Result<UpdateMethod> {
-    update_method_for_exe(&std::env::current_exe()?, &uv_tool_dirs())
-}
-
-fn manager_program(name: &str) -> anyhow::Result<PathBuf> {
-    crate::runtime::terminal::which_bin(name).map(PathBuf::from).ok_or_else(|| anyhow::anyhow!("This installation requires {name}, but it is not available on PATH"))
+fn ensure_standalone_install_with_uv_dirs(exe: &Path, uv_dirs: &[PathBuf]) -> anyhow::Result<()> {
+    let resolved = fs::canonicalize(exe)?;
+    let prefix = resolved.parent().and_then(Path::parent);
+    let managed = resolved.components().any(|part| part.as_os_str() == "Cellar") || prefix.is_some_and(|path| path.join("pyvenv.cfg").is_file()) || uv_owns_exe(&resolved, uv_dirs) || pip_owns_exe(&resolved);
+    anyhow::ensure!(!managed, "This AgentX executable is managed by another installer: {}. Install a standalone copy from https://github.com/aigotowork/agentx/releases/latest and switch your PATH to it.", resolved.display());
+    Ok(())
 }
 
 fn uv_tool_dirs() -> Vec<PathBuf> {
@@ -247,124 +181,29 @@ fn uv_tool_dirs() -> Vec<PathBuf> {
     if let Some(home) = dirs::home_dir() {
         dirs.push(home.join(".local/share/uv/tools"));
     }
-    if let Some(program) = crate::runtime::terminal::which_bin("uv") {
-        let mut cmd = Command::new(program);
-        hide_console(&mut cmd);
-        if let Ok(output) = cmd.args(["tool", "dir"]).stdin(Stdio::null()).output()
-            && output.status.success()
-        {
-            let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            if !path.is_empty() {
-                dirs.push(path.into());
-            }
-        }
-    }
     dirs
-}
-
-fn update_method_for_exe(exe: &Path, uv_dirs: &[PathBuf]) -> anyhow::Result<UpdateMethod> {
-    let resolved = fs::canonicalize(exe).unwrap_or_else(|_| exe.to_path_buf());
-    let path = resolved.to_string_lossy().replace('\\', "/");
-    if path.contains("/Cellar/") {
-        return Ok(UpdateMethod::Package(PackageUpdate {
-            program: manager_program("brew")?,
-            args: vec!["upgrade".into(), "agentx".into()],
-            env: vec![],
-            park_entrypoint: None,
-            verify_exe: resolved.ancestors().find(|p| p.file_name().is_some_and(|n| n == "Cellar")).and_then(Path::parent).map(|p| p.join("bin/agentx")),
-        }));
-    }
-    if let Some((tool_dir, bin_dir)) = uv_owner(&resolved, uv_dirs)? {
-        return Ok(UpdateMethod::Package(PackageUpdate {
-            program: manager_program("uv")?,
-            args: vec!["tool".into(), "upgrade".into(), "agentx".into()],
-            env: vec![("UV_TOOL_DIR", tool_dir), ("UV_TOOL_BIN_DIR", bin_dir.clone())],
-            park_entrypoint: if cfg!(windows) { Some(bin_dir.join("agentx.exe")) } else { None },
-            verify_exe: Some(bin_dir.join(if cfg!(windows) { "agentx.exe" } else { "agentx" })),
-        }));
-    }
-    if let Some(owner) = pip_owner(&resolved) {
-        return Ok(UpdateMethod::Package(pip_update(&owner)?));
-    }
-    // An unidentified Python environment must not silently become unmanaged.
-    if resolved.parent().and_then(Path::parent).is_some_and(|p| p.join("pyvenv.cfg").is_file()) {
-        anyhow::bail!("Could not identify the package manager owning {}; update it through its Python environment", exe.display());
-    }
-    Ok(UpdateMethod::Installer)
 }
 
 fn same_path(a: &Path, b: &Path) -> bool {
     matches!((fs::canonicalize(a), fs::canonicalize(b)), (Ok(a), Ok(b)) if a == b)
 }
 
-// uv copies executables on some Windows installs. Check the receipt and bytes
-// so stale metadata cannot claim a later direct installation.
-fn same_binary(a: &Path, b: &Path) -> bool {
-    use std::io::Read;
-    if same_path(a, b) {
-        return true;
-    }
-    let (Ok(mut a), Ok(mut b)) = (fs::File::open(a), fs::File::open(b)) else {
-        return false;
-    };
-    if !matches!((a.metadata(), b.metadata()), (Ok(a), Ok(b)) if a.len() == b.len()) {
-        return false;
-    }
-    let (mut left, mut right) = ([0u8; 65536], [0u8; 65536]);
-    loop {
-        let (Ok(n), Ok(m)) = (a.read(&mut left), b.read(&mut right)) else {
+// uv may copy the executable to a separate bin directory. Its receipt claims
+// the destination even when the bytes subsequently changed.
+fn uv_owns_exe(exe: &Path, dirs: &[PathBuf]) -> bool {
+    dirs.iter().any(|dir| {
+        let Ok(receipt) = fs::read_to_string(dir.join("agentx/uv-receipt.toml")) else {
             return false;
-        };
-        if n != m || left[..n] != right[..m] {
-            return false;
-        }
-        if n == 0 {
-            return true;
-        }
-    }
-}
-
-fn uv_owner(exe: &Path, dirs: &[PathBuf]) -> anyhow::Result<Option<(PathBuf, PathBuf)>> {
-    let Some(root) = exe.parent().and_then(Path::parent) else {
-        return Ok(None);
-    };
-    let candidates = std::iter::once(root.to_path_buf()).chain(dirs.iter().map(|d| d.join("agentx")));
-    for root in candidates {
-        let Ok(receipt) = fs::read_to_string(root.join("uv-receipt.toml")) else {
-            continue;
         };
         let Ok(receipt) = toml::from_str::<toml::Value>(&receipt) else {
-            continue;
+            return false;
         };
-        let Some(entries) = receipt.get("tool").and_then(|v| v.get("entrypoints")).and_then(|v| v.as_array()) else {
-            continue;
-        };
-        for entry in entries {
-            if entry.get("from").and_then(|v| v.as_str()) != Some("agentx") {
-                continue;
-            }
-            let Some(installed) = entry.get("install-path").and_then(|v| v.as_str()).map(PathBuf::from) else {
-                continue;
-            };
-            let Some(binary) = [root.join("Scripts/agentx.exe"), root.join("bin/agentx")].into_iter().find(|p| p.is_file()) else {
-                continue;
-            };
-            if same_path(exe, &binary) || (same_path(exe, &installed) && same_binary(exe, &binary)) {
-                if let (Some(tools), Some(bin)) = (root.parent(), installed.parent()) {
-                    return Ok(Some((tools.to_path_buf(), bin.to_path_buf())));
-                }
-            } else if same_path(exe, &installed) {
-                anyhow::bail!("The uv receipt owns {}, but it differs from the managed binary. Repair it with `uv tool install --reinstall agentx` or remove the stale uv installation", exe.display());
-            }
-        }
-    }
-    Ok(None)
-}
-
-#[derive(Debug)]
-struct PipOwner {
-    site: PathBuf,
-    scripts: PathBuf,
+        receipt
+            .get("tool")
+            .and_then(|v| v.get("entrypoints"))
+            .and_then(|v| v.as_array())
+            .is_some_and(|entries| entries.iter().any(|entry| entry.get("from").and_then(|v| v.as_str()) == Some("agentx") && entry.get("install-path").and_then(|v| v.as_str()).is_some_and(|installed| same_path(exe, Path::new(installed)))))
+    })
 }
 
 fn record_path(line: &str) -> Option<String> {
@@ -399,12 +238,11 @@ fn site_owns_exe(site: &Path, exe: &Path) -> bool {
     })
 }
 
-fn pip_owner(exe: &Path) -> Option<PipOwner> {
-    let scripts = exe.parent()?;
-    let prefix = scripts.parent()?;
-    let name = scripts.file_name()?.to_str()?;
+fn pip_owns_exe(exe: &Path) -> bool {
+    let Some(scripts) = exe.parent() else { return false };
+    let (Some(prefix), Some(name)) = (scripts.parent(), scripts.file_name().and_then(|n| n.to_str())) else { return false };
     if name != "bin" && !name.eq_ignore_ascii_case("scripts") {
-        return None;
+        return false;
     }
     let mut sites = vec![prefix.join("Lib/site-packages"), prefix.join("site-packages")];
     for lib in [prefix.join("lib"), prefix.join("lib64")] {
@@ -415,83 +253,7 @@ fn pip_owner(exe: &Path) -> Option<PipOwner> {
             }
         }
     }
-    sites.into_iter().find(|site| site_owns_exe(site, exe)).map(|site| PipOwner { site, scripts: scripts.to_path_buf() })
-}
-
-const PYTHON_PATH_QUERY: &str = "import json,sys,sysconfig,site; print(json.dumps({'executable':sys.executable,'sites':[sysconfig.get_path('purelib'),sysconfig.get_path('platlib')],'user':site.getusersitepackages()}))";
-
-fn pip_update(owner: &PipOwner) -> anyhow::Result<PackageUpdate> {
-    let prefix = owner.scripts.parent().ok_or_else(|| anyhow::anyhow!("Python installation has no prefix"))?;
-    // Preserve virtualenv Python symlinks; resolving them changes the environment.
-    let version = owner.site.parent().and_then(Path::file_name).and_then(|n| n.to_str()).and_then(|n| n.strip_prefix("python"));
-    let mut local = vec![owner.scripts.join("python.exe"), prefix.join("python.exe")];
-    if let Some(version) = version {
-        local.push(owner.scripts.join(format!("python{version}")));
-    }
-    local.extend([owner.scripts.join("python3"), owner.scripts.join("python")]);
-    if (prefix.join("pyvenv.cfg").is_file() || same_path(&owner.site, &prefix.join("Lib/site-packages")))
-        && let Some(python) = local.iter().find(|p| p.is_file())
-    {
-        return Ok(pip_command(python.clone(), false));
-    }
-    // User installs have no adjacent Python. Verify the actual interpreter's
-    // install scheme matches the site whose RECORD owns this executable.
-    let hint = python_version_hint(&owner.site);
-    let mut probes = vec!["python3".to_string(), "python".to_string(), "py".to_string()];
-    if let Some(hint) = &hint {
-        probes.insert(0, format!("python{hint}"));
-    }
-    let mut candidates: Vec<(PathBuf, Option<String>)> = local.into_iter().filter(|p| p.is_file()).map(|p| (p, None)).collect();
-    for name in probes {
-        if let Some(program) = crate::runtime::terminal::which_bin(&name) {
-            candidates.push((program.into(), if name == "py" { hint.as_ref().map(|h| format!("-{h}")) } else { None }));
-        }
-    }
-    for (program, selector) in candidates {
-        let mut cmd = Command::new(program);
-        hide_console(&mut cmd);
-        if let Some(selector) = selector {
-            cmd.arg(selector);
-        }
-        let Ok(output) = cmd.args(["-c", PYTHON_PATH_QUERY]).stdin(Stdio::null()).output() else {
-            continue;
-        };
-        if !output.status.success() {
-            continue;
-        }
-        let Ok(paths) = serde_json::from_slice::<serde_json::Value>(&output.stdout) else {
-            continue;
-        };
-        let user = paths.get("user").and_then(|v| v.as_str()).is_some_and(|p| same_path(Path::new(p), &owner.site));
-        let normal = paths.get("sites").and_then(|v| v.as_array()).is_some_and(|sites| sites.iter().filter_map(|v| v.as_str()).any(|p| same_path(Path::new(p), &owner.site)));
-        if (user || normal)
-            && let Some(python) = paths.get("executable").and_then(|v| v.as_str())
-        {
-            return Ok(pip_command(python.into(), user));
-        }
-    }
-    anyhow::bail!("Could not find the Python owning {}; update agentx with that interpreter's pip", owner.site.display())
-}
-
-fn python_version_hint(site: &Path) -> Option<String> {
-    let name = site.parent()?.file_name()?.to_str()?.to_ascii_lowercase();
-    let version = name.strip_prefix("python")?;
-    if version.contains('.') {
-        return Some(version.to_string());
-    }
-    let mut digits = version.chars();
-    let major = digits.next()?;
-    let minor: String = digits.collect();
-    if major.is_ascii_digit() && !minor.is_empty() && minor.chars().all(|c| c.is_ascii_digit()) { Some(format!("{major}.{minor}")) } else { None }
-}
-
-fn pip_command(python: PathBuf, user: bool) -> PackageUpdate {
-    let mut args = vec!["-m".into(), "pip".into(), "install".into(), "-U".into()];
-    if user {
-        args.push("--user".into());
-    }
-    args.push("agentx".into());
-    PackageUpdate { program: python, args, env: vec![], park_entrypoint: None, verify_exe: None }
+    sites.into_iter().any(|site| site_owns_exe(&site, exe))
 }
 
 pub(crate) fn windows_installer_program() -> String {
@@ -527,10 +289,6 @@ pub fn get_update_info() -> Option<(String, &'static str)> {
     Some((latest, "agentx update"))
 }
 
-pub(crate) fn version_reached(actual: &str, required: &str) -> bool {
-    matches!((parse_version(actual), parse_version(required)), (Some(actual), Some(required)) if actual >= required)
-}
-
 pub fn get_update_notice() -> Option<String> {
     let (latest, _) = get_update_info()?;
     Some(format!("→ agentx v{latest} available — run `agentx update`"))
@@ -547,9 +305,6 @@ mod tests {
             assert_eq!(published_version(body), None);
         }
         assert_eq!(parse_version("1.2.3.4"), None);
-        assert!(version_reached("0.7.29", "0.7.29"));
-        assert!(!version_reached("0.7.28", "0.7.29"));
-        assert!(!version_reached("invalid", "0.7.29"));
         assert_eq!(version_from_release_url("https://github.com/aigotowork/agentx/releases/tag/v0.7.29"), Some("0.7.29".into()));
         assert_eq!(version_from_release_url("https://github.com/aigotowork/agentx/releases/tag/v0.8.0-rc1"), None);
     }
@@ -583,168 +338,29 @@ mod tests {
     }
 
     #[test]
-    fn pip_targets_the_owning_venv_even_without_activation() {
+    fn standalone_updates_refuse_legacy_owned_files() {
         let tmp = tempfile::tempdir().unwrap();
-        let prefix = tmp.path().join("arbitrary environment with spaces");
-        let exe = pip_fixture(&prefix, "Scripts", "Lib/site-packages", "../../Scripts/agentx.exe,sha256=test,6\n");
-        let python = prefix.join("Scripts/python.exe");
-        fs::write(&python, b"interpreter").unwrap();
-        let UpdateMethod::Package(update) = update_method_for_exe(&exe, &[]).unwrap() else { panic!("not a package install") };
-        // Canonicalizing the installed binary must not change the selected
-        // interpreter or route the upgrade through an unrelated PATH pip.
-        assert!(same_path(&update.program, &python));
-        assert_eq!(update.args, ["-m", "pip", "install", "-U", "agentx"]);
-    }
-
-    #[test]
-    fn pip_user_and_termux_records_identify_the_executable() {
-        let tmp = tempfile::tempdir().unwrap();
-        let user = pip_fixture(&tmp.path().join("Python313"), "Scripts", "site-packages", "../Scripts/agentx.exe,sha256=test,6\n");
-        assert!(pip_owner(&user).is_some());
-        assert_eq!(python_version_hint(&tmp.path().join("Python313/site-packages")), Some("3.13".into()));
-        let termux = pip_fixture(&tmp.path().join("usr"), "bin", "lib/python3.13/site-packages", "../../../bin/agentx,sha256=test,6\n");
-        assert!(pip_owner(&termux).is_some());
-        fs::write(tmp.path().join("Python313/site-packages/agentx-0.7.29.dist-info/RECORD"), "../Scripts/other.exe,sha256=test,6\n").unwrap();
-        assert!(pip_owner(&user).is_none());
-        assert_eq!(record_path("\"../bin/with,comma\",hash,6"), Some("../bin/with,comma".into()));
-    }
-
-    #[test]
-    fn uv_receipt_recognizes_custom_directories_and_windows_copies() {
-        let tmp = tempfile::tempdir().unwrap();
-        let tools = tmp.path().join("custom tools");
-        let root = tools.join("agentx");
-        let binary = root.join("Scripts/agentx.exe");
-        let installed = tmp.path().join("custom bin/agentx.exe");
-        fs::create_dir_all(binary.parent().unwrap()).unwrap();
-        fs::create_dir_all(installed.parent().unwrap()).unwrap();
-        fs::write(&binary, b"uv binary").unwrap();
-        fs::copy(&binary, &installed).unwrap();
-        fs::write(root.join("uv-receipt.toml"), format!("[tool]\nentrypoints = [{{ name = 'agentx', from = 'agentx', install-path = '{}' }}]\n", installed.to_string_lossy().replace('\\', "/"))).unwrap();
-        assert_eq!(uv_owner(&binary, &[]).unwrap(), Some((tools.clone(), installed.parent().unwrap().to_path_buf())));
-        assert_eq!(uv_owner(&installed, std::slice::from_ref(&tools)).unwrap(), Some((tools.clone(), installed.parent().unwrap().to_path_buf())));
-        fs::write(&installed, b"unrelated direct binary").unwrap();
-        assert!(uv_owner(&installed, &[tools]).is_err());
-    }
-
-    #[test]
-    fn unowned_python_environment_is_not_replaced_by_the_installer() {
-        let tmp = tempfile::tempdir().unwrap();
-        let exe = tmp.path().join("Scripts/agentx.exe");
-        fs::create_dir_all(exe.parent().unwrap()).unwrap();
-        fs::write(&exe, b"binary").unwrap();
-        fs::write(tmp.path().join("pyvenv.cfg"), "home = unknown").unwrap();
-        assert!(update_method_for_exe(&exe, &[]).is_err());
-    }
-
-    #[test]
-    fn package_manager_launch_failure_restores_parked_entrypoint() {
-        let tmp = tempfile::tempdir().unwrap();
-        let entry = tmp.path().join("agentx.exe");
-        fs::write(&entry, b"old executable").unwrap();
-        let update = PackageUpdate { program: tmp.path().join("missing-manager.exe"), args: vec![], env: vec![], park_entrypoint: Some(entry.clone()), verify_exe: None };
-        assert!(update.execute(update.command()).is_err());
-        assert_eq!(fs::read(&entry).unwrap(), b"old executable");
-        assert_eq!(fs::read_dir(tmp.path()).unwrap().count(), 1);
-    }
-
-    #[cfg(windows)]
-    #[test]
-    fn failed_upgrade_keeps_entrypoint_available_and_restores_partial_copy() {
-        let tmp = tempfile::tempdir().unwrap();
-        let entry = tmp.path().join("agentx.exe");
-        fs::write(&entry, b"old executable").unwrap();
-        let update = PackageUpdate { program: windows_installer_program().into(), args: vec![], env: vec![], park_entrypoint: Some(entry.clone()), verify_exe: None };
-        let mut command = update.command();
-        command
-            .args(["-NoProfile", "-Command", "if (-not (Test-Path -LiteralPath $env:AGENTX_UPDATE_TEST_ENTRY)) { exit 14 }; Set-Content -LiteralPath $env:AGENTX_UPDATE_TEST_ENTRY -Value partial; exit 13"])
-            .env_remove("PSModulePath")
-            .env("AGENTX_UPDATE_TEST_ENTRY", &entry);
-        let error = update.execute(command).unwrap_err();
-        assert!(error.to_string().contains("exit 13"), "{error:#}");
-        assert_eq!(fs::read(&entry).unwrap(), b"old executable");
-        assert_eq!(fs::read_dir(tmp.path()).unwrap().count(), 1);
-    }
-
-    #[cfg(windows)]
-    #[test]
-    #[ignore = "creates isolated pip/uv installations and upgrades a running executable using local wheels"]
-    fn live_package_managers_upgrade_running_windows_binary() {
-        use std::io::BufRead;
-
-        let python = manager_program("python").unwrap();
-        let uv = manager_program("uv").unwrap();
-        for manager in ["pip", "uv"] {
-            let tmp = tempfile::tempdir().unwrap();
-            let wheels = tmp.path().join("wheels");
-            fs::create_dir_all(&wheels).unwrap();
-            build_fixture_wheel(&python, &wheels, "0.0.1");
-            let tools = tmp.path().join("custom tools");
-            let bin = tmp.path().join("custom bin");
-            let exe = if manager == "pip" {
-                let venv = tmp.path().join("unactivated pip environment");
-                assert!(Command::new(&python).args(["-m", "venv"]).arg(&venv).status().unwrap().success());
-                assert!(Command::new(venv.join("Scripts/python.exe")).args(["-m", "pip", "install", "--no-index", "--find-links"]).arg(&wheels).arg("agentx").status().unwrap().success());
-                venv.join("Scripts/agentx.exe")
-            } else {
-                assert!(
-                    Command::new(&uv)
-                        .args(["tool", "install", "--no-index", "--find-links"])
-                        .arg(&wheels)
-                        .arg("--python")
-                        .arg(&python)
-                        .arg("agentx")
-                        .env("UV_TOOL_DIR", &tools)
-                        .env("UV_TOOL_BIN_DIR", &bin)
-                        .env("UV_CACHE_DIR", tmp.path().join("uv-cache"))
-                        .env("UV_PYTHON_DOWNLOADS", "never")
-                        .status()
-                        .unwrap()
-                        .success()
-                );
-                bin.join("agentx.exe")
-            };
-            build_fixture_wheel(&python, &wheels, "0.0.2");
-            let UpdateMethod::Package(update) = update_method_for_exe(&exe, std::slice::from_ref(&tools)).unwrap() else { panic!("not a managed installation") };
-            let mut child = Command::new(&exe).args(["--exact", "commands::update::tests::hold_running_binary", "--ignored", "--nocapture"]).env("AGENTX_TEST_HOLD_BINARY", "1").stdin(Stdio::piped()).stdout(Stdio::piped()).spawn().unwrap();
-            let mut stdout = std::io::BufReader::new(child.stdout.take().unwrap());
-            for line in (&mut stdout).lines() {
-                if line.unwrap().contains("holding binary") {
-                    break;
-                }
-            }
-            let mut command = update.command();
-            command.env("PIP_NO_INDEX", "1").env("PIP_FIND_LINKS", &wheels).env("UV_NO_INDEX", "1").env("UV_FIND_LINKS", &wheels).env("UV_CACHE_DIR", tmp.path().join("uv-cache")).env("UV_PYTHON_DOWNLOADS", "never");
-            let result = update.execute(command);
-            drop(child.stdin.take());
-            assert!(child.wait().unwrap().success());
-            result.unwrap();
-            assert!(fs::read(&exe).unwrap().ends_with(b"fixture version:0.0.2"));
-            println!("{manager}: upgraded the running executable in its owning installation");
+        let ordinary = tmp.path().join("standalone/agentx");
+        let brew = tmp.path().join("Cellar/agentx/0.7.29/bin/agentx");
+        let venv = tmp.path().join("custom venv/Scripts/agentx.exe");
+        let uv = tmp.path().join("custom bin/agentx.exe");
+        let pip = pip_fixture(&tmp.path().join("Python313"), "Scripts", "site-packages", "../Scripts/agentx.exe,sha256=test,6\n");
+        for file in [&ordinary, &brew, &venv, &uv] {
+            fs::create_dir_all(file.parent().unwrap()).unwrap();
+            fs::write(file, b"existing binary").unwrap();
         }
-    }
-
-    #[cfg(windows)]
-    fn build_fixture_wheel(python: &Path, wheels: &Path, version: &str) {
-        const BUILD_WHEEL: &str = r#"
-import csv, io, pathlib, sys, zipfile
-payload, directory, version = sys.argv[1:]
-dist = f'agentx-{version}.dist-info'
-files = {
-    f'agentx-{version}.data/scripts/agentx.exe': pathlib.Path(payload).read_bytes() + b'fixture version:' + version.encode(),
-    f'{dist}/METADATA': f'Metadata-Version: 2.1\nName: agentx\nVersion: {version}\n'.encode(),
-    f'{dist}/WHEEL': b'Wheel-Version: 1.0\nRoot-Is-Purelib: false\nTag: py3-none-any\n',
-}
-record = io.StringIO()
-writer = csv.writer(record)
-for name in files:
-    writer.writerow([name, '', ''])
-writer.writerow([f'{dist}/RECORD', '', ''])
-files[f'{dist}/RECORD'] = record.getvalue().encode()
-with zipfile.ZipFile(pathlib.Path(directory) / f'agentx-{version}-py3-none-any.whl', 'w') as wheel:
-    for name, content in files.items():
-        wheel.writestr(name, content)
-"#;
-        assert!(Command::new(python).args(["-c", BUILD_WHEEL]).arg(std::env::current_exe().unwrap()).arg(wheels).arg(version).status().unwrap().success());
+        fs::write(tmp.path().join("custom venv/pyvenv.cfg"), "home = unknown").unwrap();
+        let tools = tmp.path().join("custom tools");
+        fs::create_dir_all(tools.join("agentx")).unwrap();
+        fs::write(tools.join("agentx/uv-receipt.toml"), format!("[tool]\nentrypoints = [{{ from = 'agentx', install-path = '{}' }}]\n", uv.display())).unwrap();
+        let uv_dirs = [tools];
+        for file in [&brew, &venv, &uv, &pip] {
+            let before = fs::read(file).unwrap();
+            let error = ensure_standalone_install_with_uv_dirs(file, &uv_dirs).unwrap_err();
+            assert!(error.to_string().contains("github.com/aigotowork/agentx/releases/latest"), "{error:#}");
+            assert_eq!(fs::read(file).unwrap(), before);
+        }
+        ensure_standalone_install_with_uv_dirs(&ordinary, &uv_dirs).unwrap();
+        assert_eq!(record_path("\"../bin/with,comma\",hash,6"), Some("../bin/with,comma".into()));
     }
 }

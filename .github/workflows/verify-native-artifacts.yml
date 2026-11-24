@@ -35,4 +35,7 @@ jobs:
           TARGET: ${{ matrix.targets[0] }}
           VERSION: ${{ fromJSON(inputs.plan).releases[0].app_version }}
           ARTIFACT_DIR: ${{ runner.temp }}/agentx-release
-        run: python .github/scripts/verify-native-artifact.py "$ARTIFACT_DIR" "$TARGET" "$VERSION"
+          RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+        run: |
+          python .github/scripts/check-release-version.py ${RELEASE_TAG:+"$RELEASE_TAG"}
+          python .github/scripts/verify-native-artifact.py "$ARTIFACT_DIR" "$TARGET" "$VERSION"

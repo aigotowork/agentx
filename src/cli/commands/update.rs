@@ -24,6 +24,17 @@ fn print_dev_root_notice(database_path: &std::path::Path) {
 pub fn cmd_update(args: &UpdateArgs) -> i32 {
     println!("Checking for updates...");
     print_dev_root_notice(&crate::paths::db_path());
+    let executable = if args.check {
+        None
+    } else {
+        match std::env::current_exe().map_err(anyhow::Error::from).and_then(|exe| crate::cli::update::ensure_standalone_install(&exe).map(|()| exe)) {
+            Ok(exe) => Some(exe),
+            Err(error) => {
+                eprintln!("Error: {error:#}");
+                return 1;
+            }
+        }
+    };
 
     let info = match crate::cli::update::fetch_update_info() {
         Ok(i) => i,
@@ -43,31 +54,12 @@ pub fn cmd_update(args: &UpdateArgs) -> i32 {
     println!("Update available: v{} → v{}", info.current, info.latest);
     crate::paths::atomic_write(&crate::cli::update::flag_path(), &info.latest);
 
-    if args.check {
+    let Some(exe) = executable else {
         println!("Run `agentx update` to apply.");
         return 0;
-    }
+    };
 
-    let result: anyhow::Result<()> = (|| {
-        let mut exe = std::env::current_exe()?;
-        match crate::cli::update::update_method()? {
-            crate::cli::update::UpdateMethod::Package(update) => {
-                println!("Running: {} {}", update.program.display(), update.args.join(" "));
-                for (key, value) in &update.env {
-                    println!("  {key}={}", value.display());
-                }
-                update.execute(update.command())?;
-                if let Some(entrypoint) = update.verify_exe {
-                    exe = entrypoint;
-                }
-            }
-            crate::cli::update::UpdateMethod::Installer if cfg!(windows) => install_windows_update(&info.latest)?,
-            crate::cli::update::UpdateMethod::Installer => install_unix_update(&info.latest)?,
-        }
-        verify_updated_binary(&exe, &info.latest)?;
-        Ok(())
-    })();
-    match result {
+    match install_github_update(&exe, &info.latest) {
         Ok(()) => {
             // Clear the cached "update available" notice
             let _ = crate::paths::atomic_write(&crate::cli::update::flag_path(), "");
@@ -87,19 +79,21 @@ fn verify_updated_binary(exe: &std::path::Path, required: &str) -> anyhow::Resul
     anyhow::ensure!(output.status.success(), "Could not verify the updated binary");
     let stdout = String::from_utf8_lossy(&output.stdout);
     let actual = stdout.trim().strip_prefix("agentx ").unwrap_or("");
-    anyhow::ensure!(crate::cli::update::version_reached(actual, required), "The updater completed, but {} reports version '{}' instead of v{required} or newer. The package release may still be publishing; retry later", exe.display(), actual);
+    anyhow::ensure!(actual == required, "Downloaded executable {} reports version {actual:?}; expected {required}", exe.display());
     Ok(())
 }
 
-/// Stage the official installer output before touching the invoked binary.
-/// A running Windows executable cannot be overwritten, but can be renamed.
-fn install_windows_update(version: &str) -> anyhow::Result<()> {
+/// Verify the official installer output before touching the invoked executable.
+fn install_github_update(exe: &std::path::Path, version: &str) -> anyhow::Result<()> {
+    let (dir, staged_name) = if cfg!(windows) { (stage_windows_update(version)?, "stage/agentx.exe") } else { (stage_unix_update(version)?, "stage/agentx") };
+    install_staged_update(&dir.path().join(staged_name), exe, version)
+}
+
+fn install_staged_update(staged: &std::path::Path, exe: &std::path::Path, version: &str) -> anyhow::Result<()> {
     use anyhow::Context;
 
-    let dir = stage_windows_update(version)?;
-    let exe = std::env::current_exe().context("Could not locate the invoked binary")?;
-    replace_binary(&dir.path().join("stage/agentx.exe"), &exe).with_context(|| format!("Could not replace {}", exe.display()))?;
-    Ok(())
+    verify_updated_binary(staged, version)?;
+    replace_binary(staged, exe).with_context(|| format!("Could not replace {}", exe.display()))
 }
 
 fn stage_windows_update(version: &str) -> anyhow::Result<tempfile::TempDir> {
@@ -150,17 +144,22 @@ try {
 }
 "#;
 
-fn install_unix_update(version: &str) -> anyhow::Result<()> {
+fn stage_unix_update(version: &str) -> anyhow::Result<tempfile::TempDir> {
     let dir = tempfile::tempdir()?;
     let script = dir.path().join("installer.sh");
     let url = format!("https://github.com/aigotowork/agentx/releases/download/v{version}/agentx-installer.sh");
     let status = std::process::Command::new("curl").args(["-fsSL", "--max-time", "30", "-o"]).arg(&script).arg(&url).status()?;
     anyhow::ensure!(status.success(), "Could not download the agentx installer");
-    let exe = std::env::current_exe()?;
-    let parent = exe.parent().ok_or_else(|| anyhow::anyhow!("Binary has no parent directory"))?;
-    let status = std::process::Command::new("sh").arg(&script).env("AGENTX_INSTALL_DIR", parent).env("AGENTX_NO_MODIFY_PATH", "1").env("AGENTX_DISABLE_UPDATE", "1").status()?;
+    let status = std::process::Command::new("sh")
+        .arg(&script)
+        .env_remove("AGENTX_INSTALL_DIR")
+        .env_remove("CARGO_DIST_FORCE_INSTALL_DIR")
+        .env("AGENTX_UNMANAGED_INSTALL", dir.path().join("stage"))
+        .env("AGENTX_NO_MODIFY_PATH", "1")
+        .env("AGENTX_DISABLE_UPDATE", "1")
+        .status()?;
     anyhow::ensure!(status.success(), "Installer failed (exit {})", status.code().unwrap_or(-1));
-    Ok(())
+    Ok(dir)
 }
 
 fn replace_binary(staged: &std::path::Path, target: &std::path::Path) -> std::io::Result<()> {
@@ -180,6 +179,12 @@ fn replace_binary(staged: &std::path::Path, target: &std::path::Path) -> std::io
         }
     }
     let backup = parent.join(format!("{prefix}{}", uuid::Uuid::new_v4()));
+    // Unix can atomically replace a running executable. Windows needs to
+    // rename the mapped image first and restore it if the replacement fails.
+    if !cfg!(windows) {
+        replacement.persist(target)?;
+        return Ok(());
+    }
     std::fs::rename(target, &backup)?;
     if let Err(error) = replacement.persist(target) {
         if let Err(rollback) = std::fs::rename(&backup, target) {
@@ -224,6 +229,27 @@ mod tests {
         std::fs::write(&target, b"old binary").unwrap();
         assert!(replace_binary(&tmp.path().join("missing.exe"), &target).is_err());
         assert_eq!(std::fs::read(&target).unwrap(), b"old binary");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn staged_update_validates_version_before_replacing_executable() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let tmp = tempfile::tempdir().unwrap();
+        let target = tmp.path().join("agentx");
+        let staged = tmp.path().join("candidate");
+        let candidate = b"#!/bin/sh\nprintf 'agentx 0.7.32\\n'\n";
+        std::fs::write(&target, b"existing binary").unwrap();
+        std::fs::write(&staged, candidate).unwrap();
+        std::fs::set_permissions(&staged, std::fs::Permissions::from_mode(0o755)).unwrap();
+
+        let error = install_staged_update(&staged, &target, "0.7.31").unwrap_err();
+        assert!(error.to_string().contains("expected 0.7.31"));
+        assert_eq!(std::fs::read(&target).unwrap(), b"existing binary");
+        install_staged_update(&staged, &target, "0.7.32").unwrap();
+        assert_eq!(std::fs::read(&target).unwrap(), candidate);
+        verify_updated_binary(&target, "0.7.32").unwrap();
     }
 
     #[test]

@@ -460,11 +460,8 @@ const UPDATE_HELP: &[HelpEntry] = &[
     ("update", "Check for and apply updates"),
     ("update --check", "Only check — print status without applying"),
     ("", ""),
-    ("", "Detects install method and runs the right update command:"),
-    ("", "  brew install    → brew upgrade agentx"),
-    ("", "  uv tool install → uv tool upgrade agentx"),
-    ("", "  pip install     → pip install -U agentx"),
-    ("", "  curl installer  → re-run agentx-installer.sh"),
+    ("", "Updates a standalone executable from the latest stable GitHub Release."),
+    ("", "For legacy package installs, switch to the standalone GitHub installer first."),
 ];
 
 const HOOKS_STATUS: &[HelpEntry] = &[("hooks", "Show how each tool loads agentx's hooks"), ("hooks status [tool]", "Same as above, for one tool"), ("", "  hermes: also asks Hermes whether the plugin is enabled (slow)")];

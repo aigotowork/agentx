@@ -458,7 +458,7 @@ fn is_same_file(a: &Path, b: &Path) -> bool {
 
 // ── Dispatch ────────────────────────────────────────────────────────────
 
-const PERSISTENT_INSTALL_INSTRUCTION: &str = "agentx: uvx is no longer supported; run uv tool install agentx, then restart this session.";
+const PERSISTENT_INSTALL_INSTRUCTION: &str = "agentx: uvx is no longer supported; install AgentX from https://github.com/aigotowork/agentx/releases/latest, then restart this session.";
 
 /// Handle ephemeral invocations before dev-root lookup, update checks, or
 /// normal command dispatch. Legacy removal is dispatched directly, though tool

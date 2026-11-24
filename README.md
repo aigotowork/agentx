@@ -41,6 +41,8 @@ irm https://github.com/aigotowork/agentx/releases/latest/download/agentx-install
 
 For other platforms, see the [source build instructions](CONTRIBUTING.md#development). The cloud daemon's [Docker image](deploy/README.md) is distributed separately.
 
+For standalone installs, run `agentx update --check` to check the latest stable GitHub Release and `agentx update` to install it. If you have a legacy Homebrew, pip, or uv install, install the GitHub build into a separate directory, select it on your PATH, and verify it with `agentx --version` before removing the old install. Your AgentX data stays in its existing scope.
+
 ## Quickstart
 
 <table>

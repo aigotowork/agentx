@@ -1,6 +1,6 @@
 ---
 scope: GitHub Release attachment diagnosis and follow-up
-status: implementation under validation
+status: v0.7.32 published; GitHub-only follow-up under validation
 last_updated: 2026-11-24
 ---
 
@@ -12,4 +12,6 @@ The [v0.7.31 cargo-dist configuration](https://github.com/aigotowork/agentx/blob
 
 The [v0.7.31 publish job](https://github.com/aigotowork/agentx/blob/v0.7.31/.github/workflows/release.yml#L248) required the wheel matrix to succeed, but wheel jobs did not install the locked Web dependencies required by the build script. In a clean checkout probe the SDK build failed resolving `packages/agentx-client/node_modules/typescript/bin/tsc`. This did not cause the missing run for v0.7.31. The old Homebrew tap is unavailable and the public `agentx` name on PyPI belongs to another project.
 
-The native Release workflow now plans Linux AMD64, both Macs, and Windows AMD64 in [cargo-dist](../../dist-workspace.toml). PRs build archives without publishing, and the [archive check](../../.github/workflows/verify-native-artifacts.yml) validates the actual bytes on each runner before tag publication. Homebrew and PyPI are disconnected from the native release; GHCR stays independent. The target is v0.7.32 after the PR and tag runs pass. Follow the [operator runbook](../../CONTRIBUTING.md#github-native-release); leave v0.7.31 intact.
+The native Release workflow builds Linux AMD64, both Macs, and Windows AMD64 using [cargo-dist](../../dist-workspace.toml). [The v0.7.32 tag run](https://github.com/aigotowork/agentx/actions/runs/45352214008) validated and published the archives and both installers; public downloads matched the validated artifacts. GHCR remains independent.
+
+The GitHub-only follow-up removes unused wheel/publisher definitions and Python packaging metadata. Cargo owns the native version; the lockfile, first changelog entry, and native-versioned Cloud Admin projections must agree before a tag is pushed. The [runbook](../../CONTRIBUTING.md#github-native-release) owns the operator steps. Native update uses only the stable GitHub release. Legacy package ownership is a local migration guard, never an instruction to call a package manager. A clean-directory Linux test using the public v0.7.31 and v0.7.32 releases confirmed that `update --check` leaves the binary alone and `update` upgrades it. Keep the historical releases and the running user environment intact.

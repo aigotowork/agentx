@@ -1,5 +1,7 @@
 # Product client context
 
+[`update`](commands/update.rs) stages and verifies the exact version from the latest stable GitHub Release before replacing the invoked standalone executable. [Release discovery](update.rs) also recognizes legacy package ownership to request migration without invoking the old managers. Keep the no-daemon and dev-root bypass behavior. The [release runbook](../../CONTRIBUTING.md#github-native-release) owns version and public update acceptance.
+
 ## Caller identity
 
 `router::GlobalFlagParser` and `extract_global_flags_full` expose `--iam NAME` as the explicit caller option, captured in the existing `InvocationContext.explicit_name`. There is no `--name` caller alias. `start::StartArgs.name` alone owns public `start --name` registration input; keep it separate from the caller claim. Provider arguments after `--` and internal hook RPC fields retain their own grammar. Standalone work/workbench/observe-web parsers use the same caller spelling where supported; browser calls still clear actor claims.
