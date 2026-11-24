@@ -1,0 +1,38 @@
+name: Verify native release artifacts
+
+on:
+  workflow_call:
+    inputs:
+      plan:
+        description: cargo-dist plan from the calling release workflow
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify archive (${{ join(matrix.targets, ', ') }})
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(inputs.plan).ci.github.artifacts_matrix }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: artifacts-build-local-${{ join(matrix.targets, '_') }}
+          path: ${{ runner.temp }}/agentx-release
+      - name: Verify checksum, architecture, and CLI version
+        shell: bash
+        env:
+          TARGET: ${{ matrix.targets[0] }}
+          VERSION: ${{ fromJSON(inputs.plan).releases[0].app_version }}
+          ARTIFACT_DIR: ${{ runner.temp }}/agentx-release
+        run: python .github/scripts/verify-native-artifact.py "$ARTIFACT_DIR" "$TARGET" "$VERSION"
