@@ -65,20 +65,9 @@
       "matchPackageNames": [
         "actions/checkout",
         "actions/upload-artifact",
-        "actions/download-artifact",
-        "actions/setup-java",
-        "android-actions/setup-android"
+        "actions/download-artifact"
       ],
       "enabled": false
-    },
-    {
-      "matchManagers": [
-        "pep621"
-      ],
-      "matchPackageNames": [
-        "maturin"
-      ],
-      "rangeStrategy": "bump"
     }
   ],
   "customManagers": [
@@ -91,18 +80,6 @@
         "(?<depName>@[^\\s@]+/[^\\s@]+)@(?<currentValue>[^\\s]+)"
       ],
       "datasourceTemplate": "npm"
-    },
-    {
-      "customType": "regex",
-      "managerFilePatterns": [
-        "/^\\.github/workflows/build-wheels\\.yml$/"
-      ],
-      "matchStrings": [
-        "(?:^|\\n)[ \\t]*version: \"(?<currentValue>[0-9.]+)\"[ \\t]*(?:\\r?\\n|$)",
-        "maturin==(?<currentValue>[0-9.]+)"
-      ],
-      "depNameTemplate": "maturin",
-      "datasourceTemplate": "pypi"
     }
   ],
   "timezone": "Europe/London",

@@ -988,7 +988,7 @@ export const wireDocument = {
       "name": "PolyForm-Noncommercial-1.0.0"
     },
     "title": "AgentX Deployment Administration",
-    "version": "0.7.32"
+    "version": "0.7.33"
   },
   "openapi": "3.1.0",
   "paths": {

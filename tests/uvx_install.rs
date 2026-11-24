@@ -37,7 +37,7 @@ fn ephemeral_uvx_requires_persistent_install() {
         assert_eq!(output.status.code(), Some(code), "{arg}: {output:?}");
         if let Some(stdout) = stdout {
             assert_eq!(String::from_utf8_lossy(&output.stdout), stdout, "{arg}");
-            assert_eq!(String::from_utf8_lossy(&output.stderr), "agentx: uvx is no longer supported; run uv tool install agentx, then restart this session.\n", "{arg}");
+            assert_eq!(String::from_utf8_lossy(&output.stderr), "agentx: uvx is no longer supported; install AgentX from https://github.com/aigotowork/agentx/releases/latest, then restart this session.\n", "{arg}");
         } else {
             assert!(!output.stdout.is_empty(), "{arg}");
             assert!(output.stderr.is_empty(), "{output:?}");

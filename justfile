@@ -60,9 +60,10 @@ typecheck:
     bash ./scripts/typecheck.sh
 
 [group("checks")]
-[doc("Check the committed release workflow still matches dist-workspace.toml")]
+[doc("Check the release workflow and native version metadata")]
 dist-check:
     dist generate --check
+    python3 .github/scripts/check-release-version.py
 
 [group("checks")]
 [doc("cargo check on the MSRV from Cargo.toml (skips loudly if not installed)")]
@@ -166,7 +167,7 @@ ci *steps:
         fi
     }
 
-    step dist-check dist generate --check
+    step dist-check just dist-check
     step audit      npm run audit:dependencies
     step typecheck  bash ./scripts/typecheck.sh
     step fmt        cargo fmt --all -- --check
