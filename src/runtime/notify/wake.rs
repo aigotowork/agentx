@@ -150,17 +150,21 @@ fn lookup_ports(db: &AgentxDb, instance: &str, kinds: &[WakeKind]) -> Vec<u16> {
 
 fn lookup_ports_for(db: &AgentxDb, instance: &str, kinds: &[WakeKind], incarnation: Option<u64>) -> Vec<u16> {
     let kinds_sql = if kinds.is_empty() { wake_kinds_sql_list() } else { kinds.iter().map(|k| format!("'{}'", k.as_str())).collect::<Vec<_>>().join(",") };
-    let sql = format!(
-        "SELECT port FROM notify_endpoints \
-         WHERE instance = ?1 AND kind IN ({kinds_sql})
-           AND (?2 IS NULL OR EXISTS (
-               SELECT 1 FROM instances WHERE name=?1 AND agentx_incarnation(created_at)=?2
-           ))"
-    );
+    let mut sql = format!("SELECT port FROM notify_endpoints WHERE instance=?1 AND kind IN ({kinds_sql})");
+    let incarnation = incarnation.map(|bits| bits.to_string());
+    let parameters: [&dyn rusqlite::ToSql; 2] = [&instance, &incarnation];
+    let bindings = if incarnation.is_some() {
+        // Ordinary wake lookups remain independent of the instance table.
+        // Only an exact reminder wake joins against the current incarnation.
+        sql.push_str(" AND EXISTS (SELECT 1 FROM instances WHERE name=?1 AND agentx_incarnation(created_at)=?2)");
+        &parameters[..]
+    } else {
+        &parameters[..1]
+    };
     let Ok(mut stmt) = db.conn().prepare(&sql) else {
         return Vec::new();
     };
-    stmt.query_map(params![instance, incarnation.map(|bits| bits.to_string())], |row| row.get::<_, i64>(0)).ok().into_iter().flatten().filter_map(|r| r.ok()).filter_map(|p| u16::try_from(p).ok()).filter(|p| *p > 0).collect()
+    stmt.query_map(bindings, |row| row.get::<_, i64>(0)).ok().into_iter().flatten().filter_map(|r| r.ok()).filter_map(|p| u16::try_from(p).ok()).filter(|p| *p > 0).collect()
 }
 
 #[cfg(test)]
