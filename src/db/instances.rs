@@ -13,6 +13,7 @@ pub struct InstanceStatus {
     pub status: String,
     pub detail: String,
     pub last_event_id: i64,
+    pub(crate) incarnation_bits: u64,
 }
 
 /// Full instance row from the instances table.
@@ -163,12 +164,18 @@ impl AgentxDb {
     /// - Err if database error occurs
     pub fn get_instance_status(&self, name: &str) -> Result<Option<InstanceStatus>> {
         let mut stmt = self.conn.prepare_cached(
-            "SELECT name, status, status_detail, last_event_id
+            "SELECT name, status, status_detail, last_event_id, created_at
              FROM instances WHERE name = ?",
         )?;
 
-        match stmt.query_row(params![name], |row| Ok(InstanceStatus { status: row.get::<_, String>(1).unwrap_or_else(|_| "unknown".to_string()), detail: row.get::<_, String>(2).unwrap_or_default(), last_event_id: row.get::<_, i64>(3).unwrap_or(0) }))
-        {
+        match stmt.query_row(params![name], |row| {
+            Ok(InstanceStatus {
+                status: row.get::<_, String>(1).unwrap_or_else(|_| "unknown".to_string()),
+                detail: row.get::<_, String>(2).unwrap_or_default(),
+                last_event_id: row.get::<_, i64>(3).unwrap_or(0),
+                incarnation_bits: row.get::<_, Option<f64>>(4)?.unwrap_or_default().to_bits(),
+            })
+        }) {
             Ok(status) => Ok(Some(status)),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),

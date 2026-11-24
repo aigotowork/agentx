@@ -286,6 +286,9 @@ fn dispatch_jobs_observed(lease: &ScopeLease, application: &mut (impl Applicatio
                 Ok(job) => {
                     let response = dispatch_observed(lease, application, job.operation, job.deadline, stop, DispatchRuntime { writer, ..runtime }, (job.observation.as_ref(), Some(job.submitted.elapsed())));
                     let _ = job.reply.send(response);
+                    if writer && !stop.load(Ordering::Acquire) {
+                        application.after_request();
+                    }
                 }
                 Err(mpsc::RecvTimeoutError::Timeout) => application.idle(),
                 Err(mpsc::RecvTimeoutError::Disconnected) => break,
@@ -736,6 +739,41 @@ mod tests {
         let current = lease.database_generation().current();
         assert!(matches!(dispatch(&lease, &mut application, queued_call(&lease, &current), Instant::now() - Duration::from_millis(1), &stop), ServerFrame::Failure(DaemonError::Deadline)));
         assert_eq!(application.0, 0);
+    }
+
+    #[test]
+    fn due_reminder_progresses_before_the_next_queued_writer_request() {
+        use crate::events::service::{ReminderState, Request as Events, Response as EventResult};
+
+        let root = tempfile::tempdir().unwrap();
+        let lease = ScopeLease::acquire(super::super::DaemonScope::prepare(root.path()).unwrap()).unwrap();
+        let path = root.path().join("agentx.db");
+        let fixture = crate::db::AgentxDb::open_at(&path).unwrap();
+        fixture.save_instance_named("luna", serde_json::json!({"tool":"codex","created_at":1.0,"status":"active"}).as_object().unwrap()).unwrap();
+        let mut application = crate::service::application::SqliteApplication::new(crate::db::AgentxDb::open_at(&path).unwrap(), lease.database_generation().clone()).unwrap();
+        let generation = lease.database_generation().current();
+        let Operation::Call { mut context, .. } = queued_call(&lease, &generation) else { unreachable!() };
+        context.caller.invocation.explicit_name = Some("luna".into());
+        let target = crate::agents::attachments::ParticipantRef { canonical_name: "luna".into(), incarnation_bits: 1.0_f64.to_bits() };
+        let due_at_ms = chrono::Utc::now().timestamp_millis() + 30_000;
+        let Response::Events(EventResult::ReminderCreated(created)) = application.handle(&context, Request::Events(Events::CreateReminder { target, due_at_ms, message: "writer queue".into() })).unwrap() else { panic!("expected creation receipt") };
+        fixture.conn().execute("UPDATE reminders SET due_at_ms=0 WHERE id=?1", [&created.reminder.id]).unwrap();
+
+        let (sender, receiver) = mpsc::sync_channel(QUEUE_CAPACITY);
+        let (first, _first_reply) = mpsc::sync_channel(1);
+        let (second, second_reply) = mpsc::sync_channel(1);
+        let mut read = queued_call(&lease, &generation);
+        let Operation::Call { request, .. } = &mut read else { unreachable!() };
+        *request = Request::Events(Events::Reminder { id: created.reminder.id });
+        for (operation, reply) in [(queued_call(&lease, &generation), first), (read, second)] {
+            assert!(sender.send(Job { operation, submitted: Instant::now(), deadline: Instant::now() + IO_TIMEOUT, reply, observation: None }).is_ok());
+        }
+        drop(sender);
+        // Both calls are already queued; there is no idle timeout before the read.
+        dispatch_jobs(&lease, &mut application, &receiver, &AtomicBool::new(false)).unwrap();
+        let ServerFrame::Result { result: Ok(Response::Events(EventResult::Reminder(observed))), .. } = second_reply.recv().unwrap() else { panic!("expected reminder view from the queued call") };
+        assert_eq!(observed.state, ReminderState::Enqueued);
+        assert!(observed.delivery_event_id.is_some());
     }
 
     #[test]

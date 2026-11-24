@@ -147,7 +147,14 @@ fn snapshot(db: &AgentxDb, own_device: &str) -> ServiceResult<RelaySnapshot> {
         return Err(ServiceError::InvalidInput("relay own-device identity exceeds 256 bytes".into()));
     }
     let cursor = db.kv_get("relay_last_push_id").map_err(internal)?.and_then(|value| value.parse::<i64>().ok()).unwrap_or(0);
-    let queued = db.conn().query_row("SELECT COUNT(*) FROM events WHERE id > ?1 AND instance NOT LIKE '%:%' AND instance != '_device' AND json_extract(data, '$._relay') IS NULL", [cursor], |row| row.get(0)).map_err(internal)?;
+    let queued = db
+        .conn()
+        .query_row(
+            "SELECT COUNT(*) FROM events WHERE id > ?1 AND instance NOT LIKE '%:%' AND instance != '_device' AND instance != ?2 AND json_extract(data, '$._relay') IS NULL",
+            rusqlite::params![cursor, crate::messaging::submission::REMINDER_EVENT_INSTANCE],
+            |row| row.get(0),
+        )
+        .map_err(internal)?;
     let mappings = {
         let mut statement = db
             .conn()

@@ -102,8 +102,78 @@ pub struct EventsSubArgs {
     /// Composable event filters
     #[command(flatten)]
     pub filters: EventFilterArgs,
-    /// SQL parts or "list" keyword
+    /// Schedule one local reminder (1s–365d; suffix s, m, h, d).
+    #[arg(long = "in", value_name = "DURATION", value_parser = parse_reminder_delay, requires = "message")]
+    pub reminder_delay_ms: Option<i64>,
+    /// Reminder text, required with --in.
+    #[arg(long, allow_hyphen_values = true, requires = "reminder_delay_ms")]
+    pub message: Option<String>,
+    /// Also show completed reminders (only with sub list).
+    #[arg(long)]
+    pub history: bool,
+    /// SQL predicate, list, or show REMINDER_ID
     pub rest: Vec<String>,
+}
+
+fn parse_reminder_delay(text: &str) -> Result<i64, String> {
+    let error = || "expected a delay from 1s to 365d (suffix s, m, h, or d)".to_string();
+    let Some((unit, digits)) = text.as_bytes().split_last() else { return Err(error()) };
+    if digits.is_empty() || !digits.iter().all(u8::is_ascii_digit) {
+        return Err(error());
+    }
+    let unit_ms = match unit {
+        b's' => 1_000,
+        b'm' => 60_000,
+        b'h' => 3_600_000,
+        b'd' => 86_400_000,
+        _ => return Err(error()),
+    };
+    let millis = text[..digits.len()].parse::<i64>().ok().and_then(|number| number.checked_mul(unit_ms)).ok_or_else(error)?;
+    if !(1_000..=crate::events::service::MAX_REMINDER_DELAY_MS).contains(&millis) {
+        return Err(error());
+    }
+    Ok(millis)
+}
+
+impl EventsArgs {
+    /// Reject reminder-only grammar before native acquisition or Relay dispatch.
+    pub(crate) fn validate_reminder_options(&self) -> crate::service::ServiceResult<()> {
+        use crate::service::ServiceError;
+        let remote = || ServiceError::Unsupported("time reminders are local only; --device is unsupported".into());
+        match &self.subcmd {
+            Some(EventsSubcmd::Sub(args)) => {
+                let action = args.rest.first().map(String::as_str);
+                let reminder = args.reminder_delay_ms.is_some() || args.history || action == Some("show");
+                if reminder && (self.device.is_some() || args.device.is_some() || self.remote_fetch) {
+                    return Err(remote());
+                }
+                if args.reminder_delay_ms.is_some() {
+                    if args.filters.has_filters() || self.filters.has_filters() || self.sql.is_some() || !args.rest.is_empty() || args.once || args.on_hit.is_some() || args.as_name.is_some() || args.from_bigboss || args.history {
+                        return Err(ServiceError::InvalidInput("--in conflicts with event filters, SQL, subcommands, --once, --on-hit, --as, -b and --history".into()));
+                    }
+                    crate::messaging::routing::validate_message(args.message.as_deref().unwrap_or_default()).map_err(ServiceError::InvalidInput)?;
+                } else if args.history && action != Some("list") {
+                    return Err(ServiceError::InvalidInput("--history requires events sub list".into()));
+                } else if action == Some("show")
+                    && (args.rest.len() != 2
+                        || !args.rest[1].starts_with("rem-")
+                        || args.filters.has_filters()
+                        || self.filters.has_filters()
+                        || self.sql.is_some()
+                        || args.once
+                        || args.on_hit.is_some()
+                        || args.as_name.is_some()
+                        || args.from_bigboss
+                        || args.for_agent.is_some())
+                {
+                    return Err(ServiceError::InvalidInput("use events sub show REMINDER_ID (rem-…)".into()));
+                }
+            }
+            Some(EventsSubcmd::Unsub(args)) if args.id.starts_with("rem-") && (args.device.is_some() || self.device.is_some() || self.remote_fetch) => return Err(remote()),
+            _ => {}
+        }
+        Ok(())
+    }
 }
 
 /// Args for `agentx events unsub`.

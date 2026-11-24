@@ -20,6 +20,10 @@ pub struct Message {
     pub relay_ref: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub requested_directory: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) reminder_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) delivery_fence: Option<crate::agents::attachments::ParticipantRef>,
 }
 
 impl Message {
@@ -31,6 +35,11 @@ impl Message {
     }
 }
 
+/// No fence preserves legacy name routing. A malformed fence fails closed.
+pub(crate) fn delivery_fence_matches(fence: Option<&serde_json::Value>, name: &str, incarnation_bits: u64) -> bool {
+    fence.is_none_or(|target| target["canonical_name"].as_str() == Some(name) && target["incarnation_bits"].as_u64() == Some(incarnation_bits))
+}
+
 impl AgentxDb {
     /// Check if a message event should be delivered to the given receiver.
     ///
@@ -38,7 +47,10 @@ impl AgentxDb {
     /// "mentions" requires the receiver's exact name in the mentions array.
     /// Relay import rewrites mentions into the local namespace, so `luna:ABCD`
     /// never matches a local `luna`.
-    pub(super) fn should_deliver_to(json: &serde_json::Value, receiver: &str) -> bool {
+    pub(super) fn should_deliver_to(json: &serde_json::Value, receiver: &str, incarnation_bits: u64) -> bool {
+        if !delivery_fence_matches(json.get("delivery_fence"), receiver, incarnation_bits) {
+            return false;
+        }
         let from = json.get("from").and_then(|v| v.as_str()).unwrap_or("");
         if from == receiver {
             return false;
@@ -59,8 +71,8 @@ impl AgentxDb {
     /// row is in the broadcast recipient set, but we don't want a passing
     /// broadcast to wake a subagent nobody actually addressed.
     pub fn has_direct_unread(&self, name: &str) -> bool {
-        let last_event_id = match self.get_instance_status(name) {
-            Ok(Some(status)) => status.last_event_id,
+        let status = match self.get_instance_status(name) {
+            Ok(Some(status)) => status,
             _ => return false,
         };
         let mut stmt = match self.conn.prepare_cached(
@@ -71,7 +83,7 @@ impl AgentxDb {
             Ok(s) => s,
             Err(_) => return false,
         };
-        let rows = match stmt.query_map(params![last_event_id], |row| row.get::<_, String>(0)) {
+        let rows = match stmt.query_map(params![status.last_event_id], |row| row.get::<_, String>(0)) {
             Ok(r) => r,
             Err(_) => return false,
         };
@@ -83,7 +95,7 @@ impl AgentxDb {
             if scope != "mentions" {
                 continue;
             }
-            if Self::should_deliver_to(&json, name) {
+            if Self::should_deliver_to(&json, name, status.incarnation_bits) {
                 return true;
             }
         }
@@ -115,16 +127,16 @@ impl AgentxDb {
         let Some(status) = self.get_instance_status(name)? else {
             return Ok(vec![]);
         };
-        self.unread_messages_after(name, status.last_event_id, limit)
+        self.unread_messages_after(name, status.incarnation_bits, status.last_event_id, limit)
     }
 
     /// The caller already resolved this recipient and cursor in its transaction.
-    pub(crate) fn unread_messages_after(&self, name: &str, last_event_id: i64, limit: usize) -> Result<Vec<Message>> {
+    pub(crate) fn unread_messages_after(&self, name: &str, incarnation_bits: u64, last_event_id: i64, limit: usize) -> Result<Vec<Message>> {
         if limit == 0 {
             return Ok(Vec::new());
         }
         if limit != usize::MAX && !name.is_empty() && self.mailbox_routes_cover(last_event_id) {
-            match self.read_unread_window(name, last_event_id, limit, true) {
+            match self.read_unread_window(name, incarnation_bits, last_event_id, limit, true) {
                 Ok(messages) => return Ok(messages),
                 Err(_) => {
                     self.hook_mailbox_routes.set(false);
@@ -132,20 +144,35 @@ impl AgentxDb {
                 }
             }
         }
-        self.read_unread_window(name, last_event_id, limit, false)
+        self.read_unread_window(name, incarnation_bits, last_event_id, limit, false)
     }
 
-    fn read_unread_window(&self, name: &str, last_event_id: i64, limit: usize, indexed: bool) -> Result<Vec<Message>> {
+    fn read_unread_window(&self, name: &str, incarnation_bits: u64, last_event_id: i64, limit: usize, indexed: bool) -> Result<Vec<Message>> {
         const LEGACY: &str = "SELECT id,timestamp,data FROM events WHERE id>?1 AND type='message' ORDER BY id";
-        const INDEXED: &str = "WITH eligible AS (
-            SELECT event_id FROM hook_mailbox_routes WHERE recipient=?2 AND event_id>?1 AND sender<>?2
-            UNION ALL
-            SELECT event_id FROM hook_mailbox_routes WHERE recipient='' AND event_id>?1 AND sender<>?2
-            ORDER BY event_id LIMIT ?3
-        ) SELECT e.id,e.timestamp,e.data FROM eligible JOIN events e ON e.id=eligible.event_id ORDER BY e.id";
+        // The name index supplies candidates. Filter exact fences before LIMIT so
+        // retired messages never consume a successor's delivery window. JSON ->
+        // retains all integer bits as text, including values outside SQLite i64.
+        macro_rules! routes {
+            ($recipient:literal) => {
+                concat!(
+                    "SELECT r.event_id,e.timestamp,e.data FROM hook_mailbox_routes r
+                     CROSS JOIN events e ON e.id=r.event_id
+                     WHERE r.recipient=",
+                    $recipient,
+                    " AND r.event_id>?1 AND r.sender<>?2
+                       AND CASE WHEN json_valid(e.data) THEN
+                           json_type(e.data,'$.delivery_fence') IS NULL OR (
+                               json_extract(e.data,'$.delivery_fence.canonical_name')=?2
+                               AND e.data -> '$.delivery_fence.incarnation_bits' = ?4
+                           ) ELSE 1 END"
+                )
+            };
+        }
+        const INDEXED: &str = concat!(routes!("?2"), " UNION ALL ", routes!("''"), " ORDER BY event_id LIMIT ?3");
         let mut stmt = self.conn.prepare_cached(if indexed { INDEXED } else { LEGACY })?;
         let max = i64::try_from(limit).unwrap_or(i64::MAX);
-        let query: &[&dyn rusqlite::ToSql] = if indexed { &[&last_event_id, &name, &max] } else { &[&last_event_id] };
+        let bits = incarnation_bits.to_string();
+        let query: &[&dyn rusqlite::ToSql] = if indexed { &[&last_event_id, &name, &max, &bits] } else { &[&last_event_id] };
         let rows = stmt.query_map(query, |row| {
             let id: i64 = row.get(0)?;
             let timestamp: String = row.get(1)?;
@@ -158,7 +185,7 @@ impl AgentxDb {
             let (id, timestamp, data) = row?;
             // Parse JSON data
             if let Ok(json) = serde_json::from_str::<serde_json::Value>(&data) {
-                if !Self::should_deliver_to(&json, name) {
+                if !Self::should_deliver_to(&json, name, incarnation_bits) {
                     anyhow::ensure!(!indexed, "stored Hook mailbox route disagrees with event");
                     continue;
                 }
@@ -177,7 +204,9 @@ impl AgentxDb {
                 });
 
                 let requested_directory = json.get("requested_directory").and_then(|value| value.as_str()).map(str::to_owned);
-                messages.push(Message { from, text, intent, thread, event_id: Some(id), timestamp: Some(timestamp.clone()), delivered_to, bundle_id, relay_ref, requested_directory });
+                let reminder_id = json.get("reminder_id").and_then(|value| value.as_str()).map(str::to_owned);
+                let delivery_fence = json.get("delivery_fence").cloned().map(serde_json::from_value).transpose()?;
+                messages.push(Message { from, text, intent, thread, event_id: Some(id), timestamp: Some(timestamp.clone()), delivered_to, bundle_id, relay_ref, requested_directory, reminder_id, delivery_fence });
                 if messages.len() == limit {
                     break;
                 }

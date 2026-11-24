@@ -18,7 +18,7 @@ pub(crate) fn snapshot(db: &AgentxDb, context: &RequestContext) -> ServiceResult
     let name = &actor.record.name;
     let mut statement = db.conn().prepare_cached("SELECT kind,port FROM notify_endpoints WHERE instance=? ORDER BY kind").map_err(internal)?;
     let endpoints = statement.query_map([name], |row| Ok((row.get(0)?, row.get(1)?))).map_err(internal)?.collect::<rusqlite::Result<Vec<_>>>().map_err(internal)?;
-    let pending = db.unread_messages_after(name, actor.record.last_event_id, crate::shared::MAX_MESSAGES_PER_DELIVERY).map_err(internal)?;
+    let pending = db.unread_messages_after(name, actor.participant.incarnation_bits, actor.record.last_event_id, crate::shared::MAX_MESSAGES_PER_DELIVERY).map_err(internal)?;
     let has_session = actor.record.session_id.as_deref().is_some_and(|session| !session.is_empty());
     let recovery = crate::agents::recovery_store::pending(db, &actor.record)?;
     Ok(DeliverySnapshot { actor, pending, endpoints, has_session, recovery })
@@ -149,7 +149,7 @@ pub(crate) fn handle(db: &AgentxDb, context: &RequestContext, request: Request) 
             }
             Request::ObserveGate { observation, .. } => match observation {
                 GateObservation::Blocked { cursor, context, detail } => {
-                    if actor.record.status != crate::shared::ST_LISTENING || cursor != actor.record.last_event_id || db.unread_messages_after(name, cursor, 1).map_err(internal)?.is_empty() {
+                    if actor.record.status != crate::shared::ST_LISTENING || cursor != actor.record.last_event_id || db.unread_messages_after(name, actor.participant.incarnation_bits, cursor, 1).map_err(internal)?.is_empty() {
                         return Ok(false);
                     }
                     db.set_gate_status(name, &context, &detail).map_err(internal)
@@ -183,7 +183,7 @@ pub(crate) fn handle(db: &AgentxDb, context: &RequestContext, request: Request) 
                         || row.model_request.as_ref().is_none_or(|model| model.error.is_some() || model.session_id != session || model.turn_id != turn || model.phase != phase || model.last_progress_at != Some(progress_at))
                         || completed_at_ms < progress_at.max(status_time).saturating_mul(1000)
                         || completed_at_ms > chrono::Utc::now().timestamp_millis()
-                        || db.unread_messages_after(name, cursor, 1).map_err(internal)?.is_empty()
+                        || db.unread_messages_after(name, actor.participant.incarnation_bits, cursor, 1).map_err(internal)?.is_empty()
                     {
                         return Ok(false);
                     }

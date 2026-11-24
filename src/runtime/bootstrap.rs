@@ -81,6 +81,7 @@ If an identity error occurs, follow the CLI recovery instructions. Use `--iam {i
   Filters (same flag=OR, different=AND): --agent NAME | --type message|status|life | --status listening|active|blocked | --cmd PATTERN (contains, ^prefix, =exact) | --file PATH (*.py for glob, file.py for contains)
   Get notified (watch agents, react): events sub [filters] [--once] | --help
   Example: events sub --idle luna → <agentx> msg when luna goes idle
+  To check an external task later (e.g., a GitHub build), set a one-time reminder for yourself: `agentx events sub --in 10m --message 'Check the GitHub build status'`.
 - Handoff context: bundle prepare
 - Spawn agents{handoff_result}
 {role_workspace_guide}

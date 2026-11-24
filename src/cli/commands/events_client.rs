@@ -3,7 +3,7 @@
 use super::events::{self, EventsArgs, EventsSubArgs, EventsSubcmd, streamline_event};
 use crate::agents::attachments::ParticipantRef;
 use crate::cli::client::Session;
-use crate::events::service::{EventPage, EventQuery, MAX_PAGE_EVENTS, ObserverSpec, Request as Events, Response as EventResult};
+use crate::events::service::{EventPage, EventQuery, MAX_PAGE_EVENTS, ObserverSpec, ReminderState, ReminderView, Request as Events, Response as EventResult};
 use crate::runtime::notify::NotifyServer;
 use crate::service::{Request, Response, ServiceError, ServiceResult, client::Client};
 use serde_json::{Value, json};
@@ -46,7 +46,7 @@ fn emit(out: &mut impl Write, event: &Value, full: bool, filters: &crate::events
 }
 
 fn reconciled_call(client: &Client, request: Events) -> ServiceResult<EventResult> {
-    // Only these exact-lifetime operations promise idempotent reconciliation.
+    // Only operations with a domain idempotency contract use this helper.
     let caller = crate::service::CallerContext {
         request_id: crate::service::RequestId(uuid::Uuid::new_v4().to_string()),
         invocation: client.invocation().clone(),
@@ -215,13 +215,18 @@ fn run(session: &Session, args: &EventsArgs) -> ServiceResult<i32> {
             }
             EventsSubcmd::Sub(args) => subscription(session, args),
             EventsSubcmd::Unsub(args) => {
-                let id = if args.id.starts_with("sub-") { args.id.clone() } else { format!("sub-{}", args.id) };
+                let reminder = args.id.starts_with("rem-");
+                let id = if reminder || args.id.starts_with("sub-") { args.id.clone() } else { format!("sub-{}", args.id) };
                 if let Some(device) = &args.device {
                     return Ok(events::cmd_events_unsub_remote(&session.client, device, &id));
                 }
                 match call(&session.client, Events::Unsubscribe { id: id.clone() })? {
                     EventResult::Unsubscribed(true) => {
-                        println!("Removed {id}");
+                        if reminder {
+                            println!("Canceled {id}");
+                        } else {
+                            println!("Removed {id}");
+                        }
                         Ok(0)
                     }
                     EventResult::Unsubscribed(false) => {
@@ -477,16 +482,112 @@ fn wait_to(session: &Session, args: &EventsArgs, mut query: EventQuery, timeout:
     Ok(code)
 }
 
+fn due_time(millis: i64) -> String {
+    chrono::DateTime::from_timestamp_millis(millis).map(|at| at.to_rfc3339_opts(chrono::SecondsFormat::AutoSi, true)).unwrap_or_else(|| millis.to_string())
+}
+
+fn print_reminders(reminders: &[ReminderView], header: bool) {
+    const ID_WIDTH: usize = 36; // "rem-" plus a simple UUID
+    const TARGET_WIDTH: usize = 12;
+    if header {
+        println!("{:<ID_WIDTH$} {:<TARGET_WIDTH$} {:<8} {:<9} {:<24} MESSAGE", "ID", "TARGET", "MODE", "STATE", "DUE");
+    }
+    for reminder in reminders {
+        let state = match reminder.state {
+            ReminderState::Pending => "pending",
+            ReminderState::Enqueued => "enqueued",
+            ReminderState::Failed => "failed",
+            ReminderState::Canceled => "canceled",
+        };
+        let text = reminder.message.split_whitespace().collect::<Vec<_>>().join(" ");
+        let mut chars = text.chars();
+        let mut summary: String = chars.by_ref().take(60).collect();
+        if chars.next().is_some() {
+            summary.push('…');
+        }
+        println!("{:<ID_WIDTH$} {:<TARGET_WIDTH$} {:<8} {:<9} {:<24} {summary}", reminder.id, reminder.target.canonical_name, "at-time", state, due_time(reminder.due_at_ms));
+    }
+}
+
+fn resolve_subscription_target(session: &Session, name: &str) -> ServiceResult<Option<crate::db::InstanceRow>> {
+    let records = session.records()?;
+    let index = records.iter().position(|record| record.name == name).or_else(|| records.iter().position(|record| record.name.starts_with(name)));
+    Ok(index.and_then(|index| records.into_iter().nth(index)))
+}
+
+fn create_reminder(session: &Session, args: &EventsSubArgs, delay_ms: i64) -> ServiceResult<i32> {
+    let actor = session.actor.as_ref().ok_or_else(|| {
+        ServiceError::IdentityRequired(if args.for_agent.is_none() {
+            "provide --for NAME to select a target when no current Agent is selected; a valid caller identity is required".into()
+        } else {
+            "time reminders require a valid caller Agent identity; --for selects the target only".into()
+        })
+    })?;
+    let target = if let Some(name) = &args.for_agent {
+        if name.is_empty() || name == crate::shared::SENDER || name.contains(':') {
+            return Err(ServiceError::Unsupported("time reminders require a local Agent target".into()));
+        }
+        let record = resolve_subscription_target(session, name)?.ok_or_else(|| ServiceError::NotFound(format!("Agent '{name}'")))?;
+        ParticipantRef { canonical_name: record.name, incarnation_bits: record.created_at.to_bits() }
+    } else {
+        actor.participant.clone()
+    };
+    let due_at_ms = chrono::Utc::now().timestamp_millis().checked_add(delay_ms).ok_or_else(|| ServiceError::InvalidInput("reminder due time is out of range".into()))?;
+    let request = Events::CreateReminder { target, due_at_ms, message: args.message.clone().unwrap_or_default() };
+    let EventResult::ReminderCreated(created) = reconciled_call(&session.client, request)? else {
+        return Err(ServiceError::Internal("daemon returned a different reminder creation result".into()));
+    };
+    let reminder = created.reminder;
+    let id = &reminder.id;
+    let result = if created.already_exists { "already exists" } else { "created" };
+    println!("Reminder {id} {result}\n  target: {}\n  due: {}\n  stop: agentx events unsub {id}\n  show: agentx events sub show {id}", reminder.target.canonical_name, due_time(reminder.due_at_ms));
+    Ok(0)
+}
+
 fn subscription(session: &Session, args: &EventsSubArgs) -> ServiceResult<i32> {
+    if let Some(delay_ms) = args.reminder_delay_ms {
+        return create_reminder(session, args, delay_ms);
+    }
+    if args.rest.first().is_some_and(|value| value == "show") {
+        let id = args.rest.get(1).ok_or_else(|| ServiceError::InvalidInput("use events sub show REMINDER_ID".into()))?;
+        let EventResult::Reminder(reminder) = call(&session.client, Events::Reminder { id: id.clone() })? else {
+            return Err(ServiceError::Internal("daemon returned a different reminder result".into()));
+        };
+        #[derive(serde::Serialize)]
+        struct ShowReminder {
+            kind: &'static str,
+            #[serde(flatten)]
+            reminder: ReminderView,
+        }
+        println!("{}", serde_json::to_string(&ShowReminder { kind: "time", reminder }).map_err(|error| ServiceError::Internal(error.to_string()))?);
+        return Ok(0);
+    }
     let is_list = args.rest.first().is_some_and(|value| value == "list");
     if let Some(device) = &args.device {
         return Ok(if is_list { events::cmd_events_sub_remote_list(&session.client, device) } else { events::cmd_events_sub_remote_create(&session.client, args, device) });
     }
     if is_list {
-        return match call(&session.client, Events::Subscriptions)? {
-            EventResult::Subscriptions(subs) => Ok(events::print_subscriptions(&subs)),
-            _ => Err(ServiceError::Internal("daemon returned a different subscriptions projection".into())),
+        let EventResult::Subscriptions(subs) = call(&session.client, Events::Subscriptions)? else {
+            return Err(ServiceError::Internal("daemon returned a different subscriptions projection".into()));
         };
+        let include_history = args.history;
+        let mut request = Events::Reminders { include_history };
+        let mut first = true;
+        loop {
+            let EventResult::Reminders(page) = call(&session.client, request)? else {
+                return Err(ServiceError::Internal("daemon returned a different reminders projection".into()));
+            };
+            if first && (!subs.is_empty() || page.reminders.is_empty()) {
+                events::print_subscriptions(&subs);
+            }
+            if !page.reminders.is_empty() {
+                print_reminders(&page.reminders, first);
+            }
+            let Some(after) = page.next else { break };
+            request = Events::ContinueReminders { include_history, after };
+            first = false;
+        }
+        return Ok(0);
     }
     let filters = args.filters.to_filter_map();
     if filters.is_empty() && args.rest.is_empty() {
@@ -494,13 +595,11 @@ fn subscription(session: &Session, args: &EventsSubArgs) -> ServiceResult<i32> {
         return Ok(0);
     }
     let owner = if let Some(name) = &args.for_agent {
-        let records = session.records()?;
-        let record = records.iter().find(|record| record.name == *name).or_else(|| records.iter().find(|record| record.name.starts_with(name)));
-        let Some(record) = record else {
+        let Some(record) = resolve_subscription_target(session, name)? else {
             eprintln!("Not found: {name}\nUse 'agentx list' to see available agents");
             return Ok(1);
         };
-        record.name.clone()
+        record.name
     } else if args.from_bigboss || args.as_name.is_some() {
         args.as_name.clone().unwrap_or_else(|| crate::shared::SENDER.into())
     } else if let Some(actor) = &session.actor {

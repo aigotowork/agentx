@@ -62,6 +62,9 @@ pub(crate) trait Application {
     /// waiting. Authoritative request handling must never depend on completion.
     fn idle(&mut self) {}
 
+    /// Bounded work that must progress even while the writer has queued calls.
+    fn after_request(&mut self) {}
+
     fn read_lane(&self) -> Option<ReadLane> {
         None
     }

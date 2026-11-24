@@ -381,16 +381,18 @@ pub fn build_push_payload(db: &AgentxDb, device_uuid: &str) -> (Value, Vec<Value
         .prepare(
             "SELECT id, timestamp, type, instance, data FROM events
              WHERE id > ? AND instance NOT LIKE '%:%'
-             AND instance != '_device'
+             AND instance != '_device' AND instance != ?2
              AND json_extract(data, '$._relay') IS NULL
              ORDER BY id LIMIT 101",
         )
         .ok()
         .map(|mut stmt| {
-            stmt.query_map(rusqlite::params![tail_start_id], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?, row.get::<_, String>(2)?, row.get::<_, String>(3)?, row.get::<_, String>(4)?)))
-                .ok()
-                .map(|rows| rows.filter_map(|r| r.ok()).collect())
-                .unwrap_or_default()
+            stmt.query_map(rusqlite::params![tail_start_id, crate::messaging::submission::REMINDER_EVENT_INSTANCE], |row| {
+                Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?, row.get::<_, String>(2)?, row.get::<_, String>(3)?, row.get::<_, String>(4)?))
+            })
+            .ok()
+            .map(|rows| rows.filter_map(|r| r.ok()).collect())
+            .unwrap_or_default()
         })
         .unwrap_or_default();
 

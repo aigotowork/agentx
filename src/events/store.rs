@@ -1,5 +1,6 @@
 //! Daemon-owned persistence adapter for native event operations.
 use super::service::*;
+use crate::agents::attachments::ParticipantRef;
 use crate::db::AgentxDb;
 use crate::db::subscriptions::{SubCreateOutcome, build_and_insert_sql_subscription, create_filter_subscription};
 use crate::events::filters::{FilterMap, build_sql_from_flags};
@@ -110,39 +111,61 @@ fn read_page_sql(conn: &rusqlite::Connection, sql: &str, params: &[&dyn rusqlite
     Ok((events, through, warnings, has_more))
 }
 
+// Route keys index names. The event retains authority for exact reminders.
+macro_rules! conversation_fence {
+    () => {
+        " AND CASE WHEN json_valid(data) THEN
+            json_type(data,'$.delivery_fence') IS NULL OR (
+                json_extract(data,'$.delivery_fence.canonical_name')=?1
+                AND data -> '$.delivery_fence.incarnation_bits'=?6
+            ) ELSE 1 END"
+    };
+}
+
+macro_rules! conversation_journal {
+    () => {
+        " WHERE id>?2 AND id<=?3 AND type='message' AND timestamp>=?4 AND (instance=?1 OR EXISTS (
+            SELECT 1 FROM json_each(CASE WHEN json_valid(data) THEN
+                CASE WHEN json_valid(json_extract(data,'$.delivered_to')) THEN json_extract(data,'$.delivered_to') END
+            END) WHERE json_each.type='text' AND value=?1
+        ))"
+    };
+}
+
 /// Read an exact conversation window with the same page limits and cursor as
 /// the general event query. Only complete projections answer from the index.
-pub(crate) fn conversation_page(db: &AgentxDb, context: &RequestContext, participant: &str, start: &str, after: i64, through: Option<i64>, limit: usize) -> ServiceResult<EventPage> {
+pub(crate) fn conversation_page(db: &AgentxDb, context: &RequestContext, target: &ParticipantRef, start: &str, after: i64, through: Option<i64>, limit: usize) -> ServiceResult<EventPage> {
     let upper = through.unwrap_or(i64::MAX);
-    if db.conversation_routes_cover(after, upper) {
-        // Start from the participant's ordered keys, not from all message rows.
-        const SQL: &str = "SELECT e.id,e.timestamp,e.type,e.instance,e.data FROM conversation_routes r
-            CROSS JOIN events e ON e.id=r.event_id WHERE r.participant=?1 AND r.event_id>?2 AND r.event_id<=?3
-            AND e.type='message' AND e.timestamp>=?4 ORDER BY r.event_id LIMIT ?5";
-        let limit = limit.min(MAX_PAGE_EVENTS);
-        let fetch = if limit == 0 { 0 } else { (limit + 1) as i64 };
-        let (events, next, warnings, has_more) = read_page_sql(db.conn(), SQL, &[&participant, &after, &upper, &start, &fetch], limit, &[]).map_err(ServiceError::InvalidInput)?;
-        return Ok(EventPage { events, resolved_filters: FilterMap::new(), newest_id: db.get_last_event_id(), next_after: next.max(after), has_more, database_generation: context.database_generation.clone(), warnings, history: None });
-    }
-    let filters = FilterMap::from([("type".into(), vec!["message".into()]), ("participant".into(), vec![participant.into()])]);
-    query(db, context, EventQuery { filters, predicate: Some(format!("timestamp >= '{start}'")), after: Some(after), through, limit, oldest_first: true, ..Default::default() })
+    const INDEXED: &str = concat!(
+        "SELECT e.id,e.timestamp,e.type,e.instance,e.data FROM conversation_routes r
+         CROSS JOIN events e ON e.id=r.event_id WHERE r.participant=?1 AND r.event_id>?2 AND r.event_id<=?3
+         AND e.type='message' AND e.timestamp>=?4",
+        conversation_fence!(),
+        " ORDER BY r.event_id LIMIT ?5"
+    );
+    const JOURNAL: &str = concat!("SELECT id,timestamp,type,instance,data FROM events", conversation_journal!(), conversation_fence!(), " ORDER BY id LIMIT ?5");
+    let sql = if db.conversation_routes_cover(after, upper) { INDEXED } else { JOURNAL };
+    let limit = limit.min(MAX_PAGE_EVENTS);
+    let fetch = if limit == 0 { 0 } else { (limit + 1) as i64 };
+    let bits = target.incarnation_bits.to_string();
+    let (events, next, warnings, has_more) = read_page_sql(db.conn(), sql, &[&target.canonical_name, &after, &upper, &start, &fetch, &bits], limit, &[]).map_err(ServiceError::InvalidInput)?;
+    Ok(EventPage { events, resolved_filters: FilterMap::new(), newest_id: db.get_last_event_id(), next_after: next.max(after), has_more, database_generation: context.database_generation.clone(), warnings, history: None })
 }
 
 /// Descending seek within a caller-pinned snapshot. The returned page is
 /// chronological; its first ID can be used as the exclusive older bound.
-pub(crate) fn conversation_history(db: &AgentxDb, participant: &str, start: &str, through: i64, limit: usize) -> ServiceResult<(Vec<Value>, bool)> {
+pub(crate) fn conversation_history(db: &AgentxDb, target: &ParticipantRef, start: &str, through: i64, limit: usize) -> ServiceResult<(Vec<Value>, bool)> {
     if through <= 0 {
         return Ok((Vec::new(), false));
     }
-    const INDEXED: &str = "SELECT e.id,e.timestamp,e.type,e.instance,e.data FROM conversation_routes r
-        CROSS JOIN events e ON e.id=r.event_id WHERE r.participant=?1 AND r.event_id>?2 AND r.event_id<=?3
-        AND e.type='message' AND e.timestamp>=?4 ORDER BY r.event_id DESC LIMIT ?5";
-    const JOURNAL: &str = "SELECT id,timestamp,type,instance,data FROM events NOT INDEXED
-        WHERE id>?2 AND id<=?3 AND type='message' AND timestamp>=?4 AND (instance=?1 OR EXISTS (
-            SELECT 1 FROM json_each(CASE WHEN json_valid(data) THEN
-                CASE WHEN json_valid(json_extract(data,'$.delivered_to')) THEN json_extract(data,'$.delivered_to') END
-            END) WHERE json_each.type='text' AND value=?1
-        )) ORDER BY id DESC LIMIT ?5";
+    const INDEXED: &str = concat!(
+        "SELECT e.id,e.timestamp,e.type,e.instance,e.data FROM conversation_routes r
+         CROSS JOIN events e ON e.id=r.event_id WHERE r.participant=?1 AND r.event_id>?2 AND r.event_id<=?3
+         AND e.type='message' AND e.timestamp>=?4",
+        conversation_fence!(),
+        " ORDER BY r.event_id DESC LIMIT ?5"
+    );
+    const JOURNAL: &str = concat!("SELECT id,timestamp,type,instance,data FROM events NOT INDEXED", conversation_journal!(), conversation_fence!(), " ORDER BY id DESC LIMIT ?5");
     const RAW_ROWS: i64 = 4096;
     let (sql, lower) = if db.conversation_routes_cover(0, through) {
         (INDEXED, 0)
@@ -154,7 +177,8 @@ pub(crate) fn conversation_history(db: &AgentxDb, participant: &str, start: &str
     };
     let limit = limit.min(MAX_PAGE_EVENTS);
     let fetch = (limit + 1) as i64;
-    let (mut events, _, _, has_more) = read_page_sql(db.conn(), sql, &[&participant, &lower, &through, &start, &fetch], limit, &[]).map_err(ServiceError::InvalidInput)?;
+    let bits = target.incarnation_bits.to_string();
+    let (mut events, _, _, has_more) = read_page_sql(db.conn(), sql, &[&target.canonical_name, &lower, &through, &start, &fetch, &bits], limit, &[]).map_err(ServiceError::InvalidInput)?;
     if lower != 0 && !has_more {
         return Err(ServiceError::Unavailable("message history scan incomplete while the conversation index is being prepared; retry".into()));
     }
@@ -210,6 +234,11 @@ pub(crate) fn handle(db: &AgentxDb, context: &RequestContext, request: Request) 
             };
             Ok(Response::Subscribed(created))
         }
+        Request::CreateReminder { target, due_at_ms, message } => super::reminders::create(db, context, target, due_at_ms, message).map(Response::ReminderCreated),
+        Request::Reminders { include_history } => super::reminders::list(db, include_history, None).map(Response::Reminders),
+        Request::ContinueReminders { include_history, after } => super::reminders::list(db, include_history, Some(&after)).map(Response::Reminders),
+        Request::Reminder { id } => super::reminders::show(db, &id).map(Response::Reminder),
+        Request::Unsubscribe { id } if id.starts_with("rem-") => super::reminders::cancel(db, context, &id).map(Response::Unsubscribed),
         Request::Unsubscribe { id } => {
             let key = format!("events_sub:{id}");
             let exists = db.kv_get(&key).map_err(internal)?.is_some();

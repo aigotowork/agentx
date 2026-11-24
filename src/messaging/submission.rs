@@ -13,6 +13,31 @@ pub(crate) struct PersistedMessage {
     pub data: serde_json::Value,
 }
 
+pub(crate) const REMINDER_EVENT_INSTANCE: &str = "sys_[agentx-reminder]";
+
+/// Append a reminder directly to one mailbox, without interpreting its text as
+/// routing syntax or running ordinary send reactions. Events owns the transaction.
+pub(crate) fn persist_reminder_message(db: &AgentxDb, target: &crate::agents::attachments::ParticipantRef, id: &str, text: &str) -> anyhow::Result<PersistedMessage> {
+    anyhow::ensure!(!db.conn().is_autocommit(), "reminder message requires a write scope");
+    const SENDER: &str = "[agentx-reminder]";
+    let routing_instance = REMINDER_EVENT_INSTANCE.to_owned();
+    let recipients = vec![target.canonical_name.clone()];
+    let data = serde_json::json!({
+        "from": SENDER,
+        "text": text,
+        "sender_kind": "system",
+        "intent": "inform",
+        "scope": "mentions",
+        "mentions": recipients,
+        "delivered_to": recipients,
+        "scene_addressing": {"sender": null, "recipients": [target], "human_sender": false, "human_recipient": false},
+        "reminder_id": id,
+        "delivery_fence": target
+    });
+    let event_id = db.insert_event_row("message", &routing_instance, &data, None)?;
+    Ok(PersistedMessage { event_id, recipients, routing_instance, data })
+}
+
 pub(crate) struct ResolvedDelivery {
     pub(crate) original_scope: MessageScope,
     pub(crate) effective_scope: MessageScope,

@@ -175,8 +175,8 @@ impl AgentxDb {
     /// Lightweight check — parses only the JSON `data` column (skipping full
     /// Message construction) and returns on the first matching row.
     pub fn has_pending(&self, name: &str) -> bool {
-        let last_event_id = match self.get_instance_status(name) {
-            Ok(Some(status)) => status.last_event_id,
+        let status = match self.get_instance_status(name) {
+            Ok(Some(status)) => status,
             // No instance row (e.g. a launch placeholder deleted after restore_stopped
             // rebinds to the canonical name) ⇒ no recipient ⇒ nothing pending. Falling
             // back to cursor 0 here would treat the entire channel backlog as unread and
@@ -196,7 +196,7 @@ impl AgentxDb {
             }
         };
 
-        let rows = match stmt.query_map(params![last_event_id], |row| row.get::<_, String>(0)) {
+        let rows = match stmt.query_map(params![status.last_event_id], |row| row.get::<_, String>(0)) {
             Ok(r) => r,
             Err(e) => {
                 crate::log::log_error("db", "has_pending.query", &format!("{e}"));
@@ -206,7 +206,7 @@ impl AgentxDb {
 
         for data in rows.flatten() {
             if let Ok(json) = serde_json::from_str::<serde_json::Value>(&data)
-                && Self::should_deliver_to(&json, name)
+                && Self::should_deliver_to(&json, name, status.incarnation_bits)
             {
                 return true;
             }

@@ -66,7 +66,7 @@ impl AgentxDb {
     /// A small idle transaction advances coverage and inserts its membership
     /// together. The reader never treats an unfinished range as empty history.
     pub(crate) fn backfill_conversation_routes(&self) -> anyhow::Result<bool> {
-        let pending = self.with_event_backfill(|| {
+        let pending = self.with_background_write_scope(|| {
             let (through, ceiling) = self.conversation_route_coverage()?;
             if through >= ceiling {
                 return Ok(false);

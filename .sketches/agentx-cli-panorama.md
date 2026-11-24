@@ -196,8 +196,12 @@ agentx
 │  ├─ events launch [batch_id]               等待启动批次进入终态
 │  │  --timeout <秒数>                       默认 30 秒
 │  │
-│  ├─ events sub list                        查看订阅
-│  │  --device <设备ID>                      查看远端订阅
+│  ├─ events sub list                        查看订阅和待处理提醒
+│  │  --history                             加上已入队、失败和已取消的提醒
+│  │  --device <设备ID>                      只查看远端普通订阅
+│  ├─ events sub show <提醒ID>                查看提醒结果（JSON）
+│  ├─ events sub --in <时长> --message <正文>  一次性本地提醒（1s–365d）
+│  │  --for <Agent>                          默认自己；也可为当前本地 Agent 代设
 │  │
 │  ├─ events sub [过滤选项 | SQL表达式]      创建订阅；命中后以消息通知
 │  │  --once                                 命中一次后删除
@@ -206,8 +210,8 @@ agentx
 │  │  --as <名称> / -b                      使用外部订阅者身份
 │  │  --device <设备ID>                      在远端安装订阅
 │  │
-│  └─ events unsub <订阅ID>                  删除订阅
-│     --device <设备ID>                      删除远端订阅
+│  └─ events unsub <ID>                      删除订阅或取消待处理提醒
+│     --device <设备ID>                      删除远端普通订阅
 │
 ├─ 上下文包与会话记录
 │  │

@@ -39,7 +39,7 @@ impl AgentxDb {
     }
 
     pub(crate) fn backfill_human_mailbox(&self) -> anyhow::Result<bool> {
-        self.with_event_backfill(|| {
+        self.with_background_write_scope(|| {
             let (through, ceiling) = self.human_mailbox_coverage()?;
             if through >= ceiling {
                 return Ok(false);

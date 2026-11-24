@@ -7,7 +7,7 @@ description: Allow compatible client and daemon builds without mandatory restart
 
 # Protocol compatibility
 
-Current native participant contracts use protocol epoch 3; see [current compatibility model](../../.docs/model/state-ownership.md#native-build-compatibility) and [metadata integration verification](../agent-metadata/verification.md). The epoch-2 implementation and rollout receipts below remain historical and do not imply current-source adoption on existing services.
+Current native IPC uses epoch 4; see the [compatibility model](../../.docs/model/state-ownership.md#native-build-compatibility) and [one-shot reminder implementation](../time-reminders/implementation.task.md). The earlier epoch-3 [metadata verification](../agent-metadata/verification.md) and the epoch-2 rollout receipts below are historical and do not imply current-source adoption on existing services.
 
 ## Selected contract
 

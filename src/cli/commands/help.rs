@@ -83,9 +83,17 @@ const EVENTS_SUB: &[HelpEntry] = &[
     ("  --device ID", "Install/list on a remote device (create requires --for, --as, or -b)"),
 ];
 
-const EVENTS_SUB_LIST: &[HelpEntry] = &[("events sub list", "List active subscriptions"), ("  --device ID", "List subscriptions on a remote device")];
+const EVENTS_REMINDER: &[HelpEntry] = &[
+    ("events sub --in DURATION --message TEXT", "Schedule one local reminder; no event filters"),
+    ("  --in DURATION", "Relative delay from 1s to 365d (s, m, h, d)"),
+    ("  --message TEXT", "Message to enqueue when due"),
+    ("  --for NAME", "Select another local Agent; defaults to the current Agent"),
+];
+const EVENTS_SUB_LIST: &[HelpEntry] =
+    &[("events sub list", "List active subscriptions and pending local reminders"), ("  --history", "Include enqueued, failed and canceled local reminders"), ("  --device ID", "List event subscriptions on a remote device")];
+const EVENTS_SUB_SHOW: &[HelpEntry] = &[("events sub show REMINDER_ID", "Show a local reminder and its outcome as JSON")];
 
-const EVENTS_UNSUB: &[HelpEntry] = &[("events unsub <id>", "Remove a subscription"), ("  --device ID", "Remove it from a remote device")];
+const EVENTS_UNSUB: &[HelpEntry] = &[("events unsub <id>", "Remove an event subscription or cancel a pending local reminder"), ("  --device ID", "Remove an event subscription from a remote device")];
 
 const EXAMPLES_HEADER: &[HelpEntry] = &[("Examples:", "")];
 
@@ -112,9 +120,25 @@ const EVENTS_SQL_REFERENCE: &[HelpEntry] = &[
 
 const EVENTS_SQL_POINTER: &[HelpEntry] = &[("", ""), ("", "SQL columns: agentx events --help")];
 
-const EVENTS_PAGE: &[&[HelpEntry]] = &[EVENTS_QUERY, FILTERS_HEADER, FILTER_HELP, EVENTS_SHORTCUTS, EVENTS_FOLLOW, EVENTS_LAUNCH, EVENTS_SUB, EVENTS_SUB_LIST, EVENTS_UNSUB, EXAMPLES_HEADER, EVENTS_EXAMPLES, EVENTS_SUB_EXAMPLES, EVENTS_SQL_REFERENCE];
+const EVENTS_PAGE: &[&[HelpEntry]] = &[
+    EVENTS_QUERY,
+    FILTERS_HEADER,
+    FILTER_HELP,
+    EVENTS_SHORTCUTS,
+    EVENTS_FOLLOW,
+    EVENTS_LAUNCH,
+    EVENTS_SUB,
+    EVENTS_REMINDER,
+    EVENTS_SUB_LIST,
+    EVENTS_SUB_SHOW,
+    EVENTS_UNSUB,
+    EXAMPLES_HEADER,
+    EVENTS_EXAMPLES,
+    EVENTS_SUB_EXAMPLES,
+    EVENTS_SQL_REFERENCE,
+];
 
-const EVENTS_SUB_PAGE: &[&[HelpEntry]] = &[EVENTS_SUB, EVENTS_SUB_LIST, EVENTS_UNSUB, FILTERS_HEADER, FILTER_HELP, EVENTS_SHORTCUTS, EXAMPLES_HEADER, EVENTS_SUB_EXAMPLES, EVENTS_SQL_POINTER];
+const EVENTS_SUB_PAGE: &[&[HelpEntry]] = &[EVENTS_SUB, EVENTS_REMINDER, EVENTS_SUB_LIST, EVENTS_SUB_SHOW, EVENTS_UNSUB, FILTERS_HEADER, FILTER_HELP, EVENTS_SHORTCUTS, EXAMPLES_HEADER, EVENTS_SUB_EXAMPLES, EVENTS_SQL_POINTER];
 
 const LIST_HELP: &[HelpEntry] = &[
     ("labels", "Read and atomically patch Agent labels"),
@@ -512,6 +536,7 @@ const TERM_PAGE: &[&[HelpEntry]] = &[TERM_SCREEN, BLANK, TERM_INJECT, BLANK, TER
 const SUBCOMMAND_HELP: &[(&str, &[&[HelpEntry]])] = &[
     ("events sub", EVENTS_SUB_PAGE),
     ("events sub list", &[EVENTS_SUB_LIST]),
+    ("events sub show", &[EVENTS_SUB_SHOW]),
     ("events unsub", &[EVENTS_UNSUB]),
     ("events launch", &[EVENTS_LAUNCH]),
     ("config bootstrap", &[CONFIG_BOOTSTRAP]),
@@ -531,6 +556,12 @@ const SUBCOMMAND_HELP: &[(&str, &[&[HelpEntry]])] = &[
 /// Help topic for `agentx <cmd> <args...> --help`: `"<cmd> <sub>"` when the first
 /// arg is a subcommand with its own page, otherwise just `cmd`.
 pub fn help_topic(cmd: &str, args: &[String]) -> String {
+    if cmd == "events"
+        && args.first().is_some_and(|arg| arg == "sub")
+        && let Some(action) = args.get(1).filter(|action| matches!(action.as_str(), "list" | "show"))
+    {
+        return format!("events sub {action}");
+    }
     if matches!(cmd, "profile" | "labels")
         && let Some(sub) = args.first()
         && native_command(cmd).is_some_and(|command| command.find_subcommand(sub).is_some())

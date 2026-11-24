@@ -69,6 +69,49 @@ pub(crate) struct SubscriptionCreated {
     pub latest_match: Option<Value>,
 }
 
+pub(crate) const MAX_REMINDER_DELAY_MS: i64 = 365 * 24 * 60 * 60 * 1000;
+
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum ReminderState {
+    Pending,
+    Enqueued,
+    Failed,
+    Canceled,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub(crate) struct ReminderView {
+    pub id: String,
+    pub target: ParticipantRef,
+    pub due_at_ms: i64,
+    pub message: String,
+    pub state: ReminderState,
+    pub completed_at_ms: Option<i64>,
+    pub delivery_event_id: Option<i64>,
+    pub failure_reason: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub(crate) struct ReminderCreated {
+    pub reminder: ReminderView,
+    pub already_exists: bool,
+}
+
+/// Keyset ordered by immutable due time and ID. Listing pages do not hold a
+/// SQLite snapshot; the mutable state is observed anew on each page.
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub(crate) struct ReminderCursor {
+    pub due_at_ms: i64,
+    pub id: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub(crate) struct ReminderPage {
+    pub reminders: Vec<ReminderView>,
+    pub next: Option<ReminderCursor>,
+}
+
 /// Originating host lifetime for a mailbox/filter wait. The id is correlation;
 /// the daemon binds it to the authenticated peer and exact participant.
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -108,6 +151,10 @@ pub(crate) enum Request {
     CheckObserver(ObserverSpec),
     EndObserver(ObserverSpec),
     EndHistory { snapshot: String },
+    CreateReminder { target: ParticipantRef, due_at_ms: i64, message: String },
+    Reminders { include_history: bool },
+    ContinueReminders { include_history: bool, after: ReminderCursor },
+    Reminder { id: String },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -123,4 +170,7 @@ pub(crate) enum Response {
     ObserverReady,
     ObserverEnded,
     HistoryEnded,
+    ReminderCreated(ReminderCreated),
+    Reminders(ReminderPage),
+    Reminder(ReminderView),
 }
