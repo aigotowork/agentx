@@ -334,7 +334,7 @@ fn list_page(db: &AgentxDb, context: &RequestContext, cursor: &str, limit: u32, 
     hydrate_views(db, context, entries.iter_mut().map(|(_, view)| view))?;
     Ok(AgentPage { current_complete, generation: context.database_generation.clone(), next: more.then(|| entries.last().unwrap().0.clone()), agents: entries.into_iter().map(|(_, view)| view).collect() })
 }
-fn conversation_bounds(db: &AgentxDb, reference: &AgentRef) -> ServiceResult<(String, Option<i64>)> {
+fn conversation_bounds(db: &AgentxDb, reference: &AgentRef) -> ServiceResult<(ParticipantRef, String, Option<i64>)> {
     // Native messages have daemon timestamps. Bound both sides of a stopped
     // execution so a reused name cannot merge unrelated conversation history.
     let created =
@@ -344,7 +344,7 @@ fn conversation_bounds(db: &AgentxDb, reference: &AgentRef) -> ServiceResult<(St
     }
     let start = chrono::DateTime::from_timestamp(created as i64, (created.fract() * 1_000_000_000.0) as u32).ok_or(ServiceError::StaleFence)?.format("%Y-%m-%dT%H:%M:%S%.6f+00:00").to_string();
     let through = reference.stopped_event.as_deref().map(|id| id.parse::<i64>().map_err(|_| invalid("invalid stopped event"))).transpose()?;
-    Ok((start, through))
+    Ok((ParticipantRef { canonical_name: reference.name.clone(), incarnation_bits: created.to_bits() }, start, through))
 }
 
 fn messages(db: &AgentxDb, context: &RequestContext, reference: AgentRef, after: Option<String>, limit: u32) -> ServiceResult<MessagePage> {
@@ -356,8 +356,8 @@ fn messages(db: &AgentxDb, context: &RequestContext, reference: AgentRef, after:
     if after < 0 {
         return Err(invalid("invalid event cursor"));
     }
-    let (start, through) = conversation_bounds(db, &reference)?;
-    let page = crate::events::store::conversation_page(db, context, &reference.name, &start, after, through, limit as usize)?;
+    let (participant, start, through) = conversation_bounds(db, &reference)?;
+    let page = crate::events::store::conversation_page(db, context, &participant, &start, after, through, limit as usize)?;
     let messages = project_messages(db, context, page.events)?;
     Ok(MessagePage { generation: context.database_generation.clone(), messages, next_after: page.next_after.to_string(), has_more: page.has_more })
 }
@@ -370,10 +370,10 @@ fn message_history(db: &AgentxDb, context: &RequestContext, reference: AgentRef,
         return Err(invalid("invalid page size"));
     }
     let before = before.map(|value| value.parse::<i64>().ok().filter(|id| *id > 0).ok_or_else(|| invalid("invalid event cursor"))).transpose()?;
-    let (start, stop) = conversation_bounds(db, &reference)?;
+    let (participant, start, stop) = conversation_bounds(db, &reference)?;
     let live_after = if before.is_none() { Some(db.conn().query_row("SELECT COALESCE(MAX(id),0) FROM events", [], |row| row.get::<_, i64>(0)).map_err(internal)?) } else { None };
     let through = before.map(|id| id - 1).or(live_after).unwrap_or_default().min(stop.unwrap_or(i64::MAX));
-    let (events, has_more) = crate::events::store::conversation_history(db, &reference.name, &start, through, limit as usize)?;
+    let (events, has_more) = crate::events::store::conversation_history(db, &participant, &start, through, limit as usize)?;
     let messages = project_messages(db, context, events)?;
     let next_before = if has_more { messages.first().map(|message| message.id.clone()) } else { None };
     Ok(MessageHistoryPage { generation: context.database_generation.clone(), messages, next_before, live_after: live_after.map(|id| id.to_string()) })

@@ -24,6 +24,8 @@ const VALUE_FLAGS: &[&str] = &[
     "--name",
     "--terminal",
     "--device",
+    "--in",
+    "--message",
     "--dir",
     "--workspace",
     "--project",

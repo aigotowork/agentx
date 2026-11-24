@@ -9,8 +9,9 @@ fn compatible_build_server_accepts_native_calls_and_preserves_fences() {
     let _daemon = TestDaemon::start(directory.path(), &directory.path().join("agentx.db"));
     let scope = DaemonScope::prepare(directory.path()).unwrap();
     let original = transport::probe(&scope).unwrap();
+    assert_eq!(original.protocol_version, 4);
     for (protocol, path, accepted) in
-        [(PROTOCOL_VERSION, scope.root().to_path_buf(), true), (PROTOCOL_VERSION - 1, scope.root().to_path_buf(), false), (PROTOCOL_VERSION + 1, scope.root().to_path_buf(), false), (PROTOCOL_VERSION, directory.path().join("wrong-scope"), false)]
+        [(PROTOCOL_VERSION, scope.root().to_path_buf(), true), (3, scope.root().to_path_buf(), false), (PROTOCOL_VERSION + 1, scope.root().to_path_buf(), false), (PROTOCOL_VERSION, directory.path().join("wrong-scope"), false)]
     {
         let deadline = Instant::now() + Duration::from_secs(3);
         let mut stream = platform::connect(&scope, deadline).unwrap();
@@ -50,7 +51,7 @@ fn compatible_build_client_accepts_ready_but_rejects_invalid_identity() {
     for case in 0..7 {
         let mut info = baseline.clone();
         match case {
-            1 => info.protocol_version -= 1,
+            1 => info.protocol_version = 3,
             2 => info.protocol_version += 1,
             3 => info.canonical_scope = directory.path().join("wrong"),
             4 => info.pid += 1,
@@ -64,12 +65,14 @@ fn compatible_build_client_accepts_ready_but_rejects_invalid_identity() {
         std::thread::scope(|threads| {
             let deadline = Instant::now() + Duration::from_secs(3);
             threads.spawn(move || {
-                assert!(matches!(frame::read::<ClientFrame>(&mut server, deadline).unwrap(), ClientFrame::Hello { .. }));
+                assert!(matches!(frame::read::<ClientFrame>(&mut server, deadline).unwrap(), ClientFrame::Hello { protocol_version: 4, .. }));
                 frame::write(&mut server, &ServerFrame::Ready(info), deadline).unwrap();
             });
             let result = transport::hello(&scope, &mut client, deadline);
             if case == 0 {
                 assert_eq!(result.unwrap().build_id, "another-build");
+            } else if case == 1 {
+                assert!(matches!(result, Err(DaemonError::Incompatible(_))), "epoch 4 must reject epoch 3 readiness: {result:?}");
             } else {
                 assert!(matches!(result, Err(DaemonError::Incompatible(_) | DaemonError::Protocol(_))));
             }

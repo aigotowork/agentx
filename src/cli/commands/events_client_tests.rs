@@ -202,3 +202,69 @@ fn follower_reset_rebinds_generation_and_never_registers_a_namesake_participant(
     assert!(String::from_utf8(output.bytes).unwrap().contains("\"db_reset\":true"));
     assert_eq!(endpoint_count(root.path()), 0);
 }
+
+#[cfg(unix)]
+#[test]
+fn reminder_create_reconciles_a_committed_call_with_a_lost_reply() {
+    use crate::daemon::{DaemonScope, frame};
+    use crate::service::CallerContext;
+    use std::os::unix::net::UnixListener;
+
+    let (root, _daemon, session) = fixture();
+    let proxy_scope = DaemonScope::prepare(root.path().join("drop-reply")).unwrap();
+    let proxy = UnixListener::bind(proxy_scope.socket_path().unwrap()).unwrap();
+    proxy.set_nonblocking(true).unwrap();
+    let target = session.actor.as_ref().unwrap().participant.clone();
+    let due = chrono::Utc::now().timestamp_millis() + 30_000;
+
+    std::thread::scope(|threads| {
+        let actual = session.client.clone();
+        let mut ready = actual.info().clone();
+        ready.canonical_scope = proxy_scope.root().into();
+        threads.spawn(move || {
+            let deadline = Instant::now() + Duration::from_secs(6);
+            let mut first_request_id = None;
+            for connection in 0..3 {
+                let mut stream = loop {
+                    match proxy.accept() {
+                        Ok((stream, _)) => break stream,
+                        Err(error) if error.kind() == std::io::ErrorKind::WouldBlock && Instant::now() < deadline => std::thread::park_timeout(Duration::from_millis(5)),
+                        Err(error) => panic!("proxy accept failed: {error}"),
+                    }
+                };
+                stream.set_nonblocking(true).unwrap();
+                let hello: Value = frame::read(&mut stream, deadline).unwrap();
+                assert_eq!(hello["Hello"]["protocol_version"], 4);
+                frame::write(&mut stream, &json!({"Ready": ready}), deadline).unwrap();
+                if connection == 0 {
+                    assert!(frame::read_optional::<Value>(&mut stream, deadline).unwrap().is_none());
+                    continue;
+                }
+                let wire: Value = frame::read(&mut stream, deadline).unwrap();
+                let caller: CallerContext = serde_json::from_value(wire["Call"]["caller"].clone()).unwrap();
+                let request: Request = serde_json::from_value(wire["Call"]["request"].clone()).unwrap();
+                if let Some(id) = &first_request_id {
+                    assert_eq!(id, &caller.request_id);
+                } else {
+                    first_request_id = Some(caller.request_id.clone());
+                }
+                let response = actual.call_with_context(caller, request).unwrap();
+                let Response::Events(EventResult::ReminderCreated(receipt)) = &response else {
+                    panic!("expected real creation result");
+                };
+                assert_eq!(receipt.already_exists, connection == 2);
+                if connection == 2 {
+                    frame::write(&mut stream, &json!({"Result":{"result": {"Ok": response}, "database_generation": ready.database_generation}}), deadline).unwrap();
+                }
+            }
+        });
+
+        let client = Client::connect_existing(proxy_scope.root(), session.invocation.clone()).unwrap();
+        let EventResult::ReminderCreated(receipt) = reconciled_call(&client, Events::CreateReminder { target, due_at_ms: due, message: "lost reply".into() }).unwrap() else {
+            panic!("expected reconciled creation result");
+        };
+        assert!(receipt.already_exists);
+        let db = AgentxDb::open_at(&root.path().join("agentx.db")).unwrap();
+        assert_eq!(db.conn().query_row("SELECT COUNT(*) FROM reminders", [], |row| row.get::<_, i64>(0)).unwrap(), 1);
+    });
+}

@@ -10,6 +10,7 @@ use crate::db::AgentxDb;
 
 pub(crate) struct SqliteApplication {
     db: AgentxDb,
+    reminders: crate::events::reminders::Schedule,
     mailbox_backfill: Option<std::time::Instant>,
     human_mailbox_backfill: Option<std::time::Instant>,
     conversation_backfill: Option<std::time::Instant>,
@@ -54,7 +55,9 @@ impl SqliteApplication {
                 None
             }
         };
-        Ok(Self { db, generation, mailbox_backfill, human_mailbox_backfill, conversation_backfill })
+        let mut reminders = crate::events::reminders::Schedule::new(&db);
+        reminders.check(&db, || true);
+        Ok(Self { db, reminders, generation, mailbox_backfill, human_mailbox_backfill, conversation_backfill })
     }
 }
 
@@ -63,7 +66,12 @@ impl Application for SqliteApplication {
         Some(super::read_application::lane(self.db.path(), self.generation.clone(), self.db.poll_progress.clone()))
     }
 
+    fn after_request(&mut self) {
+        self.reminders.check(&self.db, || !self.generation.current().is_empty());
+    }
+
     fn idle(&mut self) {
+        self.after_request();
         let Some((due, backfill)) = [
             (&mut self.mailbox_backfill, AgentxDb::backfill_mailbox_routes as fn(&AgentxDb) -> anyhow::Result<bool>),
             (&mut self.human_mailbox_backfill, AgentxDb::backfill_human_mailbox),
@@ -97,6 +105,7 @@ impl Application for SqliteApplication {
         if committed != context.database_generation || context.caller.expected_database_generation.as_ref().is_some_and(|expected| expected != &committed) {
             return Err(ServiceError::StaleFence);
         }
+        let reminders_changed = matches!(&request, Request::Events(crate::events::service::Request::CreateReminder { .. })) || matches!(&request, Request::Events(crate::events::service::Request::Unsubscribe { id }) if id.starts_with("rem-"));
         let result = match request {
             Request::Inspection(request) => crate::inspection::store::handle(&self.db, context, request).map(Response::Inspection),
             Request::Management(request) => crate::management::store::handle(&self.db, context, request).map(Response::Management),
@@ -119,11 +128,14 @@ impl Application for SqliteApplication {
                 return Err(ServiceError::Unavailable(format!("database generation unavailable after dispatch: {other:?}")));
             }
         };
-        if after != committed
-            && let Err(error) = self.generation.publish(after)
-        {
-            self.generation.invalidate();
-            return Err(ServiceError::Unavailable(error.to_string()));
+        if after != committed {
+            if let Err(error) = self.generation.publish(after) {
+                self.generation.invalidate();
+                return Err(ServiceError::Unavailable(error.to_string()));
+            }
+            self.reminders.after_reset();
+        } else if reminders_changed && result.is_ok() {
+            self.reminders.invalidate();
         }
         result
     }

@@ -34,7 +34,7 @@ Queue publication wraps only native nonblocking `try_send`; dequeue/dispatch pas
 
 The native inspection frame budget is 64 KiB input/512 KiB complete output. Event leaves reserve 128 bytes for the fixed outer envelope; keep that wrapper within the reserve. `DaemonChanged` is checked before every owner leaf, including unstamped Head/Describe. Origin-local failures retain structured stage/kind/raw OS code before service flattening; a missing failure timestamp establishes no time/order/age. Clock failure itself is ClockUnavailable with no fabricated timestamp. Windows read-only DACL/pipe and unsupported-platform branches remain source coverage until separately executed.
 
-For protocol compatibility maintenance, follow the [current Task](../../.controller/domain-daemon/protocol-compatibility.md). `wire::PROTOCOL_VERSION` covers business and inspection IPC. Increment it for incompatible native serialization or operation semantics; preserve prior readers/callers for compatible changes. Epoch 3 carries the simplified participant contract and rejects prior epochs before native calls are decoded. Test both directions of Hello/Ready and both endpoints; do not infer compatibility from equal package versions or bypass scope/peer/generation fences.
+For protocol compatibility maintenance, follow the [current Task](../../.controller/domain-daemon/protocol-compatibility.md). `wire::PROTOCOL_VERSION` covers business and inspection IPC. Increment it for incompatible native serialization or operation semantics; preserve prior readers/callers for compatible changes. Epoch 4 adds [one-shot reminders](../events/AGENTS.md) and rejects epoch 3 before native calls are decoded. Test both directions of Hello/Ready and both endpoints; do not infer compatibility from equal package versions or bypass scope/peer/generation fences.
 
 
 ## Passive observation admission
@@ -45,3 +45,5 @@ For protocol compatibility maintenance, follow the [current Task](../../.control
 
 
 The authorized repair's [completed source outcome and independent evidence](../../.controller/source-hygiene-diagnosis/repair.task.md#completed-source-outcome-and-final-evidence) records15/15 exact native cases,1/1 actual CLI case, deterministic old-order discrimination and real transport capacity checks. This Linux local source-built result does not establish installed/live adoption.
+
+The writer runs bounded reminder maintenance after each ordinary request and on idle timeout. The read lane does not drive timers. Keep derived-index backfills idle-only and preserve the reminder pass budgets; see [Events scheduling](../events/reminders.rs).

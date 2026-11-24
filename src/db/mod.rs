@@ -37,6 +37,7 @@ mod launch_relations;
 mod message_acceptance;
 mod notify;
 mod post_commit;
+pub(crate) mod reminders;
 pub(crate) mod reqwatch_policy;
 mod reset;
 mod sessions;
@@ -46,13 +47,14 @@ pub(crate) mod subscriptions;
 
 pub(crate) use collaboration::StoredWorkCommand;
 pub use events::Message;
+pub(crate) use events::delivery_fence_matches;
 pub use instances::InstanceRow;
 #[allow(unused_imports)]
 pub use instances::InstanceStatus;
 
 /// Storage-owned current head; migration consumers assert this after upgrades.
 /// Bump on any schema change.
-pub(crate) const SCHEMA_VERSION: i32 = 29;
+pub(crate) const SCHEMA_VERSION: i32 = 30;
 // Tables introduced by replayable additive migrations. A version stamp alone
 // cannot prove these migrations ran; detection and repair share this inventory.
 const ADDITIVE_TABLES: &[(i32, &str)] = &[
@@ -67,6 +69,7 @@ const ADDITIVE_TABLES: &[(i32, &str)] = &[
     (28, "agent_label_sets"),
     (28, "agent_labels"),
     (29, "agent_creation_forks"),
+    (30, "reminders"),
 ];
 pub const DEV_ROOT_KV_KEY: &str = "config:dev_root";
 const MIGRATIONS: &[(i32, &str)] = &[
@@ -124,6 +127,7 @@ const MIGRATIONS: &[(i32, &str)] = &[
     (27, ""), // Canonical instance-column projection runs inside the migration transaction.
     (28, labels::SCHEMA),
     (29, launch_relations::FORK_SCHEMA),
+    (30, reminders::SCHEMA),
 ];
 
 /// Identify columns outside the current native instance storage contract.
@@ -358,6 +362,15 @@ impl AgentxDb {
             self.flush_post_commit();
         }
         result
+    }
+
+    /// Background passes yield on a contended SQLite writer instead of
+    /// consuming the timeout reserved for a foreground operation.
+    pub(crate) fn with_background_write_scope<T>(&self, work: impl FnOnce() -> anyhow::Result<T>) -> anyhow::Result<T> {
+        self.conn().busy_timeout(std::time::Duration::ZERO)?;
+        let pending = self.with_write_scope(work);
+        self.conn().busy_timeout(std::time::Duration::from_secs(5))?;
+        pending
     }
 
     /// Access the filesystem path backing this DB handle.
@@ -643,6 +656,7 @@ impl AgentxDb {
         tx.execute_batch(launch_relations::SCHEMA)?;
         tx.execute_batch(labels::SCHEMA)?;
         tx.execute_batch(launch_relations::FORK_SCHEMA)?;
+        tx.execute_batch(reminders::SCHEMA)?;
 
         project_instance_columns(&tx).context(PreserveInstanceStorage)?;
 

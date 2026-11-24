@@ -43,6 +43,7 @@ impl AgentxDb {
              DELETE FROM participant_attachments;
              DELETE FROM participant_sessions;
              DELETE FROM message_acceptances;
+             DELETE FROM reminders;
              DELETE FROM claude_actor_capabilities;
              DELETE FROM session_bindings;
              DELETE FROM process_bindings;

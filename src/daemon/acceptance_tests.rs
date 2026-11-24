@@ -829,7 +829,7 @@ fn process_abandoned_reply_reconciles_after_restart_without_duplicate_message() 
     }
     let target = format!("@{}", names[1]);
     let cli_body = "actual CLI send observed by actual CLI events";
-    let (code, _, stderr) = fixture.cli(scope.root(), &["send", "--name", &names[0], "--json", &target, "--", cli_body]);
+    let (code, _, stderr) = fixture.cli(scope.root(), &["--iam", &names[0], "send", "--json", &target, "--", cli_body]);
     assert_eq!(code, 0, "{stderr}");
     let (code, events, stderr) = fixture.cli(scope.root(), &["events", "--last", "20", "--full"]);
     assert_eq!(code, 0, "{stderr}");

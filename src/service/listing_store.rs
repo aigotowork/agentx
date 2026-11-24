@@ -146,7 +146,11 @@ pub(crate) fn get_unread_count(db: &AgentxDb, name: &str, last_event_id: i64) ->
     db.conn()
         .query_row(
             "SELECT COUNT(*) FROM events WHERE id > ? AND type = 'message'
-             AND EXISTS (SELECT 1 FROM json_each(json_extract(data, '$.delivered_to')) WHERE value = ?)",
+             AND EXISTS (SELECT 1 FROM json_each(json_extract(data, '$.delivered_to')) WHERE value = ?2)
+             AND (json_type(data,'$.delivery_fence') IS NULL OR EXISTS (
+                 SELECT 1 FROM instances WHERE name=?2 AND json_extract(events.data,'$.delivery_fence.canonical_name')=name
+                   AND events.data -> '$.delivery_fence.incarnation_bits'=agentx_incarnation(created_at)
+             ))",
             rusqlite::params![last_event_id, name],
             |row| row.get(0),
         )
@@ -162,25 +166,27 @@ pub(crate) fn get_unread_counts_batch(db: &AgentxDb, instances: &[InstanceRow]) 
 /// Use covered participant keys to exclude unrelated events. Until backfill
 /// covers the requested unread tail, scan that tail once for the whole roster.
 pub(crate) fn try_get_unread_counts_batch(db: &AgentxDb, instances: &[InstanceRow]) -> ServiceResult<HashMap<String, i64>> {
-    let recipients: HashMap<&str, i64> = instances.iter().filter(|inst| !is_remote_instance(inst)).map(|inst| (inst.name.as_str(), inst.last_event_id)).collect();
-    let Some(min_cursor) = recipients.values().min() else {
+    let recipients: HashMap<&str, (i64, u64)> = instances.iter().filter(|inst| !is_remote_instance(inst)).map(|inst| (inst.name.as_str(), (inst.last_event_id, inst.created_at.to_bits()))).collect();
+    let Some(min_cursor) = recipients.values().map(|(cursor, _)| cursor).min() else {
         return Ok(HashMap::new());
     };
     if db.conversation_routes_cover(*min_cursor, i64::MAX) {
         return indexed_unread_counts(db, &recipients);
     }
-    let mut stmt = db.conn().prepare("SELECT id, json_extract(data, '$.delivered_to') FROM events WHERE type = 'message' AND id > ? ORDER BY id").map_err(internal)?;
-    let rows = stmt.query_map([min_cursor], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, Option<String>>(1)?))).map_err(internal)?;
+    let mut stmt = db.conn().prepare("SELECT id, json_extract(data, '$.delivered_to'), data -> '$.delivery_fence' FROM events WHERE type = 'message' AND id > ? ORDER BY id").map_err(internal)?;
+    let rows = stmt.query_map([min_cursor], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, Option<String>>(1)?, row.get::<_, Option<String>>(2)?))).map_err(internal)?;
     let mut counts: HashMap<String, i64> = recipients.keys().map(|name| ((*name).to_owned(), 0)).collect();
     for row in rows {
-        let (id, data) = row.map_err(internal)?;
+        let (id, data, fence) = row.map_err(internal)?;
         let Some(data) = data else { continue };
         let data: serde_json::Value = serde_json::from_str(&data).map_err(internal)?;
         let Some(delivered_to) = data.as_array() else { continue };
+        let fence = decode_fence(fence.as_deref())?;
         let mut seen = HashSet::new();
         for name in delivered_to.iter().filter_map(serde_json::Value::as_str) {
-            if let Some(cursor) = recipients.get(name)
+            if let Some((cursor, bits)) = recipients.get(name)
                 && id > *cursor
+                && crate::db::delivery_fence_matches(fence.as_ref(), name, *bits)
                 && seen.insert(name)
             {
                 *counts.get_mut(name).expect("selected recipient initialized") += 1;
@@ -190,21 +196,26 @@ pub(crate) fn try_get_unread_counts_batch(db: &AgentxDb, instances: &[InstanceRo
     Ok(counts)
 }
 
-fn indexed_unread_counts(db: &AgentxDb, recipients: &HashMap<&str, i64>) -> ServiceResult<HashMap<String, i64>> {
+fn decode_fence(raw: Option<&str>) -> ServiceResult<Option<serde_json::Value>> {
+    raw.map(serde_json::from_str).transpose().map_err(internal)
+}
+
+fn indexed_unread_counts(db: &AgentxDb, recipients: &HashMap<&str, (i64, u64)>) -> ServiceResult<HashMap<String, i64>> {
     // A conversation key is a candidate: outgoing events also have keys.
     // The original delivered_to array remains authoritative for unread counts.
-    const SQL: &str = "SELECT cursor.key,json_extract(e.data,'$.delivered_to') FROM json_each(?1) cursor
-        CROSS JOIN conversation_routes r ON r.participant=cursor.key AND r.event_id>cursor.value
+    const SQL: &str = "SELECT cursor.key,json_extract(e.data,'$.delivered_to'),e.data -> '$.delivery_fence' FROM json_each(?1) cursor
+        CROSS JOIN conversation_routes r ON r.participant=cursor.key AND r.event_id>json_extract(cursor.value,'$[0]')
         CROSS JOIN events e ON e.id=r.event_id WHERE e.type='message'";
     let cursors = serde_json::to_string(recipients).map_err(internal)?;
     let mut stmt = db.conn().prepare_cached(SQL).map_err(internal)?;
-    let rows = stmt.query_map([cursors], |row| Ok((row.get::<_, String>(0)?, row.get::<_, Option<String>>(1)?))).map_err(internal)?;
+    let rows = stmt.query_map([cursors], |row| Ok((row.get::<_, String>(0)?, row.get::<_, Option<String>>(1)?, row.get::<_, Option<String>>(2)?))).map_err(internal)?;
     let mut counts: HashMap<String, i64> = recipients.keys().map(|name| ((*name).to_owned(), 0)).collect();
     for row in rows {
-        let (name, data) = row.map_err(internal)?;
+        let (name, data, fence) = row.map_err(internal)?;
         let Some(data) = data else { continue };
         let delivered: serde_json::Value = serde_json::from_str(&data).map_err(internal)?;
-        if delivered.as_array().is_some_and(|values| values.iter().any(|value| value.as_str() == Some(name.as_str()))) {
+        let fence = decode_fence(fence.as_deref())?;
+        if crate::db::delivery_fence_matches(fence.as_ref(), &name, recipients[name.as_str()].1) && delivered.as_array().is_some_and(|values| values.iter().any(|value| value.as_str() == Some(name.as_str()))) {
             *counts.get_mut(&name).expect("selected recipient initialized") += 1;
         }
     }

@@ -1,6 +1,7 @@
 //! Transaction-local external notifications. Savepoints retain only committed
 //! effects; the owning outer transaction flushes after SQLite releases its lock.
 use super::AgentxDb;
+use crate::agents::attachments::ParticipantRef;
 use crate::runtime::notify::WakeKind;
 
 #[expect(
@@ -10,6 +11,7 @@ use crate::runtime::notify::WakeKind;
 pub(super) enum Effect {
     Event { id: i64, kind: String, instance: String, data: serde_json::Value },
     Wake { instance: String, kinds: Vec<WakeKind> },
+    WakeExact(ParticipantRef),
     Observation { prepared: crate::service::context::PreparedDomainObservation, bytes: usize },
 }
 
@@ -136,6 +138,14 @@ impl AgentxDb {
         }
     }
 
+    pub(crate) fn wake_exact_after_commit(&self, target: &ParticipantRef) {
+        if self.conn().is_autocommit() {
+            crate::runtime::notify::wake::wake_exact(self, target);
+        } else {
+            self.post_commit.borrow_mut().push(Effect::WakeExact(target.clone()));
+        }
+    }
+
     pub(super) fn flush_post_commit(&self) {
         debug_assert!(self.conn().is_autocommit());
         let effects = std::mem::take(&mut *self.post_commit.borrow_mut());
@@ -149,6 +159,7 @@ impl AgentxDb {
                     observers_woken = true;
                 }
                 Effect::Wake { instance, kinds } => crate::runtime::notify::wake(self, &instance, &kinds),
+                Effect::WakeExact(target) => crate::runtime::notify::wake::wake_exact(self, &target),
                 Effect::Observation { prepared, .. } => prepared.publish(),
             }
         }

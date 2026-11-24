@@ -36,7 +36,15 @@ pub(crate) fn report(db: &AgentxDb, event: i64) -> ServiceResult<DeliveryReport>
     let frozen: Vec<ParticipantRef> = data.get("scene_addressing").and_then(|value| value.get("recipients")).cloned().map(serde_json::from_value).transpose().map_err(internal)?.unwrap_or_default();
     let mut recipients = Vec::new();
     for name in data["delivered_to"].as_array().into_iter().flatten().filter_map(|value| value.as_str()) {
-        let participant = frozen.iter().find(|target| target.canonical_name == name).cloned();
+        let participant = if let Some(fence) = data.get("delivery_fence") {
+            let target: ParticipantRef = serde_json::from_value(fence.clone()).map_err(internal)?;
+            if target.canonical_name != name {
+                continue;
+            }
+            Some(target)
+        } else {
+            frozen.iter().find(|target| target.canonical_name == name).cloned()
+        };
         let mut recipient = RecipientDelivery { name: name.into(), participant: participant.clone(), mailbox: MailboxProgress::Unknown, host: None, status: None, context: None };
         if let Some(participant) = participant {
             match db.get_instance_full(name).map_err(internal)? {

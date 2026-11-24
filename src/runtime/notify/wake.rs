@@ -42,6 +42,12 @@ pub fn wake(db: &AgentxDb, instance: &str, kinds: &[WakeKind]) {
     wake_ports(&ports, WAKE_TARGETED_MS);
 }
 
+/// A reminder wake may only select endpoints belonging to its frozen row.
+pub(crate) fn wake_exact(db: &AgentxDb, target: &crate::agents::attachments::ParticipantRef) {
+    let ports = lookup_ports_for(db, &target.canonical_name, &[], Some(target.incarnation_bits));
+    wake_ports(&ports, WAKE_TARGETED_MS);
+}
+
 /// Wake every wake endpoint registered system-wide.
 ///
 /// Legacy borrowed wrapper retained for policy fixtures. Production Relay
@@ -139,15 +145,22 @@ pub fn wake_ports(ports: &[u16], timeout_ms: u64) {
 /// SELECT ports for an instance, filtered to wake kinds. Empty `kinds` means
 /// all wake kinds. Inject is excluded in either case.
 fn lookup_ports(db: &AgentxDb, instance: &str, kinds: &[WakeKind]) -> Vec<u16> {
+    lookup_ports_for(db, instance, kinds, None)
+}
+
+fn lookup_ports_for(db: &AgentxDb, instance: &str, kinds: &[WakeKind], incarnation: Option<u64>) -> Vec<u16> {
     let kinds_sql = if kinds.is_empty() { wake_kinds_sql_list() } else { kinds.iter().map(|k| format!("'{}'", k.as_str())).collect::<Vec<_>>().join(",") };
     let sql = format!(
         "SELECT port FROM notify_endpoints \
-         WHERE instance = ? AND kind IN ({kinds_sql})"
+         WHERE instance = ?1 AND kind IN ({kinds_sql})
+           AND (?2 IS NULL OR EXISTS (
+               SELECT 1 FROM instances WHERE name=?1 AND agentx_incarnation(created_at)=?2
+           ))"
     );
     let Ok(mut stmt) = db.conn().prepare(&sql) else {
         return Vec::new();
     };
-    stmt.query_map(params![instance], |row| row.get::<_, i64>(0)).ok().into_iter().flatten().filter_map(|r| r.ok()).filter_map(|p| u16::try_from(p).ok()).filter(|p| *p > 0).collect()
+    stmt.query_map(params![instance, incarnation.map(|bits| bits.to_string())], |row| row.get::<_, i64>(0)).ok().into_iter().flatten().filter_map(|r| r.ok()).filter_map(|p| u16::try_from(p).ok()).filter(|p| *p > 0).collect()
 }
 
 #[cfg(test)]

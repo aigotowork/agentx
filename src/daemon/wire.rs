@@ -9,8 +9,8 @@ use crate::service::{CallerContext, Request, Response, ServiceResult};
 
 /// Compatibility epoch shared by business and inspection IPC. Increment for
 /// incompatible native request/response shapes or semantics, not for rebuilds.
-/// Epoch 3 removes the obsolete participant grouping contract.
-pub(crate) const PROTOCOL_VERSION: u32 = 3;
+/// Epoch 4 adds native reminders and exact reminder mailbox delivery.
+pub(crate) const PROTOCOL_VERSION: u32 = 4;
 pub(crate) const BUILD_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub(crate) const BUILD_ID_PREFIX: &str = "native-build-v1:";
 const BUILD_ID: &str = env!("AGENTX_NATIVE_BUILD_ID");

@@ -156,8 +156,8 @@ impl<'a> SqlitePendingInbox<'a> {
 
     fn read_batch(&self, participant: &ParticipantRef) -> Result<Option<(PendingSnapshot, Vec<Message>)>, InboxFailure> {
         self.validate_participant(participant)?;
-        let row = self.db.get_instance_full(&participant.canonical_name).map_err(unavailable)?.ok_or(InboxFailure::StaleParticipant)?;
-        let messages = self.db.unread_messages_up_to(&participant.canonical_name, crate::shared::MAX_MESSAGES_PER_DELIVERY).map_err(unavailable)?;
+        let row = self.db.get_instance_full(&participant.canonical_name).map_err(unavailable)?.filter(|row| row.created_at.to_bits() == participant.incarnation_bits).ok_or(InboxFailure::StaleParticipant)?;
+        let messages = self.db.unread_messages_after(&participant.canonical_name, participant.incarnation_bits, row.last_event_id, crate::shared::MAX_MESSAGES_PER_DELIVERY).map_err(unavailable)?;
         let Some(count) = NonZeroUsize::new(messages.len()) else {
             return Ok(None);
         };

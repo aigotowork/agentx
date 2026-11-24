@@ -980,6 +980,10 @@ fn dispatch_native_command(cmd: &str, args: &[String]) -> i32 {
             Ok(args) => args,
             Err(error) => return crate::cli::commands::help::clap_usage_error("events", &error),
         };
+        if let Err(error) = parsed.validate_reminder_options() {
+            eprintln!("Error: {error}");
+            return 2;
+        }
         return run_client_command(&flags, cmd, false, |session| crate::cli::commands::events_client::cmd_events(session, &parsed));
     }
 

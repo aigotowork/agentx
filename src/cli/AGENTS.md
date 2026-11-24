@@ -69,3 +69,5 @@ Omitted-target command-layer rejection is an `Err` before Session acquisition; t
 
 
 The authorized repair's [completed source outcome and independent evidence](../../.controller/source-hygiene-diagnosis/repair.task.md#completed-source-outcome-and-final-evidence) records15/15 exact native cases,1/1 actual CLI case, deterministic old-order discrimination and real transport capacity checks. This Linux local source-built result does not establish installed/live adoption.
+
+For local one-shot reminders, see the [Events CLI contract](../../.docs/architecture/event-subscriptions.md#一次性时间提醒). Creation uses a stable request ID only for uncertain result recovery; preserve the distinction between selecting `--for` and proving the caller identity.

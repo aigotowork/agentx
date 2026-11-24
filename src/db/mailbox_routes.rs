@@ -1,8 +1,6 @@
 //! Rebuildable routing keys for the bounded Hook mailbox reader. Event JSON,
 //! participant cursors and receipt semantics remain authoritative.
 
-use std::time::Duration;
-
 use rusqlite::{OptionalExtension, params};
 
 use super::AgentxDb;
@@ -71,7 +69,7 @@ impl AgentxDb {
     /// Copy a fixed row range in one idle dispatch. Rollback retains the old
     /// coverage, so queries never mistake an interrupted copy for an empty box.
     pub(crate) fn backfill_mailbox_routes(&self) -> anyhow::Result<bool> {
-        self.with_event_backfill(|| {
+        self.with_background_write_scope(|| {
             let Some((through, ceiling)) = self.mailbox_route_coverage()? else { return Ok(false) };
             if through >= ceiling {
                 return Ok(false);
@@ -89,13 +87,6 @@ impl AgentxDb {
             self.conn().execute("UPDATE hook_mailbox_coverage SET through_id=?1 WHERE singleton=1", [upper])?;
             Ok(upper < ceiling)
         })
-    }
-
-    pub(super) fn with_event_backfill<T>(&self, work: impl FnOnce() -> anyhow::Result<T>) -> anyhow::Result<T> {
-        self.conn().busy_timeout(Duration::ZERO)?;
-        let pending = self.with_write_scope(work);
-        self.conn().busy_timeout(Duration::from_secs(5))?;
-        pending
     }
 
     pub(super) fn next_event_batch(&self, through: i64, ceiling: i64) -> rusqlite::Result<i64> {

@@ -253,11 +253,14 @@ mod tests {
         let events = render(&words(&["events", "sub"])).unwrap();
         assert!(events.contains("=== agentx events sub list ==="));
         assert!(events.contains("--once"));
+        assert!(events.contains("--in DURATION"));
+        assert!(events.contains("=== agentx events sub show ==="));
         assert!(!events.contains("=== agentx events unsub ==="));
         assert!(!events.contains("agentx events unsub <id>"));
         assert!(!events.contains("=== agentx launch ==="));
         let list = render(&words(&["events", "sub", "list"])).unwrap();
         assert!(list.contains("--device"));
+        assert!(list.contains("--history"));
         assert!(!list.contains("--once"));
         let work = render(&words(&["work", "report"])).unwrap();
         assert!(work.contains("--assignment"));
