@@ -105,6 +105,12 @@ Runs: release-workflow check, dependency audit, fmt, clippy, typecheck, msrv, un
 
 `just ci` integration tests run genuine Codex/Claude binaries against local mock providers. No model/API usage.
 
+### GitHub native release
+
+Use a fresh version in the Cargo manifest and lockfile, Python packaging metadata, and changelog. The Cloud Admin OpenAPI export takes its version from Cargo; refresh it and the SDK projection with `npm run generate --prefix packages/agentx-client -- --cloud /absolute/path/to/new/agentx admin`. Keep GitHub Release configuration in [dist-workspace.toml](dist-workspace.toml), run `dist generate` with the pinned version when it changes, and check the result with `just dist-check`.
+
+Before tagging, require green CI and a green [Release workflow](.github/workflows/release.yml) on the PR. The PR run builds and verifies the actual archives and generates the installers without publishing. On the validated main commit, push a single matching annotated version tag with `git tag -a vX.Y.Z -m 'AgentX vX.Y.Z'` and `git push origin refs/tags/vX.Y.Z`. Check that the tag starts the Release workflow, that all platform checks and the publish job pass, and that the public release serves the verified archives, checksums, and both installer scripts. Re-run a failed job if the original tag run can recover; if there is no run, inspect the tag push and Actions event before selecting a new release version. Keep existing public tags and assets fixed. [Docker publishing](deploy/README.md#从源码交付) runs separately.
+
 ## Debugging
 
 ```bash

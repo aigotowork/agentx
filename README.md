@@ -16,14 +16,18 @@ The daemon also provides an optional [Web management console and HTTP API](.docs
 
 ## Install
 
-Build from source on macOS, Linux, or Windows using the [development instructions](CONTRIBUTING.md#development).
+Download the archive for your machine from [GitHub Releases](https://github.com/aigotowork/agentx/releases/latest).
 
-<details>
-<summary>Install a prebuilt binary when a GitHub release is available</summary>
+| Platform | Archive |
+| --- | --- |
+| macOS Apple Silicon | `agentx-aarch64-apple-darwin.tar.gz` |
+| macOS Intel | `agentx-x86_64-apple-darwin.tar.gz` |
+| Linux AMD64 (glibc) | `agentx-x86_64-unknown-linux-gnu.tar.gz` |
+| Windows AMD64 | `agentx-x86_64-pc-windows-msvc.zip` |
 
-<br>
+Download the matching `.sha256` file to the same directory. Verify it with `shasum -a 256 -c <file>.sha256` on macOS or `sha256sum -c <file>.sha256` on Linux. On Windows, compare `Get-FileHash <archive> -Algorithm SHA256` with the checksum file. Extract the archive and run `./agentx --version` (or `./agentx.exe --version` in PowerShell).
 
-macOS, Linux, Android:
+To install directly, use the release installer for macOS or Linux:
 
 ```bash
 curl -fsSL https://github.com/aigotowork/agentx/releases/latest/download/agentx-installer.sh | sh
@@ -35,7 +39,7 @@ Windows:
 irm https://github.com/aigotowork/agentx/releases/latest/download/agentx-installer.ps1 | iex
 ```
 
-</details>
+For other platforms, see the [source build instructions](CONTRIBUTING.md#development). The cloud daemon's [Docker image](deploy/README.md) is distributed separately.
 
 ## Quickstart
 
