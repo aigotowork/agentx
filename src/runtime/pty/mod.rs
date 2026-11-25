@@ -12,7 +12,7 @@ mod conpty;
 mod console_input;
 #[cfg(unix)]
 mod forward;
-mod inject;
+pub(crate) mod inject;
 pub mod screen;
 #[cfg(any(unix, windows))]
 mod shared;
@@ -1039,7 +1039,9 @@ impl Proxy {
                                 if !matches!(self.config.target.name(), "cursor" | "codex") {
                                     self.screen.clear_approval();
                                 }
-                                shared::note_user_keystroke(&self.config.target, &self.delivery_state, &|a| self.publish_approval(a));
+                                if self.config.target.name() != "codex" {
+                                    shared::note_user_keystroke(&self.config.target, &self.delivery_state, &|a| self.publish_approval(a));
+                                }
                             }
                             InputOrigin::Injected => {
                                 if shared::clear_injected_approval_state(&self.config.target, &self.delivery_state, &|a| self.publish_approval(a)) {
@@ -1131,7 +1133,7 @@ impl Proxy {
                     }
                     if !raw_chunks.is_empty() {
                         shared::update_delivery_state(&self.delivery_state, &self.screen, &self.config.target, &self.launch_phase_active, &|a| self.publish_approval(a));
-                        if !ready_signaled && self.screen.is_ready() {
+                        if !ready_signaled && self.delivery_state.read().is_ok_and(|state| state.ready) {
                             ready_signaled = true;
                             if let Some(ready) = &self.config.native_ready {
                                 ready.store(true, Ordering::Release);
@@ -1222,6 +1224,9 @@ impl Proxy {
 
                             if has_user_input {
                                 self.last_user_input = Instant::now();
+                                if self.config.target.name() == "codex" {
+                                    shared::note_user_keystroke(&self.config.target, &self.delivery_state, &|_| {});
+                                }
                             }
                             let origin = has_user_input.then_some(InputOrigin::User);
                             // Copilot pauses stdin processing on terminal focus-out
@@ -1263,13 +1268,33 @@ impl Proxy {
                     match self.inject_server.read_client_with_budget(i, QUEUE_LIMIT.saturating_sub(child_input.len()))? {
                         inject::InjectResult::Inject(text) => {
                             if !child_exited {
+                                if self.config.target.name() == "codex" {
+                                    shared::note_user_keystroke(&self.config.target, &self.delivery_state, &|_| {});
+                                }
                                 child_input.push(text.as_bytes(), Some(InputOrigin::Injected));
                             }
                         }
                         inject::InjectResult::Query(client) => match client.command {
                             inject::QueryCommand::Screen => {
-                                let dump = self.screen.get_screen_dump(self.config.target.name(), self.inject_server.port());
+                                let dump = self.screen.get_screen_dump(self.config.target.name(), self.launch_phase_active.load(Ordering::Acquire));
                                 client.respond(&dump);
+                            }
+                            inject::QueryCommand::GuardedWake(request) => {
+                                use inject::WakeWrite;
+                                // This iteration already consumed child output
+                                // and queued user input. Never queue guarded
+                                // bytes behind input or kernel backpressure.
+                                let eligible = !child_exited && !output_eof && child_input.is_empty() && self.config.target.name() == "codex";
+                                let bytes = eligible.then(|| self.delivery_state.read().ok().and_then(|state| request.bytes(&state))).flatten();
+                                let result = match bytes {
+                                    Some(bytes) => match write(&self.pty_master, bytes) {
+                                        Ok(n) if n == bytes.len() => WakeWrite::Written,
+                                        Ok(0) | Err(Errno::EAGAIN | Errno::EINTR) => WakeWrite::Deferred,
+                                        _ => WakeWrite::Unknown,
+                                    },
+                                    None => WakeWrite::Deferred,
+                                };
+                                client.respond(result.response());
                             }
                             inject::QueryCommand::Unknown => {
                                 client.respond("error: unknown command\n");
@@ -1364,6 +1389,9 @@ impl Proxy {
 
         if let Ok(winsize) = terminal::get_terminal_size() {
             self.screen.resize(winsize.ws_row, winsize.ws_col);
+            if self.config.target.name() == "codex" {
+                shared::invalidate_codex_resize(&self.delivery_state, &self.screen);
+            }
 
             // SAFETY:
             // - self.pty_master is an OwnedFd, valid for the lifetime of Proxy

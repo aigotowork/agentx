@@ -4,14 +4,14 @@
  */
 import { useEffect, useRef } from "react";
 import type { HistoryRecord } from "../offline/model";
-import { Attachments } from "./Attachments";
+import { Attachments } from "../../uiux/systems/space/space.web";
 import { Markdown } from "./Markdown";
 import { CopyButton } from "./CopyButton";
 
 /** @aiPurpose Preserve the source's readable chronological messages and local process disclosures.
  * @aiUsage Pass native or explicitly demo records; use followEnd only for live-tail readers, not deliberate forward paging.
  */
-export function History({ items, agentName, followEnd = true, compact, match, forward }: { items: readonly HistoryRecord[]; agentName: string; followEnd?: boolean; compact?: boolean; match?: string; forward?: boolean }) {
+export function History({ items, agentName, followEnd = true, compact, match }: { items: readonly HistoryRecord[]; agentName: string; followEnd?: boolean; compact?: boolean; match?: string }) {
   const root = useRef<HTMLDivElement>(null), following = useRef(true);
   const lastId = items.at(-1)?.id;
   useEffect(() => {
@@ -25,7 +25,7 @@ export function History({ items, agentName, followEnd = true, compact, match, fo
   return <div ref={root} className="history-feed history-projected-feed" role={followEnd ? "log" : undefined} aria-label="会话记录">{items.map((item, index) => {
     const at = compact ? dayLabel(item) : undefined;
     return <div className="history-entry" key={item.id}>
-      {at && at !== dayLabel(items[index - 1]) && <div className="history-date"><span>{at}</span>{index === 0 && forward && <small>最早记录</small>}</div>}
+      {at && at !== dayLabel(items[index - 1]) && <div className="history-date"><span>{at}</span></div>}
       <div data-history-record={item.id} data-history-match={match === item.id || undefined}><Record item={item} agentName={agentName} compact={compact} /></div>
     </div>;
   })}</div>;

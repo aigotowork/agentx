@@ -32,7 +32,7 @@ use crate::db::AgentxDb;
 
 /// Public MQTT brokers (TLS, port 8883/8886). Tried in order during initial setup;
 /// first success gets pinned to config. Append-only (never insert/reorder) to preserve
-/// v0x01 token compatibility.
+/// broker indexes encoded in current join tokens.
 pub const DEFAULT_BROKERS: &[(&str, u16)] = &[("broker.emqx.io", 8883), ("broker.hivemq.com", 8883), ("test.mosquitto.org", 8886)];
 
 /// Largest MQTT packet this device accepts. Announced to peers as `max_packet`

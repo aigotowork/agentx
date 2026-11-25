@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client/index.js';
-import type { AdminSpaceChangesData, AdminSpaceChangesErrors, AdminSpaceChangesResponses, CreateAdminControlOperationData, CreateAdminControlOperationErrors, CreateAdminControlOperationResponses, GetAdminControlOperationData, GetAdminControlOperationErrors, GetAdminControlOperationResponses, GetAdminHostCapabilitiesData, GetAdminHostCapabilitiesErrors, GetAdminHostCapabilitiesResponses, GetAdminOverviewData, GetAdminOverviewErrors, GetAdminOverviewResponses, GetAdminScopeData, GetAdminScopeErrors, GetAdminScopeResponses, ListAdminScopeAgentsData, ListAdminScopeAgentsErrors, ListAdminScopeAgentsResponses, ListAdminScopeHostsData, ListAdminScopeHostsErrors, ListAdminScopeHostsResponses, ListAdminScopeMessagesData, ListAdminScopeMessagesErrors, ListAdminScopeMessagesResponses, ListAdminScopesData, ListAdminScopesErrors, ListAdminScopesResponses, ListAdminScopeTranscriptData, ListAdminScopeTranscriptErrors, ListAdminScopeTranscriptResponses, PutAdminScopeData, PutAdminScopeErrors, PutAdminScopeResponses, RotateAdminScopeTokenData, RotateAdminScopeTokenErrors, RotateAdminScopeTokenResponses, SendAdminScopeMessageData, SendAdminScopeMessageErrors, SendAdminScopeMessageResponses } from './types.gen.js';
+import type { AdminSpaceChangesData, AdminSpaceChangesErrors, AdminSpaceChangesResponses, CreateAdminControlOperationData, CreateAdminControlOperationErrors, CreateAdminControlOperationResponses, GetAdminControlOperationData, GetAdminControlOperationErrors, GetAdminControlOperationResponses, GetAdminHostCapabilitiesData, GetAdminHostCapabilitiesErrors, GetAdminHostCapabilitiesResponses, GetAdminNamespaceData, GetAdminNamespaceErrors, GetAdminNamespaceResponses, GetAdminOverviewData, GetAdminOverviewErrors, GetAdminOverviewResponses, ListAdminNamespaceAgentsData, ListAdminNamespaceAgentsErrors, ListAdminNamespaceAgentsResponses, ListAdminNamespaceHostsData, ListAdminNamespaceHostsErrors, ListAdminNamespaceHostsResponses, ListAdminNamespaceMessagesData, ListAdminNamespaceMessagesErrors, ListAdminNamespaceMessagesResponses, ListAdminNamespacesData, ListAdminNamespacesErrors, ListAdminNamespacesResponses, ListAdminNamespaceTranscriptData, ListAdminNamespaceTranscriptErrors, ListAdminNamespaceTranscriptResponses, ListAdminWorkspacesData, ListAdminWorkspacesErrors, ListAdminWorkspacesResponses, PutAdminNamespaceData, PutAdminNamespaceErrors, PutAdminNamespaceResponses, RotateAdminNamespaceTokenData, RotateAdminNamespaceTokenErrors, RotateAdminNamespaceTokenResponses, SendAdminNamespaceMessageData, SendAdminNamespaceMessageErrors, SendAdminNamespaceMessageResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -18,27 +18,21 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
     meta?: keyof ClientMeta extends never ? Record<string, unknown> : ClientMeta;
 };
 
-export const getAdminOverview = <ThrowOnError extends boolean = false>(options?: Options<GetAdminOverviewData, ThrowOnError>): RequestResult<GetAdminOverviewResponses, GetAdminOverviewErrors, ThrowOnError> => (options?.client ?? client).get<GetAdminOverviewResponses, GetAdminOverviewErrors, ThrowOnError>({
+export const listAdminNamespaces = <ThrowOnError extends boolean = false>(options?: Options<ListAdminNamespacesData, ThrowOnError>): RequestResult<ListAdminNamespacesResponses, ListAdminNamespacesErrors, ThrowOnError> => (options?.client ?? client).get<ListAdminNamespacesResponses, ListAdminNamespacesErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/admin/overview',
+    url: '/api/v1/admin/namespaces',
     ...options
 });
 
-export const listAdminScopes = <ThrowOnError extends boolean = false>(options?: Options<ListAdminScopesData, ThrowOnError>): RequestResult<ListAdminScopesResponses, ListAdminScopesErrors, ThrowOnError> => (options?.client ?? client).get<ListAdminScopesResponses, ListAdminScopesErrors, ThrowOnError>({
+export const getAdminNamespace = <ThrowOnError extends boolean = false>(options: Options<GetAdminNamespaceData, ThrowOnError>): RequestResult<GetAdminNamespaceResponses, GetAdminNamespaceErrors, ThrowOnError> => (options.client ?? client).get<GetAdminNamespaceResponses, GetAdminNamespaceErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/admin/scopes',
+    url: '/api/v1/admin/namespaces/{id}',
     ...options
 });
 
-export const getAdminScope = <ThrowOnError extends boolean = false>(options: Options<GetAdminScopeData, ThrowOnError>): RequestResult<GetAdminScopeResponses, GetAdminScopeErrors, ThrowOnError> => (options.client ?? client).get<GetAdminScopeResponses, GetAdminScopeErrors, ThrowOnError>({
+export const putAdminNamespace = <ThrowOnError extends boolean = false>(options: Options<PutAdminNamespaceData, ThrowOnError>): RequestResult<PutAdminNamespaceResponses, PutAdminNamespaceErrors, ThrowOnError> => (options.client ?? client).put<PutAdminNamespaceResponses, PutAdminNamespaceErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/admin/scopes/{id}',
-    ...options
-});
-
-export const putAdminScope = <ThrowOnError extends boolean = false>(options: Options<PutAdminScopeData, ThrowOnError>): RequestResult<PutAdminScopeResponses, PutAdminScopeErrors, ThrowOnError> => (options.client ?? client).put<PutAdminScopeResponses, PutAdminScopeErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/admin/scopes/{id}',
+    url: '/api/v1/admin/namespaces/{id}',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -46,39 +40,39 @@ export const putAdminScope = <ThrowOnError extends boolean = false>(options: Opt
     }
 });
 
-export const listAdminScopeAgents = <ThrowOnError extends boolean = false>(options: Options<ListAdminScopeAgentsData, ThrowOnError>): RequestResult<ListAdminScopeAgentsResponses, ListAdminScopeAgentsErrors, ThrowOnError> => (options.client ?? client).get<ListAdminScopeAgentsResponses, ListAdminScopeAgentsErrors, ThrowOnError>({
+export const listAdminNamespaceAgents = <ThrowOnError extends boolean = false>(options: Options<ListAdminNamespaceAgentsData, ThrowOnError>): RequestResult<ListAdminNamespaceAgentsResponses, ListAdminNamespaceAgentsErrors, ThrowOnError> => (options.client ?? client).get<ListAdminNamespaceAgentsResponses, ListAdminNamespaceAgentsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/admin/scopes/{id}/agents',
+    url: '/api/v1/admin/namespaces/{id}/agents',
     ...options
 });
 
 export const adminSpaceChanges = <ThrowOnError extends boolean = false>(options: Options<AdminSpaceChangesData, ThrowOnError>): RequestResult<AdminSpaceChangesResponses, AdminSpaceChangesErrors, ThrowOnError> => (options.client ?? client).get<AdminSpaceChangesResponses, AdminSpaceChangesErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/admin/scopes/{id}/changes',
+    url: '/api/v1/admin/namespaces/{id}/changes',
     ...options
 });
 
-export const listAdminScopeHosts = <ThrowOnError extends boolean = false>(options: Options<ListAdminScopeHostsData, ThrowOnError>): RequestResult<ListAdminScopeHostsResponses, ListAdminScopeHostsErrors, ThrowOnError> => (options.client ?? client).get<ListAdminScopeHostsResponses, ListAdminScopeHostsErrors, ThrowOnError>({
+export const listAdminNamespaceHosts = <ThrowOnError extends boolean = false>(options: Options<ListAdminNamespaceHostsData, ThrowOnError>): RequestResult<ListAdminNamespaceHostsResponses, ListAdminNamespaceHostsErrors, ThrowOnError> => (options.client ?? client).get<ListAdminNamespaceHostsResponses, ListAdminNamespaceHostsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/admin/scopes/{id}/hosts',
+    url: '/api/v1/admin/namespaces/{id}/hosts',
     ...options
 });
 
 export const getAdminHostCapabilities = <ThrowOnError extends boolean = false>(options: Options<GetAdminHostCapabilitiesData, ThrowOnError>): RequestResult<GetAdminHostCapabilitiesResponses, GetAdminHostCapabilitiesErrors, ThrowOnError> => (options.client ?? client).get<GetAdminHostCapabilitiesResponses, GetAdminHostCapabilitiesErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/admin/scopes/{id}/hosts/{host}/capabilities',
+    url: '/api/v1/admin/namespaces/{id}/hosts/{host}/capabilities',
     ...options
 });
 
-export const listAdminScopeMessages = <ThrowOnError extends boolean = false>(options: Options<ListAdminScopeMessagesData, ThrowOnError>): RequestResult<ListAdminScopeMessagesResponses, ListAdminScopeMessagesErrors, ThrowOnError> => (options.client ?? client).get<ListAdminScopeMessagesResponses, ListAdminScopeMessagesErrors, ThrowOnError>({
+export const listAdminNamespaceMessages = <ThrowOnError extends boolean = false>(options: Options<ListAdminNamespaceMessagesData, ThrowOnError>): RequestResult<ListAdminNamespaceMessagesResponses, ListAdminNamespaceMessagesErrors, ThrowOnError> => (options.client ?? client).get<ListAdminNamespaceMessagesResponses, ListAdminNamespaceMessagesErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/admin/scopes/{id}/messages',
+    url: '/api/v1/admin/namespaces/{id}/messages',
     ...options
 });
 
-export const sendAdminScopeMessage = <ThrowOnError extends boolean = false>(options: Options<SendAdminScopeMessageData, ThrowOnError>): RequestResult<SendAdminScopeMessageResponses, SendAdminScopeMessageErrors, ThrowOnError> => (options.client ?? client).post<SendAdminScopeMessageResponses, SendAdminScopeMessageErrors, ThrowOnError>({
+export const sendAdminNamespaceMessage = <ThrowOnError extends boolean = false>(options: Options<SendAdminNamespaceMessageData, ThrowOnError>): RequestResult<SendAdminNamespaceMessageResponses, SendAdminNamespaceMessageErrors, ThrowOnError> => (options.client ?? client).post<SendAdminNamespaceMessageResponses, SendAdminNamespaceMessageErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/admin/scopes/{id}/messages',
+    url: '/api/v1/admin/namespaces/{id}/messages',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -88,7 +82,7 @@ export const sendAdminScopeMessage = <ThrowOnError extends boolean = false>(opti
 
 export const createAdminControlOperation = <ThrowOnError extends boolean = false>(options: Options<CreateAdminControlOperationData, ThrowOnError>): RequestResult<CreateAdminControlOperationResponses, CreateAdminControlOperationErrors, ThrowOnError> => (options.client ?? client).post<CreateAdminControlOperationResponses, CreateAdminControlOperationErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/admin/scopes/{id}/operations',
+    url: '/api/v1/admin/namespaces/{id}/operations',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -98,13 +92,13 @@ export const createAdminControlOperation = <ThrowOnError extends boolean = false
 
 export const getAdminControlOperation = <ThrowOnError extends boolean = false>(options: Options<GetAdminControlOperationData, ThrowOnError>): RequestResult<GetAdminControlOperationResponses, GetAdminControlOperationErrors, ThrowOnError> => (options.client ?? client).get<GetAdminControlOperationResponses, GetAdminControlOperationErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/admin/scopes/{id}/operations/{request_id}',
+    url: '/api/v1/admin/namespaces/{id}/operations/{request_id}',
     ...options
 });
 
-export const rotateAdminScopeToken = <ThrowOnError extends boolean = false>(options: Options<RotateAdminScopeTokenData, ThrowOnError>): RequestResult<RotateAdminScopeTokenResponses, RotateAdminScopeTokenErrors, ThrowOnError> => (options.client ?? client).post<RotateAdminScopeTokenResponses, RotateAdminScopeTokenErrors, ThrowOnError>({
+export const rotateAdminNamespaceToken = <ThrowOnError extends boolean = false>(options: Options<RotateAdminNamespaceTokenData, ThrowOnError>): RequestResult<RotateAdminNamespaceTokenResponses, RotateAdminNamespaceTokenErrors, ThrowOnError> => (options.client ?? client).post<RotateAdminNamespaceTokenResponses, RotateAdminNamespaceTokenErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/admin/scopes/{id}/token-rotations',
+    url: '/api/v1/admin/namespaces/{id}/token-rotations',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -112,8 +106,20 @@ export const rotateAdminScopeToken = <ThrowOnError extends boolean = false>(opti
     }
 });
 
-export const listAdminScopeTranscript = <ThrowOnError extends boolean = false>(options: Options<ListAdminScopeTranscriptData, ThrowOnError>): RequestResult<ListAdminScopeTranscriptResponses, ListAdminScopeTranscriptErrors, ThrowOnError> => (options.client ?? client).get<ListAdminScopeTranscriptResponses, ListAdminScopeTranscriptErrors, ThrowOnError>({
+export const listAdminNamespaceTranscript = <ThrowOnError extends boolean = false>(options: Options<ListAdminNamespaceTranscriptData, ThrowOnError>): RequestResult<ListAdminNamespaceTranscriptResponses, ListAdminNamespaceTranscriptErrors, ThrowOnError> => (options.client ?? client).get<ListAdminNamespaceTranscriptResponses, ListAdminNamespaceTranscriptErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/admin/scopes/{id}/transcript',
+    url: '/api/v1/admin/namespaces/{id}/transcript',
+    ...options
+});
+
+export const listAdminWorkspaces = <ThrowOnError extends boolean = false>(options: Options<ListAdminWorkspacesData, ThrowOnError>): RequestResult<ListAdminWorkspacesResponses, ListAdminWorkspacesErrors, ThrowOnError> => (options.client ?? client).get<ListAdminWorkspacesResponses, ListAdminWorkspacesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/admin/namespaces/{id}/workspaces',
+    ...options
+});
+
+export const getAdminOverview = <ThrowOnError extends boolean = false>(options?: Options<GetAdminOverviewData, ThrowOnError>): RequestResult<GetAdminOverviewResponses, GetAdminOverviewErrors, ThrowOnError> => (options?.client ?? client).get<GetAdminOverviewResponses, GetAdminOverviewErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/admin/overview',
     ...options
 });

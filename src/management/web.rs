@@ -27,6 +27,7 @@ use tokio::sync::Semaphore;
 
 const BODY_LIMIT: usize = 128 * 1024;
 const RESPONSE_LIMIT: usize = 2 * 1024 * 1024;
+const EXPECTED_SCOPE: &str = "x-agentx-expected-scope";
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 #[serde(default, deny_unknown_fields)]
@@ -363,6 +364,17 @@ async fn route(state: Arc<Adapter>, request: HttpRequest) -> Result<HttpResponse
         let asset = state.assets.get(asset_path).ok_or_else(|| ServiceError::NotFound("asset".into()))?;
         return Ok(HttpResponse::builder().status(StatusCode::OK).header(header::CONTENT_TYPE, &asset.content_type).body(Body::from(asset.bytes.clone())).unwrap());
     }
+    // A pinned SDK address can reject an aliased/rebound listener even if its
+    // data was copied from the original Scope and has the same generation.
+    if request.headers().contains_key(EXPECTED_SCOPE) {
+        let encoded = single_header(request.headers(), EXPECTED_SCOPE).filter(|value| !value.is_empty()).ok_or_else(|| ServiceError::InvalidInput("invalid expected Scope header".into()))?;
+        let expected = percent_encoding::percent_decode_str(encoded).decode_utf8().map_err(|_| ServiceError::InvalidInput("expected Scope must be percent-encoded UTF-8".into()))?;
+        if expected != state.service.scope_root().to_string_lossy() {
+            let (status, mut envelope) = super::openapi::ErrorEnvelope::from_service(ServiceError::StaleGeneration);
+            envelope.error.message = "Management listener does not serve the expected Scope".into();
+            return json(status, &envelope);
+        }
+    }
     let _permit = state.calls.clone().try_acquire_owned().map_err(|_| ServiceError::Unavailable("HTTP calls busy".into()))?;
     let method = request.method().clone();
     let query = parse_query(request.uri().query())?;
@@ -376,9 +388,6 @@ async fn route(state: Arc<Adapter>, request: HttpRequest) -> Result<HttpResponse
         if single_header(request.headers(), "content-type") != Some("application/octet-stream") || request.headers().contains_key("content-encoding") {
             return Err(ServiceError::InvalidInput("raw application/octet-stream required".into()));
         }
-        let before = state.clone();
-        let generation = input.generation.clone();
-        tokio::task::spawn_blocking(move || before.service.client(Some(&generation))).await.map_err(|e| ServiceError::Internal(e.to_string()))??;
         let bytes = tokio::time::timeout(Duration::from_secs(20), to_bytes(request.into_body(), super::uploads::MAX_FILE))
             .await
             .map_err(|_| ServiceError::InvalidInput("upload deadline".into()))?

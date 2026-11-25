@@ -5,12 +5,10 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 use super::DaemonError;
-use crate::service::{CallerContext, Request, Response, ServiceResult};
+use crate::service::{CallerContext, Request, RequestId, Response, ServiceResult};
 
-/// Compatibility epoch shared by business and inspection IPC. Increment for
-/// incompatible native request/response shapes or semantics, not for rebuilds.
-/// Epoch 4 adds native reminders and exact reminder mailbox delivery.
-pub(crate) const PROTOCOL_VERSION: u32 = 4;
+/// Direct-call wire family, for diagnostics. Additive operations do not change it.
+pub(crate) const PROTOCOL_VERSION: u32 = 5;
 pub(crate) const BUILD_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub(crate) const BUILD_ID_PREFIX: &str = "native-build-v1:";
 const BUILD_ID: &str = env!("AGENTX_NATIVE_BUILD_ID");
@@ -58,21 +56,87 @@ pub(crate) struct DaemonInfo {
     pub message_history: bool,
 }
 
+/// One frame per connection. Raw operation input lets admission distinguish
+/// unknown operations from invalid inputs without changing native DTOs.
 #[derive(Serialize, Deserialize)]
-#[expect(clippy::large_enum_variant, reason = "At most 32 connection workers decode this finite native request envelope from frames capped at 8 MiB; retain direct service types.")]
-pub(crate) enum ClientFrame {
-    Hello { protocol_version: u32, build_version: String, build_id: String, canonical_scope: PathBuf },
-    Call { daemon_instance: String, caller: CallerContext, request: Request },
-    Shutdown { daemon_instance: String },
+pub(crate) enum ClientFrame<R = Request> {
+    Call {
+        canonical_scope: PathBuf,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        daemon_instance: Option<String>,
+        caller: CallerContext,
+        request: R,
+    },
 }
 
+pub(super) const STATUS: &str = "DaemonStatus";
+pub(super) const SHUTDOWN: &str = "Shutdown";
+
 #[derive(Serialize, Deserialize)]
-#[expect(clippy::large_enum_variant, reason = "Finite native replies pass through bounded one-reply channels and frames capped at 8 MiB; retain direct service response/error types.")]
+#[allow(clippy::large_enum_variant, reason = "Retain direct native response types in bounded frames.")]
 pub(crate) enum ServerFrame {
-    Ready(DaemonInfo),
-    Result { result: ServiceResult<Response>, database_generation: String },
+    Status(DaemonInfo),
+    Result { result: ServiceResult<Response>, info: DaemonInfo, executed_generation: String, request_id: RequestId },
     Stopping,
     Failure(DaemonError),
+}
+
+pub(super) fn decode_request(raw: &serde_json::value::RawValue) -> Result<Request, DaemonError> {
+    use super::operation::{decode, payload, recognize, recognize_leaf};
+    let family = recognize::<Request>(raw.get())?;
+    let leaf = match family.as_str() {
+        "Inspection" => recognize_leaf::<crate::inspection::contract::Request>(raw, &family)?,
+        "Management" => recognize_leaf::<crate::management::contract::Request>(raw, &family)?,
+        "Collaboration" => recognize_leaf::<crate::collaboration::service::Request>(raw, &family)?,
+        "Participants" => recognize_leaf::<crate::agents::service::Request>(raw, &family)?,
+        "Messages" => recognize_leaf::<crate::messaging::service::Request>(raw, &family)?,
+        "Hosts" => recognize_leaf::<crate::runtime::hosts::Request>(raw, &family)?,
+        "Events" => recognize_leaf::<crate::events::service::Request>(raw, &family)?,
+        "Queries" => recognize_leaf::<crate::service::queries::Request>(raw, &family)?,
+        "Maintenance" => recognize_leaf::<crate::service::maintenance::Request>(raw, &family)?,
+        "Relay" => recognize_leaf::<crate::relay::service::Request>(raw, &family)?,
+        // A Codex hook is one operation; its activity is input data.
+        _ => return decode(raw),
+    };
+    let raw_family = || payload(raw.get()).expect("recognized leaf has a family payload");
+    let qualified = || format!("{family}.{leaf}");
+    match (family.as_str(), leaf.as_str()) {
+        ("Messages", "Delivery") => {
+            recognize_leaf::<crate::messaging::delivery_service::Request>(raw_family(), &qualified())?;
+        }
+        ("Messages", "Bundle") => {
+            recognize_leaf::<crate::messaging::bundle_service::Request>(raw_family(), &qualified())?;
+        }
+        ("Messages", "Inbox") => {
+            recognize_leaf::<crate::messaging::service::InboxOperation>(raw_family(), &qualified())?;
+        }
+        ("Participants", "Launch") => {
+            recognize_leaf::<crate::agents::launch_service::Request>(raw_family(), &qualified())?;
+        }
+        ("Participants", "Lifecycle") => {
+            recognize_leaf::<crate::agents::lifecycle_service::Request>(raw_family(), &qualified())?;
+        }
+        ("Participants", "Attachments") => {
+            recognize_leaf::<crate::agents::service::AttachmentOperation>(raw_family(), &qualified())?;
+        }
+        ("Participants", "Recovery") => {
+            recognize_leaf::<crate::agents::recovery::Request>(raw_family(), &qualified())?;
+        }
+        ("Participants", "Labels") => {
+            recognize_leaf::<crate::agents::labels::Request>(raw_family(), &qualified())?;
+        }
+        ("Participants", "Hermes") => {
+            recognize_leaf::<crate::agents::hermes_service::Request>(raw_family(), &qualified())?;
+        }
+        ("Participants", "Claude") => {
+            recognize_leaf::<crate::agents::claude_service::Request>(raw_family(), &qualified())?;
+        }
+        ("Participants", "Copilot") => {
+            recognize_leaf::<crate::agents::copilot_service::Request>(raw_family(), &qualified())?;
+        }
+        _ => {}
+    }
+    decode(raw)
 }
 
 /// Diagnostic build identity embedded in loaded code by build.rs. It performs no

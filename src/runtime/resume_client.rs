@@ -16,12 +16,7 @@ use anyhow::{Result, bail};
 use std::io::BufRead;
 
 fn lifecycle(client: &Client, input: Lifecycle) -> Result<LifecycleResult> {
-    let caller = crate::service::CallerContext {
-        request_id: crate::service::RequestId(uuid::Uuid::new_v4().to_string()),
-        invocation: client.invocation().clone(),
-        deadline_unix_ms: None,
-        expected_database_generation: Some(client.info().database_generation.clone()),
-    };
+    let caller = crate::service::CallerContext { request_id: crate::service::RequestId(uuid::Uuid::new_v4().to_string()), invocation: client.invocation().clone(), deadline_unix_ms: None, expected_database_generation: None };
     let request = Request::Participants(crate::agents::service::Request::Lifecycle(input));
     let result = match client.call_with_context(caller.clone(), request.clone()) {
         Err(crate::service::ServiceError::OutcomeUnknown(_)) => client.call_with_context(caller, request),

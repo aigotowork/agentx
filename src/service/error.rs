@@ -16,6 +16,8 @@ pub(crate) enum ServiceError {
     Conflict(String),
     #[error("stale participant, execution, attachment or database generation")]
     StaleFence,
+    #[error("database generation changed; explicitly reconnect before issuing new work")]
+    StaleGeneration,
     #[error("service unavailable: {0}")]
     Unavailable(String),
     #[error("unsupported operation or capability: {0}")]

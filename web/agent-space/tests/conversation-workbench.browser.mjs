@@ -32,9 +32,9 @@ const sameAnchor = (left, right) => {
   assert.equal(left[0], right[0], JSON.stringify([left, right]));
   assert(Math.abs(left[1] - right[1]) <= 2, JSON.stringify([left, right]));
 };
-async function open(root, name) {
-  await root.locator('.office-camera-controls button[aria-expanded]').click();
-  await button(root.getByRole('region', { name: '场景名册' }), new RegExp('^@' + name)).click();
+async function open(root, name, input = 'click') {
+  await root.locator('.office-camera-controls button[aria-expanded]')[input]();
+  await button(root.getByRole('region', { name: '场景名册' }), new RegExp('^@' + name))[input]();
   const result = pane(root, name);
   await result.waitFor();
   return result;
@@ -296,7 +296,7 @@ try {
     await route.continue({ url: url.href });
   });
   await phone.goto(fixture.base);
-  const shortPane = await open(phone, 'tobi');
+  const shortPane = await open(phone, 'tobi', 'tap');
   await shortPane.getByText(/^\[tobi \/ 5\]/).waitFor();
   assert.equal(await button(shortPane, 'Fork 新 Agent').count(), 0);
   const unavailable = button(shortPane, '启动关系');
@@ -304,7 +304,7 @@ try {
   await shortPane.getByText('外部启动', { exact: true }).waitFor();
   await draft(shortPane).tap();
   await shortPane.getByText('外部启动', { exact: true }).waitFor({ state: 'hidden' });
-  const phonePane = await open(phone, 'luna');
+  const phonePane = await open(phone, 'luna', 'tap');
   await phonePane.getByText('独立的新消息 · Luna').waitFor();
   const earlier = button(phonePane, '查看更早消息');
   await earlier.waitFor();

@@ -1,34 +1,26 @@
-import type { Agent, AgentAddress, AgentSnapshot, AgentXScope, MemberCursor, Message, MessageCursor, MessageHistoryCursor, NativeMemberCursor, Workspace, WorkspaceCatalog } from '@agentx/client';
+import { DomainCapabilityError, ManagementError, type Agent, type AgentAddress, type AgentSnapshot, type AgentXScope, type Message, type MessageCursor, type MessageHistoryCursor, type NativeMemberCursor, type Workspace, type WorkspaceCatalog } from '@agentx/client';
 import { GLOBAL_OFFICE, LEGACY_OFFICE, UNKNOWN_OFFICE } from '../offline/model';
 import { domainAgentKey } from './projection';
+import type { HistoryReadPage, ReadState } from '../conversation/read-state';
 
-type Phase = 'loading' | 'ready' | 'error';
-interface ReadState { phase: Phase; error?: string }
-type MemberPaging =
-  | { kind: 'native-workspace-members'; next?: NativeMemberCursor | null; currentComplete: boolean }
-  | { kind: 'global-agent-page'; next?: MemberCursor | null; scanned: number; legacy: number; unavailable: number };
 export interface OfficeExploration extends ReadState {
   office: string; workspace: Workspace; rows: Map<string, AgentSnapshot>;
   request?: AbortController;
-  paging: MemberPaging; emptyPage: boolean; revision: number;
+  next?: NativeMemberCursor | null; currentComplete: boolean; revision: number;
 }
 type Lane = ReadState & { pending?: boolean };
 interface ExactReader extends ReadState {
   id: string; office: string; agent: Agent; subject: AgentSnapshot; snapshot?: AgentSnapshot;
   lease: AbortController; pending: boolean;
+  stale?: boolean;
   older: Lane; live: Lane;
   history?: ReadHistory; restoring?: ReadHistory;
 }
-type StoredMessages = { snapshot: AgentSnapshot; messages: Map<string, Message> };
-type ForwardHistory = StoredMessages & { mode: 'forward'; checkpoint: MessageCursor; hasMore: boolean };
-type LatestHistory = StoredMessages & {
-  mode: 'latest'; before: MessageHistoryCursor | null; checkpoint: MessageCursor | null;
+type ReadHistory = {
+  snapshot: AgentSnapshot; messages: Map<string, Message>;
+  before: MessageHistoryCursor | null; checkpoint: MessageCursor;
   token: object; arrivals: number; emptyOlder: boolean;
 };
-type ReadHistory = ForwardHistory | LatestHistory;
-type PageState = ReadState & { more: boolean };
-export type MessageReadPage = (PageState & { mode: 'forward' })
-  | (PageState & { mode: 'latest'; older?: Lane; live?: Lane; token?: object; arrivals?: number; emptyOlder?: boolean });
 const historyPageLimit = 20;
 
 // Match the window shelf bound without depending on the presentation layer.
@@ -37,6 +29,8 @@ const sameMembership = (a: AgentSnapshot['membership'], b: AgentSnapshot['member
   a.kind === b.kind && (a.kind !== 'adopted' || (b.kind === 'adopted' && a.workspace === b.workspace));
 
 const issueOf = (error: unknown) => error instanceof Error ? error.message : String(error);
+const staleAgent = (error: unknown) => error instanceof ManagementError && error.code === 'StaleReference';
+const unsupportedHistory = (error: unknown) => error instanceof DomainCapabilityError && error.capability === 'message-history';
 
 export class DomainOfficeReads {
   catalog?: WorkspaceCatalog;
@@ -50,8 +44,7 @@ export class DomainOfficeReads {
   private closed = false;
   readonly subjects = new Map<string, AgentSnapshot>();
   private fresh = new Set<string>();
-  constructor(readonly scope: AgentXScope, private limit: number, private changed: () => void) {}
-  get supportsHistory() { return this.scope.descriptor.supports_message_history === true; }
+  constructor(readonly scope: AgentXScope, private limit: number, private changed: () => void, private invalidated: (error: unknown) => boolean = () => false) {}
   get readers(): ReadonlyMap<string, ExactReader> { return this.readerSet; }
   *parkedSubjects() { for (const { snapshot } of this.parked.values()) yield snapshot; }
 
@@ -63,7 +56,7 @@ export class DomainOfficeReads {
     try {
       this.catalog = await this.scope.workspaces({ signal: request.signal });
     } catch (error) {
-      if (!request.signal.aborted) this.catalogError = issueOf(error);
+      if (!request.signal.aborted && !this.invalidated(error)) this.catalogError = issueOf(error);
     } finally {
       if (this.discovery === request) { this.discovery = undefined; this.changed(); }
     }
@@ -73,8 +66,7 @@ export class DomainOfficeReads {
     if (this.closed) return;
     if (this.office !== office) {
       this.office = office;
-      if (this.supportsHistory) for (const id of this.readerSet.keys()) this.parkReader(id);
-      else this.clearReaders();
+      for (const id of this.readerSet.keys()) this.parkReader(id);
     }
     if (this.exploration?.office === office) return;
     const workspace = office === GLOBAL_OFFICE ? this.scope.workspace('global') : this.catalog?.workspaces.find(entry => entry.workspace.address.key === office)?.workspace;
@@ -85,45 +77,39 @@ export class DomainOfficeReads {
 
   more = () => {
     const office = this.exploration;
-    if (office && (office.phase === 'error' || office.paging.next)) void this.readMembers(office);
+    if (office && (office.phase === 'error' || office.next)) void this.readMembers(office);
   };
 
   private newExploration(office: string, workspace: Workspace): OfficeExploration {
-    const paging: MemberPaging = this.scope.supportsWorkspaceMembers ? { kind: 'native-workspace-members', currentComplete: false }
-      : { kind: 'global-agent-page', scanned: 0, legacy: 0, unavailable: 0 };
-    return { office, workspace, rows: new Map(), phase: 'loading', paging, emptyPage: false, revision: ++this.revision };
+    return { office, workspace, rows: new Map(), phase: 'loading', currentComplete: false, revision: ++this.revision };
   }
 
   refresh = () => {
     const old = this.exploration;
-    if (!old || this.closed) return;
+    if (!old || this.closed || old.phase === 'unavailable') return;
     old.request?.abort();
     const next = this.exploration = this.newExploration(old.office, old.workspace);
     void this.readMembers(next);
   };
 
   private async readMembers(office: OfficeExploration) {
-    const paging = office.paging;
-    if (office.request || this.closed || paging.next === null) return;
+    if (office.request || this.closed || office.next === null) return;
     const request = office.request = new AbortController();
     office.phase = 'loading'; office.error = undefined; this.changed();
     try {
-      const page = paging.kind === 'native-workspace-members'
-        ? await office.workspace.memberPage({ limit: this.limit, after: paging.next }, { signal: request.signal })
-        : await office.workspace.members({ limit: this.limit, after: paging.next }, { signal: request.signal });
+      const page = await office.workspace.memberPage({ limit: this.limit, after: office.next ?? undefined }, { signal: request.signal });
       if (request.signal.aborted || this.exploration !== office) return;
       for (const { snapshot } of page.members) office.rows.set(domainAgentKey(snapshot.address), snapshot);
-      const coverage = page.coverage;
-      if (paging.kind === 'native-workspace-members' && coverage.kind === 'native-workspace-members') {
-        paging.next = coverage.next; paging.currentComplete = coverage.currentComplete;
-      } else if (paging.kind === 'global-agent-page' && coverage.kind === 'global-agent-page') {
-        paging.next = coverage.next; paging.scanned += coverage.scanned;
-        paging.legacy += coverage.legacy; paging.unavailable += coverage.unavailable;
-      }
-      office.emptyPage = page.members.length === 0; office.phase = 'ready'; office.revision = ++this.revision;
+      office.next = page.coverage.next;
+      office.currentComplete = page.coverage.currentComplete;
+      office.phase = 'ready'; office.revision = ++this.revision;
     } catch (error) {
       if (request.signal.aborted || this.exploration !== office) return;
-      office.phase = 'error'; office.error = issueOf(error);
+      if (this.invalidated(error)) return;
+      if (error instanceof DomainCapabilityError && error.capability === 'workspace-members') {
+        office.phase = 'unavailable'; office.error = '此服务不支持成员列表';
+        office.next = null; office.currentComplete = false;
+      } else { office.phase = 'error'; office.error = issueOf(error); }
     } finally {
       if (!request.signal.aborted && this.exploration === office) { office.request = undefined; this.changed(); }
     }
@@ -132,7 +118,7 @@ export class DomainOfficeReads {
   /** Resolve an exact route/related subject without admitting it to the workspace roster. */
   async resolve(address: AgentAddress, signal?: AbortSignal, office?: string, current: () => boolean = () => true) {
     const agent = this.scope.agent(address);
-    const snapshot = await agent.snapshot({ signal });
+    const snapshot = await this.readSnapshot(agent, signal);
     if (signal?.aborted || this.closed || !current()) throw new Error('精确导航已失效');
     if (office && !this.belongs(snapshot, office)) throw new Error('办公室与精确 Agent 归属不匹配');
     const id = domainAgentKey(snapshot.address);
@@ -169,7 +155,7 @@ export class DomainOfficeReads {
       const reader: ExactReader = { id, office: this.office, agent, subject, snapshot, restoring: cached, lease: new AbortController(), pending: false, phase: 'loading', older: { phase: 'ready' }, live: { phase: 'ready' } };
       this.readerSet.set(id, reader);
       changed = true;
-      void this.readMessages(reader, 'initial');
+      void this.openHistory(reader);
     }
     while (this.readerSet.size + this.parked.size > retainedReaderLimit) this.parked.delete(this.parked.keys().next().value!);
     return changed;
@@ -179,7 +165,7 @@ export class DomainOfficeReads {
     const reader = this.readerSet.get(id)!;
     this.readerSet.delete(id);
     reader.lease.abort();
-    const history = reader.history ?? reader.restoring;
+    const history = reader.stale ? undefined : reader.history ?? reader.restoring;
     if (history) this.parked.set(id, history);
   }
 
@@ -188,48 +174,41 @@ export class DomainOfficeReads {
     this.readerSet.clear(); this.parked.clear();
   }
 
-  messagePage(id: string): MessageReadPage | undefined {
+  messagePage(id: string): HistoryReadPage | undefined {
     const reader = this.readerSet.get(id);
     if (!reader) return;
     const history = reader.history;
-    if (history?.mode === 'latest') return {
-      mode: 'latest' as const, phase: reader.phase, error: reader.error, more: history.before !== null,
-      older: { ...reader.older }, live: { ...reader.live }, token: history.token, arrivals: history.arrivals,
-      emptyOlder: history.emptyOlder,
-    };
-    return { mode: this.supportsHistory ? 'latest' : 'forward',
-      phase: reader.phase, error: reader.error, more: history?.hasMore ?? false };
+    return { phase: reader.phase, error: reader.error, more: !reader.stale && !!history?.before,
+      older: { phase: reader.older.phase, error: reader.older.error },
+      live: { phase: reader.live.phase, error: reader.live.error },
+      token: history?.token, arrivals: history?.arrivals, emptyOlder: history?.emptyOlder };
   }
 
   continueMessages = (id: string) => {
     const reader = this.readerSet.get(id);
-    if (!reader) return;
-    if (reader.history?.mode === 'latest') void this.readOlder(reader, reader.history);
-    else if (reader.phase === 'error' || reader.history?.hasMore) void this.readMessages(reader, 'explicit');
+    if (!reader || reader.stale) return;
+    if (reader.history) void this.readOlder(reader, reader.history);
+    else if (reader.phase === 'error') void this.openHistory(reader);
   };
 
   retryLive(id: string) {
     const reader = this.readerSet.get(id);
-    if (reader?.agent.kind === 'current' && reader.history?.mode === 'latest') void this.readLive(reader, reader.history);
+    if (reader?.agent.kind === 'current' && !reader.stale && reader.history) void this.readLive(reader, reader.history);
   }
 
   /** One bounded update per visible current reader; older pages never gate its live cursor. */
   catchUp() {
-    for (const reader of this.readerSet.values()) {
-      if (reader.agent.kind !== 'current') continue;
-      if (reader.history?.mode === 'latest') void this.readLive(reader, reader.history);
-      else if (reader.phase === 'ready' && !reader.history?.hasMore) void this.readMessages(reader, 'passive');
-    }
+    for (const id of this.readerSet.keys()) this.retryLive(id);
   }
 
-  private async readMessages(reader: ExactReader, mode: 'initial' | 'explicit' | 'passive') {
+  private async openHistory(reader: ExactReader) {
     const signal = reader.lease.signal;
     if (reader.pending || signal.aborted) return;
     reader.pending = true;
-    if (mode === 'explicit') { reader.phase = 'loading'; reader.error = undefined; this.changed(); }
+    if (reader.phase === 'error') { reader.phase = 'loading'; reader.error = undefined; this.changed(); }
     try {
       if (!reader.snapshot) {
-        const snapshot = await reader.agent.snapshot({ signal });
+        const snapshot = await this.readSnapshot(reader.agent, signal);
         if (signal.aborted) return;
         const restored = reader.restoring;
         reader.restoring = undefined;
@@ -241,25 +220,21 @@ export class DomainOfficeReads {
           return;
         }
       }
-      const snapshot = reader.snapshot;
-      if (this.supportsHistory) {
-        const page = await reader.agent.messageHistory({ limit: this.historyLimit }, { signal });
-        if (signal.aborted) return;
-        reader.history = { mode: 'latest', snapshot, token: {}, arrivals: 0, emptyOlder: false,
-          before: page.nextBefore, checkpoint: page.liveAfter, messages: new Map(page.messages.map(message => [message.id, message])) };
-      } else {
-        const history = reader.history?.mode === 'forward' ? reader.history : undefined;
-        const page = await reader.agent.messages({ limit: this.limit, after: history?.checkpoint }, { signal });
-        if (signal.aborted) return;
-        if (page.hasMore && page.checkpoint.position === (history?.checkpoint.position ?? '0')) throw new Error('消息游标没有前进');
-        const messages = history?.messages ?? new Map<string, Message>();
-        appendMessages(messages, page.messages);
-        reader.history = { mode: 'forward', snapshot, checkpoint: page.checkpoint, hasMore: page.hasMore, messages };
-      }
+      const page = await reader.agent.messageHistory({ limit: this.historyLimit }, { signal });
+      if (signal.aborted) return;
+      if (!page.liveAfter) throw new Error('缺少当前消息游标');
+      reader.history = { snapshot: reader.snapshot, token: {}, arrivals: 0, emptyOlder: false,
+        before: page.nextBefore, checkpoint: page.liveAfter, messages: new Map(page.messages.map(message => [message.id, message])) };
       reader.phase = 'ready';
     } catch (error) {
-      if (signal.aborted) return;
-      reader.phase = 'error'; reader.error = issueOf(error);
+      if (signal.aborted || this.invalidated(error)) return;
+      if (unsupportedHistory(error)) {
+        reader.phase = 'unavailable'; reader.error = '此服务不支持消息历史';
+      } else {
+        this.noteStale(reader, error);
+        reader.phase = reader.stale ? 'unavailable' : 'error';
+        reader.error = reader.stale ? '此 Agent 实例已失效' : issueOf(error);
+      }
     } finally {
       if (!signal.aborted) { reader.pending = false; this.changed(); }
     }
@@ -267,13 +242,13 @@ export class DomainOfficeReads {
 
   private get historyLimit() { return Math.min(historyPageLimit, this.scope.descriptor.max_page); }
 
-  private async readOlder(reader: ExactReader, history: LatestHistory) {
+  private async readOlder(reader: ExactReader, history: ReadHistory) {
     const before = history.before, signal = reader.lease.signal, lane = reader.older;
     if (!before || lane.pending || signal.aborted) return;
     lane.pending = true; lane.phase = 'loading'; lane.error = undefined; this.changed();
     try {
       const page = await reader.agent.messageHistory({ limit: this.historyLimit, before }, { signal });
-      if (signal.aborted) return;
+      if (signal.aborted || reader.stale) return;
       if (page.nextBefore?.position === before.position) throw new Error('更早消息游标没有前进');
       const older = new Map<string, Message>();
       appendMessages(older, page.messages.filter(message => !history.messages.has(message.id)));
@@ -286,25 +261,33 @@ export class DomainOfficeReads {
       history.before = page.nextBefore;
       lane.phase = 'ready';
     } catch (error) {
-      if (!signal.aborted) { lane.phase = 'error'; lane.error = issueOf(error); }
+      if (signal.aborted || this.invalidated(error)) return;
+      if (this.noteStale(reader, error)) {
+        history.before = null; lane.phase = 'ready';
+      } else if (unsupportedHistory(error)) {
+        history.before = null; lane.phase = 'unavailable'; lane.error = '此服务不支持读取更早消息';
+      } else { lane.phase = 'error'; lane.error = issueOf(error); }
     } finally {
       if (!signal.aborted) { lane.pending = false; this.changed(); }
     }
   }
 
-  private async readLive(reader: ExactReader, history: LatestHistory) {
+  private async readLive(reader: ExactReader, history: ReadHistory) {
     const signal = reader.lease.signal, lane = reader.live;
     if (lane.pending || signal.aborted) return;
     lane.pending = true;
     try {
-      const page = await reader.agent.messages({ limit: this.historyLimit, after: history.checkpoint ?? undefined }, { signal });
-      if (signal.aborted) return;
-      if (page.hasMore && page.checkpoint.position === (history.checkpoint?.position ?? '0')) throw new Error('新消息游标没有前进');
+      const page = await reader.agent.messages({ limit: this.historyLimit, after: history.checkpoint }, { signal });
+      if (signal.aborted || reader.stale) return;
+      if (page.hasMore && page.checkpoint.position === history.checkpoint.position) throw new Error('新消息游标没有前进');
       history.arrivals += appendMessages(history.messages, page.messages);
       history.checkpoint = page.checkpoint;
       lane.phase = 'ready'; lane.error = undefined;
     } catch (error) {
-      if (!signal.aborted) { lane.phase = 'error'; lane.error = issueOf(error); }
+      if (signal.aborted || this.invalidated(error)) return;
+      this.noteStale(reader, error);
+      lane.phase = reader.stale ? 'unavailable' : 'error';
+      lane.error = reader.stale ? '此 Agent 实例已失效' : issueOf(error);
     } finally {
       if (!signal.aborted) { lane.pending = false; this.changed(); }
     }
@@ -313,17 +296,38 @@ export class DomainOfficeReads {
   /** Validate the submitted ID against its original lease, independent of pane focus. */
   async verifySend(id: string) {
     const reader = this.readerSet.get(id);
-    if (!reader?.snapshot || reader.agent.kind !== 'current') throw new Error('请先验证当前精确会话');
+    if (!reader?.snapshot || reader.stale || reader.agent.kind !== 'current') throw new Error('请先验证当前精确会话');
     const signal = reader.lease.signal;
-    const snapshot = await reader.agent.snapshot({ signal });
-    if (signal.aborted || !this.belongs(snapshot, reader.office) || !snapshot.facts.can_send) throw new Error('精确目标或发送能力已失效');
-    return { snapshot, agent: reader.agent, signal };
+    try {
+      const snapshot = await this.readSnapshot(reader.agent, signal);
+      if (signal.aborted || reader.stale || !this.belongs(snapshot, reader.office) || !snapshot.facts.can_send) throw new Error('精确目标或发送能力已失效');
+      return { snapshot, agent: reader.agent, signal };
+    } catch (error) {
+      if (!signal.aborted && this.noteStale(reader, error)) this.changed();
+      throw error;
+    }
+  }
+
+  private async readSnapshot(agent: Agent, signal?: AbortSignal) {
+    try { return await agent.snapshot({ signal }); }
+    catch (error) {
+      if (!signal?.aborted) this.invalidated(error);
+      throw error;
+    }
+  }
+
+  private noteStale(reader: ExactReader, error: unknown) {
+    if (!staleAgent(error)) return false;
+    reader.stale = true;
+    reader.live.phase = 'unavailable'; reader.live.error = '此 Agent 实例已失效';
+    return true;
   }
 
   dispose() {
     this.closed = true;
     this.discovery?.abort(); this.discovery = undefined;
     this.exploration?.request?.abort();
+    if (this.exploration) this.exploration.next = null;
     this.clearReaders();
   }
 }

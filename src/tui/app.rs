@@ -386,12 +386,7 @@ impl App {
                             crate::service::client::Client::connect(scope, invocation)
                         })
                         .and_then(|client| {
-                            let caller = crate::service::CallerContext {
-                                request_id: crate::service::RequestId(uuid::Uuid::new_v4().to_string()),
-                                invocation: client.invocation().clone(),
-                                deadline_unix_ms: None,
-                                expected_database_generation: Some(client.info().database_generation.clone()),
-                            };
+                            let caller = crate::service::CallerContext { request_id: crate::service::RequestId(uuid::Uuid::new_v4().to_string()), invocation: client.invocation().clone(), deadline_unix_ms: None, expected_database_generation: None };
                             let request = crate::service::Request::Maintenance(crate::service::maintenance::Request::ReapDeadProcesses);
                             let result = match client.call_with_context(caller.clone(), request.clone()) {
                                 Err(crate::service::ServiceError::OutcomeUnknown(_)) => client.call_with_context(caller, request),

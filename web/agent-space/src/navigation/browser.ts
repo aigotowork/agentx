@@ -1,5 +1,5 @@
 /** Page-lifetime URL/state synchronization; supply retries never create history. */
-import { conversationSubjects, GLOBAL_OFFICE, membershipKey } from '../offline/model';
+import { conversationSubjects, GLOBAL_OFFICE, matchesOffice, membershipKey } from '../offline/model';
 import type { SpaceController } from '../offline/controller';
 import { defaultRoute, parseRoute, routeFromState, routeSearch, type SpaceRoute, type RouteTarget, type NavigationCodec } from './route';
 /** Install once per page; user navigation cancels pending targets, drafts/supply do not. */
@@ -18,18 +18,21 @@ export function installNavigation(controller: SpaceController, report: (issue: s
     const domainOffice = !!supply.scope.listener && (workspaceId === GLOBAL_OFFICE || workspaceId.startsWith('/'));
     const known = !domainOffice || workspaceId === GLOBAL_OFFICE || supply.workspaces.some(office => office.id === workspaceId);
     if (workspaceId && !supply.scope.cloud && !['$global', '$legacy', '$unknown'].includes(workspaceId) && !supply.workspaces.some(office => office.id === workspaceId)) issue ||= '办公室尚未加载或不存在';
+    if (!route.target && workspaceId.startsWith('project:') && supply.scope.cloud && !supply.workspaces.some(office => office.id === workspaceId)) {
+      issue ||= supply.cloudDirectory?.phase === 'ready' ? '此项目办公室不存在' : '正在等待项目目录';
+    }
     if (route.target) {
       const target = route.target;
       // Synthetic demo records can explicitly retain an older generation; native targets cannot.
       if (!supply.scope.id) issue ||= '正在等待精确会话供给';
-      else if (target.scope !== supply.scope.id || supply.mode !== 'offline' && target.generation !== supply.scope.generation) issue ||= '目标 scope / generation 已失效；不会转向同名实例';
+      else if (target.scope !== supply.scope.id || supply.mode !== 'offline' && target.generation !== supply.scope.generation) issue ||= supply.scope.cloud ? '目标 Namespace 代次已失效；不会转向同名实例' : '目标 scope / generation 已失效；不会转向同名实例';
       else {
         const candidates = domainOffice && supply.roster?.office !== workspaceId ? supply.subjects ?? [] : conversationSubjects(supply);
         const matches = candidates.filter(agent => agent.ref.scope === target.scope && agent.ref.generation === target.generation && agent.ref.host === target.host && agent.name === target.name && agent.ref.incarnation === target.incarnation && (agent.ref.stopped_event ?? null) === target.stopped_event && agent.ref.record === target.record);
         if ((supply.scope.listener || supply.scope.cloud) && request?.phase === 'loading') issue ||= '正在读取精确会话';
         else if (request?.phase === 'error') issue ||= `精确目标不可用：@${target.name} · ${target.record === 'stopped' ? '停止历史' : '当前实例'}（${target.incarnation ?? target.stopped_event}） · ${request.error}；不会转向同名实例`;
         else if (matches.length !== 1) issue ||= '精确目标未加载、已失效或不唯一；不会转向同名实例';
-        else if (workspaceId && workspaceId !== membershipKey(matches[0])) issue ||= 'office 与精确 Agent 归属不匹配';
+        else if (!matchesOffice(matches[0], workspaceId)) issue ||= '办公室与精确 Agent 归属不匹配';
         else if (known) { selectedId = matches[0].id; if (route.inferOffice) workspaceId = membershipKey(matches[0]); }
       }
     }

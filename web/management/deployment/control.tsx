@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
-import { CloudAdminError, CloudAdminOutcomeUnknown, type CloudControlInput, type CloudControlReceipt, type CloudHostCapabilities } from '@agentx/client';
+import { newCloudId, CloudAdminError, CloudAdminOutcomeUnknown, type CloudControlInput, type CloudControlReceipt, type CloudHostCapabilities } from '@agentx/client';
 import { InteractionDialog } from '../dialog';
 import { Timestamp } from '../presentation';
 import { explainError, useRead, type AdminClient } from './model';
 
-export type ControlTarget = { scope: string; generation: string; host: string } & (
+/** @aiPurpose Identify the exact host and optional Agent for a cloud control dialog. @aiUsage Capture at selection time and replace when the dialog closes. */
+export type ControlTarget = { namespace: string; generation: string; host: string } & (
   { kind: 'launch' } | { kind: 'stop'; name: string; incarnation: string }
 );
 
@@ -12,17 +13,18 @@ const statusLabel: Record<CloudControlReceipt['status'], string> = {
   queued: '等待主机接收', running: '主机正在执行', succeeded: '已完成', failed: '执行失败', uncertain: '执行结果未确认',
 };
 
-function Receipt({ value }: { value: CloudControlReceipt }) {
+function Receipt({ value, workspaces }: { value: CloudControlReceipt; workspaces?: CloudHostCapabilities['workspaces'] }) {
   const outcome = value.outcome;
   const command = value.command;
   const agent = outcome?.status === 'succeeded' ? outcome.agent : null;
+  const projectName = command.kind === 'launch' ? workspaces?.find(item => item.workspace_id === command.workspace_id)?.name : undefined;
   return <dl className="deployment-control-receipt" role="status">
     <div><dt>状态</dt><dd><strong>{statusLabel[value.status]}</strong>{outcome && 'code' in outcome && <> · <code>{outcome.code}</code></>}</dd></div>
     <div><dt>请求 ID</dt><dd><code>{value.request_id}</code></dd></div>
     <div><dt>主机</dt><dd><code>{value.host}</code> · <code>{value.installation_id}</code></dd></div>
     <div><dt>{({ launch: '启动', stop: '停止', add_workspace: '添加工作区' })[command.kind]}</dt><dd>{command.kind === 'launch'
-      ? <>{command.workspace} · {command.role ?? '默认 Codex'}{command.name && <> · <code>@{command.name}</code></>}</>
-      : command.kind === 'add_workspace' ? <code>{command.alias} · {command.parent}/{command.directory}</code>
+      ? <><span title={command.workspace_id}>{projectName ?? command.workspace_id}</span> · {command.role ?? '默认 Codex'}{command.name && <> · <code>@{command.name}</code></>}</>
+      : command.kind === 'add_workspace' ? <code>{command.name} · {command.parent}/{command.directory}</code>
       : <code>@{command.name} · {command.incarnation}</code>}</dd></div>
     {agent && <div><dt>Agent 实例</dt><dd><code>@{agent.name} · {agent.incarnation}</code></dd></div>}
   </dl>;
@@ -33,7 +35,7 @@ const isMissing = (error: unknown) =>
 
 function controlError(error: unknown, fallback: string) {
   return error instanceof CloudAdminError && error.status === 409
-    ? '主机、Scope 代次、Agent 实例或角色可用性已变化。请核对后重新选择。'
+    ? '主机、Namespace 代次、Agent 实例或角色可用性已变化。请核对后重新选择。'
     : explainError(error, fallback);
 }
 
@@ -56,7 +58,7 @@ function Catalogue({ value }: { value: CloudHostCapabilities }) {
 
 /**
  * @aiPurpose Confirm one cloud launch or exact-instance stop and retain its original receipt.
- * @aiUsage Keep mounted while the scope workspace is shown and clear the captured target on dismiss.
+ * @aiUsage Keep mounted while the namespace workspace is shown and clear the captured target on dismiss.
  * @aiBehavior Read the live installation catalogue, then permit exact-input replay only after an explicit receipt lookup finds no result.
  */
 export function DeploymentControlDialog({ client, target, onClose }: {
@@ -78,14 +80,14 @@ export function DeploymentControlDialog({ client, target, onClose }: {
 
   const load = useCallback(async (signal: AbortSignal) => {
     if (!target) return null;
-    const value = await client.getHostCapabilities(target.scope, target.host, { signal });
-    if (value.generation !== target.generation) throw new Error('Scope changed');
+    const value = await client.getHostCapabilities(target.namespace, target.host, { signal });
+    if (value.generation !== target.generation) throw new Error('Namespace changed');
     return value;
   }, [client, target]);
   const { read, retry } = useRead(load);
   const capabilities = read.kind === 'ready' ? read.data : null;
   const workspaces = capabilities?.workspaces ?? [];
-  const workspace = workspaces.find(item => item.alias === draft.workspace);
+  const workspace = workspaces.find(item => item.workspace_id === draft.workspace);
   const roleAvailable = draft.role ? workspace?.roles.some(role => role.name === draft.role && role.available) : workspace?.default_available;
   const taskTooLong = new TextEncoder().encode(draft.task).length > 16 * 1024;
   const canSubmit = !!capabilities?.online && !!capabilities.installation_id && phase.kind === 'draft'
@@ -93,8 +95,8 @@ export function DeploymentControlDialog({ client, target, onClose }: {
   const stopping = target?.kind === 'stop';
   const verb = stopping ? '停止 Agent' : '启动 Agent';
   const targetText = !target ? '' : stopping
-    ? `${target.scope} / ${target.host} · @${target.name} · ${target.incarnation}`
-    : `${target.scope} / ${target.host}`;
+    ? `${target.namespace} / ${target.host} · @${target.name} · ${target.incarnation}`
+    : `${target.namespace} / ${target.host}`;
 
   function edit(patch: Partial<Draft>) {
     setDraft(value => ({ ...value, ...patch }));
@@ -110,7 +112,7 @@ export function DeploymentControlDialog({ client, target, onClose }: {
     setError('');
     try {
       const opts = { signal: controller.signal };
-      const receipt = await (mode === 'lookup' ? client.recoverControlOperation(target.scope, input, opts) : client.submitControlOperation(target.scope, input, opts));
+      const receipt = await (mode === 'lookup' ? client.recoverControlOperation(target.namespace, input, opts) : client.submitControlOperation(target.namespace, input, opts));
       if (!controller.signal.aborted) setPhase({ kind: 'saved', input, receipt });
     } catch (failure) {
       if (controller.signal.aborted) return;
@@ -138,10 +140,10 @@ export function DeploymentControlDialog({ client, target, onClose }: {
     if (!target || !canSubmit || !capabilities) return;
     const command: CloudControlInput['command'] = target.kind === 'stop'
       ? { kind: 'stop', name: target.name, incarnation: target.incarnation }
-      : { kind: 'launch', workspace: draft.workspace, role: draft.role || undefined, name: draft.name || undefined,
+      : { kind: 'launch', workspace_id: draft.workspace, role: draft.role || undefined, name: draft.name || undefined,
         title: draft.title || undefined, initial_prompt: draft.task || undefined };
     void execute({ generation: target.generation, host: target.host, installation_id: capabilities.installation_id,
-      request_id: crypto.randomUUID(), command }, 'submit');
+      request_id: newCloudId(), command }, 'submit');
   }
 
   const dismiss = () => { if (!pending.current) onClose(); };
@@ -159,13 +161,13 @@ export function DeploymentControlDialog({ client, target, onClose }: {
     {target && <form id={formId} className="launch-fields deployment-control-form" onSubmit={submit} autoComplete="off">
       {phase.kind === 'draft' && <>
         {read.kind === 'loading' && <p role="status">正在读取主机目录…</p>}
-        {read.kind === 'error' && <div className="deployment-control-catalogue"><p role="alert">无法读取当前 Scope 的主机目录。</p><button type="button" onClick={retry}>重新读取</button></div>}
+        {read.kind === 'error' && <div className="deployment-control-catalogue"><p role="alert">无法读取当前 Namespace 的主机目录。</p><button type="button" onClick={retry}>重新读取</button></div>}
         {capabilities && <Catalogue value={capabilities} />}
         {capabilities && !capabilities.online && <div className="deployment-control-catalogue"><p role="status">主机当前无法接收管理操作。</p><button type="button" onClick={retry}>重新读取</button></div>}
         {!stopping && capabilities && <>
           {workspaces.length ? <>
             <label>工作区<select required value={draft.workspace} onChange={event => edit({ workspace: event.target.value, role: '' })}>
-              <option value="">选择工作区</option>{workspaces.map(item => <option key={item.alias}>{item.alias}</option>)}
+              <option value="">选择工作区</option>{workspaces.map(item => <option key={item.workspace_id} value={item.workspace_id}>{item.name}</option>)}
             </select></label>
             {workspace && <label>角色<select value={draft.role} onChange={event => edit({ role: event.target.value })}>
               <option value="" disabled={!workspace.default_available}>默认 Codex{!workspace.default_available && `（${workspace.default_reason ?? '不可用'}）`}</option>
@@ -185,25 +187,25 @@ export function DeploymentControlDialog({ client, target, onClose }: {
         <code>{phase.input.request_id}</code>
         <span>关闭后仍可用此请求 ID 查询回执。</span>
       </div>}
-      {phase.kind === 'saved' && <Receipt value={phase.receipt} />}
+      {phase.kind === 'saved' && <Receipt value={phase.receipt} workspaces={workspaces} />}
       {error && <p className="deployment-error" role="alert">{error}</p>}
     </form>}
   </InteractionDialog>;
 }
 
 /**
- * @aiPurpose Look up a cloud operation receipt by its original scope and request ID.
- * @aiUsage Mount inside the selected Scope and key by scope identity; form submission always reads without dispatching.
+ * @aiPurpose Look up a cloud operation receipt by its original namespace and request ID.
+ * @aiUsage Mount inside the selected Namespace and key by namespace identity; form submission always reads without dispatching.
  */
-export function DeploymentReceiptLookup({ client, scope, generation }: { client: AdminClient; scope: string; generation: string }) {
+export function DeploymentReceiptLookup({ client, namespace, generation }: { client: AdminClient; namespace: string; generation: string }) {
   const [draft, setDraft] = useState('');
   const [lookup, setLookup] = useState('');
   const load = useCallback(async (signal: AbortSignal) => {
     if (!lookup) return null;
-    const receipt = await client.getControlOperation(scope, lookup, { signal });
-    if (receipt.generation !== generation) throw new Error('Scope changed');
+    const receipt = await client.getControlOperation(namespace, lookup, { signal });
+    if (receipt.generation !== generation) throw new Error('Namespace changed');
     return receipt;
-  }, [client, scope, generation, lookup]);
+  }, [client, namespace, generation, lookup]);
   const { read, retry } = useRead(load);
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -219,7 +221,7 @@ export function DeploymentReceiptLookup({ client, scope, generation }: { client:
       <button type="submit" disabled={!draft.trim()}>查询回执</button>
     </form>
     {lookup && read.kind === 'loading' && <p role="status">正在读取回执…</p>}
-    {read.kind === 'error' && <p className="deployment-error" role="alert">{isMissing(read.error) ? '此 Scope 内未找到该请求。' : controlError(read.error, '无法读取回执。请重试。')}</p>}
+    {read.kind === 'error' && <p className="deployment-error" role="alert">{isMissing(read.error) ? '此 Namespace 内未找到该请求。' : controlError(read.error, '无法读取回执。请重试。')}</p>}
     {read.kind === 'ready' && read.data && <Receipt value={read.data} />}
   </section>;
 }

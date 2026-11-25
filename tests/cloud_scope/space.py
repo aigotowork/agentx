@@ -2,10 +2,12 @@
 
 from contextlib import closing
 from html.parser import HTMLParser
-import sqlite3
 import uuid
 
-from fixture import require
+from fixture import UNEXPOSED, compact_id, exact, require
+
+
+READER_INCARNATION = "ReaderInc001"
 
 
 class AssetReferences(HTMLParser):
@@ -22,16 +24,16 @@ class AssetReferences(HTMLParser):
             self.urls.append(fields["href"])
 
 
-def resource(fixture, method, path):
+def resource(fixture, method, path, token=None):
     with closing(fixture.connect()) as connection:
-        connection.request(method, path)
+        connection.request(method, path, headers={"Authorization": f"Bearer {token}"} if token else {})
         response = connection.getresponse()
         return response.status, dict((k.lower(), v) for k, v in response.getheaders()), response.read()
 
 
-def assets(fixture, scope_id, generation):
-    entry = f"/scopes/{scope_id}/space/"
-    exact = f"access=scope&view=list&host=west&name=reader&incarnation=first&generation={generation}"
+def assets(fixture, namespace_id, generation):
+    entry = f"/namespaces/{namespace_id}/space/"
+    exact = f"access=namespace&view=list&host=west&name=reader&incarnation={READER_INCARNATION}&generation={generation}"
     status, fields, _ = resource(fixture, "GET", entry[:-1] + "?" + exact + "&token=discard-me")
     require(status == 307 and fields["location"] == entry + "?" + exact, "Canonical redirect must keep only nonsecret navigation")
     status, fields, body = resource(fixture, "GET", entry)
@@ -52,8 +54,8 @@ def assets(fixture, scope_id, generation):
                 asset_headers["content-type"].startswith(("text/javascript", "text/css")), f"Wrong asset content type: {url}")
     status, head, empty = resource(fixture, "HEAD", entry)
     require(status == 200 and not empty and head["content-type"] == fields["content-type"], "HEAD must match the Space representation")
-    require(resource(fixture, "GET", "/scopes/unprovisioned/space/")[2] == body, "Unauthenticated shells must not reveal scope existence")
-    for path in ("/scopes/-invalid/space/", "/scopes/%61lpha/space/", entry + "unknown", "/space/",
+    require(resource(fixture, "GET", "/namespaces/unprovisioned/space/")[2] == body, "Unauthenticated shells must not reveal scope existence")
+    for path in ("/namespaces/-invalid/space/", "/namespaces/%61lpha/space/", entry + "unknown", "/space/",
                  "/space/assets/not-present.js", "/api/v1/management", "/api/v1/agents"):
         status, headers, _ = resource(fixture, "GET", path)
         require(status == 404 and headers["cache-control"] == "no-store", f"Route must not alias Space/local APIs: {path}")
@@ -68,11 +70,11 @@ def run(fixture, provision):
     other, _ = provision(fixture, "neighbor")
     token, generation = created["token"], receipt["generation"]
     urls = assets(fixture, "alpha", generation)
-    base = "/scopes/alpha/api/v1"
+    base = "/namespaces/alpha/api/v1"
     history = base + "/messages"
-    admin_scope = fixture.admin + "/scopes/alpha"
+    admin_scope = fixture.admin + "/namespaces/alpha"
     admin_messages = admin_scope + "/messages"
-    operations = fixture.admin + "/scopes/alpha/operations"
+    operations = fixture.admin + "/namespaces/alpha/operations"
 
     def call(method, path, body=None, **options):
         return fixture.expect(method, base + path, token, body, **options)
@@ -86,7 +88,8 @@ def run(fixture, provision):
         return station
 
     def register(station, host, name, incarnation):
-        return call("PUT", f"/agents/{name}", {**station, "host": host, "incarnation": incarnation})
+        return exact(call("PUT", f"/agents/{name}", {**station, "host": host, "incarnation": incarnation,
+                                                    "workspace": UNEXPOSED}))
 
     def send(station, sender, receiver, body, **fields):
         request_id = str(uuid.uuid4())
@@ -95,9 +98,9 @@ def run(fixture, provision):
         return call("POST", "/messages", data), request_id
 
     west, east = install("west"), install("east")
-    reader = register(west, "west", "reader", "first")
-    counterpart = register(east, "east", "counterpart", "source")
-    unrelated = register(east, "east", "unrelated", "other")
+    reader = register(west, "west", "reader", READER_INCARNATION)
+    counterpart = register(east, "east", "counterpart", compact_id())
+    unrelated = register(east, "east", "unrelated", compact_id())
     query = {**reader, "generation": generation}
 
     require(call("GET", "/messages", query=query) == {"items": [], "next": None}, "Known empty registration must return an empty page")
@@ -109,7 +112,7 @@ def run(fixture, provision):
             "History requires the current generation")
     for override in ({"limit": 0}, {"limit": 101}, {"before": "00"}, {"before": "9223372036854775808"}, {"extra": "rejected"}):
         call("GET", "/messages", query={**query, **override}, statuses=(400,))
-    for override in ({"incarnation": "other"}, {"host": "east"}):
+    for override in ({"incarnation": unrelated["incarnation"]}, {"host": "east"}):
         call("GET", "/messages", query={**query, **override}, statuses=(404,))
 
     from concurrent.futures import ThreadPoolExecutor
@@ -153,14 +156,15 @@ def run(fixture, provision):
     human_message = operator_call("POST", human_input)
     operator = human_message["from"]
     operator_address = f"@{operator['host']}/{operator['name']}"
-    require(human_message["to"] == reader and human_message["body"] == human_input["body"]
+    require(exact(human_message["to"]) == reader and human_message["body"] == human_input["body"]
             and human_message["intent"] == "request" and human_message["id"] != first["id"]
             and human_message["reply_to"] is None and human_message["thread"] is None,
             "Human admission must assign its own sender and a separate ID from a scope send with the same request ID")
     require(call("GET", f"/operations/{message_request}")["message"] == first,
             "Admin admission must not replace a scope member's replay receipt")
     call("PUT", f"/hosts/{operator['host']}", west, statuses=(400,))
-    call("PUT", f"/agents/{operator['name']}", {**west, "host": "west", "incarnation": operator["incarnation"]}, statuses=(400,))
+    call("PUT", f"/agents/{operator['name']}", {**west, "host": "west", "incarnation": operator["incarnation"],
+                                               "workspace": UNEXPOSED}, statuses=(400,))
     call("POST", "/messages", {**west, "request_id": str(uuid.uuid4()), "from": operator, "to": "@reader",
                                "body": "spoofed operator", "intent": "request"}, statuses=(400,))
     require(operator not in call("GET", "/agents")["items"]
@@ -177,7 +181,7 @@ def run(fixture, provision):
     call("POST", "/messages", {**answer_input, "reply_to": None}, statuses=(400,))
     call("POST", "/messages", {**answer_input, "from": counterpart, "installation_id": east["installation_id"]}, statuses=(404,))
     answer = call("POST", "/messages", answer_input)
-    require(answer["to"] == operator and answer["from"] == reader and answer["reply_to"] == human_message["id"],
+    require(exact(answer["to"]) == exact(operator) and exact(answer["from"]) == reader and answer["reply_to"] == human_message["id"],
             "The regular send path must persist the related Agent reply")
     require(call("GET", f"/operations/{answer_input['request_id']}")["status"] == "confirmed",
             "The operator reply is delivered directly to history")
@@ -186,8 +190,8 @@ def run(fixture, provision):
             and sent_page == call("GET", "/messages", query={**query, "limit": 2}),
             "Both read paths must expose the same durable conversation and cursor")
 
-    call("POST", "/agents/reader/retire", {**west, "host": "west", "incarnation": "first"})
-    replacement = register(east, "east", "reader", "replacement")
+    call("POST", "/agents/reader/retire", {**west, "host": "west", "incarnation": READER_INCARNATION, "workspace": UNEXPOSED})
+    replacement = register(east, "east", "reader", compact_id())
     replacement_query = {**replacement, "generation": generation}
     require(call("GET", "/messages", query=replacement_query) == {"items": [], "next": None},
             "A namesake on another host must not inherit the old history")
@@ -213,13 +217,10 @@ def run(fixture, provision):
     require(status == 200 and [msg["id"] for msg in final["items"]] == large[:1] and final["next"] is None,
             "Byte-limit cursor must skip no rows")
 
-    # Emulate the index state of a scope provisioned by the pre-Space deployment.
     fixture.stop(fixture.process)
-    with closing(sqlite3.connect(fixture.runtime / "deployment/scopes/alpha/communication.sqlite3")) as storage:
-        storage.executescript("DROP INDEX messages_from_history; DROP INDEX messages_to_history;")
     fixture.start()
     require(call("GET", "/messages", query={**query, "before": first_page["next"]}) == older,
-            "Reopening a pre-Space scope must establish the additive indexes without losing messages")
+            "Reopening the v2 Namespace must retain exact historical messages")
     require(operator_call("GET", query={**query, "limit": 2}) == sent_page and operator_call("POST", human_input) == human_message,
             "Restart must preserve both sides of the conversation and operator replay identity")
     reopened = call("GET", "/changes", query={**change_query, "cursor": cursor})
@@ -228,7 +229,7 @@ def run(fixture, provision):
     new_token = fixture.token()
     with ThreadPoolExecutor(max_workers=1) as pool:
         revoked = pool.submit(call, "GET", "/changes", query={**change_query, "cursor": cursor}, statuses=(401,))
-        fixture.expect("POST", fixture.admin + "/scopes/alpha/token-rotations", fixture.admin_token,
+        fixture.expect("POST", fixture.admin + "/namespaces/alpha/token-rotations", fixture.admin_token,
                        {"request_id": str(uuid.uuid4()), "expected_version": 1, "token": new_token})
         require(revoked.result(timeout=5)["code"] == "unauthorized", "A waiting member must be revoked on rotation")
     fixture.expect("GET", history, token, query=query, statuses=(401,))
@@ -236,4 +237,4 @@ def run(fixture, provision):
             "Rotated bearer must see the same history for the same generation")
     return {"assets": urls, "exact_agent": reader, "message_ids": [first["id"], reply["id"], self_send["id"]],
             "operator_message_ids": [human_message["id"], answer["id"]],
-            "rotation_and_additive_upgrade": True, "deployment_starts": fixture.boots}
+            "rotation_and_restart": True, "deployment_starts": fixture.boots}

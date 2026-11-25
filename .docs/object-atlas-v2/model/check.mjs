@@ -48,10 +48,8 @@ for (const route of fixture.routes) {
 for (const port of fixture.forbiddenPorts) assert(!nodes.has(port), `must not expose ${port}`);
 const field = (id, name) => anchors.get(`${id}.${name}`);
 assert.equal(nodes.get('NativeWorkspaceMembershipPaging').support.native, 'implemented');
-assert.equal(nodes.get('BoundedWorkspaceMemberProjection').support.sdk, 'implemented');
 assert.equal(field('Management.Descriptor', 'supports_workspace_members').optional, true);
 for (const [method, request, coverage, cursor] of [
-  ['Workspace.members', 'PageRequest<MemberCursor>', 'MemberCoverage', 'MemberCursor'],
   ['Workspace.memberPage', 'NativeMemberRequest', 'NativeMemberCoverage', 'NativeMemberCursor'],
 ]) {
   assert.deepEqual(nodes.get(method).inputs[0].typeIds, [request]);
@@ -120,7 +118,7 @@ assert.deepEqual(JSON.parse(JSON.stringify(sandbox.CONTRACT_VIEW)), view, 'offli
 const api = sandbox.CONTRACT_LAYERS;
 assert.deepEqual(JSON.parse(JSON.stringify(api.layers.flatMap(layer => layer.nodeIds))).sort(), [...nodes.keys()].sort());
 assert.equal(api.layerForNode('Office.workspace').id, 'application');
-assert.equal(api.layerForNode('Workspace.members').id, 'sdk');
+assert.equal(api.layerForNode('Workspace.memberPage').id, 'sdk');
 assert.equal(api.layerForNode('Management.AgentView').id, 'transport');
 assert.equal(api.layerForNode('AbortSignal').id, 'platform');
 assert.equal(api.layer('missing'), undefined);

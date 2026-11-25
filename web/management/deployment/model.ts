@@ -3,12 +3,12 @@ import { CloudAdminError, createCloudAdminClient } from '@agentx/client';
 
 export type AdminClient = ReturnType<typeof createCloudAdminClient>;
 export type AdminOverview = Awaited<ReturnType<AdminClient['overview']>>;
-export type Scope = Awaited<ReturnType<AdminClient['getScope']>>;
-export type ScopeReceipt = Awaited<ReturnType<AdminClient['putScope']>>;
-export type ScopeTarget = Pick<Scope, 'id' | 'credential_version'>;
-export type ScopeWriteAction = { kind: 'create' } | { kind: 'rotate'; scope: ScopeTarget };
+export type Namespace = Awaited<ReturnType<AdminClient['getNamespace']>>;
+export type NamespaceReceipt = Awaited<ReturnType<AdminClient['putNamespace']>>;
+export type NamespaceTarget = Pick<Namespace, 'namespace_id' | 'credential_version'>;
+export type NamespaceWriteAction = { kind: 'create' } | { kind: 'rotate'; namespace: NamespaceTarget };
 export type Read<T> = { kind: 'loading' } | { kind: 'error'; error: unknown } | { kind: 'ready'; data: T };
-export const cloudTokenPattern = /^[A-Za-z0-9_-]{32,256}$/;
+export { cloudTokenPattern } from '@agentx/client';
 
 /** Bind only this deployment, with finite calls and no browser credential caching. */
 export function deploymentClient(token: string) {
@@ -23,10 +23,16 @@ export function deploymentClient(token: string) {
 /** Do not echo server text, which is outside the browser's credential boundary. */
 export function explainError(error: unknown, fallback: string) {
   if (!(error instanceof CloudAdminError)) return fallback;
+  if (error.code === 'unsupported_operation') return '此部署不支持这项操作。';
+  if (error.code === 'stale_generation') return 'Namespace 代次已变化，请重新读取清单。';
   if (error.status === 401 || error.status === 403) return '管理员令牌无效或没有权限。';
   if (error.status === 404) return '该资源已不存在。请刷新部署。';
-  if (error.status === 409) return 'Scope 或令牌版本已变化。请刷新后核对。';
+  if (error.status === 409) return 'Namespace 或令牌版本已变化。请刷新后核对。';
   return fallback;
+}
+
+export function staleInventory(error: unknown) {
+  return error instanceof CloudAdminError && error.code === 'stale_generation';
 }
 
 /** Cancel obsolete calls and show only data for the current reader and retry. */

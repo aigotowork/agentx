@@ -41,6 +41,8 @@ irm https://github.com/aigotowork/agentx/releases/latest/download/agentx-install
 
 For other platforms, see the [source build instructions](CONTRIBUTING.md#development). The cloud daemon's [Docker image](deploy/README.md) is distributed separately.
 
+When upgrading a running daemon from v0.7.31–v0.7.33, run `agentx daemon restart --scope PATH` with the new executable. Omit `--scope` to use the normal environment selection. Reopen any Agent sessions still running the earlier host after this one-time upgrade. [Native upgrade details](.docs/architecture/daemon.md#operator-status-and-recovery).
+
 ## Quickstart
 
 <table>
@@ -185,7 +187,7 @@ agentx config terminal --info
 
 ## Cross-device
 
-For the cloud daemon container, Compose quick start and GitHub image releases, see [Docker deployment](deploy/README.md). For one HTTPS deployment shared across machines, see [cloud scopes, administration, and client setup](.docs/architecture/cloud-scope.md).
+For the cloud daemon container, Compose quick start and GitHub image releases, see [Docker deployment](deploy/README.md). For one HTTPS deployment shared across machines, see [cloud namespaces, administration, and client setup](.docs/architecture/cloud-scope.md).
 
 Connect agents across machines via MQTT relay.
 

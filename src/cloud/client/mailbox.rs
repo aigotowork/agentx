@@ -47,7 +47,8 @@ impl Mailbox {
     pub(super) fn try_open(scope: &Scope, actor: &Actor) -> Result<Option<Self>> {
         // The incarnation is generated locally and never reused. A replacement Agent
         // cannot consume or overwrite its predecessor's unresolved claim journal.
-        let incarnation = Uuid::parse_str(&actor.agent.incarnation).context("invalid local cloud Agent incarnation")?;
+        let incarnation = &actor.agent.incarnation;
+        anyhow::ensure!(crate::cloud::identifiers::valid_incarnation(incarnation), "invalid local cloud Agent incarnation");
         let prefix = scope.state.join(format!("{}-{incarnation}", actor.agent.name));
         let lock = OpenOptions::new().read(true).write(true).create(true).truncate(false).open(prefix.with_extension("claim-lock"))?;
         match lock.try_lock() {

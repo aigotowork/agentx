@@ -27,7 +27,7 @@ fn call(client: &Client, request: Lifecycle) -> Result<LifecycleResult, ServiceE
 /// Kill only the admitted participant; never reacquire a Client or resolve its
 /// name again. An uncertain issuance/completion never repeats external effects.
 pub(crate) fn kill(client: &Client, participant: &ParticipantRef, initiator: &str) -> Result<KillTrackedResult, String> {
-    let caller = CallerContext { request_id: RequestId(uuid::Uuid::new_v4().to_string()), invocation: client.invocation().clone(), deadline_unix_ms: None, expected_database_generation: Some(client.info().database_generation.clone()) };
+    let caller = CallerContext { request_id: RequestId(uuid::Uuid::new_v4().to_string()), invocation: client.invocation().clone(), deadline_unix_ms: None, expected_database_generation: None };
     let prepare = || client.call_with_context(caller.clone(), Request::Participants(Participants::Lifecycle(Lifecycle::PrepareKill { participant: participant.clone(), initiator: initiator.into() })));
     let prepared = match prepare() {
         Err(ServiceError::OutcomeUnknown(_)) => prepare(),

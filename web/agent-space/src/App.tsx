@@ -7,20 +7,21 @@ import { createStudioSupply } from "./offline/studio";
 import { SpaceTheme, SpaceInteractions, SpaceStyleSwitch, type SpaceStyle } from "../uiux/systems/space/space.web";
 import { usesStudioArt } from "../uiux/systems/space/components/presentation";
 import { AgentCommands, NewAgentButton } from "./interactions/AgentCommands";
-import { findConversation, GLOBAL_OFFICE, UNKNOWN_OFFICE, LEGACY_OFFICE } from "./offline/model";
+import { findConversation, GLOBAL_OFFICE, UNKNOWN_OFFICE, LEGACY_OFFICE, UNEXPOSED_OFFICE, membershipKey, projectDisplayName } from "./offline/model";
 import { officeMembers, visibleMembers } from "./offline/projection";
 import type { HallLayoutMemory } from "./scene/population";
 import { SceneSpace, type SceneMemory } from "./scene/SceneSpace";
 import { Conversation } from "./conversation/Conversation";
 import { Directory } from "./Directory";
-import { OfficeLayout } from "./layouts/OfficeLayout";
-import { SpaceLayout } from "./layouts/SpaceLayout";
-import { ChatLayout } from "./layouts/ChatLayout";
+import { OfficeLayout } from "../uiux/systems/space/layouts/OfficeLayout";
+import { SpaceLayout } from "../uiux/systems/space/layouts/SpaceLayout";
+import { ChatLayout } from "../uiux/systems/space/layouts/ChatLayout";
 import { OfficeNavigation, OfficeContext } from "./OfficeNavigation";
 import { OfficeResources } from "./OfficeResources";
 import type { SpaceHostBinding } from './live/host';
 import { SpaceReadStatus } from './live/ReadStatus';
 import { defaultRoute, routeSearch } from './navigation/route';
+import { cloudOfficeQuery } from './cloud/route';
 import { readAppearance, saveAppearance } from "./navigation/appearance";
 import { LiveSpace } from "./live/controller";
 import type { SpaceLive } from "./live/workbench";
@@ -45,8 +46,8 @@ export function App({ inspection, host, previewCaption, cloud, onCloudDisconnect
   const [session, setSession] = useState(0);
   const allowSample = !host && !cloud;
   const [appearance, setAppearance] = useState(() => readAppearance(allowSample));
-  const { style, legacyStudio } = appearance;
-  const studio = !!legacyStudio || usesStudioArt(style);
+  const { style } = appearance;
+  const studio = usesStudioArt(style);
   useEffect(() => {
     const sync = () => setAppearance(readAppearance(allowSample));
     window.addEventListener("popstate", sync);
@@ -130,9 +131,23 @@ function SpaceApp({ studio, inspection, host, cloud, onCloudDisconnect, previewC
   if (!memories.current.has(state.workspaceId)) memories.current.set(state.workspaceId, { current: null });
   const memory = memories.current.get(state.workspaceId)!;
   const names = useMemo(() => {
+    if (supply.scope.cloud) {
+      const { host, workspace_id } = cloudOfficeQuery(state.workspaceId);
+      const projects = supply.cloudDirectory?.projects ?? [];
+      const map = new Map(projects.filter(office => (!host || office.host === host) && (!workspace_id || office.workspaceId === workspace_id)).map(office => {
+        const sameName = projects.filter(other => other.host === office.host && other.title === office.title).map(other => other.workspaceId);
+        const title = projectDisplayName(office.title, office.workspaceId, sameName);
+        return [office.id, host ? title : `${title} · ${office.host}`] as const;
+      }));
+      for (const agent of officeMembers(supply, state.workspaceId)) {
+        const key = membershipKey(agent);
+        if (!map.has(key)) map.set(key, key === GLOBAL_OFFICE ? "全局成员" : key === UNEXPOSED_OFFICE ? "项目未开放" : key === UNKNOWN_OFFICE ? "归属未知" : "项目目录未提供");
+      }
+      return map;
+    }
     const entries = supply.workspaces.filter(office => !state.workspaceId || office.id === state.workspaceId).map(office => [office.id, studio ? office.title : `${office.title} · ${office.id}`] as const);
     const map = new Map<string, string>(entries);
-    if (!studioSample && !supply.scope.cloud) {
+    if (!studioSample) {
       if (!state.workspaceId || state.workspaceId === GLOBAL_OFFICE) map.set(GLOBAL_OFFICE, "全局成员");
       if (!state.workspaceId || state.workspaceId === UNKNOWN_OFFICE) map.set(UNKNOWN_OFFICE, "归属未知");
       if (!state.workspaceId || state.workspaceId === LEGACY_OFFICE) map.set(LEGACY_OFFICE, "旧记录 · 未记录归属");
@@ -147,7 +162,7 @@ function SpaceApp({ studio, inspection, host, cloud, onCloudDisconnect, previewC
   const scrollPositions = useRef(new Map<string, number>());
   const roster = supply.roster?.office === state.workspaceId ? supply.roster : undefined;
   const isPinnedOffice = !!host && (state.workspaceId.startsWith("/") || state.workspaceId === GLOBAL_OFFICE);
-  const awaitStudioRoster = studio && isPinnedOffice && (roster?.phase !== "ready" || !roster.exhausted && !scoped.some(agent => agent.ref.record === "current"));
+  const awaitStudioRoster = studio && isPinnedOffice && roster?.phase !== "unavailable" && (roster?.phase !== "ready" || roster.more && !scoped.some(agent => agent.ref.record === "current"));
   function cue(id: string, event: "open" | "minimize" | "restore" | "close") {
     feedback.play(event);
     setWindowCue(event === "close" ? undefined : { id, event, windows: controller.getSnapshot().windows });
@@ -184,7 +199,7 @@ function SpaceApp({ studio, inspection, host, cloud, onCloudDisconnect, previewC
       else focusWorkspace();
     });
   }
-  const directory = <Directory studio={studio} agents={filtered} selectedId={state.selectedId} drafts={state.drafts} onSelect={id => open(id, state.presentation === "scene" ? "directory" : "list")} onReset={controller.clearFilters} scrollPositions={scrollPositions.current} scrollKey={JSON.stringify(['roster', state.workspaceId, state.presentation, state.officeView])} showEmpty={!roster || scoped.length > 0 && !filtered.length && !!(state.query || state.state)} />;
+  const directory = <Directory studio={studio} cloudDirectory={supply.cloudDirectory} groupByHost={!!supply.scope.cloud && !state.workspaceId} agents={filtered} selectedId={state.selectedId} drafts={state.drafts} onSelect={id => open(id, state.presentation === "scene" ? "directory" : "list")} onReset={controller.clearFilters} scrollPositions={scrollPositions.current} scrollKey={JSON.stringify(['roster', state.workspaceId, state.presentation, state.officeView])} showEmpty={!roster || scoped.length > 0 && !filtered.length && !!(state.query || state.state)} />;
   const backLabel = studio ? (state.presentation === "scene" ? "返回办公室" : "返回名册") : undefined;
   const reader = selected ? <Conversation studio={studio} backLabel={backLabel} presentationControl={studio ? readerStyleControls : undefined} controller={controller} key={selected.id} agent={selected} records={supply.records(selected.id, channel)} channel={channel} onChannel={value => controller.channel(selected.id, value)} draft={state.drafts[selected.id] ?? ""} onDraft={text => controller.writeDraft(selected.id, text)} onBack={controller.close} live={live} scrollPositions={scrollPositions.current} /> : <ReaderEmpty />;
   const isResources = state.officeView === "posts" || state.officeView === "skills";
@@ -208,7 +223,7 @@ function SpaceApp({ studio, inspection, host, cloud, onCloudDisconnect, previewC
     onClose={closePane} /> : undefined;
   const resources = isResources && <OfficeResources controller={controller} live={live?.kind === "native" ? live : undefined} />;
   const content = !windowed && resources ? resources : state.presentation === "scene"
-    ? <SceneSpace studio={studio} studioSample={studioSample} awaitStudioRoster={awaitStudioRoster} key={state.workspaceId} memory={memory} layoutMemory={layoutMemory.current} population={supply.population} identityScope={`${supply.scope.id}:${supply.scope.generation}`} messages={supply.activity} human={human} agents={scoped} names={names} visibleKeys={visibleKeys} selectedId={state.selectedId} reading={state.reading} reader={reader} workspace={windows} directory={directory} scope={state.workspaceId} showEmpty={!roster || !!(state.query || state.state) || studio && roster.phase === "ready" && roster.exhausted} onSelect={id => open(id, "actor")} onClose={controller.close} onCabinet={() => live?.kind === "cloud" ? controller.panel("directory") : controller.historyDirectory()} onReset={controller.clearFilters} onHumanNavigate={openRelated} panel={state.panel} onPanel={controller.panel} />
+    ? <SceneSpace studio={studio} studioSample={studioSample} awaitStudioRoster={awaitStudioRoster} key={state.workspaceId} memory={memory} layoutMemory={layoutMemory.current} population={supply.population} identityScope={`${supply.scope.id}:${supply.scope.generation}`} messages={supply.activity} human={human} agents={scoped} names={names} visibleKeys={visibleKeys} selectedId={state.selectedId} reading={state.reading} reader={reader} workspace={windows} directory={directory} scope={state.workspaceId} showEmpty={!roster || !!(state.query || state.state) || studio && roster.phase === "ready" && !roster.more} onSelect={id => open(id, "actor")} onClose={controller.close} onCabinet={() => live?.kind === "cloud" ? controller.panel("directory") : controller.historyDirectory()} onReset={controller.clearFilters} onHumanNavigate={openRelated} panel={state.panel} onPanel={controller.panel} />
     : <ChatLayout directory={directory} reader={state.reading ? reader : <ReaderEmpty />} workspace={windows} hasWindows={panes.length > 0} reading={state.reading} onReturnFallback={focusWorkspace} />;
   const contextStatus = contextIssue ? <div className="context-error" role="alert">{contextIssue}{live?.more && !roster && <button type="button" onClick={live.loadMore}>加载更多成员</button>}{(host || cloud) && contextIssue.startsWith('精确目标不可用') && <button type="button" onClick={() => window.dispatchEvent(new PopStateEvent('popstate'))}>重试精确会话</button>}</div> : null;
   const sound = windowed && <WorkspaceSoundToggle enabled={feedback.enabled} onToggle={feedback.toggle} />;
@@ -217,7 +232,7 @@ function SpaceApp({ studio, inspection, host, cloud, onCloudDisconnect, previewC
   const header = <SpaceHeader studio={studioSample} previewCaption={studio && host ? previewCaption : undefined} presentation={state.presentation} onPresentation={controller.presentation} live={live} inspection={inspection} onReconnect={() => reconnect(state.presentation)} onCloudDisconnect={onCloudDisconnect} styleControls={<>{styleControls}{sound}</>} windowed={windowed} filters={filters} />;
   const context = <>{contextStatus}<OfficeContext studio={studioSample} controller={controller} matchedCount={filtered.length} actions={live?.kind === "native" && <DirectoryContact key={state.workspaceId} live={live} office={state.workspaceId} />} />{live && <SpaceReadStatus live={live} roster={roster} rows={scoped} />}</>;
   const studioReader = !windowed && studio && !isResources && state.reading && selected ? state.presentation : undefined;
-  const resourceWindow = windowed && resources && <ResourceWindow title={state.officeView === "skills" ? "办公室技能" : "办公室岗位"} compact={state.officeView === "skills"} onClose={controller.closeResources}>{resources}</ResourceWindow>;
+  const resourceWindow = windowed && resources && <ResourceWindow title={state.officeView === "skills" ? "办公室技能" : "办公室岗位"} compact={state.officeView === "skills" || !!supply.scope.cloud} onClose={controller.closeResources}>{resources}</ResourceWindow>;
   return <AgentCommands live={live} controller={controller} onSearch={windowed ? focusSearch : undefined}><OfficeLayout studio={studio} studioSample={studioSample} studioReader={studioReader} windowed={windowed} compactReading={compactReading} filtersOpen={filtersOpen} header={header} context={context} contextId={contextId}><SpaceLayout contentRef={contentRef} navigation={<OfficeNavigation studio={studioSample} controller={controller} />}>{content}{resourceWindow}</SpaceLayout></OfficeLayout></AgentCommands>;
 }
 function paneCapacity(width: number, presentation: Presentation): 1 | 2 {

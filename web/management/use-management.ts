@@ -7,7 +7,7 @@ import { ApiError, management, storageSuffix, submitManagement } from './api/cli
 import { activeOperation, loadReceipts, messageOf, readStored, refKey, requestId, saveReceipts, type Receipt, type WriteBody, type WriteKind } from './model';
 
 const selectionKey = 'agentx.management.selection.v1' + storageSuffix;
-type StoredSelection = { agent: AgentRef; generation: string } | AgentRef | null;
+type StoredSelection = { agent: AgentRef; generation: string };
 
 /** Own scoped read polling and durable operation admission independently of visible panels. */
 export function useManagement() {
@@ -18,7 +18,7 @@ export function useManagement() {
   const [labelSelectors, setLabelSelectors] = useState<string[]>([]);
   const applyLabelSelectors = useCallback((values: string[]) => { setLabelSelectors(values); setPages(1); setAgents([]); setHasMore(false); setLoading(true); }, []);
   const [hasMore, setHasMore] = useState(false);
-  const [savedSelection] = useState(() => readStored<StoredSelection>(selectionKey, null));
+  const [savedSelection] = useState(() => readStored<StoredSelection | null>(selectionKey, null));
   const [selected, setSelectedState] = useState<AgentRef | null>(null);
   const selectedRef = useRef<AgentRef | null>(null);
   const [detail, setDetail] = useState<AgentView>();
@@ -69,7 +69,7 @@ export function useManagement() {
         descriptorRef.current = next;
         setDescriptor(next);
         if (changed) { select(null); setAgents([]); setError('数据范围已重置；请选择当前 Agent。旧操作保留原代次。'); }
-        if (first && savedSelection && 'agent' in savedSelection && savedSelection.generation === next.generation) select(savedSelection.agent);
+        if (first && savedSelection?.generation === next.generation && savedSelection.agent) select(savedSelection.agent);
         if (labelSelectors.length && !next.supports_labels) throw new Error('当前服务不支持标签筛选。请清除条件。');
         let after: string | undefined;
         const rows: AgentView[] = [];
@@ -81,12 +81,6 @@ export function useManagement() {
           if (!after) break;
         }
         if (!controller.signal.aborted) {
-          // A legacy selection had no dataset metadata. Restore only if the
-          // first read confirms its full reference within this listener.
-          if (first && savedSelection && !('agent' in savedSelection)) {
-            const match = rows.find(row => refKey(row.agent) === refKey(savedSelection));
-            if (match) select(match.agent);
-          }
           setAgents(rows); setHasMore(!!after); if (!changed) setError('');
         }
       } catch (error) { if (!controller.signal.aborted) setError(messageOf(error)); }
@@ -160,7 +154,7 @@ export function useManagement() {
       refresh();
     } catch (error) {
       // Native label admission rejects these inputs before committing the patch.
-      const rejected = receipt.kind === 'labels' && error instanceof ApiError && ['InvalidInput', 'Forbidden', 'NotFound', 'Conflict', 'StaleReference', 'Unsupported'].includes(error.code);
+      const rejected = receipt.kind === 'labels' && error instanceof ApiError && ['InvalidInput', 'Forbidden', 'NotFound', 'Conflict', 'StaleReference', 'StaleGeneration', 'Unsupported'].includes(error.code);
       updateReceipts(all => all.map(item => item.id === receipt.id ? { ...item, rejected, missing: false, issue: rejected ? `请求已拒绝：${messageOf(error)}` : `回执未确认：${messageOf(error)}。先查询原操作。` } : item));
     } finally { inFlight.current.delete(receipt.id); }
   }

@@ -204,7 +204,7 @@ fn load_all(db: &AgentxDb, context: &RequestContext, options: SnapshotOptions, f
 }
 
 fn unscoped_info(target: info::Target) -> info::Reference {
-    info::Reference { scope: Default::default(), generation: String::new(), target, legacy: None }
+    info::Reference { scope: Default::default(), generation: String::new(), target }
 }
 
 fn with_info_references(db: &AgentxDb, context: &RequestContext, mut agents: Vec<Agent>) -> Vec<Agent> {

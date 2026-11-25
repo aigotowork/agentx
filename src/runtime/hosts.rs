@@ -73,7 +73,6 @@ pub(crate) struct DeliveryHostProgress {
     pub pid: u32,
     pub incarnation: String,
     pub child: ChildProcess,
-    pub protocol: Option<u32>,
     pub last_poll: Option<i64>,
     pub process_alive: Option<bool>,
 }

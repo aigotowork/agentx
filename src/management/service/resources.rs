@@ -3,25 +3,21 @@ use super::*;
 
 impl ManagementService {
     pub(crate) fn list_workspaces(&self, input: GenerationInput) -> ServiceResult<WorkspaceCatalog> {
-        let client = self.client(Some(&input.generation))?;
-        let result = super::super::offices::catalog(&client, &self.project)?;
-        self.client(Some(&input.generation))?;
-        Ok(result)
+        let client = self.client(&input.generation)?;
+        super::super::offices::catalog(&client, &self.project)
     }
 
     pub(crate) fn list_roles(&self, input: ListRolesInput) -> ServiceResult<RoleCatalog> {
-        let client = self.client(Some(&input.generation))?;
+        let client = self.client(&input.generation)?;
         let result = super::super::offices::roles(&client, &input.workspace)?;
-        self.client(Some(&input.generation))?;
+        self.verify_generation(&input.generation)?;
         Ok(result)
     }
 
     /// Preview uses native endpoint inspection only, never launch/adopt/reserve.
     pub(crate) fn inspect_directory(&self, input: InspectDirectoryInput) -> ServiceResult<DirectoryEntry> {
-        let client = self.client(Some(&input.generation))?;
-        let result = super::super::offices::entry(&client, &input.directory)?;
-        self.client(Some(&input.generation))?;
-        Ok(result)
+        let client = self.client(&input.generation)?;
+        super::super::offices::entry(&client, &input.directory)
     }
 
     pub(crate) fn get_labels(&self, input: GetAgentInput) -> ServiceResult<LabelsSnapshot> {
@@ -77,12 +73,11 @@ impl ManagementService {
     /// Persist bounded bytes outside dispatch, then register through native IPC.
     /// This retains existing upload semantics; it does not add a replay journal.
     pub(crate) fn upload_attachment(&self, input: UploadAttachmentInput, bytes: &[u8]) -> ServiceResult<Attachment> {
-        self.client(Some(&input.generation))?;
+        self.verify_generation(&input.generation)?;
         let stored = super::super::uploads::persist(&self.scope, &input.generation, &input.name, &input.media_type, bytes)?;
         let Response::Attachment(stored) = self.call(&input.generation, Request::RegisterAttachment(stored))? else {
             return Err(ServiceError::Internal("unexpected upload response".into()));
         };
-        self.client(Some(&input.generation))?;
         Ok(stored.attachment)
     }
 
@@ -92,7 +87,6 @@ impl ManagementService {
         };
         super::super::uploads::check(&stored)?;
         let bytes = std::fs::read(&stored.path).map_err(|error| ServiceError::Internal(error.to_string()))?;
-        self.client(Some(&input.generation))?;
         Ok(AttachmentBytes { attachment: stored.attachment, bytes })
     }
 }

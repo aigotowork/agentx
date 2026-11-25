@@ -6,6 +6,7 @@ import type { CallOptions } from '../transport.js';
 import { DomainReferenceError, readReference, requestId, requireAgent, requireGeneration, requireScope, wireReference } from './address.js';
 import type { Agent, AgentAddress, AgentReference, AgentSnapshot, CurrentReference, LabelsPatch, LaunchRelationCursor, LaunchRelationsPage, Membership, MessageCursor, MessageHistoryPage, MessageHistoryRequest, PageRequest, PreparedMessage, PreparedOperation, ReadonlyValue, RelatedConversation, ScopeAddress } from './contracts.js';
 import { checkedReceipt, killResult, labelsResult, launchResult, operationAddress, prepareTarget, projectLabels, retainInput, stopParticipationResult, submitTarget, targetInput, transcriptResult } from './operation.js';
+import { readWhenSupported, type ReadCapabilities } from './read-capabilities.js';
 
 export function projectSnapshot(scope: ScopeAddress, view: AgentView): AgentSnapshot {
   const { agent, collaboration, ...facts } = view;
@@ -51,7 +52,7 @@ function labelsInput(target: SubmitTarget, patch: LabelsPatch): SubmitLabels {
   return { ...target, set: patch.set, remove: patch.remove === undefined ? undefined : [...patch.remove], if_revision: patch.if_revision };
 }
 
-export function bindAgent(client: ManagementClient, scope: ScopeAddress, reference: AgentReference): Agent {
+export function bindAgent(client: ManagementClient, scope: ScopeAddress, capabilities: ReadCapabilities, reference: AgentReference): Agent {
   const exact = wireReference(reference);
   const ownReference = readReference(exact);
   const exactInput = { generation: scope.generation, agent: exact };
@@ -89,7 +90,8 @@ export function bindAgent(client: ManagementClient, scope: ScopeAddress, referen
           if (page.before.kind !== 'message-history') throw new DomainReferenceError('InvalidReference', 'Expected an AgentX message history cursor');
           requireAgent(page.before.agent, address);
         }
-        const result = await client.agents.messages.history({ ...exactInput, before: page.before?.position, limit: page.limit }, options);
+        const result = await readWhenSupported(capabilities, 'message-history',
+          () => client.agents.messages.history({ ...exactInput, before: page.before?.position, limit: page.limit }, options));
         requireGeneration(result.generation, scope);
         if ((result.live_after === null) !== (page.before !== undefined)) {
           throw new DomainReferenceError('InconsistentResponse', 'Unexpected live checkpoint for this message history page');

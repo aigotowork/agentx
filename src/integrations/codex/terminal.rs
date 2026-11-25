@@ -166,7 +166,7 @@ impl TerminalSession {
             _ if !required => return Ok(None),
             _ => bail!("the running AgentX daemon does not support direct Codex terminals with recovery"),
         }
-        ensure!(context.raw_env.get("AGENTX_LAUNCH_GENERATION") == Some(&client.info().database_generation), "direct Codex reservation belongs to another database generation");
+        ensure!(context.raw_env.get("AGENTX_LAUNCH_GENERATION").map(String::as_str) == Some(client.generation()?), "direct Codex reservation belongs to another database generation");
         let actual = match client.call(crate::service::Request::Participants(crate::agents::service::Request::Resolve))? {
             crate::service::Response::Participants(crate::agents::service::Response::Actor(actor)) => actor.participant,
             _ => bail!("unexpected direct Codex participant response"),

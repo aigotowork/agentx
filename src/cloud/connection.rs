@@ -10,10 +10,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Config {
-    pub url: String,
+    pub namespace_url: String,
     pub token: String,
     pub host: Option<String>,
-    pub workspaces: BTreeMap<String, PathBuf>,
+    pub project_roots: BTreeMap<String, PathBuf>,
 }
 
 const FILE: &str = "cloud.toml";
@@ -55,22 +55,22 @@ impl Config {
     }
 
     fn validate(&self) -> Result<()> {
-        let uri: axum::http::Uri = self.url.parse().map_err(|_| anyhow::anyhow!("invalid cloud scope URL"))?;
-        let host = uri.host().context("cloud scope URL requires a host")?;
+        let uri: axum::http::Uri = self.namespace_url.parse().map_err(|_| anyhow::anyhow!("invalid cloud namespace URL"))?;
+        let host = uri.host().context("cloud namespace URL requires a host")?;
         let local = host.eq_ignore_ascii_case("localhost") || host.trim_matches(['[', ']']).parse::<std::net::IpAddr>().is_ok_and(|ip| ip.is_loopback());
-        ensure!(uri.scheme_str() == Some("https") || local && uri.scheme_str() == Some("http"), "cloud scope URL requires HTTPS (loopback HTTP permitted)");
-        ensure!(uri.query().is_none() && !self.url.contains('#') && uri.authority().is_some_and(|a| !a.as_str().contains('@')), "cloud URL may not contain credentials, a fragment, or a query");
-        let id = uri.path().trim_end_matches('/').strip_prefix("/scopes/").context("expected a /scopes/ID URL")?;
+        ensure!(uri.scheme_str() == Some("https") || local && uri.scheme_str() == Some("http"), "cloud namespace URL requires HTTPS (loopback HTTP permitted)");
+        ensure!(uri.query().is_none() && !self.namespace_url.contains('#') && uri.authority().is_some_and(|a| !a.as_str().contains('@')), "cloud URL may not contain credentials, a fragment, or a query");
+        let id = uri.path().trim_end_matches('/').strip_prefix("/namespaces/").context("expected a /namespaces/ID URL")?;
         super::validate_id(id).map_err(|_| anyhow::anyhow!("invalid scope ID in cloud URL"))?;
-        super::validate_token(&self.token).map_err(|_| anyhow::anyhow!("invalid scope token format"))?;
+        super::validate_token(&self.token).map_err(|_| anyhow::anyhow!("invalid namespace token format"))?;
         if let Some(host) = &self.host {
             ensure!(host.len() <= 253 && host.as_bytes().first().is_some_and(u8::is_ascii_alphanumeric) && host.bytes().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || b"-_.".contains(&c)), "invalid host name");
         }
-        ensure!(!self.workspaces.is_empty(), "cloud.toml needs at least one workspace");
-        ensure!(self.workspaces.len() <= super::control::types::MAX_WORKSPACES, "cloud.toml exceeds the workspace limit");
-        for (alias, path) in &self.workspaces {
-            super::validate_id(alias).map_err(|_| anyhow::anyhow!("invalid workspace alias"))?;
-            ensure!(path.is_absolute(), "workspace paths must be absolute");
+        ensure!(!self.project_roots.is_empty(), "cloud.toml needs at least one project root");
+        ensure!(self.project_roots.len() <= super::control::types::MAX_WORKSPACES, "cloud.toml exceeds the project root limit");
+        for (alias, path) in &self.project_roots {
+            super::validate_id(alias).map_err(|_| anyhow::anyhow!("invalid project root alias"))?;
+            ensure!(path.is_absolute(), "project root paths must be absolute");
         }
         Ok(())
     }
@@ -83,36 +83,36 @@ pub(crate) struct Connect {
     /// Save configuration only; let a service manager start or restart the daemon.
     #[arg(long)]
     pub configure_only: bool,
-    /// HTTPS scope URL, including /scopes/ID.
+    /// HTTPS namespace URL, including /namespaces/ID.
     #[arg(long)]
-    url: String,
-    /// File containing the scope communication token.
+    namespace_url: String,
+    /// File containing the namespace token.
     #[arg(long)]
     token_file: PathBuf,
     #[arg(long)]
     host: Option<String>,
-    /// Exposed workspace alias=path; defaults to default=current directory.
-    #[arg(long = "workspace")]
-    workspaces: Vec<String>,
+    /// Exposed project root alias=path; defaults to default=current directory.
+    #[arg(long = "project-root")]
+    project_roots: Vec<String>,
 }
 
 impl Connect {
     pub(crate) fn save(self, root: &Path, cwd: &Path) -> Result<()> {
         let mut token = String::new();
-        File::open(&self.token_file).context("open scope token file")?.take(259).read_to_string(&mut token)?;
-        ensure!(token.len() <= 258, "invalid scope token length");
-        let mut workspaces = BTreeMap::new();
-        for item in self.workspaces {
-            let (name, path) = item.split_once('=').context("expected --workspace alias=path")?;
-            ensure!(!path.is_empty(), "missing workspace path");
-            let path = cwd.join(path).canonicalize().context("resolve workspace directory")?;
-            ensure!(path.is_dir(), "workspace must be a directory");
-            ensure!(workspaces.insert(name.to_owned(), path).is_none(), "duplicate workspace alias");
+        File::open(&self.token_file).context("open namespace token file")?.take(15).read_to_string(&mut token)?;
+        ensure!(token.len() <= 14, "invalid namespace token length");
+        let mut project_roots = BTreeMap::new();
+        for item in self.project_roots {
+            let (name, path) = item.split_once('=').context("expected --project root alias=path")?;
+            ensure!(!path.is_empty(), "missing project root path");
+            let path = cwd.join(path).canonicalize().context("resolve project root directory")?;
+            ensure!(path.is_dir(), "project root must be a directory");
+            ensure!(project_roots.insert(name.to_owned(), path).is_none(), "duplicate project root alias");
         }
-        if workspaces.is_empty() {
-            workspaces.insert("default".into(), cwd.canonicalize()?);
+        if project_roots.is_empty() {
+            project_roots.insert("default".into(), cwd.canonicalize()?);
         }
-        let config = Config { url: self.url.trim_end_matches('/').into(), token: token.trim_end_matches(['\n', '\r']).into(), host: self.host, workspaces };
+        let config = Config { namespace_url: self.namespace_url.trim_end_matches('/').into(), token: token.trim_end_matches(['\n', '\r']).into(), host: self.host, project_roots };
         config.validate()?;
         let data = toml::to_string(&config)?;
         ensure!(data.len() as u64 <= LIMIT, "configuration exceeds size limit");
@@ -161,7 +161,7 @@ pub(crate) fn describe(root: &Path, instance: Option<&str>) -> Option<String> {
         },
         None => "configured; no current connection report".to_owned(),
     };
-    Some(format!("configured endpoint={}\nCloud daemon: {detail}", config.url))
+    Some(format!("configured endpoint={}\nCloud daemon: {detail}", config.namespace_url))
 }
 
 #[cfg(all(test, unix))]
@@ -173,13 +173,13 @@ mod tests {
     fn enrollment_secrets_are_private_and_stale_status_is_never_current() -> Result<()> {
         let tmp = tempfile::tempdir()?;
         let root = tmp.path();
-        let key = "a".repeat(32);
+        let key = "a".repeat(12);
         let input = root.join("credential");
         std::fs::write(&input, &key)?;
-        Connect { configure_only: false, scope: None, url: "https://example.com/scopes/team".into(), token_file: input, host: Some("work".into()), workspaces: vec![] }.save(root, root)?;
+        Connect { configure_only: false, scope: None, namespace_url: "https://example.com/namespaces/team".into(), token_file: input, host: Some("work".into()), project_roots: vec![] }.save(root, root)?;
         let config = Config::load(root)?.unwrap();
         assert_eq!(config.token, key);
-        assert_eq!(config.workspaces["default"], root.canonicalize()?);
+        assert_eq!(config.project_roots["default"], root.canonicalize()?);
         assert_eq!(std::fs::metadata(root.join(FILE))?.permissions().mode() & 0o077, 0);
         std::fs::create_dir(root.join(".daemon"))?;
         publish_status(root, "old", "online", None)?;

@@ -50,7 +50,7 @@ impl Fixture {
     }
 
     fn read(&self, window: ObservationWindow, limit: u16) -> ObservationReadResult {
-        self.journal.read(ObservationRead { window, limit }).unwrap()
+        self.journal.read(ObservationRead { window, limit }, MAX_PAGE_BYTES).unwrap()
     }
 }
 
@@ -167,11 +167,11 @@ fn future_inverted_and_invalid_page_inputs_fail_without_clamping() {
     let f = Fixture::new();
     f.append(1);
     for (after, through, limit) in [(0, 2, 1), (1, 0, 1), (0, 1, 0), (0, 1, 257)] {
-        assert!(matches!(f.journal.read(ObservationRead { window: f.window(after, through), limit }), Err(ObservationReadError::InvalidInput(_))));
+        assert!(matches!(f.journal.read(ObservationRead { window: f.window(after, through), limit }, MAX_PAGE_BYTES), Err(ObservationReadError::InvalidInput(_))));
     }
     let mut window = f.window(0, 1);
     window.after.stream.epoch.daemon.scope.canonical_scope.push("different-scope");
-    assert!(matches!(f.journal.read(ObservationRead { window, limit: 1 }), Err(ObservationReadError::InvalidInput(ReadInputError::WrongScope))));
+    assert!(matches!(f.journal.read(ObservationRead { window, limit: 1 }, MAX_PAGE_BYTES), Err(ObservationReadError::InvalidInput(ReadInputError::WrongScope))));
 }
 
 #[test]
@@ -204,7 +204,7 @@ fn restarted_daemon_is_an_epoch_change_before_numeric_boundary_validation() {
     successor.daemon_instance = "new-daemon".into();
     let journal = ObservationJournal::new(successor.clone(), ObservationClock::new()).unwrap();
     journal.publish_epoch(ObservationEpoch { daemon: successor, database_generation: f.epoch.database_generation }).unwrap();
-    assert!(matches!(journal.read(ObservationRead { window: old, limit: 1 }), Ok(ObservationReadResult::EpochChanged { .. })));
+    assert!(matches!(journal.read(ObservationRead { window: old, limit: 1 }, MAX_PAGE_BYTES), Ok(ObservationReadResult::EpochChanged { .. })));
 }
 
 #[test]

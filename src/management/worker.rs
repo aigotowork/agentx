@@ -45,9 +45,9 @@ fn run(argv: &[String]) -> Result<(), String> {
     if resolved.canonicalize().map_err(|error| error.to_string())? != scope {
         return Err("management worker invocation scope mismatch".into());
     }
-    let client = Client::connect_existing(&scope, invocation).map_err(|error| error.to_string())?;
-    if client.scope_root() != scope || client.info().database_generation != input.generation {
-        return Err("management worker scope or database generation changed".into());
+    let client = Client::connect_existing_fenced(&scope, invocation, &input.generation).map_err(|error| error.to_string())?;
+    if client.scope_root() != scope {
+        return Err("management worker scope changed".into());
     }
     // Never retry a claim or execute following a failed/lost claim response.
     let command = match call(&client, Request::Claim { request_id: input.request_id.clone(), ticket: input.ticket.clone() })? {
@@ -143,8 +143,12 @@ fn send(client: &Client, agent: &AgentRef, message: &MessageInput, request_id: &
         };
         super::uploads::check(&stored).map_err(|error| error.to_string())?;
     }
-    let caller =
-        crate::service::CallerContext { request_id: crate::service::RequestId(request_id.into()), invocation: client.invocation().clone(), deadline_unix_ms: None, expected_database_generation: Some(client.info().database_generation.clone()) };
+    let caller = crate::service::CallerContext {
+        request_id: crate::service::RequestId(request_id.into()),
+        invocation: client.invocation().clone(),
+        deadline_unix_ms: None,
+        expected_database_generation: Some(client.generation().map_err(native_error)?.into()),
+    };
     let request = NativeRequest::Management(Request::Send { agent: agent.clone(), message: message.clone() });
     match client.call_with_context(caller, request).map_err(native_error)? {
         NativeResponse::Management(Response::Sent(result)) => Ok(result),

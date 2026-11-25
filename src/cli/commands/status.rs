@@ -122,7 +122,6 @@ fn tool_statuses_json(tools: &[ToolStatus]) -> serde_json::Value {
 
 /// Main entry point for `agentx status` command.
 pub(crate) fn cmd_status(session: &crate::cli::client::Session, args: &StatusArgs) -> i32 {
-    crate::config::file::drop_old_delivery_keys(session.client.scope_root());
     let json_mode = args.json;
     let show_logs = args.logs;
 

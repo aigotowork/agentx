@@ -16,8 +16,6 @@ struct RegisteredProcess {
     incarnation: String,
     #[serde(default)]
     last_poll: Option<i64>,
-    #[serde(default)]
-    protocol: Option<u32>,
 }
 
 fn internal(error: impl std::fmt::Display) -> ServiceError {
@@ -46,7 +44,6 @@ pub(crate) fn delivery_progress(db: &AgentxDb, participant: &ParticipantRef) -> 
             pid: stored.pid,
             incarnation: stored.incarnation.clone(),
             child: stored.registration.child,
-            protocol: observed.map(|_| crate::daemon::PROTOCOL_VERSION).or(stored.protocol),
             last_poll: observed.or(stored.last_poll),
             process_alive: if crate::sys::process::has_exited(stored.pid) { Some(false) } else { crate::sys::process::identity(stored.pid).map(|identity| identity == stored.incarnation) },
         }
@@ -66,9 +63,8 @@ pub(crate) fn poll_registration_token(db: &AgentxDb, context: &RequestContext, p
 pub(crate) fn observe_delivery_poll(db: &AgentxDb, context: &RequestContext, participant: &ParticipantRef) -> ServiceResult<()> {
     let Some(mut stored) = polling_process(db, context, participant)? else { return Ok(()) };
     let now = crate::shared::time::now_epoch_i64();
-    if stored.last_poll != Some(now) || stored.protocol != Some(crate::daemon::PROTOCOL_VERSION) {
+    if stored.last_poll != Some(now) {
         stored.last_poll = Some(now);
-        stored.protocol = Some(crate::daemon::PROTOCOL_VERSION);
         db.kv_set(&key(participant), Some(&serde_json::to_string(&stored).map_err(internal)?)).map_err(internal)?;
     }
     Ok(())
@@ -78,11 +74,10 @@ pub(crate) fn observe_delivery_poll(db: &AgentxDb, context: &RequestContext, par
 pub(crate) fn checkpoint_delivery_poll(db: &AgentxDb, registration: &ProcessRegistration) -> ServiceResult<()> {
     let Some(last) = db.poll_progress.last(&registration.token) else { return Ok(()) };
     let Some(mut stored) = load(db, &registration.participant)?.filter(|stored| stored.registration == *registration) else { return Ok(()) };
-    if stored.last_poll.is_some_and(|old| (0..30).contains(&last.saturating_sub(old))) && stored.protocol == Some(crate::daemon::PROTOCOL_VERSION) {
+    if stored.last_poll.is_some_and(|old| (0..30).contains(&last.saturating_sub(old))) {
         return Ok(());
     }
     stored.last_poll = Some(last);
-    stored.protocol = Some(crate::daemon::PROTOCOL_VERSION);
     db.kv_set(&key(&registration.participant), Some(&serde_json::to_string(&stored).map_err(internal)?)).map_err(internal)
 }
 
@@ -160,7 +155,7 @@ pub(super) fn handle(db: &AgentxDb, context: &RequestContext, request: Request) 
             if let Some(launch_context) = launch_context {
                 db.store_launch_context(name, &launch_context).map_err(internal)?;
             }
-            let stored = RegisteredProcess { registration: registration.clone(), pid: context.process.pid, incarnation: incarnation.to_owned(), last_poll: None, protocol: None };
+            let stored = RegisteredProcess { registration: registration.clone(), pid: context.process.pid, incarnation: incarnation.to_owned(), last_poll: None };
             db.kv_set(&key(&registration.participant), Some(&serde_json::to_string(&stored).map_err(internal)?)).map_err(internal)?;
             let display_name = crate::agents::launch_title::pane_display_from_record(&actor.record);
             Ok(Response::ProcessRegistered { registration, display_name })

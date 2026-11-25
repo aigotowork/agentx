@@ -15,7 +15,7 @@ test('lost Transcript submission restores the original exact request, without re
     getItem: key => memory.get(key) ?? null,
     setItem: (key, value) => memory.set(key, value),
   } });
-  const descriptor = { scope: '/isolated', generation: 'generation-a', project: '/workspace', tools: [], profiles: [], max_page: 100, max_text: 65536 };
+  const descriptor = { scope: '/isolated', generation: 'generation-a', project: '/workspace', tools: [], profiles: [], supports_workspace_members: true, supports_message_history: true, max_page: 100, max_text: 65536 };
   const calls = [];
   let original;
   let correctTarget = false;

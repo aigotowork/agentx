@@ -55,7 +55,7 @@ pub(crate) fn stop_relay_worker_client(client: &Client) -> Result<(), String> {
         return Err("Relay runtime has worker evidence but no recorded owner; shutdown outcome unknown".into());
     }
     if let Some(owner) = &captured.owner {
-        if owner.pid == std::process::id() || owner.pid == client.info().pid {
+        if owner.pid == std::process::id() || owner.pid == client.info().map_err(|error| error.to_string())?.pid {
             return Err("refusing to stop this process or the data daemon as a Relay worker".into());
         }
         stop_owned_process(owner, &mut HostControl { scope, captured: &captured })?;
@@ -392,7 +392,7 @@ mod tests {
     #[test]
     fn stop_refuses_its_data_daemon_and_transport_loss_never_reacquires_or_deletes() {
         let (directory, daemon, client) = fixture();
-        write_owner(directory.path(), &WorkerOwner { pid: client.info().pid, incarnation: crate::sys::process::identity(client.info().pid) });
+        write_owner(directory.path(), &WorkerOwner { pid: client.info().unwrap().pid, incarnation: crate::sys::process::identity(client.info().unwrap().pid) });
         let before = CapturedWorker::capture(directory.path()).unwrap();
         assert!(stop_relay_worker_client(&client).unwrap_err().contains("data daemon"));
         assert_eq!(CapturedWorker::capture(directory.path()).unwrap(), before);

@@ -8,7 +8,7 @@ globalThis.document = Object.assign(new EventTarget(), { hidden: false });
 
 const listener = 'http://disposable.invalid';
 const scope = '/disposable', generation = 'g-one', office = '/work/office';
-const descriptor = { scope, generation, project: '/work', tools: [], profiles: [], max_page: 80, max_text: 65536 };
+const descriptor = { scope, generation, project: '/work', tools: [], profiles: [], supports_workspace_members: true, supports_message_history: true, max_page: 80, max_text: 65536 };
 const current = { name: 'same', incarnation: '18446744073709551615' };
 const stopped = { name: 'same', stopped_event: '20' };
 const row = (agent, workspace = office) => ({
@@ -18,7 +18,10 @@ const row = (agent, workspace = office) => ({
 });
 const message = (id, text) => ({ id, text, at: '2026-11-18T12:00:00Z', from: '@fixture', recipients: ['same'], attachments: [] });
 const memberPage = (agents, next) => ({ generation, agents, next, current_complete: !next });
+const latest = (messages, live_after, next_before = null) => ({ generation, messages, live_after, next_before });
 const historyPage = (messages, next_after, has_more = false) => ({ generation, messages, next_after, has_more });
+const activity = (observedGeneration = generation) => ({ generation: observedGeneration, next_after: '0', has_more: false, messages: [], created: [], human_messages: [], human_has_more: false, human_unhandled_count: 0 });
+const refused = (code, message) => Response.json({ error: { code, message } }, { status: 409 });
 const waitFor = async predicate => {
   const deadline = Date.now() + 1000;
   while (!predicate()) {
@@ -83,16 +86,67 @@ test('a wrong trusted scope fails before discovery or any fallback request', asy
   } finally { dispose(); globalThis.fetch = fetch; }
 });
 
+for (const missing of ['supports_workspace_members', 'supports_message_history']) {
+  test(`Space localizes missing ${missing} and keeps exact Agent access`, async () => {
+    const calls = [], originalFetch = globalThis.fetch;
+    globalThis.fetch = async request => {
+      const url = new URL(request.url), path = url.pathname;
+      calls.push(path);
+      switch (path) {
+        case '/api/v1/management': return Response.json({ ...descriptor, [missing]: undefined });
+        case '/api/v1/workspaces': return Response.json({ generation, workspaces: [{ path: office, sources: ['adopted'] }],
+          coverage: { errors: [], agent_limit_reached: false, scan_limit_reached: false, agent_pages: 1, directories_examined: 1 } });
+        case '/api/v1/agents':
+        case '/api/v1/workspaces/members': return Response.json(memberPage([row(current)], null));
+        case '/api/v1/office-activity': return Response.json(activity());
+        case '/api/v1/roles': return Response.json({ generation, workspace: url.searchParams.get('workspace') === 'global' ? null : office, roles: [] });
+        case '/api/v1/agents/same':
+          assert.equal(url.searchParams.get('incarnation'), current.incarnation);
+          return Response.json(row(current));
+        case '/api/v1/agents/same/message-history': return Response.json(latest([message('1', 'retained history')], '1'));
+        case '/api/v1/agents/same/messages': return Response.json(historyPage([], '1'));
+        default: assert.fail(`unhandled fixture endpoint ${path}`);
+      }
+    };
+    const live = new LiveSpace(() => {}, { baseUrl: listener, expectedScope: scope });
+    const dispose = live.start();
+    try {
+      await waitFor(() => live.supply.agents.length === 1 && !live.refreshing);
+      const [overview] = live.supply.agents;
+      live.chooseOffice(office);
+      const membersMissing = missing === 'supports_workspace_members';
+      await waitFor(() => live.supply.roster?.phase === (membersMissing ? 'unavailable' : 'ready'));
+      assert.equal(live.connection, 'pinned');
+      assert.equal(live.supply.agents.length, membersMissing ? 0 : 1);
+      if (membersMissing) assert.match(live.supply.roster.error, /不支持成员列表/);
+      const exact = await live.openReference(current, descriptor, undefined, office);
+      assert.equal(exact.id, overview.id);
+      live.select(exact.id);
+      await waitFor(() => live.messagePage(exact.id)?.phase === (membersMissing ? 'ready' : 'unavailable'));
+      assert.equal(live.supply.records(exact.id, 'messages').status, membersMissing ? 'available' : 'unavailable');
+      assert.equal(live.capabilities(exact.id).can_send, true);
+      assert.equal(live.canSendTo(exact.id), true);
+      live.refreshData();
+      await waitFor(() => !live.refreshing);
+      assert.equal(calls.filter(path => path === '/api/v1/management').length, 1);
+      assert(!calls.includes(membersMissing ? '/api/v1/workspaces/members' : '/api/v1/agents/same/message-history'));
+      live.chooseOffice('');
+      await waitFor(() => !live.supply.roster && live.supply.agents.length === 1 && !live.refreshing);
+    } finally { dispose(); globalThis.fetch = originalFetch; }
+  });
+}
+
 test('hidden Space waits for foreground and refreshes again on return', async () => {
   const fetch = globalThis.fetch, document = globalThis.document;
   const visibility = Object.assign(new EventTarget(), { hidden: true });
   globalThis.document = visibility;
   let reads = 0;
+  let activityReads = 0;
   globalThis.fetch = async request => {
     const pathname = new URL(request.url).pathname;
     if (pathname === '/api/v1/management') { reads++; return Response.json(descriptor); }
     if (pathname === '/api/v1/agents') return Response.json(memberPage([], null));
-    if (pathname === '/api/v1/office-activity') return Response.json({ generation, next_after: '0', has_more: false, messages: [], created: [], human_messages: [], human_has_more: false, human_unhandled_count: 0 });
+    if (pathname === '/api/v1/office-activity') { activityReads++; return Response.json(activity()); }
     return Response.json({ generation, workspaces: [], discovery: { scanned: 0, truncated: false } });
   };
   const live = new LiveSpace(() => {}, { baseUrl: listener, expectedScope: scope });
@@ -102,11 +156,12 @@ test('hidden Space waits for foreground and refreshes again on return', async ()
     const setVisible = visible => { visibility.hidden = !visible; visibility.dispatchEvent(new Event('visibilitychange')); };
     setVisible(true);
     await waitFor(() => live.connection === 'pinned' && !live.refreshing);
-    const initialReads = reads;
     setVisible(false);
-    assert.equal(reads, initialReads);
+    assert.equal(reads, 1);
+    assert.equal(activityReads, 1);
     setVisible(true);
-    await waitFor(() => reads > initialReads && !live.refreshing);
+    await waitFor(() => activityReads === 2 && !live.refreshing);
+    assert.equal(reads, 1);
   } finally { dispose(); globalThis.fetch = fetch; globalThis.document = document; }
 });
 
@@ -121,7 +176,8 @@ test('all offices and legacy use the same pinned exact reader; embedded upgrades
       case '/api/v1/management': return Response.json(descriptor);
       case '/api/v1/agents': return Response.json(memberPage([legacy], null));
       case '/api/v1/agents/same': return Response.json(legacy);
-      case '/api/v1/agents/same/messages': return Response.json(historyPage([message('1', 'legacy text')], 'checkpoint'));
+      case '/api/v1/agents/same/message-history': return Response.json(latest([message('1', 'legacy text')], 'checkpoint'));
+      case '/api/v1/agents/same/messages': return Response.json(historyPage([], 'checkpoint'));
       default: return Response.json({}, { status: 404 });
     }
   };
@@ -134,7 +190,7 @@ test('all offices and legacy use the same pinned exact reader; embedded upgrades
     live.chooseOffice('$legacy'); live.select(agent.id);
     await waitFor(() => live.supply.records(agent.id, 'messages').status === 'available');
     const exact = urls.filter(url => url.pathname.startsWith('/api/v1/agents/same'));
-    assert.deepEqual(exact.slice(0, 2).map(url => url.pathname), ['/api/v1/agents/same', '/api/v1/agents/same/messages']);
+    assert.deepEqual(exact.slice(0, 2).map(url => url.pathname), ['/api/v1/agents/same', '/api/v1/agents/same/message-history']);
     assert(exact.slice(2).every(url => url.pathname.endsWith('/messages') && url.searchParams.get('after') === 'checkpoint'));
     const old = { scope, body: { generation } };
     assert(live.ownsReceipt(old));
@@ -153,28 +209,30 @@ test('a sparse office and exact namesakes keep independent continuation and disc
     assert.equal(url.origin, listener);
     calls.push(url);
     switch (url.pathname) {
-      case '/api/v1/management': return Response.json({ ...descriptor, generation: currentGeneration });
+      case '/api/v1/management': return Response.json(descriptor);
+      case '/api/v1/office-activity': return Response.json(activity(currentGeneration));
       case '/api/v1/workspaces': return Response.json({
         generation, workspaces: [{ path: office, sources: ['adopted'] }],
         coverage: { errors: [], agent_limit_reached: false, scan_limit_reached: false, agent_pages: 1, directories_examined: 2 },
       });
-      case '/api/v1/agents': {
+      case '/api/v1/workspaces/members': {
+        assert.equal(params.get('workspace'), office);
         assert.equal(params.get('limit'), '1', 'focused owner does not run the broad list');
         const after = params.get('after');
-        if (after === null) return Response.json(memberPage([row({ name: 'outside', incarnation: '1' }, '/other')], 'opaque:2'));
+        if (after === null) return Response.json(memberPage([], 'opaque:2'));
         if (after === 'opaque:2' && rejectNext) { rejectNext = false; throw new Error('temporary roster failure'); }
         if (after === 'opaque:2') return Response.json(memberPage([row(current)], 'opaque:3'));
         assert.equal(after, 'opaque:3'); return Response.json(memberPage([row(stopped)], null));
       }
       case '/api/v1/agents/same':
         return Response.json(row(params.has('stopped_event') ? stopped : current));
-      case '/api/v1/agents/same/messages':
-        if (params.has('stopped_event')) return Response.json(historyPage([message('9', 'stopped text')], 'stopped-checkpoint'));
+      case '/api/v1/agents/same/message-history':
+        if (params.has('stopped_event')) return Response.json(latest([message('9', 'stopped text')], '20'));
         assert.equal(params.get('incarnation'), current.incarnation);
-        if (!params.has('after')) return Response.json(historyPage([message('1', 'current one')], 'current-checkpoint', true));
-        assert.equal(params.get('after'), 'current-checkpoint');
+        if (!params.has('before')) return Response.json(latest([message('2', 'current one')], '10', '2'));
+        assert.equal(params.get('before'), '2');
         pendingSignal = request.signal;
-        return new Promise(resolve => { release = () => resolve(Response.json(historyPage([message('2', 'late current two')], 'next'))); });
+        return new Promise(resolve => { release = () => resolve(Response.json(latest([message('1', 'late older')], null))); });
       default:
         // Ancillary feeds are outside these reader assertions.
         return Response.json({}, { status: 404 });
@@ -186,7 +244,6 @@ test('a sparse office and exact namesakes keep independent continuation and disc
   try {
     await waitFor(() => live.supply.roster?.phase === 'ready' || live.supply.roster?.phase === 'error' || live.catalogError);
     assert.equal(live.supply.roster?.phase, 'ready', JSON.stringify({ error: live.catalogError || live.supply.roster?.error, calls }));
-    assert.equal(live.supply.roster.emptyPage, true);
     assert.equal(live.supply.roster.more, true);
     assert.equal(live.supply.agents.length, 0);
     live.moreMembers();
@@ -195,8 +252,9 @@ test('a sparse office and exact namesakes keep independent continuation and disc
     live.moreMembers();
     await waitFor(() => live.supply.agents.length === 1);
     live.moreMembers();
-    await waitFor(() => live.supply.roster.exhausted);
-    assert.deepEqual(calls.filter(url => url.pathname === '/api/v1/agents').map(url => url.searchParams.get('after')), [null, 'opaque:2', 'opaque:2', 'opaque:3']);
+    await waitFor(() => live.supply.roster.phase === 'ready' && !live.supply.roster.more);
+    assert.deepEqual(calls.filter(url => url.pathname === '/api/v1/workspaces/members').map(url => url.searchParams.get('after')), [null, 'opaque:2', 'opaque:2', 'opaque:3']);
+    assert(!calls.some(url => url.pathname === '/api/v1/agents'), 'focused roster never scans the scope');
     const [a, b] = live.supply.agents;
     assert.notEqual(a.id, b.id);
     assert.equal(a.cwd, '/unrelated-cwd');
@@ -204,8 +262,8 @@ test('a sparse office and exact namesakes keep independent continuation and disc
     await waitFor(() => live.messagePage(a.id)?.more || live.messagePage(a.id)?.error);
     assert.equal(live.messagePage(a.id)?.more, true, live.messagePage(a.id)?.error);
     live.select(a.id);
-    assert.equal(calls.filter(url => url.pathname === '/api/v1/agents/same/messages').length, 1);
-    live.moreMessages();
+    assert.equal(calls.filter(url => url.pathname === '/api/v1/agents/same/message-history').length, 1);
+    live.moreMessagesFor(a.id);
     await waitFor(() => release);
     live.select(b.id);
     assert.equal(pendingSignal.aborted, true);
@@ -220,24 +278,26 @@ test('a sparse office and exact namesakes keep independent continuation and disc
     assert.equal(live.connection, 'reset');
     assert.equal(live.supply.scope.generation, generation);
     assert.equal(live.blocked(b.id), true);
+    assert.equal(calls.filter(url => url.pathname === '/api/v1/management').length, 1);
     assert.equal(calls.filter(url => url.pathname === '/api/v1/workspaces').length, 1);
   } finally { dispose(); globalThis.fetch = fetch; }
 });
 
 const other = { name: 'peer', incarnation: '5' };
 
-function readerFixture(t, references, respond, supportsHistory = false) {
+function readerFixture(t, references, respond) {
   const originalFetch = globalThis.fetch;
   let scopeGeneration = generation;
   globalThis.fetch = async request => {
     const url = new URL(request.url);
     assert.equal(url.origin, listener);
     switch (url.pathname) {
-      case '/api/v1/management': return Response.json({ ...descriptor, generation: scopeGeneration, supports_message_history: supportsHistory });
+      case '/api/v1/management': return Response.json(descriptor);
       case '/api/v1/workspaces': return Response.json({ generation, workspaces: [{ path: office, sources: ['adopted'] }],
         coverage: { errors: [], agent_limit_reached: false, scan_limit_reached: false, agent_pages: 1, directories_examined: 1 } });
-      case '/api/v1/agents': return Response.json(memberPage(references.map(ref => row(ref)), null));
-      case '/api/v1/office-activity': return Response.json({ generation, next_after: '0', has_more: false, messages: [], created: [], human_messages: [], human_has_more: false, human_unhandled_count: 0 });
+      case '/api/v1/agents':
+      case '/api/v1/workspaces/members': return Response.json(memberPage(references.map(ref => row(ref)), null));
+      case '/api/v1/office-activity': return scopeGeneration === generation ? Response.json(activity()) : refused('StaleGeneration', 'database generation changed');
       default: return respond(request, url) ?? Response.json({}, { status: 404 });
     }
   };
@@ -248,87 +308,33 @@ function readerFixture(t, references, respond, supportsHistory = false) {
   return { live, reset: () => { scopeGeneration = 'g-two'; } };
 }
 
-test('two visible readers isolate exact pages and failures; a removed peer stops polling', async t => {
-  const pages = [];
-  let archiveFailure = true, continuation, poll, holdSnapshot = false, reopen;
-  const { live } = readerFixture(t, [current, stopped, other], (request, url) => {
+test('a replaced same-name Agent invalidates its exact reader without resetting the Scope', async t => {
+  const successor = { ...current, incarnation: '12' }, references = [current, other];
+  const { live } = readerFixture(t, references, (request, url) => {
     assert.equal(request.method, 'GET');
-    if (url.pathname === '/api/v1/agents/peer' || url.pathname === '/api/v1/agents/peer/messages') assert.fail('third reader exceeded the cap');
-    if (!url.pathname.startsWith('/api/v1/agents/same')) return;
-    const archived = url.searchParams.has('stopped_event');
-    assert.equal(url.searchParams.get(archived ? 'stopped_event' : 'incarnation'), archived ? stopped.stopped_event : current.incarnation);
-    if (url.pathname.endsWith('/same')) {
-      if (!archived && holdSnapshot) return new Promise(resolve => { reopen = () => resolve(Response.json(row(current))); });
-      return Response.json(row(archived ? stopped : current));
-    }
-    const after = url.searchParams.get('after');
-    pages.push([archived ? 'archive' : 'current', after]);
-    if (after === null) return Response.json(historyPage([message('1', archived ? 'archive first' : 'current first')], archived ? 'archive-next' : 'current-next', true));
-    if (archived) {
-      assert.equal(after, 'archive-next');
-      if (archiveFailure) { archiveFailure = false; return Response.json({ error: 'temporary history failure' }, { status: 503 }); }
-      return Response.json(historyPage([message('2', 'archive second')], 'archive-end'));
-    }
-    return new Promise(resolve => {
-      const pending = { signal: request.signal, finish: () => resolve(Response.json(after === 'current-next'
-        ? historyPage([message('2', 'current second')], 'current-end')
-        : historyPage([message('3', 'new current')], 'current-polled'))) };
-      if (after === 'current-next') continuation = pending;
-      else { assert.equal(after, 'current-end'); poll = pending; }
-    });
+    const match = url.pathname.match(/^\/api\/v1\/agents\/([^/]+)(?:\/(.+))?$/);
+    if (!match) return;
+    const ref = references.find(agent => agent.name === match[1]);
+    if (!ref || url.searchParams.get('incarnation') !== ref.incarnation) return refused('StaleReference', 'exact Agent changed');
+    if (match[2] === 'message-history') return Response.json(latest([], '0'));
+    if (match[2] === 'messages') return Response.json(historyPage([], '0'));
+    return Response.json(row(ref));
   });
-  await waitFor(() => live.supply.agents.length === 3 && !live.refreshing);
-  const [a, b, c] = live.supply.agents.map(agent => agent.id);
-  const texts = id => live.supply.records(id, 'messages').items?.map(item => item.text);
-  live.selectReaders([a, a, b, c], b);
-  await waitFor(() => [a, b].every(id => live.messagePage(id)?.phase === 'ready'));
-  assert.equal(live.messagePage(c), undefined);
-  assert.equal(live.capabilities(a).can_send, true);
-  assert.equal(live.capabilities(b).can_send, false);
-  live.moreMessagesFor(a);
-  live.moreMessages(); // Legacy wrapper follows the active (archived) pane.
-  await waitFor(() => continuation && live.messagePage(b)?.phase === 'error');
-  assert.equal(live.messagePage(a).phase, 'loading');
-  assert.equal(live.capabilities(b), undefined);
-  assert.deepEqual(texts(b), ['archive first']);
-  live.selectReaders([b, a], a);
-  assert.equal(continuation.signal.aborted, false);
-  live.moreMessagesFor(b);
-  await waitFor(() => live.messagePage(b)?.phase === 'ready');
-  continuation.finish();
-  await waitFor(() => live.messagePage(a)?.phase === 'ready');
-  assert.deepEqual(texts(a), ['current first', 'current second']);
-  assert.deepEqual(texts(b), ['archive first', 'archive second']);
+  await waitFor(() => live.supply.agents.length === 2 && !live.refreshing);
+  const [old, unaffected] = live.supply.agents;
+  live.selectReaders([old.id, unaffected.id], old.id);
+  await waitFor(() => live.canSendTo(old.id) && live.canSendTo(unaffected.id));
+  references[0] = successor;
   await live.refresh();
-  await waitFor(() => poll);
-  live.selectReaders([b], b);
-  assert.equal(poll.signal.aborted, true);
-  poll.finish();
-  live.moreMessagesFor(a);
-  await live.refresh();
-  assert.equal(live.messagePage(a), undefined);
-  assert.equal(live.supply.records(a, 'messages').status, 'unavailable');
-  assert.deepEqual(texts(b), ['archive first', 'archive second']);
-  assert.deepEqual(pages.filter(([kind]) => kind === 'current').map(([, after]) => after), [null, 'current-next', 'current-end']);
-  assert.deepEqual(pages.filter(([kind]) => kind === 'archive').map(([, after]) => after), [null, 'archive-next', 'archive-next']);
-
-  holdSnapshot = true;
-  live.selectReaders([a, b], a);
-  await waitFor(() => reopen);
-  assert.equal(live.supply.records(a, 'messages').status, 'loading');
-  assert.equal(live.capabilities(a), undefined);
-  await assert.rejects(live.target('send', a, { text: 'too soon' }), /请先验证当前精确会话/);
-  reopen();
-  await waitFor(() => live.messagePage(a)?.phase === 'ready');
-  assert.deepEqual(texts(a), ['current first', 'current second']);
-  assert.equal(live.capabilities(a).can_send, true);
-  assert.equal(pages.length, 6, 'reopening after a verified snapshot needs no replay or page fetch');
-  poll = undefined;
-  await live.refresh();
-  await waitFor(() => poll);
-  assert.deepEqual(pages.at(-1), ['current', 'current-end']);
-  poll.finish();
-  await waitFor(() => texts(a)?.length === 3);
+  await waitFor(() => live.messagePage(old.id)?.live?.phase === 'unavailable');
+  assert.equal(live.connection, 'pinned');
+  assert.equal(live.canSendTo(old.id), false);
+  assert.equal(live.canSendTo(unaffected.id), true);
+  await assert.rejects(live.target('send', old.id, { text: 'not for the successor' }), /精确会话/);
+  live.refreshMembers();
+  await waitFor(() => live.supply.agents.some(agent => agent.ref.incarnation === successor.incarnation));
+  const adopted = live.supply.agents.find(agent => agent.ref.incarnation === successor.incarnation);
+  assert.notEqual(adopted.id, old.id);
 });
 
 test('latest reads isolate older retries, concurrent arrivals and a stopped namesake', async t => {
@@ -358,7 +364,7 @@ test('latest reads isolate older retries, concurrent arrivals and a stopped name
       return Response.json({ error: { code: 'Unavailable', message: 'fixture failure' } }, { status: 503 });
     }
     return new Promise(resolve => { releaseOlder = () => resolve(backwards([message('12', 'older'), message('14', 'older2')], null, null)); });
-  }, true);
+  });
   await waitFor(() => live.supply.agents.length === 2 && !live.refreshing);
   const a = live.supply.agents.find(agent => agent.ref.record === 'current').id;
   const b = live.supply.agents.find(agent => agent.ref.record === 'stopped').id;
@@ -389,14 +395,14 @@ test('latest reads isolate older retries, concurrent arrivals and a stopped name
   assert(calls.every(call => call.limit === '20'));
 });
 
-test('parked history is dropped on office changes or newly observed membership', async t => {
+test('parked history survives view changes but not newly observed membership', async t => {
   let memberOffice = office;
   const requested = [];
   const { live } = readerFixture(t, [current], (request, url) => {
     if (url.pathname === '/api/v1/agents/same') return Response.json(row(current, memberOffice));
-    if (!url.pathname.endsWith('/messages')) return;
-    requested.push(url.searchParams.get('after'));
-    return Response.json(historyPage([message('1', `read ${requested.length}`)], 'next', true));
+    if (!url.pathname.endsWith('/message-history')) return;
+    requested.push(url.searchParams.get('before'));
+    return Response.json(latest([message('1', `read ${requested.length}`)], '1'));
   });
   await waitFor(() => live.supply.agents.length === 1 && !live.refreshing);
   const [{ id }] = live.supply.agents;
@@ -409,13 +415,13 @@ test('parked history is dropped on office changes or newly observed membership',
   await waitFor(() => live.supply.agents.length === 1 && !live.refreshing);
   live.select(id);
   await waitFor(ready);
-  assert.deepEqual(texts(), ['read 2'], 'same Agent in a different view starts a fresh page');
+  assert.deepEqual(texts(), ['read 1'], 'same verified Agent keeps its history across office views');
   live.select(null);
   memberOffice = '/new-office';
   live.select(id);
   await waitFor(ready);
-  assert.deepEqual(texts(), ['read 3'], 'all offices permits the new membership but invalidates the old history');
-  assert.deepEqual(requested, [null, null, null]);
+  assert.deepEqual(texts(), ['read 2'], 'all offices permits the new membership but invalidates the old history');
+  assert.deepEqual(requested, [null, null]);
 
   live.chooseOffice(office);
   memberOffice = office;
@@ -428,18 +434,18 @@ test('parked history is dropped on office changes or newly observed membership',
   await waitFor(() => live.messagePage(id)?.phase === 'error');
   assert.equal(texts(), undefined, 'mismatched office cannot display the parked history');
   assert.equal(live.capabilities(id), undefined);
-  assert.deepEqual(requested, [null, null, null, null]);
+  assert.deepEqual(requested, [null, null, null]);
 });
 
 test('the oldest parked history is evicted when the eight-reader bound is reached', async t => {
   const references = Array.from({ length: 9 }, (_, index) => ({ name: `peer-${index}`, incarnation: '5' }));
   const pages = [];
   const { live } = readerFixture(t, references, (request, url) => {
-    const [, name, history] = url.pathname.match(/^\/api\/v1\/agents\/(peer-\d+)(\/messages)?$/) ?? [];
+    const [, name, history] = url.pathname.match(/^\/api\/v1\/agents\/(peer-\d+)(\/message-history)?$/) ?? [];
     if (!name) return;
     if (!history) return Response.json(row(references.find(ref => ref.name === name)));
     pages.push(name);
-    return Response.json(historyPage([message('1', name)], 'next', true));
+    return Response.json(latest([message('1', name)], '1'));
   });
   await waitFor(() => live.supply.agents.length === references.length && !live.refreshing);
   const ids = live.supply.agents.map(agent => agent.id);
@@ -467,6 +473,7 @@ test('admission keeps the exact submitted pane across focus but rejects revoked 
       posts.push(body);
       return Response.json({ generation, request_id: body.request_id, status: 'Succeeded', result: { Sent: { message_id: '1', recipients: ['same'] } } });
     });
+    if (url.pathname.endsWith('/message-history')) return Response.json(latest([], '0'));
     if (url.pathname.endsWith('/messages')) return Response.json(historyPage([], '0'));
     if (url.pathname === '/api/v1/agents/peer') return Response.json(row(other));
     if (url.pathname !== '/api/v1/agents/same') return;

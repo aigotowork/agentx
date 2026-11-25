@@ -20,7 +20,7 @@ use std::path::PathBuf;
 /// Keep the original caller ID and Client generation through that retry.
 fn call(hook: &HookClient, request: native::Request) -> Result<native::Response> {
     let client = &hook.client;
-    let caller = CallerContext { request_id: RequestId(uuid::Uuid::new_v4().to_string()), invocation: client.invocation().clone(), deadline_unix_ms: None, expected_database_generation: Some(client.info().database_generation.clone()) };
+    let caller = CallerContext { request_id: RequestId(uuid::Uuid::new_v4().to_string()), invocation: client.invocation().clone(), deadline_unix_ms: None, expected_database_generation: None };
     let request = ServiceRequest::Participants(Request::Copilot(request));
     let invoke = || client.call_with_context(caller.clone(), request.clone());
     let response = match invoke() {

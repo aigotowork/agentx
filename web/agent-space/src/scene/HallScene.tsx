@@ -5,7 +5,8 @@ import { worldToScreen, hallActorGoal, sceneBehavior, HALL_STATE_LABEL, type Hal
 
 import type { AgentSpaceSupply, SceneMessage } from "../offline/model";
 import { LongPress } from "../interactions/long-press";
-import { FactButton, ActorAnchor, SceneObjectLayer } from "../../uiux/systems/space/space.web";
+import { ActorAnchor, SceneObjectLayer } from "../../uiux/systems/space/space.web";
+import { FactButton } from "../../uiux/systems/space/components/FactButton";
 import { adoptedRoleLabel } from "../offline/model";
 import { SceneRuntime, browserSceneEnvironment } from "./runtime/runtime";
 import { SceneRenderer } from "./runtime/renderer";

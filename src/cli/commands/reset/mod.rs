@@ -87,10 +87,7 @@ fn commit_reset(client: &crate::service::client::Client) -> ServiceResult<M::Res
 }
 
 fn notify_reset(client: &crate::service::client::Client, result: &M::ResetResult) -> ServiceResult<()> {
-    let next = crate::service::client::Client::connect_existing(client.scope_root(), client.invocation().clone())?;
-    if next.info().database_generation != result.database_generation {
-        return Err(ServiceError::StaleFence);
-    }
+    let next = crate::service::client::Client::connect_existing_fenced(client.scope_root(), client.invocation().clone(), &result.database_generation)?;
     let config = crate::config::AgentxConfig::load_for_scope(next.scope_root(), &next.invocation().environment);
     if crate::relay::is_relay_enabled(&config) {
         crate::relay::trigger_push_client(&next);

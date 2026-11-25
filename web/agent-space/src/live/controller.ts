@@ -1,6 +1,6 @@
 /** Native read/action lifecycle; scene state and drafts remain with SpaceController. */
 import type { Attachment, AgentRef, AgentView, Descriptor, MessageInput } from '../../../management/api/native';
-import { DomainReferenceError, selectAgentXScope, type AgentAddress, type AgentCursor, type AgentSnapshot, type DirectoryPreview, type InboxCursor, type InboxPage, type LaunchDraft, type LaunchRelationCursor, type OfficeActivityCursor, type OperationReceipt, type ReadonlyValue, type RelatedConversation, type Transcript, type TypedOperationReceipt } from '@agentx/client';
+import { DomainGenerationMismatch, ManagementError, selectAgentXScope, type AgentAddress, type AgentCursor, type AgentSnapshot, type DirectoryPreview, type InboxCursor, type InboxPage, type LaunchDraft, type LaunchRelationCursor, type OfficeActivityCursor, type OperationReceipt, type ReadonlyValue, type RelatedConversation, type Transcript, type TypedOperationReceipt } from '@agentx/client';
 import { hostSelection, type SpaceHostBinding } from './host';
 import { DomainOfficeReads } from './domain-office';
 import { humanPageSize, mailboxHead } from './mailbox';
@@ -91,7 +91,6 @@ export class LiveSpace {
   retryCatalog = () => { void this.domain?.discover(); };
   moreMembers = () => { this.domain?.more(); };
   refreshMembers = () => { this.domain?.refresh(); };
-  moreMessages = () => { if (this.selected) this.moreMessagesFor(this.selected); };
   moreMessagesFor = (id: string) => { this.domain?.continueMessages(id); };
   messagePage(id: string) { return this.domain?.messagePage(id); }
   retryMessagesLive = (id: string) => { this.domain?.retryLive(id); };
@@ -104,6 +103,7 @@ export class LiveSpace {
   private emit(selectionOnly = false) {
     const descriptor = this.descriptor;
     const domain = this.domain, focused = this.focused;
+    const reset = this.connection === 'reset';
     const readersChanged = this.connection === 'pinned' && domain?.selectReaders(this.desiredReaders, id => this.observed(id));
     if (selectionOnly && !readersChanged) return;
     const records = new Map(this.records);
@@ -120,6 +120,7 @@ export class LiveSpace {
         subjects.set(reader.id, nativeSnapshot(snapshot));
         records.set(`${reader.id}:messages`, reader.history
           ? messageRecords([...reader.history.messages.values()])
+          : reader.phase === 'unavailable' ? { status: 'unavailable', reason: reader.error ?? '消息历史不可用' }
           : reader.phase === 'error' ? { status: 'error', reason: reader.error ?? '读取失败' } : { status: 'loading' });
       }
     }
@@ -132,16 +133,34 @@ export class LiveSpace {
     this.supply = descriptor ? {
       mode: 'live', scope: { id: descriptor.scope, generation: descriptor.generation, listener: this.listener, coverage: domainCoverage(domain?.catalog, domain?.catalogError ?? '') },
       workspaces: workspaces?.map(office => ({ id: office.path, title: office.path.split('/').filter(Boolean).at(-1) ?? office.path, origin: office.sources.includes('role-marker') ? 'role-marker' : 'explicit-membership', sources: office.sources })) ?? [],
-      activity: this.activity, human: this.human, population: focused ? { revision: focused.revision, complete: focused.phase === 'ready' && focused.paging.kind === 'native-workspace-members' && focused.paging.currentComplete } : this.population,
-      agents: rows.map(project), subjects: [...subjects.values()].map(project), posts: this.posts,
-      roster: focused && { ...focused.paging, office: focused.office, phase: focused.phase, error: focused.error, more: focused.paging.next != null,
-        exhausted: focused.paging.next === null, emptyPage: focused.emptyPage },
-      records: (id, channel) => records.get(`${id}:${channel}`) ?? { status: 'unavailable', reason: channel === 'model' ? '请主动读取 Provider Transcript' : '消息读取中' },
+      activity: this.activity, human: this.human, population: focused ? { revision: focused.revision, complete: focused.phase === 'ready' && focused.currentComplete } : this.population,
+      // A reset ends native leases, but the last published identities still
+      // anchor the visible drafts (including readers absent during roster refresh).
+      agents: reset ? this.supply.agents : rows.map(project),
+      subjects: reset ? this.supply.subjects : [...subjects.values()].map(project),
+      posts: this.posts,
+      roster: !reset && focused ? { office: focused.office, phase: focused.phase, error: focused.error, more: focused.next != null } : undefined,
+      records: (id, channel) => reset ? { status: 'unavailable', reason: '连接已失效' }
+        : records.get(`${id}:${channel}`) ?? { status: 'unavailable', reason: channel === 'model' ? '请主动读取 Provider Transcript' : '消息读取中' },
     } : emptySupply();
     this.publish(this.supply);
   }
   private get options() { return { signal: this.abort?.signal }; }
   private current(scope: string, generation: string) { return !this.abort?.signal.aborted && this.connection !== 'reset' && this.descriptor?.scope === scope && this.descriptor.generation === generation; }
+  /** Stop the old read session when a resource, rather than a preflight, reports a reset. */
+  private invalidated = (error: unknown) => {
+    if (!(error instanceof DomainGenerationMismatch) && !(error instanceof ManagementError && error.code === 'StaleGeneration')) return false;
+    if (this.connection === 'pinned') {
+      this.connection = 'reset'; this.error = '作用域或数据代次已变化；请重新连接';
+      this.abort?.abort(); this.overviewRead?.abort(); this.domain?.dispose();
+      this.refreshing = false; clearTimeout(this.timer);
+      this.more = false; this.records.clear(); this.activityCursor = undefined; this.activity = [];
+      this.arrivals.clear(); this.human = undefined; this.humanBefore = undefined; this.humanNext = undefined;
+      this.entry = undefined; this.completions.clear();
+      this.emit();
+    }
+    return true;
+  };
   refreshData = () => {
     if (this.connection === 'pinned') {
       this.retryCatalog(); this.refreshMembers(); void this.readRoles();
@@ -162,35 +181,29 @@ export class LiveSpace {
         const domain = this.domain = new DomainOfficeReads(scope, Math.min(pageLimit, scope.descriptor.max_page), () => {
           if (!alive() || this.connection !== 'pinned' || this.domain !== domain) return;
           domain.choose(this.office); this.emit();
-        });
+        }, this.invalidated);
         this.descriptor = scope.descriptor;
         this.connection = 'pinned'; this.error = '';
         domain.choose(this.office); this.emit();
         await domain.discover();
-      } else {
-        try { await this.domain.scope.verify({ signal: lifetime?.signal }); }
-        catch (error) {
-          if (!alive()) return;
-          if (!(error instanceof DomainReferenceError) || !['ScopeMismatch', 'InconsistentResponse'].includes(error.code)) throw error;
-          this.connection = 'reset'; this.error = '监听器作用域或代次已变化；请重新连接';
-          this.domain.dispose(); this.emit(); return;
-        }
       }
-      if (!alive() || !this.descriptor) return;
+      if (!alive() || this.connection !== 'pinned' || !this.descriptor) return;
       const descriptor = this.descriptor, officeRevision = this.officeRevision;
       // A known office uses only its bounded Workspace provider. Unknown route offices wait for discovery.
       const overviewRead = this.usesOverview ? this.overviewRead = new AbortController() : undefined;
       const signal = lifetime && overviewRead ? AbortSignal.any([lifetime.signal, overviewRead.signal]) : overviewRead?.signal;
       const feed = overviewRead ? this.readOverview(signal).then(result => {
-        if (!alive() || overviewRead.signal.aborted || officeRevision !== this.officeRevision) return;
+        if (!this.current(descriptor.scope, descriptor.generation) || !alive() || overviewRead.signal.aborted || officeRevision !== this.officeRevision) return;
         this.overview = new Map(result.rows.map(row => [domainAgentKey(row.address), row]));
         this.more = result.more;
         this.population = { revision: this.population.revision + 1, complete: result.complete };
         this.emit();
+      }).catch(error => {
+        if (alive() && !overviewRead.signal.aborted && !this.invalidated(error)) throw error;
       }) : undefined;
       const results = await Promise.allSettled([feed, this.readActivity(descriptor)]);
       if (this.overviewRead === overviewRead) this.overviewRead = undefined;
-      if (!alive()) return;
+      if (!alive() || this.connection !== 'pinned') return;
       this.error = results[0].status === 'rejected' && officeRevision === this.officeRevision ? issueOf(results[0].reason) : '';
       this.emit();
       if (!this.posts.length) await this.readRoles();
@@ -246,6 +259,7 @@ export class LiveSpace {
         if (hint !== this.humanHead && await this.readHuman(descriptor)) this.humanHead = hint;
       }
     } catch (error) {
+      if (!this.current(descriptor.scope, descriptor.generation) || this.invalidated(error)) return;
       this.activityCursor = undefined; this.activity = []; this.arrivals.clear(); this.activityError = issueOf(error);
       this.humanHead = undefined;
       if (!this.humanBefore && humanRevision === this.humanRevision) await this.readHuman(descriptor);
@@ -260,6 +274,7 @@ export class LiveSpace {
       this.acceptHuman(descriptor, page);
       return true;
     } catch (error) {
+      if (this.invalidated(error)) return false;
       if (this.current(descriptor.scope, descriptor.generation) && revision === this.humanRevision) this.human = { ...this.human, messages: this.human?.messages ?? [], hasMore: false, error: issueOf(error), history: this.humanHistory, page: this.humanPage };
       return false;
     }
@@ -272,7 +287,7 @@ export class LiveSpace {
   /** Restore mailbox read filters/cursor; idempotent and GET-only, never handles letters. */
   mailbox = (pending: boolean, before: string) => {
     const scope = this.domain?.scope.address;
-    if (!scope || !this.descriptor || this.humanBusy || pending === this.humanPending && (this.humanBefore?.position ?? '') === before) return;
+    if (!scope || !this.current(scope.scope, scope.generation) || !this.descriptor || this.humanBusy || pending === this.humanPending && (this.humanBefore?.position ?? '') === before) return;
     this.humanPending = pending; this.humanBefore = before ? { scope, kind: 'human-inbox', pending, position: before } : undefined; this.humanRevision++;
     this.human = undefined; this.emit();
     void this.readHuman(this.descriptor).then(() => this.emit());
@@ -302,6 +317,7 @@ export class LiveSpace {
       this.humanBusy = false;
       await this.readHuman(descriptor);
     } catch (error) {
+      if (this.invalidated(error)) return;
       if (this.current(descriptor.scope, descriptor.generation)) {
         this.humanBusy = false;
         await this.readHuman(descriptor);
@@ -340,14 +356,15 @@ export class LiveSpace {
       const catalog = await domain.scope.workspace(office.startsWith('/') ? office : 'global').roles(this.options);
       if (!this.current(descriptor.scope, descriptor.generation) || this.officeRevision !== revision) return;
       this.posts = projectPosts(catalog); this.roleError = '';
-    } catch (error) { if (this.current(descriptor.scope, descriptor.generation) && this.officeRevision === revision) { this.posts = []; this.roleError = issueOf(error); } }
+    } catch (error) { if (this.invalidated(error)) return; if (this.current(descriptor.scope, descriptor.generation) && this.officeRevision === revision) { this.posts = []; this.roleError = issueOf(error); } }
     this.emit();
   }
   async launchRelations(id: string, after?: LaunchRelationCursor, signal?: AbortSignal) {
     const domain = this.domain, descriptor = this.descriptor, snapshot = this.observed(id);
     if (!domain || !descriptor || !snapshot || !this.current(descriptor.scope, descriptor.generation)) throw new Error('精确 Agent 已不可用');
     const agent = domain.scope.agent(snapshot.address);
-    const result = await agent.launchRelations({ limit: Math.min(5, domain.scope.descriptor.max_page), after }, { signal: this.readSignal(signal) });
+    const result = await agent.launchRelations({ limit: Math.min(5, domain.scope.descriptor.max_page), after }, { signal: this.readSignal(signal) })
+      .catch(error => { this.invalidated(error); throw error; });
     if (this.domain !== domain || !this.current(descriptor.scope, descriptor.generation)) throw new Error('关系数据代次已变化');
     return result;
   }
@@ -377,7 +394,7 @@ export class LiveSpace {
   select(id: string | null) {
     this.selectReaders(id ? [id] : [], id);
   }
-  /** The first two distinct visible exact IDs get leases; focus only drives the legacy paging wrapper. */
+  /** The first two distinct visible exact IDs get leases; focus is independent. */
   selectReaders(ids: readonly string[], activeId: string | null) {
     const desired = [...new Set(ids)].slice(0, 2);
     const active = activeId && desired.includes(activeId) ? activeId : null;
@@ -393,13 +410,13 @@ export class LiveSpace {
   }
   async act(work: () => Promise<unknown>) {
     this.actionError = '';
-    try { await work(); } catch (error) { this.actionError = issueOf(error); }
+    try { await work(); } catch (error) { if (!this.invalidated(error)) this.actionError = issueOf(error); }
     this.emit();
   }
   private actionSnapshot(id: string) {
     if (this.connection === 'reset') return;
     const reader = this.domain?.readers.get(id);
-    return reader?.phase === 'ready' ? reader.snapshot : this.desiredReaders.includes(id) ? undefined : this.observed(id);
+    return reader ? (reader.stale ? undefined : reader.snapshot) : this.desiredReaders.includes(id) ? undefined : this.observed(id);
   }
   capabilities(id: string) {
     const snapshot = this.actionSnapshot(id);
@@ -408,7 +425,7 @@ export class LiveSpace {
   /** Paging status is independent of send authority; the operation still verifies the lease afresh. */
   canSendTo(id: string) {
     const reader = this.domain?.readers.get(id);
-    return this.connection === 'pinned' && reader?.agent.kind === 'current' && !!reader.snapshot?.facts.can_send;
+    return this.connection === 'pinned' && reader?.agent.kind === 'current' && !reader.stale && !!reader.snapshot?.facts.can_send;
   }
   blocked(key: string, kind?: Kind) {
     return !this.descriptor || this.connection === 'reset' || !!this.error || this.receipts.some(receipt => this.ownsReceipt(receipt) && receipt.key === key && unresolved(receipt) && (kind === 'transcript' ? receipt.kind === kind : receipt.kind !== 'transcript'));
@@ -429,7 +446,10 @@ export class LiveSpace {
       this.accept(receipt, outcome);
       this.save(); this.emit();
       return outcome.receipt.status === 'Succeeded';
-    } catch (error) { if (unresolved(receipt)) receipt.issue = `回执未确认：${issueOf(error)}；仅查询原操作，勿重复提交。`; }
+    } catch (error) {
+      this.invalidated(error);
+      if (unresolved(receipt)) receipt.issue = `回执未确认：${issueOf(error)}；仅查询原操作，勿重复提交。`;
+    }
     this.save(); this.emit();
     return false;
   }
@@ -458,7 +478,7 @@ export class LiveSpace {
         : await scope.operation(command).observe(this.options);
       this.accept(receipt, outcome);
     }
-    catch (error) { receipt.issue = `${issueOf(error)}；保留原凭据，未重发。`; }
+    catch (error) { this.invalidated(error); receipt.issue = `${issueOf(error)}；保留原凭据，未重发。`; }
     finally { this.busyLookups.delete(receipt.id); this.save(); this.emit(); }
   };
   async target(kind: 'send' | 'stop' | 'kill' | 'stop-participation' | 'fork' | 'resume' | 'transcript', id: string, message?: MessageInput, onSucceeded?: () => void) {
@@ -510,7 +530,8 @@ export class LiveSpace {
     const result: Attachment[] = [];
     for (const file of files) {
       const name = file instanceof File ? file.name : 'attachment';
-      const { address, ...attachment } = await scope.attachments.upload({ name, mediaType: file.type || 'application/octet-stream', bytes: file });
+      const { address, ...attachment } = await scope.attachments.upload({ name, mediaType: file.type || 'application/octet-stream', bytes: file })
+        .catch(error => { this.invalidated(error); throw error; });
       result.push({ id: address.id, ...attachment });
       if (!this.current(descriptor.scope, descriptor.generation) || !this.canSendTo(id)) throw new Error('上传期间目标已失效');
     }
@@ -565,7 +586,7 @@ export class LiveSpace {
       const entry = await scope.directory.inspect(directory, this.options);
       if (epoch !== this.entryEpoch || !this.current(descriptor.scope, descriptor.generation)) return;
       this.entry = entry; this.entryInput = directory;
-    } catch (error) { if (epoch === this.entryEpoch && this.current(descriptor.scope, descriptor.generation)) this.entryError = issueOf(error); }
+    } catch (error) { if (this.invalidated(error)) return; if (epoch === this.entryEpoch && this.current(descriptor.scope, descriptor.generation)) this.entryError = issueOf(error); }
     this.emit();
   }
   async directorySend(text: string) {

@@ -1,3 +1,4 @@
+import { cloudTokenPattern } from '@agentx/client';
 import { useEffect, useState } from 'react';
 
 export type TokenRetention = 0 | 30 | 90;
@@ -21,7 +22,7 @@ export function useRememberedLogin<T>(audience: string, validate: (token: string
     try {
       const saved = JSON.parse(localStorage.getItem(key(audience)) ?? 'null');
       if (!saved) return;
-      if (!Number.isFinite(saved.expires) || saved.expires <= Date.now() || !/^[A-Za-z0-9_-]{32,256}$/.test(saved.token)) {
+      if (!Number.isFinite(saved.expires) || saved.expires <= Date.now() || typeof saved.token !== 'string' || !cloudTokenPattern.test(saved.token)) {
         forgetLogin(audience);
         return;
       }

@@ -24,7 +24,7 @@ The browser URL addresses the existing complete Space. Native `URLSearchParams` 
 | Mailbox pending/history and page | `mail=pending|all`, `before` (opaque native cursor) | LiveSpace read adapter |
 | Conversation facts disclosure | `detail=agent` | Conversation |
 
-Absent values mean scene, members, no reader/panel, empty filters, messages, pending/latest mailbox. Exact references include record kind and both nullable native identity fields; no name fallback. Existing embedding queries remain valid: omitted record infers stopped only from stopped_event; legacy `layout=embedded|sidebar` remains a preserved hint. Native IDs remain decimal strings; explicit offline demo references are synthetic strings and retain their exact record/generation. URL target scope/generation fence the native supply. Resource identity is resolved only from supplied facts; no inferred office from cwd.
+Absent values mean scene, members, no reader/panel, empty filters, messages, pending/latest mailbox. Exact references include record kind and both nullable native identity fields; no name fallback. Existing embedding queries remain valid: omitted record infers stopped only from stopped_event; unrelated query parameters are preserved without interpretation. Native IDs remain decimal strings; explicit offline demo references are synthetic strings and retain their exact record/generation. URL target scope/generation fence the native supply. Resource identity is resolved only from supplied facts; no inferred office from cwd.
 
 ## Lifecycle and history
 
@@ -41,7 +41,7 @@ Camera, zoom, pause, reader size, hover/tooltips, source/provenance/tool/reasoni
 3. Scene directory and mailbox open/close are copied/restored; mailbox pending/all/older/latest restores via GET only. Conversation facts disclosure round trips. Narrow iframe uses the same route.
 4. Delay native supply; deep link stays in URL through empty supply, draft edits and refresh; exact target appears later and opens once. Wrong generation, missing incarnation, missing target and same-name successor never redirect. User navigation cancels a pending target.
 5. Keep independent drafts/attachments while switching exact targets, office, presentation and browser history. No send/launch/stop/handle/transcript POST during restoration. Parent getTarget/addContext keeps exact identity and away/back revision fencing.
-6. Preserve `layout`, `supply`, unrelated host query hints and hash; repeated supply refresh/draft typing does not grow history. Search uses replace; actual navigation uses push.
+6. Preserve `supply`, unrelated host query parameters and hash; repeated supply refresh/draft typing does not grow history. Search uses replace; actual navigation uses push.
 
 ## Examples
 

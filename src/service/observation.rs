@@ -187,7 +187,7 @@ pub(crate) fn received_failure(error: &DaemonError) {
         DaemonError::StaleGeneration => RuntimeFailureCode::StaleGeneration,
         DaemonError::Incompatible(_) => RuntimeFailureCode::Incompatible,
         DaemonError::OutcomeUnknown(_) => RuntimeFailureCode::OutcomeUnknown,
-        DaemonError::Protocol(_) => RuntimeFailureCode::Protocol,
+        DaemonError::Protocol(_) | DaemonError::InvalidInput(_) => RuntimeFailureCode::Protocol,
         DaemonError::Unsupported(_) => RuntimeFailureCode::Unsupported,
         _ => RuntimeFailureCode::Io,
     };

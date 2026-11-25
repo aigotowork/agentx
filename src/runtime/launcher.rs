@@ -471,7 +471,7 @@ pub(crate) fn report_spawn_failure(context: &crate::runtime::context::AgentxCont
     }
     let launch_cursor = context.raw_env.get("AGENTX_LAUNCH_START_EVENT_ID").context("launch cursor missing")?.parse()?;
     let client = Client::connect(&context.agentx_dir, super::host_client::invocation(context))?;
-    if context.raw_env.get("AGENTX_LAUNCH_GENERATION").map(String::as_str) != Some(client.info().database_generation.as_str()) {
+    if context.raw_env.get("AGENTX_LAUNCH_GENERATION").map(String::as_str) != Some(client.generation()?) {
         bail!("launch failure belongs to another database generation");
     }
     launch_request(&client, launch_service::Request::SpawnFailed { participant, launch_cursor, detail: detail.to_owned() })?;
@@ -1901,7 +1901,7 @@ fn launch_with_client_inner(mut params: LaunchParams, caller_context: &crate::ru
         let launch_client = client.with_invocation(super::host_client::invocation(&launch_context));
         let instance_name = reservation.participant.canonical_name.clone();
         instance_env.insert("AGENTX_LAUNCH_PARTICIPANT".to_owned(), serde_json::to_string(&reservation.participant)?);
-        instance_env.insert("AGENTX_LAUNCH_GENERATION".to_owned(), launch_client.info().database_generation.clone());
+        instance_env.insert("AGENTX_LAUNCH_GENERATION".to_owned(), launch_client.generation()?.to_owned());
         instance_env.insert("AGENTX_LAUNCH_EVENT_ID".to_owned(), reservation.initial_cursor.to_string());
         instance_env.insert("AGENTX_LAUNCH_START_EVENT_ID".to_owned(), reservation.launch_cursor.to_string());
         instance_env.insert("AGENTX_INSTANCE_NAME".to_string(), instance_name.clone());
@@ -1954,7 +1954,7 @@ fn launch_with_client_inner(mut params: LaunchParams, caller_context: &crate::ru
             continue;
         }
 
-        let assignment = crate::file_bindings::Assignment { scope: client.scope_root().to_string_lossy().into_owned(), generation: client.info().database_generation.clone(), participant: reservation.participant.clone() };
+        let assignment = crate::file_bindings::Assignment { scope: client.scope_root().to_string_lossy().into_owned(), generation: client.generation()?.to_owned(), participant: reservation.participant.clone() };
         let mut binding_changes = Vec::new();
         // Dispatch to tool-specific launcher
         let launch_result = (|| -> Result<bool> {

@@ -7,6 +7,7 @@
 //! - is_prompt_empty(tool): Input box has no user text
 //! - get_input_box_text(tool): Extract text from input box
 
+use std::cell::OnceCell;
 use std::fs::{File, OpenOptions, create_dir_all};
 use std::io::Write;
 use std::num::NonZeroU16;
@@ -204,6 +205,35 @@ fn is_block_border(line: &str) -> bool {
     trimmed.chars().count() >= 20 && trimmed.chars().all(|c| c == '▀' || c == '▄')
 }
 
+const CODEX_INPUT_ROWS: u16 = 16;
+
+#[derive(Debug, PartialEq, Eq)]
+pub(super) enum CodexInput {
+    Empty,
+    Draft(Option<String>),
+    Overlay,
+    Unknown,
+}
+
+impl CodexInput {
+    pub(super) fn ready(&self) -> bool {
+        matches!(self, Self::Empty | Self::Draft(_))
+    }
+
+    fn text(&self) -> Option<String> {
+        match self {
+            Self::Empty => Some(String::new()),
+            Self::Draft(text) => text.clone(),
+            Self::Overlay | Self::Unknown => None,
+        }
+    }
+}
+
+struct CodexFrame {
+    input: CodexInput,
+    approval: bool,
+}
+
 /// Screen tracker with vt100 emulation
 pub struct ScreenTracker {
     parser: vt100::Parser,
@@ -215,6 +245,10 @@ pub struct ScreenTracker {
     rows: u16,
     cols: u16,
     ready_patterns: Vec<String>,
+    codex_frame: OnceCell<CodexFrame>,
+    codex_startup: OnceCell<bool>,
+    frame_revision: u64,
+    awaiting_redraw: bool,
     waiting_approval: bool,
     // Last complete, sanitized OSC 0/2 title the wrapped tool set, cached for the
     // Combined title passthrough. Only ever holds a fully-terminated title (see
@@ -234,19 +268,8 @@ pub struct ScreenTracker {
     instance_name: Option<String>,
 }
 
-/// Codex draws its composer, ready pattern included, before startup finishes:
-/// input typed then is held as a draft ("Waiting for startup"), and a
-/// full-screen prompt (folder trust, update available, startup hooks review)
-/// can still take over the TUI. Until startup completes, the directory line
-/// under its `>_ OpenAI Codex (vX)` header reads `loading`. Those prompts and
-/// in-session pickers are drawn over a composer whose ready-pattern row can
-/// survive underneath (the update prompt's own `› 1. Update now` row matches
-/// it too), and all end in an `enter <action> · esc <action>` footer. Either
-/// means not ready.
-fn is_codex_startup_screen(lines: &[String]) -> bool {
-    is_codex_loading(lines) || lines.iter().any(|line| is_codex_modal_footer(line))
-}
-
+/// During startup, Codex renders its composer but holds input as a draft
+/// while the directory under its `>_ OpenAI Codex (vX)` header says `loading`.
 fn is_codex_loading(lines: &[String]) -> bool {
     lines.windows(2).any(|pair| pair[0].contains(">_ OpenAI Codex") && pair[1].trim() == "loading")
 }
@@ -254,6 +277,30 @@ fn is_codex_loading(lines: &[String]) -> bool {
 fn is_codex_modal_footer(line: &str) -> bool {
     let line = line.trim_start();
     line.starts_with("enter ") && line.contains(" \u{b7} esc ")
+}
+
+fn codex_status_footer(lines: &[String]) -> bool {
+    let Some(first) = lines.iter().position(|line| !line.trim().is_empty()) else { return true };
+    let last = lines.iter().rposition(|line| !line.trim().is_empty()).unwrap_or(first);
+    let mut footer = lines[first..=last].iter();
+    let Some(line) = footer.next() else { return false };
+    // Do not accept a continuation line merely because real status chrome
+    // appears later (e.g. a blank line in a multiline draft).
+    line.starts_with("  ") && (line.contains(" · ") || line.contains("? for shortcuts") || line.contains("← for agents") || line.contains(" to view")) && footer.all(|line| line.starts_with("  ") && !line.trim().is_empty())
+}
+
+fn codex_approval_in(lines: &[String]) -> bool {
+    let visible = lines.join("\n").to_lowercase();
+    if visible.contains("↑/↓ to scroll") && visible.contains("q to quit") && visible.contains("esc to edit prev") {
+        return false;
+    }
+    visible.contains("allow command?")
+        || visible.contains("press enter to confirm or esc to cancel")
+        || visible.contains("enter to submit answer")
+        || visible.contains("enter to submit all")
+        || visible.contains("[y/n]")
+        || visible.contains("yes (y)")
+        || (visible.contains("do you want to") && (visible.contains("yes") || visible.contains('❯')))
 }
 
 impl ScreenTracker {
@@ -273,6 +320,10 @@ impl ScreenTracker {
             rows,
             cols,
             ready_patterns: ready_patterns.to_vec(),
+            codex_frame: OnceCell::new(),
+            codex_startup: OnceCell::new(),
+            frame_revision: 0,
+            awaiting_redraw: false,
             waiting_approval: false,
             last_child_title: None,
             last_output: Instant::now(),
@@ -320,6 +371,8 @@ impl ScreenTracker {
 
     /// Process output data from PTY
     pub fn process(&mut self, data: &[u8]) {
+        self.invalidate_codex_frame();
+        self.awaiting_redraw = false;
         // Update output buffer for pattern detection (rolling 4KB)
         self.output_buffer.extend_from_slice(data);
         if self.output_buffer.len() > 4096 {
@@ -371,6 +424,8 @@ impl ScreenTracker {
 
     /// Resize the screen
     pub fn resize(&mut self, rows: u16, cols: u16) {
+        self.invalidate_codex_frame();
+        self.awaiting_redraw = true;
         let rows = NonZeroU16::new(rows).unwrap_or(NonZeroU16::MIN);
         let cols = NonZeroU16::new(cols).unwrap_or(NonZeroU16::MIN);
         if std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -406,20 +461,98 @@ impl ScreenTracker {
             return true;
         }
 
-        let lines = self.get_screen_lines();
-        if is_codex_startup_screen(&lines) {
-            return false;
+        if self.ready_patterns.iter().any(|p| matches!(p.as_str(), "› " | "» ")) {
+            return self.codex_input().ready();
         }
-        lines.iter().any(|line| self.ready_patterns.iter().any(|p| line.contains(p.as_str())))
+        self.get_screen_lines().iter().any(|line| self.ready_patterns.iter().any(|p| line.contains(p.as_str())))
     }
 
-    /// Codex is still starting and nothing needs answering yet: its header
-    /// says `loading` and no full-screen prompt has taken over. Startup
-    /// can sit here for seconds (the folder-trust lookup runs first), which must
-    /// not read as a launch that settled without becoming ready.
+    fn invalidate_codex_frame(&mut self) {
+        self.frame_revision = self.frame_revision.wrapping_add(1);
+        self.codex_frame.take();
+        self.codex_startup.take();
+    }
+
+    pub(super) fn frame_revision(&self) -> u64 {
+        self.frame_revision
+    }
+
+    /// Call only during launch. A loading header in ordinary output conveys no
+    /// information about the current composer.
     pub fn is_codex_startup_loading(&self) -> bool {
-        let lines = self.get_screen_lines();
-        is_codex_loading(&lines) && !lines.iter().any(|line| is_codex_modal_footer(line))
+        *self.codex_startup.get_or_init(|| {
+            let screen = self.parser.screen();
+            let (_, cols) = screen_size(screen);
+            !matches!(self.codex_input(), CodexInput::Overlay) && is_codex_loading(&screen.rows(0, cols).take(usize::from(CODEX_INPUT_ROWS)).collect::<Vec<_>>())
+        })
+    }
+
+    pub(super) fn codex_input(&self) -> &CodexInput {
+        &self.codex_frame().input
+    }
+
+    fn codex_frame(&self) -> &CodexFrame {
+        self.codex_frame.get_or_init(|| {
+            if self.awaiting_redraw {
+                return CodexFrame { input: CodexInput::Unknown, approval: false };
+            }
+            let screen = self.parser.screen();
+            let (rows, cols) = screen_size(screen);
+            let start = rows.saturating_sub(CODEX_INPUT_ROWS);
+            let (caret_row, caret_col) = screen.cursor_position();
+            let lines: Vec<_> = screen.rows(0, cols).skip(start.into()).collect();
+            let caret = caret_row.checked_sub(start).map(usize::from).filter(|i| *i < lines.len());
+            let prompt = |line: &str| {
+                let glyph = line.trim_start().chars().next()?;
+                matches!(glyph, '›' | '»').then_some(glyph)
+            };
+            let anchor = caret.filter(|&i| !screen.hide_cursor() && prompt(&lines[i]).is_some());
+            // In a menu the visible caret is often hidden or sits above its
+            // footer. A footer above a focused composer belongs to old output.
+            let active_lines = &lines[anchor.unwrap_or(0)..];
+            let approval = codex_approval_in(active_lines);
+            let overlay = active_lines.iter().any(|line| is_codex_modal_footer(line));
+            let input = if approval || overlay {
+                CodexInput::Overlay
+            } else if let Some(i) = anchor {
+                let line = &lines[i];
+                let lead = line.len() - line.trim_start().len(); // ASCII indentation in the TUI
+                let glyph = prompt(line).unwrap();
+                let tail = &line[lead + glyph.len_utf8()..];
+                let prefix_col = u16::try_from(lead).unwrap_or(u16::MAX).saturating_add(2);
+                let attached = i.checked_sub(1).is_some_and(|n| lines[n].trim_start().starts_with("[Image #"));
+                // An intact composer is followed by whitespace, then optional
+                // indented status chrome. If rows continue directly below the
+                // prompt, or unknown text follows it, it is not a proven
+                // single-line input. In particular it cannot own a wake.
+                let below = &lines[i + 1..];
+                let footer = below.iter().all(|line| line.trim().is_empty()) || (below.first().is_some_and(|line| line.trim().is_empty()) && codex_status_footer(&below[1..]));
+                if caret_col < prefix_col || (!tail.is_empty() && !tail.starts_with(' ')) {
+                    CodexInput::Unknown
+                } else if tail.trim_start().starts_with('/') {
+                    CodexInput::Overlay
+                } else if attached || below.first().is_some_and(|line| !line.trim().is_empty()) || (!footer && !tail.trim().is_empty()) {
+                    CodexInput::Draft(None)
+                } else if !footer {
+                    CodexInput::Unknown
+                } else {
+                    let text = tail.strip_prefix(' ').unwrap_or(tail).trim_end();
+                    let dim = (prefix_col..cols).all(|col| screen.cell(caret_row, col).is_none_or(|cell| cell.dim() || cell.contents().trim().is_empty()));
+                    if dim && caret_col == prefix_col {
+                        CodexInput::Empty
+                    } else if !text.is_empty() && !dim {
+                        CodexInput::Draft(Some(text.to_owned()))
+                    } else {
+                        CodexInput::Draft(None)
+                    }
+                }
+            } else if caret.is_some_and(|i| !screen.hide_cursor() && lines[..i].iter().rev().take_while(|line| !line.trim().is_empty()).any(|line| prompt(line).is_some())) {
+                CodexInput::Draft(None)
+            } else {
+                CodexInput::Unknown
+            };
+            CodexFrame { input, approval }
+        })
     }
 
     /// Check if the latest complete OSC terminal title requires action.
@@ -457,21 +590,7 @@ impl ScreenTracker {
     /// render before or without the title update while excluding the transcript
     /// viewer, which is navigable but not an approval blocker.
     pub fn is_codex_approval_visible(&self) -> bool {
-        let lines = self.get_screen_lines();
-        let start = lines.iter().rposition(|line| line.trim_start().starts_with('›')).unwrap_or(0);
-        let visible = lines[start..].join("\n").to_lowercase();
-
-        if visible.contains("↑/↓ to scroll") && visible.contains("q to quit") && visible.contains("esc to edit prev") {
-            return false;
-        }
-
-        visible.contains("allow command?")
-            || visible.contains("press enter to confirm or esc to cancel")
-            || visible.contains("enter to submit answer")
-            || visible.contains("enter to submit all")
-            || visible.contains("[y/n]")
-            || visible.contains("yes (y)")
-            || (visible.contains("do you want to") && (visible.contains("yes") || visible.contains('❯')))
+        self.codex_frame().approval
     }
 
     /// Antigravity-specific approval detection: the agy TUI renders permission
@@ -972,52 +1091,7 @@ impl ScreenTracker {
     /// real input, avoiding race conditions where ready pattern is still visible
     /// during PTY injection.
     fn get_codex_input_text(&self) -> Option<String> {
-        let lines = self.get_screen_lines();
-        // The startup composer's placeholder reads as an empty prompt, but
-        // input there is held as a draft and an onboarding screen can still
-        // take over. Unknown input keeps both launch readiness and delivery
-        // waiting until startup is done.
-        if is_codex_startup_screen(&lines) {
-            return None;
-        }
-
-        // Submitted history can contain `›` above a live `»` composer.
-        // Search bottom-to-top so the live prompt wins.
-        for (row_idx, line) in lines.iter().enumerate().rev() {
-            let trimmed = line.trim_start();
-            let (prompt_char, text) = if let Some(text) = trimmed.strip_prefix("› ") {
-                ("›", text)
-            } else if let Some(text) = trimmed.strip_prefix("» ") {
-                ("»", text)
-            } else {
-                continue;
-            };
-            let text = trim_with_nbsp(text);
-
-            if text.is_empty() {
-                return Some(String::new());
-            }
-
-            // Dim text = placeholder, not real input.
-            match self.is_dim_after_prompt(row_idx as u16, prompt_char) {
-                Some(true) => return Some(String::new()),
-                Some(false) => return Some(text.to_string()),
-                None => {
-                    // Can't locate prompt glyph, fall back to ready-pattern logic.
-                    if self.is_ready() {
-                        return Some(String::new());
-                    }
-                    return Some(text.to_string());
-                }
-            }
-        }
-
-        // Fallback: if ready pattern visible but prompt not found, assume empty
-        if self.is_ready() {
-            return Some(String::new());
-        }
-
-        None // Prompt not found
+        self.codex_input().text()
     }
 
     /// Extract Antigravity (`agy`) input text.
@@ -1227,14 +1301,16 @@ impl ScreenTracker {
     }
 
     /// Get screen state as JSON for TCP query responses.
-    pub fn get_screen_dump(&self, tool: &str, _inject_port: u16) -> String {
+    pub fn get_screen_dump(&self, tool: &str, launching: bool) -> String {
         let screen = self.parser.screen();
         let (rows, cols) = screen_size(screen);
         let cursor = screen.cursor_position();
 
         let lines: Vec<String> = self.get_screen_lines().into_iter().map(|l| l.trim_end().to_string()).collect();
 
-        let input_text = self.get_input_box_text(tool);
+        let startup = tool == "codex" && launching && self.is_codex_startup_loading();
+        let input_text = if startup { None } else { self.get_input_box_text(tool) };
+        let ready = if tool == "codex" { !startup && self.codex_input().ready() } else { self.is_ready() };
 
         // Manual JSON — no serde dependency needed
         let mut j = String::from("{\n");
@@ -1249,10 +1325,11 @@ impl ScreenTracker {
         j.push_str("],\n");
         j.push_str(&format!("  \"size\": [{}, {}],\n", rows, cols));
         j.push_str(&format!("  \"cursor\": [{}, {}],\n", cursor.0, cursor.1));
-        j.push_str(&format!("  \"ready\": {},\n", self.is_ready()));
+        j.push_str(&format!("  \"ready\": {ready},\n"));
         // null when no composer was read (no parser for this tool, or a menu
         // in its place): unknown, which scripts must not read as "has text".
         let prompt_empty = match &input_text {
+            None if tool == "codex" && !startup && matches!(self.codex_input(), CodexInput::Draft(_)) => "false".into(),
             Some(text) => text.is_empty().to_string(),
             None => "null".to_string(),
         };
@@ -1300,6 +1377,10 @@ mod tests {
             rows,
             cols,
             ready_patterns: ready_patterns.iter().map(|p| p.to_string()).collect(),
+            codex_frame: OnceCell::new(),
+            codex_startup: OnceCell::new(),
+            frame_revision: 0,
+            awaiting_redraw: false,
             waiting_approval: false,
             last_child_title: None,
             last_output: Instant::now(),
@@ -1547,14 +1628,14 @@ mod tests {
     #[test]
     fn codex_detects_visible_approval_dialog() {
         let mut t = make_tracker(24, 80, "");
-        t.process(b"Run command\r\nAllow command?\r\nPress enter to confirm or esc to cancel\r\n");
+        t.process(b"\x1b[21;1HRun command\r\nAllow command?\r\nPress enter to confirm or esc to cancel\r\n");
         assert!(t.is_codex_approval_visible());
     }
 
     #[test]
     fn codex_transcript_viewer_is_not_approval() {
         let mut t = make_tracker(24, 80, "");
-        t.process("Transcript\r\n↑/↓ to scroll  q to quit  esc to edit prev\r\n".as_bytes());
+        t.process("\x1b[21;1HTranscript\r\n↑/↓ to scroll  q to quit  esc to edit prev\r\n".as_bytes());
         assert!(!t.is_codex_approval_visible());
     }
 
@@ -1801,21 +1882,21 @@ mod tests {
     #[test]
     fn codex_extracts_text_after_prompt() {
         let mut t = make_tracker(24, 80, "? for shortcuts");
-        t.process("› hello world\r\n".as_bytes());
+        t.process("\x1b[21;1H› hello world".as_bytes());
         assert_eq!(t.get_codex_input_text(), Some("hello world".to_string()));
     }
 
     #[test]
     fn codex_empty_prompt() {
         let mut t = make_tracker(24, 80, "? for shortcuts");
-        t.process("› \r\n".as_bytes());
+        t.process("\x1b[21;1H› ".as_bytes());
         assert_eq!(t.get_codex_input_text(), Some(String::new()));
     }
 
     #[test]
     fn codex_ultra_dim_placeholder_wins_over_submitted_history() {
         let mut t = make_tracker(24, 80, "? for shortcuts");
-        t.process("› submitted prompt\r\n» \x1b[2mAsk Codex to do anything\x1b[0m\r\n".as_bytes());
+        t.process("› submitted prompt\x1b[21;1H» \x1b[2mAsk Codex to do anything\x1b[0m\x1b[21;3H".as_bytes());
 
         assert_eq!(t.get_codex_input_text(), Some(String::new()));
         assert!(t.is_prompt_empty("codex"));
@@ -1824,7 +1905,7 @@ mod tests {
     #[test]
     fn codex_ultra_prompt_satisfies_ready_pattern() {
         let mut t = make_tool_tracker(24, 80, crate::integrations::tool::Tool::Codex);
-        t.process("» \x1b[2mAsk Codex to do anything\x1b[0m\r\n".as_bytes());
+        t.process("\x1b[21;1H» \x1b[2mAsk Codex to do anything\x1b[0m\x1b[21;3H".as_bytes());
 
         assert!(t.is_ready());
         assert!(t.is_prompt_empty("codex"));
@@ -1833,7 +1914,7 @@ mod tests {
     #[test]
     fn codex_ultra_non_dim_draft_wins_over_submitted_history() {
         let mut t = make_tracker(24, 80, "? for shortcuts");
-        t.process("› submitted prompt\r\n» Summarize recent commits\r\n".as_bytes());
+        t.process("› submitted prompt\x1b[21;1H» Summarize recent commits".as_bytes());
 
         assert_eq!(t.get_codex_input_text(), Some("Summarize recent commits".to_string()));
         assert!(!t.is_prompt_empty("codex"));
@@ -1841,25 +1922,16 @@ mod tests {
 
     #[test]
     fn codex_not_ready_while_startup_header_is_loading() {
-        let header = |directory: &str| {
-            format!(
-                "  >_ OpenAI Codex (v0.162.1)\r\n     {directory}\r\n\r\n\
-                 \u{203a} \x1b[2mAsk Codex to do anything\x1b[0m\r\n  ? for shortcuts\r\n"
-            )
-        };
-        let mut t = make_tracker(24, 80, "? for shortcuts");
+        let header = |directory: &str| format!("  >_ OpenAI Codex (v0.172.0)\r\n     {directory}\x1b[21;1H› \x1b[2mAsk Codex to do anything\x1b[0m\r\n\r\n  ? for shortcuts\x1b[21;3H");
+        let mut t = make_tool_tracker(24, 80, crate::integrations::tool::Tool::Codex);
         t.process(header("loading").as_bytes());
-        assert!(!t.is_ready(), "composer drawn during startup is not ready");
         assert!(t.is_codex_startup_loading());
-        assert_eq!(t.get_codex_input_text(), None, "a startup draft is not an empty prompt");
+        let dump = |t: &ScreenTracker, launching| serde_json::from_str::<serde_json::Value>(&t.get_screen_dump("codex", launching)).unwrap();
+        assert_eq!(dump(&t, true)["ready"], false, "composer drawn during startup is not ready");
+        assert!(dump(&t, true)["input_text"].is_null());
+        assert_eq!(dump(&t, false)["ready"], true, "a historical loading header must not block an established session");
 
-        let mut t = make_tracker(24, 80, "? for shortcuts");
-        t.process(header("~/Dev/hook-comms-public").as_bytes());
-        assert!(t.is_ready());
-        assert_eq!(t.get_codex_input_text(), Some(String::new()));
-
-        // A folder-trust screen over the composer, stale ready row included.
-        t.process("\u{203a} 1. Open restricted\r\n  2. Quit\r\n  enter continue \u{b7} esc quit\r\n".as_bytes());
+        t.process(b"\x1b[?25l\x1b[22;1H  enter continue \xc2\xb7 esc quit");
         assert!(!t.is_ready(), "onboarding screen is not ready");
         assert!(!t.is_codex_startup_loading(), "a screen awaiting an answer is not loading");
         assert_eq!(t.get_codex_input_text(), None);
@@ -1867,9 +1939,9 @@ mod tests {
 
     #[test]
     fn codex_not_ready_on_update_prompt() {
-        let mut t = make_tracker(24, 80, "? for shortcuts");
+        let mut t = make_tool_tracker(24, 80, crate::integrations::tool::Tool::Codex);
         t.process(
-            "  Update available \u{b7} 0.159.2 \u{2192} 0.162.1\r\n\r\n\
+            "\x1b[15;1H  Update available \u{b7} 0.159.2 \u{2192} 0.162.1\r\n\r\n\
              \u{203a} 1. Update now (runs `npm install -g @openai/codex`)\r\n\
              \x20 2. Skip\r\n  3. Skip until next version\r\n\r\n\
              \x20 enter continue \u{b7} esc skip\r\n"
@@ -1878,6 +1950,49 @@ mod tests {
         assert!(!t.is_ready(), "the update menu's `›` row is not the composer");
         assert!(!t.is_codex_startup_loading());
         assert_eq!(t.get_codex_input_text(), None);
+    }
+
+    #[test]
+    fn codex_ignores_picker_footer_in_history_above_focused_composer() {
+        let mut t = make_tool_tracker(52, 68, crate::integrations::tool::Tool::Codex);
+        t.process(
+            "\x1b[2;1H      enter select · esc back\x1b[28;1H    + 14 lines (^t to expand)\
+             \x1b[48;1H› \x1b[2mAsk Codex to do anything\x1b[0m\
+             \x1b[50;1H  GPT-6.1-Sol high · ~/works/longwork/dancingai · Implement the\
+             \x1b[51;1H  approved plan\x1b[52;1H  ← for agents · ? for shortcuts\x1b[48;3H"
+                .as_bytes(),
+        );
+
+        assert!(t.is_ready());
+        assert_eq!(t.get_codex_input_text(), Some(String::new()));
+
+        // A real picker can leave the composer painted underneath. With no
+        // visible caret in that composer, the footer still blocks delivery.
+        t.process(b"\x1b[?25l");
+        assert!(!t.is_ready());
+        assert_eq!(t.get_codex_input_text(), None);
+    }
+
+    #[test]
+    fn codex_classifies_current_plan_surface_and_protects_drafts() {
+        let observe = |content: &str| {
+            let mut tracker = make_tool_tracker(52, 68, crate::integrations::tool::Tool::Codex);
+            tracker.process(content.as_bytes());
+            serde_json::from_str::<serde_json::Value>(&tracker.get_screen_dump("codex", false)).unwrap()
+        };
+        let plan = "\x1b[48;1H› \x1b[2mAsk Codex to do anything\x1b[0m\r\n\r\n  Plan mode · ? for shortcuts\x1b[48;3H";
+        assert_eq!(observe(plan)["prompt_empty"], true);
+        assert_eq!(observe(&format!("{plan}\x1b[50;1H  enter select · esc back\x1b[?25l"))["ready"], false);
+        assert_eq!(observe("\x1b[48;1H› /pl\r\n\r\n  /plan    switch to Plan mode\x1b[48;6H")["ready"], false);
+        let attachment = observe(&format!("{plan}\x1b[47;1H  [Image #1]\x1b[48;3H"));
+        assert_eq!(attachment["prompt_empty"], false);
+        let multiline = observe("\x1b[46;1H› <agentx>\r\n  User continuation\r\n\r\n  ? for shortcuts\x1b[46;10H");
+        assert_eq!(multiline["prompt_empty"], false);
+        assert!(multiline["input_text"].is_null(), "must not grant single-line wake ownership");
+        let separated = observe("\x1b[46;1H› <agentx>\r\n\r\n  A draft after a blank line\r\n\r\n  ? for shortcuts\x1b[46;10H");
+        assert!(separated["input_text"].is_null());
+        let history = observe("\x1b[1;1H› \x1b[2mAsk Codex to do anything\x1b[0m\x1b[1;3H");
+        assert_eq!(history["ready"], false);
     }
 
     #[test]
@@ -1893,11 +2008,11 @@ mod tests {
         let mut t = make_tracker(24, 80, "? for shortcuts");
         // SGR 2 = dim, SGR 0 = reset
         let mut data = Vec::new();
-        data.extend_from_slice("› ".as_bytes());
+        data.extend_from_slice("\x1b[21;1H› ".as_bytes());
         data.extend_from_slice(b"\x1b[2m"); // dim on
         data.extend_from_slice(b"Improve docs");
         data.extend_from_slice(b"\x1b[0m"); // reset
-        data.extend_from_slice(b"\r\n? for shortcuts\r\n");
+        data.extend_from_slice(b"\r\n\r\n  ? for shortcuts\x1b[21;3H");
         t.process(&data);
         assert_eq!(t.get_codex_input_text(), Some(String::new()));
     }
@@ -1908,7 +2023,7 @@ mod tests {
         // Should return the text (it's real input, not placeholder)
         let mut t = make_tracker(24, 80, "? for shortcuts");
         // Non-dim text after prompt, ready pattern on next line
-        t.process("› <agentx>test message</agentx>\r\n? for shortcuts\r\n".as_bytes());
+        t.process("\x1b[21;1H› <agentx>test message</agentx>\r\n\r\n  ? for shortcuts\x1b[21;6H".as_bytes());
         // Current bug: returns empty because is_ready()=true
         // After fix: should return the actual text
         assert_eq!(t.get_codex_input_text(), Some("<agentx>test message</agentx>".to_string()));
@@ -2233,7 +2348,7 @@ mod tests {
 
     #[test]
     fn screen_dump_prompt_empty_is_null_when_no_composer_is_read() {
-        let dump = |t: &ScreenTracker, tool| -> serde_json::Value { serde_json::from_str(&t.get_screen_dump(tool, 0)).unwrap() };
+        let dump = |t: &ScreenTracker, tool| -> serde_json::Value { serde_json::from_str(&t.get_screen_dump(tool, false)).unwrap() };
         let mut t = make_tracker(24, 80, "> ");
         t.process("╭──────────────────────────╮\r\n".as_bytes());
         t.process("│ >                        │\r\n".as_bytes());

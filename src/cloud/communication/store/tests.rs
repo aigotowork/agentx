@@ -11,7 +11,7 @@ fn host(host: &str) -> HostRegistration {
 }
 
 fn agent(host: &str, incarnation: &str) -> AgentRegistration {
-    AgentRegistration { generation: GEN.into(), installation_id: format!("{host}-installation"), host: host.into(), incarnation: incarnation.into() }
+    AgentRegistration { generation: GEN.into(), installation_id: format!("{host}-installation"), host: host.into(), incarnation: incarnation.into(), workspace: AgentWorkspace::Unexposed }
 }
 
 fn send_input(sender: &AgentView, target: &str, request: &str) -> SendMessage {
@@ -46,7 +46,7 @@ fn scenario() -> (tempfile::TempDir, AgentView, AgentView) {
     let (luna, nova) = apply(root.path(), |db, now| {
         renew_host(db, now, "laptop".into(), host("laptop"))?;
         renew_host(db, now, "desktop".into(), host("desktop"))?;
-        Ok((register_agent(db, now, "luna".into(), agent("laptop", "luna-one"))?, register_agent(db, now, "nova".into(), agent("desktop", "nova-one"))?))
+        Ok((register_agent(db, now, "luna".into(), agent("laptop", "Luna00000001"))?, register_agent(db, now, "nova".into(), agent("desktop", "Nova00000001"))?))
     })
     .unwrap();
     (root, luna, nova)
@@ -85,19 +85,19 @@ fn offline_target_keeps_its_name_and_mailbox_then_replies_from_its_exact_host() 
     apply(root, |db, now| {
         db.execute("UPDATE hosts SET last_seen=?1 WHERE name='desktop'", [now - LEASE_SECONDS])?;
         assert!(matches!(renew_host(db, now, "desktop".into(), host("intruder")), Err(Error::Installation)));
-        assert!(matches!(register_agent(db, now, "nova".into(), agent("laptop", "nova-two")), Err(Error::Conflict(_))));
+        assert!(matches!(register_agent(db, now, "nova".into(), agent("laptop", "Nova00000002")), Err(Error::Conflict(_))));
         assert!(matches!(send(db, now, send_input(&luna, "@laptop/nova", "wrong-host")), Err(Error::NotFound(_))));
         Ok(())
     })
     .unwrap();
     assert_eq!(super::super::summary(root, GEN).unwrap(), (2, 1, 2));
-    let page = super::super::host_page(root, GEN, None, 1).unwrap();
+    let page = transaction(root, GEN, false, || true, |db, now| hosts(db, now, GEN.into(), HostQuery { generation: None, after: None, limit: Some(1) })).unwrap();
     assert_eq!(page.items.iter().map(|h| (h.name.as_str(), h.online)).collect::<Vec<_>>(), [("desktop", false)]);
     assert_eq!(page.next.as_deref(), Some("desktop"));
-    let page = super::super::host_page(root, GEN, page.next, 1).unwrap();
+    let page = transaction(root, GEN, false, || true, |db, now| hosts(db, now, GEN.into(), HostQuery { generation: None, after: page.next, limit: Some(1) })).unwrap();
     assert_eq!(page.items.iter().map(|h| (h.name.as_str(), h.online)).collect::<Vec<_>>(), [("laptop", true)]);
     assert!(page.next.is_none());
-    let page = super::super::agent_page(root, GEN, None, 1, Some("desktop".into()), None).unwrap();
+    let page = transaction(root, GEN, false, || true, |db, now| agents(db, now, GEN.into(), AgentQuery { generation: None, after: None, limit: Some(1), host: Some("desktop".into()), workspace_id: None, facts: None })).unwrap();
     assert_eq!(page.items.len(), 1);
     let row = &page.items[0];
     assert_eq!((&row.host, &row.name, &row.incarnation), (&nova.host, &nova.name, &nova.incarnation));
@@ -163,12 +163,12 @@ fn retirement_fences_claims_and_replayed_send_never_changes_targets() {
     let root = root.path();
     let sent = apply(root, |db, now| send(db, now, send_input(&luna, "@nova", "frozen"))).unwrap();
     apply(root, |db, now| claim(db, now, &claim_input(&nova, "old-claim"))).unwrap();
-    apply(root, |db, now| retire_agent(db, now, "nova".into(), agent("desktop", "nova-one"))).unwrap();
-    assert!(matches!(apply(root, |db, now| register_agent(db, now, "nova".into(), agent("desktop", "nova-one"))), Err(Error::Conflict(_))));
-    let successor = apply(root, |db, now| register_agent(db, now, "nova".into(), agent("desktop", "nova-two"))).unwrap();
+    apply(root, |db, now| retire_agent(db, now, "nova".into(), agent("desktop", "Nova00000001"))).unwrap();
+    assert!(matches!(apply(root, |db, now| register_agent(db, now, "nova".into(), agent("desktop", "Nova00000001"))), Err(Error::Conflict(_))));
+    let successor = apply(root, |db, now| register_agent(db, now, "nova".into(), agent("desktop", "Nova00000002"))).unwrap();
 
-    apply(root, |db, now| retire_agent(db, now, "nova".into(), agent("desktop", "nova-one"))).unwrap();
-    let directory = super::super::agent_page(root, GEN, None, 50, None, None).unwrap();
+    apply(root, |db, now| retire_agent(db, now, "nova".into(), agent("desktop", "Nova00000001"))).unwrap();
+    let directory = transaction(root, GEN, false, || true, |db, now| agents(db, now, GEN.into(), AgentQuery { generation: None, after: None, limit: Some(50), host: None, workspace_id: None, facts: None })).unwrap();
     assert_eq!(serde_json::to_value(directory.items).unwrap(), serde_json::json!([luna, successor]));
     let (batch, reusable) = apply(root, |db, now| claim(db, now, &claim_input(&successor, "new-claim"))).unwrap();
     assert!(batch.items.is_empty());
@@ -281,16 +281,99 @@ fn cloud_transcript_is_incremental_idempotent_and_bound_to_the_exact_registratio
         let wrong = AgentView { host: nova.host.clone(), ..luna.clone() };
         assert!(matches!(transcript::history(db, now, query(&wrong, None, None)), Err(Error::NotFound(_))));
         assert_eq!(transcript::history(db, now + 100, query(&luna, None, None))?.facts.unwrap().status, CloudAgentStatus::Unknown);
-        let legacy = agents(db, now, AgentQuery { after: None, limit: Some(1), host: None, facts: None })?;
+        let legacy = agents(db, now, GEN.into(), AgentQuery { generation: None, after: None, limit: Some(1), host: None, workspace_id: None, facts: None })?;
         assert_eq!(serde_json::to_value(&legacy.items[0])?, serde_json::to_value(&luna)?);
-        let roster = agents(db, now, AgentQuery { after: None, limit: Some(1), host: None, facts: Some(true) })?;
+        let roster = agents(db, now, GEN.into(), AgentQuery { generation: None, after: None, limit: Some(1), host: None, workspace_id: None, facts: Some(true) })?;
         assert_eq!(roster.items[0].facts, Some(facts.clone()));
         retire_agent(db, now, luna.name.clone(), agent(&luna.host, &luna.incarnation))?;
-        let replacement = register_agent(db, now, luna.name.clone(), agent(&luna.host, "luna-two"))?;
+        let replacement = register_agent(db, now, luna.name.clone(), agent(&luna.host, "Luna00000002"))?;
         assert!(matches!(transcript::publish(db, now, publish_input(&luna, "laptop-installation", &[5])), Err(Error::Agent)));
         assert_eq!(transcript::history(db, now, query(&luna, None, None))?.facts.unwrap().status, CloudAgentStatus::Stopped);
         assert!(!transcript::history(db, now, query(&replacement, None, None))?.available);
         Ok(())
     })
+    .unwrap();
+}
+
+#[test]
+fn workspace_member_filter_and_exact_history_are_independent_of_cwd_and_status() {
+    let (root, luna, _) = scenario();
+    let root = root.path();
+    let legacy = "ws_g1IMogNN8O8DXrbzbvh4TOT3_Oxzn-06yjXb6OTskPI";
+    let compact = "WSH0zNdctPlX";
+    let project = AgentWorkspace::Project { workspace_id: compact.into() };
+    let register = |host, incarnation| AgentRegistration { workspace: project.clone(), ..agent(host, incarnation) };
+    let (first, second) = apply(root, |db, now| {
+        assert!(matches!(register_agent(db, now, "first".into(), register("desktop", "550e8400-e29b-41d4-a716-446655440000")), Err(Error::Invalid(_))));
+        let legacy_input = AgentRegistration { workspace: AgentWorkspace::Project { workspace_id: legacy.into() }, ..register("desktop", "FirstAgent01") };
+        assert!(matches!(register_agent(db, now, "first".into(), legacy_input), Err(Error::Invalid(_))));
+        let first = register_agent(db, now, "first".into(), register("desktop", "FirstAgent01"))?;
+        let second = register_agent(db, now, "second".into(), register("laptop", "SecondAgent1"))?;
+        assert_eq!(register_agent(db, now, "second".into(), register("laptop", "SecondAgent1"))?, second);
+        register_agent(db, now, "global".into(), AgentRegistration { workspace: AgentWorkspace::Global, ..agent("laptop", "GlobalAgent1") })?;
+        assert!(matches!(register_agent(db, now, "second".into(), agent("laptop", "SecondAgent1")), Err(Error::Conflict(_))));
+        Ok((first, second))
+    })
+    .unwrap();
+
+    let query = |host: Option<&str>, workspace_id: Option<&str>| AgentQuery { generation: None, after: None, limit: None, host: host.map(str::to_owned), workspace_id: workspace_id.map(str::to_owned), facts: Some(true) };
+    apply(root, |db, now| {
+        let mut from = first.clone();
+        from.workspace = AgentWorkspace::Global;
+        let msg = send(db, now, send_input(&from, "@laptop/second", "project-message"))?;
+        assert_eq!((msg.from, msg.to), (first.clone(), second.clone()));
+        assert_eq!(operation(db, "project-message".into())?.message.from, first);
+        let facts = CloudAgentFacts { role: None, title: None, cwd: "/path/to/project/nested/dir".into(), status: CloudAgentStatus::Idle };
+        for view in [&first, &luna] {
+            transcript::publish(db, now, PublishTranscript { generation: GEN.into(), installation_id: format!("{}-installation", view.host), agent: view.clone(), facts: facts.clone(), items: vec![] })?;
+        }
+        assert_eq!(agents(db, now, GEN.into(), query(None, Some(compact)))?.items.len(), 2);
+        let filtered = agents(db, now, GEN.into(), query(Some("desktop"), Some(compact)))?;
+        assert_eq!(filtered.items.len(), 1);
+        assert_eq!(filtered.items[0].name, "first");
+        assert_eq!(filtered.items[0].workspace, project);
+        assert_eq!(agents(db, now, GEN.into(), query(Some("laptop"), Some(compact)))?.items[0].name, "second");
+        assert!(matches!(agents(db, now, GEN.into(), query(Some("laptop"), Some(legacy))), Err(Error::Invalid(_))));
+        let all = agents(db, now, GEN.into(), query(None, None))?;
+        assert!(all.items.iter().any(|item| item.name == "global" && item.workspace == AgentWorkspace::Global));
+        assert!(all.items.iter().any(|item| item.name == luna.name && item.workspace == AgentWorkspace::Unexposed));
+
+        retire_agent(db, now, "first".into(), agent("desktop", "FirstAgent01"))?;
+        assert!(agents(db, now, GEN.into(), query(Some("desktop"), Some(compact)))?.items.is_empty());
+        let history = transcript::history(db, now, TranscriptHistoryQuery { generation: GEN.into(), host: first.host.clone(), name: first.name.clone(), incarnation: first.incarnation.clone(), before: None, after: None, limit: None })?;
+        assert_eq!(history.agent.workspace, project);
+        assert_eq!(history.facts.unwrap().status, CloudAgentStatus::Stopped);
+        assert_eq!(operation(db, "project-message".into())?.message.from, first);
+        Ok(())
+    })
+    .unwrap();
+}
+
+#[test]
+fn namespace_format_fences_old_storage_before_reads_and_provisioning() {
+    let temp = tempfile::tempdir().unwrap();
+    let db = Connection::open(temp.path().join(DB_NAME)).unwrap();
+    db.execute_batch("CREATE TABLE scope_metadata(singleton INTEGER PRIMARY KEY,generation TEXT); INSERT INTO scope_metadata VALUES(1,'scope-generation'); PRAGMA user_version=4;").unwrap();
+    assert!(initialize(temp.path(), GEN).unwrap_err().to_string().contains("use a new deployment volume"));
+    assert!(matches!(transaction(temp.path(), GEN, false, || true, |_, _| Ok(())), Err(Error::SchemaVersion)));
+    assert_eq!(storage::version(&db).unwrap(), 4);
+    assert!(!db.query_row("SELECT EXISTS(SELECT 1 FROM sqlite_schema WHERE name='control_leases')", [], |row| row.get::<_, bool>(0)).unwrap());
+
+    let fresh = tempfile::tempdir().unwrap();
+    initialize(fresh.path(), GEN).unwrap();
+    initialize(fresh.path(), GEN).unwrap();
+    assert!(matches!(initialize(fresh.path(), "another-generation").unwrap_err().downcast_ref::<Error>(), Some(Error::Generation)));
+    transaction(
+        fresh.path(),
+        GEN,
+        false,
+        || true,
+        |db, _| {
+            for table in ["agents", "agent_transcript", "control_leases", "control_operations"] {
+                assert!(db.query_row("SELECT EXISTS(SELECT 1 FROM sqlite_schema WHERE name=?1)", [table], |row| row.get::<_, bool>(0))?);
+            }
+            Ok(())
+        },
+    )
     .unwrap();
 }

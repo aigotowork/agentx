@@ -1,7 +1,7 @@
 ---
 scope: Linux CLI acceptance for native one-shot time reminders
 owner: Events integration
-links: [../../.controller/time-reminders/implementation.task.md]
+links: [../../.controller/time-reminders/cli-acceptance.task.md, ../../.controller/time-reminders/implementation.task.md]
 ---
 
 Run with Python 3.8+ and an already built Linux candidate:

@@ -7,7 +7,6 @@ pub(crate) const MAX_WORKSPACES: usize = 64;
 pub(crate) const MAX_ROLES: usize = 512;
 pub(in crate::cloud) const MAX_DIRECTORY_BYTES: usize = 1024;
 pub(in crate::cloud) const LEASE_FEATURES_HEADER: &str = "X-AgentX-Features";
-pub(in crate::cloud) const WORKSPACE_PARENTS_HEADER: &str = "X-AgentX-Workspace-Parents";
 pub(in crate::cloud) const WORKSPACE_MANAGEMENT_FEATURE: &str = "workspace_management";
 
 /// Empty means the export root. The host additionally resolves each component without following symlinks.
@@ -24,18 +23,46 @@ pub(in crate::cloud) struct RoleCapability {
     pub reason: Option<String>,
 }
 
+/// Shared fields also composed into the flattened WorkspaceView schema.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, ToSchema)]
-#[serde(deny_unknown_fields)]
 pub(in crate::cloud) struct WorkspaceCapability {
-    pub alias: String,
-    /// This configured export is eligible as a parent for remote workspace registration. Set by the server from the lease header.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[schema(read_only)]
-    pub managed_parent: Option<bool>,
+    #[schema(pattern = "^WS[A-Za-z0-9]{10}$")]
+    pub workspace_id: String,
+    pub name: String,
     pub default_available: bool,
     #[schema(required = true)]
     pub default_reason: Option<String>,
     pub roles: Vec<RoleCapability>,
+}
+
+#[derive(Debug, Deserialize, utoipa::IntoParams)]
+#[serde(deny_unknown_fields)]
+#[into_params(parameter_in = Query)]
+pub(super) struct WorkspaceQuery {
+    /// Expected Namespace generation. Bind the first page's generation when continuing a cursor.
+    pub(super) generation: Option<String>,
+    pub(super) host: Option<String>,
+    /// Exclusive cursor from a previous page.
+    pub(super) after: Option<String>,
+    #[param(minimum = 1, maximum = 100)]
+    pub(super) limit: Option<u32>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub(super) struct WorkspaceView {
+    pub(super) host: String,
+    pub(super) online: bool,
+    #[serde(flatten)]
+    pub(super) capability: WorkspaceCapability,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub(super) struct WorkspacePage {
+    /// Namespace generation verified in the same transaction as the page.
+    pub(super) generation: String,
+    pub(super) items: Vec<WorkspaceView>,
+    #[schema(required = true)]
+    pub(super) next: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, ToSchema)]
@@ -47,6 +74,7 @@ pub(in crate::cloud) struct HostCapabilities {
     #[schema(required = true)]
     pub observed_at: Option<i64>,
     pub workspaces: Vec<WorkspaceCapability>,
+    pub project_roots: Vec<String>,
     /// This control lease accepts workspace-relative launch directories.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub directory_launch: Option<bool>,
@@ -59,7 +87,8 @@ pub(in crate::cloud) struct HostCapabilities {
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub(in crate::cloud) enum ControlCommand {
     Launch {
-        workspace: String,
+        #[schema(pattern = "^WS[A-Za-z0-9]{10}$")]
+        workspace_id: String,
         role: Option<String>,
         name: Option<String>,
         title: Option<String>,
@@ -75,6 +104,7 @@ pub(in crate::cloud) enum ControlCommand {
     },
     Stop {
         name: String,
+        #[schema(pattern = "^[A-Za-z0-9]{12}$")]
         incarnation: String,
     },
     AddWorkspace {
@@ -83,8 +113,8 @@ pub(in crate::cloud) enum ControlCommand {
         /// Nonempty slash-separated path relative to the parent export.
         #[schema(min_length = 1, max_length = 1024)]
         directory: String,
-        /// New workspace alias to publish on this host.
-        alias: String,
+        /// Display name to publish for this project.
+        name: String,
         /// Create only the final component if absent. Parents must already exist.
         create_directory: bool,
     },
@@ -93,10 +123,19 @@ pub(in crate::cloud) enum ControlCommand {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, ToSchema)]
 #[serde(tag = "status", rename_all = "snake_case", deny_unknown_fields)]
 pub(in crate::cloud) enum ControlOutcome {
-    Succeeded { agent: AgentView },
-    WorkspaceAdded { alias: String },
-    Failed { code: String },
-    Uncertain { code: String },
+    Succeeded {
+        agent: AgentView,
+    },
+    WorkspaceAdded {
+        #[schema(pattern = "^WS[A-Za-z0-9]{10}$")]
+        workspace_id: String,
+    },
+    Failed {
+        code: String,
+    },
+    Uncertain {
+        code: String,
+    },
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, ToSchema)]
@@ -141,6 +180,7 @@ pub(in crate::cloud) struct RenewControlLease {
     pub lease_id: String,
     pub previous_lease_id: Option<String>,
     pub workspaces: Vec<WorkspaceCapability>,
+    pub project_roots: Vec<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, ToSchema)]

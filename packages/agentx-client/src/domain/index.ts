@@ -10,16 +10,17 @@ import { bindAttachments, bindDirectory, bindInbox, readOfficeActivity } from '.
 import { bindWorkspace, discoverWorkspaces } from './workspace.js';
 
 export type * from './contracts.js';
-export { DomainReferenceError } from './address.js';
+export { DomainGenerationMismatch, DomainReferenceError } from './address.js';
+export { DomainCapabilityError, type ReadCapability } from './read-capabilities.js';
 
 /** Pin one listener, expected native scope and observed generation without later implicit refreshes. */
 export const selectAgentXScope: SelectAgentXScope = async (selection, options) => {
   const { baseUrl, expectedScope, fetch, headers } = selection;
   if (typeof expectedScope !== 'string' || !expectedScope) throw new TypeError('Supply the expected native management scope');
   const listener = normalizeListener(baseUrl);
-  const client = createManagementClient({ baseUrl: listener, fetch, headers });
-  async function describe(opts?: Parameters<typeof client.describe>[0]) {
-    const descriptor = await client.describe(opts);
+  const listenerClient = createManagementClient({ baseUrl: listener, fetch, headers });
+  async function describe(opts?: Parameters<typeof listenerClient.describe>[0]) {
+    const descriptor = await listenerClient.describe(opts);
     if (descriptor.scope !== expectedScope) {
       throw new DomainReferenceError('ScopeMismatch', 'Management listener does not describe the expected native scope');
     }
@@ -27,14 +28,16 @@ export const selectAgentXScope: SelectAgentXScope = async (selection, options) =
   }
   const descriptor = await describe(options);
   const address: ScopeAddress = Object.freeze({ baseUrl: listener, scope: descriptor.scope, generation: descriptor.generation });
-  const supportsWorkspaceMembers = descriptor.supports_workspace_members === true;
+  const scopedHeaders = new Headers(headers);
+  scopedHeaders.set('x-agentx-expected-scope', encodeURIComponent(address.scope));
+  const client = createManagementClient({ baseUrl: listener, fetch, headers: scopedHeaders });
 
   function agent(target: AgentAddress<CurrentReference>): CurrentAgent;
   function agent(target: AgentAddress<StoppedReference>): StoppedAgent;
   function agent(target: AgentAddress): Agent;
   function agent(target: AgentAddress): Agent {
     requireScope(target.scope, address);
-    return bindAgent(client, address, target.reference);
+    return bindAgent(client, address, descriptor, target.reference);
   }
 
   function operation<K extends OperationKind>(prepared: PreparedOperation<K> & { readonly kind: K }): TypedOperationHandle<K>;
@@ -56,7 +59,6 @@ export const selectAgentXScope: SelectAgentXScope = async (selection, options) =
   const selected: AgentXScope = {
     address,
     descriptor,
-    supportsWorkspaceMembers,
     async verify(opts) {
       const current = await describe(opts);
       requireGeneration(current.generation, address);
@@ -67,8 +69,8 @@ export const selectAgentXScope: SelectAgentXScope = async (selection, options) =
     inbox: bindInbox(client, address),
     directory: bindDirectory(client, address),
     officeActivity: (page, opts) => readOfficeActivity(client, address, page, opts),
-    workspaces: opts => discoverWorkspaces(client, address, supportsWorkspaceMembers, opts),
-    workspace: key => bindWorkspace(client, address, key, supportsWorkspaceMembers),
+    workspaces: opts => discoverWorkspaces(client, address, descriptor, opts),
+    workspace: key => bindWorkspace(client, address, descriptor, key),
     async agents(page = {}, options) {
       if (page.after) requireScope(page.after.scope, address);
       const result = await client.agents.list({ generation: address.generation, after: page.after?.position, limit: page.limit }, options);

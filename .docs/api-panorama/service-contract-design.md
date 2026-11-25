@@ -105,6 +105,8 @@ TrustedManagementContext 是职责名称，实施可直接复用已有经过构�
 
 首批公开错误码复用管理现有 `InvalidInput / Forbidden / NotFound / Conflict / StaleReference / Unsupported / Unavailable / OutcomeUnknown / Internal`，禁止解析 message 字符串分支。结构化字段仅由拥有者能够明确提供时新增，如现有协作 RevisionConflict.current_revision；不能伪造历史管理 Operation.error 的分类。
 
+[直调契约](../../.controller/direct-calls/AGENTS.md)为 Management 增加 `StaleGeneration`。Domain SDK 的资源请求带有 UTF-8 百分号编码的 `X-AgentX-Expected-Scope`；Management 在调用业务前将它与监听器的作用域配置比较。旧客户端可省略这个头。所带作用域或数据代次不再匹配时，服务返回 HTTP 409 `StaleGeneration`，调用方重新选择 Scope 并获取新对象、游标。同一作用域和代次下失效的 Agent 等精确引用仍报 HTTP 409 `StaleReference`。
+
 为兼容既有 Web，v1 管理 wire 的 status/result/error 形状保持；错误文案不作为程序接口。新增精细错误或 tagged Operation 联合时优先增加内部／SDK 类型与显式映射；如改变公共序列化、允许值、原生 IPC 或存储，先记录影响并按现有版本/epoch/兼容规则实施，不能直接重写历史回执。
 
 Operation 仍可能包含不同 CommandResult。SDK 提供 `send()` 返回 Operation 与可选 `waitForSent()` 类型化组合；不能 unchecked cast 所有成功 result 为 Sent。验证请求 ID、generation、状态与 result variant；遇到不匹配显式协议失败并保留回执。结果未知不等价于 Failed；取消等待不取消服务工作。幂等查重优先于当前 worker 容量／目标状态的顺序沿现有 journal，避免重放旧请求被新环境错误遮蔽。

@@ -8,11 +8,87 @@ use crate::agents::recovery::{HostAction, Ticket};
 use crate::messaging::delivery_service::{Client as PolicyClient, DeliverySnapshot, GateObservation, LaunchObservation, Request as PolicyRequest, Response as PolicyResponse, heartbeat_due};
 use crate::runtime::hosts::{EndpointKind, HostService, Request as HostRequest};
 use crate::runtime::process_host::ProcessHost;
+use crate::runtime::pty::inject::{GuardedWake, WakeKey, WakeWrite};
 use crate::service::{ServiceError, ServiceResult};
 use std::{path::Path, sync::RwLock};
 
 fn pending_gate_wait(tool: &str, reason: &str, has_recovery: bool) -> Duration {
-    if tool == "codex" && reason == "not_idle" && !has_recovery { Duration::from_secs(2) } else { RETRY_DELAY }
+    if codex_local_gate_wait(tool, reason) {
+        CODEX_LOCAL_POLL
+    } else if tool == "codex" && reason == "not_idle" && !has_recovery {
+        Duration::from_secs(2)
+    } else {
+        RETRY_DELAY
+    }
+}
+
+const CODEX_LOCAL_POLL: Duration = Duration::from_secs(3);
+const GATE_REPORT_AFTER: Duration = Duration::from_secs(2);
+
+fn codex_local_gate_wait(tool: &str, reason: &str) -> bool {
+    tool == "codex" && matches!(reason, "not_ready" | "input_overlay" | "startup_loading" | "approval" | "prompt_has_text" | "user_active" | "submit_settle")
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum GateWait {
+    Poll,
+    Local,
+    Sleep(Duration),
+}
+
+fn codex_next_check(now: Instant, poll_at: Instant, before: &str, after: &GateResult, local_at: Option<Instant>) -> GateWait {
+    if now >= poll_at || after.safe {
+        GateWait::Poll
+    } else if before != after.reason || local_at.is_some_and(|at| now >= at) {
+        GateWait::Local
+    } else {
+        GateWait::Sleep(local_at.map_or(poll_at, |at| at.min(poll_at)) - now)
+    }
+}
+
+/// Sleep locally while the old snapshot cannot possibly authorize a write.
+/// Provider and local hint connections may share the socket: neither can
+/// move the absolute Poll deadline while the same local blocker persists.
+fn wait_for_codex_input(notify: &NotifyServer, running: &AtomicBool, state: &DeliveryState, config: &ToolConfig, previous: &str, poll_at: Instant, report_at: Option<Instant>) -> GateWait {
+    state.screen.write().unwrap().codex_wait_port = Some(notify.port());
+    let result = loop {
+        if !running.load(Ordering::Acquire) {
+            break GateWait::Local;
+        }
+        let now = Instant::now();
+        let time_at = {
+            let screen = state.screen.read().unwrap();
+            match previous {
+                "user_active" => Some(screen.last_user_input + Duration::from_millis(state.user_activity_cooldown_ms)),
+                "submit_settle" => screen.last_prompt_submit.map(|at| at + Duration::from_millis(SUBMIT_SETTLE_COOLDOWN_MS)),
+                _ => None,
+            }
+        };
+        let gate = evaluate_gate(config, state, true);
+        // Taking the later keystroke stamp only extends the local cooldown,
+        // never the daemon deadline.
+        let local_at = [report_at, time_at].into_iter().flatten().min();
+        match codex_next_check(now, poll_at, previous, &gate, local_at) {
+            GateWait::Sleep(wait) => {
+                notify.wait(wait);
+            }
+            result => break result,
+        }
+    };
+    state.screen.write().unwrap().codex_wait_port = None;
+    result
+}
+
+fn codex_guard(state: &DeliveryState, key: WakeKey, expected_user: Option<u64>) -> Option<(GuardedWake, u64)> {
+    let screen = state.screen.read().ok()?;
+    let user = screen.codex_user_input;
+    if expected_user.is_some_and(|expected| expected != user) {
+        return None;
+    }
+    let request = GuardedWake::new(key, screen.codex_frame, user);
+    // Full verification happens again at the PTY writer.
+    request.bytes(&screen)?;
+    Some((request, user))
 }
 
 fn staggered_idle_wait() -> Duration {
@@ -22,11 +98,32 @@ fn staggered_idle_wait() -> Duration {
 
 #[cfg(test)]
 #[test]
-fn pty_slow_poll_only_applies_while_codex_is_waiting_for_a_hook() {
+fn codex_pending_cadence_distinguishes_provider_and_local_blockers() {
     assert_eq!(pending_gate_wait("codex", "not_idle", false), Duration::from_secs(2));
     assert_eq!(pending_gate_wait("codex", "not_idle", true), RETRY_DELAY);
-    assert_eq!(pending_gate_wait("codex", "prompt_has_text", false), RETRY_DELAY);
+    assert_eq!(pending_gate_wait("codex", "prompt_has_text", false), CODEX_LOCAL_POLL);
+    assert_eq!(pending_gate_wait("codex", "not_ready", true), CODEX_LOCAL_POLL);
     assert_eq!(pending_gate_wait("claude", "not_idle", false), RETRY_DELAY);
+}
+
+#[cfg(test)]
+#[test]
+fn codex_local_deadline_survives_redraws_and_wakes_on_clear() {
+    let now = Instant::now();
+    let due = now + CODEX_LOCAL_POLL;
+    let blocked = GateResult { safe: false, reason: "not_ready" };
+    for ms in [0, 250, 900, 1500, 2750] {
+        let tick = now + Duration::from_millis(ms);
+        assert_eq!(codex_next_check(tick, due, blocked.reason, &blocked, None), GateWait::Sleep(due - tick));
+    }
+    let draft = GateResult { safe: false, reason: "prompt_has_text" };
+    assert_eq!(codex_next_check(now, due, blocked.reason, &draft, None), GateWait::Local);
+    assert_eq!(codex_next_check(due, due, blocked.reason, &blocked, None), GateWait::Poll);
+    assert_eq!(codex_next_check(now, due, blocked.reason, &blocked, Some(now)), GateWait::Local);
+    assert_eq!(codex_next_check(now, due, blocked.reason, &GateResult { safe: true, reason: "ok" }, None), GateWait::Poll);
+    assert!(codex_local_gate_wait("codex", blocked.reason));
+    assert!(!codex_local_gate_wait("codex", "not_idle"));
+    assert!(!codex_local_gate_wait("claude", blocked.reason));
 }
 
 pub(crate) struct DeliveryHost {
@@ -246,13 +343,14 @@ fn drive_recovery(host: &DeliveryHost, state: &DeliveryState, config: &ToolConfi
     }
 
     let submitted = (|| {
-        if !evaluate_gate(config, state, true).safe || !inject_text(state.inject_port, PROMPT) {
+        let Some((request, user)) = codex_guard(state, WakeKey::RecoveryMarker, None) else { return Ok(false) };
+        if request.send(state.inject_port) != WakeWrite::Written {
             return Ok(false);
         }
         let deadline = Instant::now() + Duration::from_secs(2);
         while Instant::now() < deadline {
             let screen = state.screen.read().unwrap();
-            if state.is_user_active(&screen) || screen.approval || screen.nav_overlay {
+            if state.is_user_active(&screen) || screen.approval || screen.nav_overlay || screen.codex_user_input != user {
                 return Ok(false);
             }
             let ownership = submit_ownership(&screen, PROMPT, false);
@@ -262,8 +360,7 @@ fn drive_recovery(host: &DeliveryHost, state: &DeliveryState, config: &ToolConfi
                     if !host.recovery(ticket, HostAction::Enter)? {
                         return Ok(false);
                     }
-                    let screen = state.screen.read().unwrap();
-                    return Ok(!state.is_user_active(&screen) && !screen.approval && !screen.nav_overlay && submit_ownership(&screen, PROMPT, false) == PromptOwnership::Exclusive && inject_enter(state.inject_port));
+                    return Ok(codex_guard(state, WakeKey::RecoveryEnter, Some(user)).is_some_and(|(request, _)| request.send(state.inject_port) == WakeWrite::Written));
                 }
                 PromptOwnership::Mixed => return Ok(false),
                 _ => std::thread::sleep(Duration::from_millis(20)),
@@ -592,13 +689,20 @@ pub(crate) fn run_delivery_loop_client(
         let mut participant = host.snapshot.actor.participant.clone();
         let mut idle_snapshot_ready = false;
         let mut next_completion_probe = Instant::now();
+        let mut codex_poll_at = Instant::now();
+        let mut codex_local_recheck = false;
+        let mut codex_wake_user = None;
 
         while running.load(Ordering::Acquire) {
             // Looking at screen rendering requires no daemon state. Refresh
             // before any Enter and again when verifying the mailbox cursor.
+            let local_recheck = std::mem::take(&mut codex_local_recheck);
             if !matches!(delivery_state, State::WaitTextRender | State::WaitTextClear) {
-                if !std::mem::take(&mut idle_snapshot_ready) && !host.refresh_for_delivery(notify, &running) {
-                    continue;
+                if !std::mem::take(&mut idle_snapshot_ready) && !local_recheck {
+                    if !host.refresh_for_delivery(notify, &running) {
+                        continue;
+                    }
+                    codex_poll_at = Instant::now() + CODEX_LOCAL_POLL;
                 }
                 if host.snapshot.actor.participant != participant {
                     participant = host.snapshot.actor.participant.clone();
@@ -617,6 +721,7 @@ pub(crate) fn run_delivery_loop_client(
             }
 
             if config.tool == "codex"
+                && !local_recheck
                 && matches!(delivery_state, State::Idle | State::Pending)
                 && let Some(ticket) = &host.snapshot.recovery
                 && let Err(error) = drive_recovery(host, state, config, ticket)
@@ -660,12 +765,12 @@ pub(crate) fn run_delivery_loop_client(
                     host.heartbeat();
                     // Check for pending messages
                     let has_pending = !host.snapshot.pending.is_empty();
+                    codex_poll_at = Instant::now() + CODEX_LOCAL_POLL;
+                    idle_snapshot_ready = true;
                     if has_pending {
                         log_info("native", "delivery.wake", &format!("Woke up (notified={}) with pending messages for {}", notified, current_name));
                         delivery_state = State::Pending;
                     } else {
-                        // The next idle iteration can act on this same observation.
-                        idle_snapshot_ready = true;
                         if notified {
                             log_info("native", "delivery.wake_no_pending", &format!("Woke up (notified=true) but no pending messages for {}", current_name));
                         }
@@ -676,6 +781,13 @@ pub(crate) fn run_delivery_loop_client(
                     // Check if still pending
                     if host.snapshot.pending.is_empty() {
                         log_info("native", "delivery.no_pending", &format!("No pending messages for {}", current_name));
+                        if config.tool == "codex" {
+                            if !last_block_context.is_empty() {
+                                let _ = host.clear_gate(&last_block_context);
+                                last_block_context.clear();
+                            }
+                            block_since = None;
+                        }
                         delivery_state = State::Idle;
                         attempt = 0;
                         continue;
@@ -697,6 +809,13 @@ pub(crate) fn run_delivery_loop_client(
                     // Recheck periodically in case a wake is lost, without
                     // polling for local screen changes that cannot open it.
                     let retry = pending_gate_wait(&config.tool, gate.reason, host.snapshot.recovery.is_some());
+
+                    let local_wait = codex_local_gate_wait(&config.tool, gate.reason);
+                    if local_recheck && !local_wait {
+                        // No write or eligibility based on a cached actor. A
+                        // newly open gate must re-resolve the exact mailbox.
+                        continue;
+                    }
 
                     if gate.safe {
                         log_info("native", "delivery.gate_pass", &format!("Gate passed, injecting to port {}", state.inject_port));
@@ -732,7 +851,22 @@ pub(crate) fn run_delivery_loop_client(
                             _ => host.wake_preview(input_box_width),
                         };
 
-                        if inject_text(state.inject_port, &text) {
+                        let write = if config.tool == "codex" {
+                            codex_guard(state, WakeKey::Marker, None).map_or(WakeWrite::Deferred, |(request, user)| {
+                                codex_wake_user = Some(user);
+                                request.send(state.inject_port)
+                            })
+                        } else if inject_text(state.inject_port, &text) {
+                            WakeWrite::Written
+                        } else {
+                            WakeWrite::Deferred
+                        };
+                        if write == WakeWrite::Unknown {
+                            log_warn("native", "delivery.marker_write_unknown", "Wake write outcome unknown; waiting for mailbox progress");
+                            delivery_state = unconfirmed_prompt_state(&config.tool);
+                            continue;
+                        }
+                        if write == WakeWrite::Written {
                             log_info("native", "delivery.injected", &format!("Injected '{}' (len={}, inject_attempt={})", truncate_chars(&text, 40), text.len(), inject_attempt));
                             injected_text = text;
                             submitting_leftover = false;
@@ -741,15 +875,21 @@ pub(crate) fn run_delivery_loop_client(
                             delivery_state = State::WaitTextRender;
                             continue; // Skip retry delay - now in WaitTextRender phase
                         } else {
-                            log_warn("native", "delivery.inject_fail", "TCP inject failed");
+                            log_warn("native", "delivery.inject_fail", "Wake write was deferred");
                             attempt += 1;
+                            if config.tool == "codex" {
+                                notify.wait(Duration::from_secs(1));
+                                continue;
+                            }
                         }
                     } else {
                         // Gate blocked - refresh liveness so we don't go stale while
                         // waiting (DB status is still "listening" until the message is
                         // delivered and hooks fire). This path can hold for a long time
                         // behind an approval prompt, so it publishes wake state too.
-                        host.heartbeat();
+                        if !local_recheck {
+                            host.heartbeat();
+                        }
 
                         // Log gate failure
                         if attempt == 0 || attempt.is_multiple_of(5) {
@@ -800,10 +940,10 @@ pub(crate) fn run_delivery_loop_client(
                             && let Some(since) = block_since
                         {
                             // After 2 seconds of blocking, update TUI status context
-                            if since.elapsed().as_secs_f64() >= 2.0 {
+                            if since.elapsed() >= GATE_REPORT_AFTER {
                                 let context = format!("tui:{}", gate.reason.replace('_', "-"));
                                 if context != last_block_context {
-                                    let detail = gate_block_detail(gate.reason);
+                                    let detail = if config.tool == "codex" && gate.reason == "not_ready" { "cannot confirm the current input box" } else { gate_block_detail(gate.reason) };
                                     match host.block_gate(&context, detail) {
                                         Ok(true) => last_block_context = context,
                                         Ok(false) => {}
@@ -814,6 +954,12 @@ pub(crate) fn run_delivery_loop_client(
                         }
 
                         attempt += 1;
+                    }
+
+                    if local_wait {
+                        let report_at = block_since.map(|at| at + GATE_REPORT_AFTER).filter(|&at| at > Instant::now());
+                        codex_local_recheck = wait_for_codex_input(notify, &running, state, config, gate.reason, codex_poll_at, report_at) == GateWait::Local;
+                        continue;
                     }
 
                     // TCP notify handles the fast path.
@@ -873,6 +1019,21 @@ pub(crate) fn run_delivery_loop_client(
                             delivery_state = State::WaitTextClear;
                             phase_started_at = Instant::now();
                             enter_attempt = 0;
+
+                            if config.tool == "codex" {
+                                let still_pending = host.snapshot.actor.record.status == ST_LISTENING && !host.snapshot.pending.is_empty();
+                                let request = codex_wake_user.and_then(|user| codex_guard(state, WakeKey::Enter, Some(user)));
+                                if !still_pending || request.is_none() {
+                                    log_warn("native", "delivery.prompt_ownership_lost", "Codex wake is no longer eligible for Enter");
+                                    delivery_state = unconfirmed_prompt_state(&config.tool);
+                                } else if let Some((request, _)) = request
+                                    && request.send(state.inject_port) == WakeWrite::Unknown
+                                {
+                                    log_warn("native", "delivery.enter_write_unknown", "Enter write outcome unknown; waiting for mailbox progress");
+                                    delivery_state = unconfirmed_prompt_state(&config.tool);
+                                }
+                                continue;
+                            }
 
                             if !user_active && !approval {
                                 log_info("native", "delivery.send_enter", "Sending Enter key");
@@ -949,6 +1110,23 @@ pub(crate) fn run_delivery_loop_client(
                                 delivery_state = unconfirmed_prompt_state(&config.tool);
                                 inject_attempt += 1;
                                 attempt += 1;
+                                continue;
+                            }
+
+                            if config.tool == "codex" {
+                                let still_pending = host.snapshot.actor.record.status == ST_LISTENING && !host.snapshot.pending.is_empty();
+                                let request = codex_wake_user.and_then(|user| codex_guard(state, WakeKey::Enter, Some(user)));
+                                if let Some((request, _)) = request.filter(|_| still_pending) {
+                                    match request.send(state.inject_port) {
+                                        WakeWrite::Written | WakeWrite::Deferred => {
+                                            enter_attempt += 1;
+                                            phase_started_at = Instant::now();
+                                        }
+                                        WakeWrite::Unknown => delivery_state = unconfirmed_prompt_state(&config.tool),
+                                    }
+                                } else {
+                                    delivery_state = unconfirmed_prompt_state(&config.tool);
+                                }
                                 continue;
                             }
 

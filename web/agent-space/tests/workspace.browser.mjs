@@ -70,7 +70,10 @@ try {
   await page.mouse.wheel(0, 10_000);
   await a.getByText(/^\[luna \/ 18\]/).waitFor();
   assert.equal(await button('更多消息', a).count(), 0, 'ordinary continuation should not require a paging button');
-  assert.equal(await b.getByText(/^\[mora \/ 18\]/).count(), 0);
+  await b.getByText(/^\[mora \/ 18\]/).waitFor();
+  const readerReads = fixture.calls.filter(call => call.path.endsWith('/message-history')).slice(-2);
+  assert.deepEqual(new Set(readerReads.map(call => call.query.incarnation)), new Set(['101', '102']));
+  assert(readerReads.every(call => call.query.before === undefined), 'both panes start from their own latest page');
   await history(a).evaluate(element => {
     element.scrollTop = element.scrollHeight - element.clientHeight;
     element.dispatchEvent(new Event('scroll', { bubbles: true }));
@@ -213,7 +216,7 @@ try {
   data.status = 'passed';
 } catch (error) {
   data.status = 'failed';
-  data.failure = String(error);
+  data.failure = error.stack ?? String(error);
   await snap('failure').catch(() => {});
   process.exitCode = 1;
 } finally {

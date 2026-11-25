@@ -576,7 +576,7 @@ impl Proxy {
             let mut tail_stale = false;
             let refresh = |screen: &ScreenTracker| {
                 if let Ok(mut s) = screen_snapshot.write() {
-                    *s = screen.get_screen_dump(target.name(), inject_port);
+                    *s = screen.get_screen_dump(target.name(), launch_phase.load(Ordering::Acquire));
                 }
             };
             let publish = |a: bool| shared::publish_approval_status(a, instance.as_deref(), &current_status);
@@ -643,6 +643,9 @@ impl Proxy {
                         if let Some((r, c)) = pending_resize.write().ok().and_then(|mut g| g.take()) {
                             trace::note(Hop::Mode, &format!("resize {c}x{r}"));
                             screen.resize(r, c);
+                            if target.name() == "codex" {
+                                shared::invalidate_codex_resize(&screen_state, &screen);
+                            }
                         }
 
                         // Strip the child's Win32-input/focus mode-set sequences
@@ -706,7 +709,7 @@ impl Proxy {
                         // Latch the ready signal for the delivery coordinator. A
                         // latch never regresses (unlike re-reading a screen flag
                         // that can flicker during redraws).
-                        if !ready_signaled.load(Ordering::Acquire) && screen.is_ready() {
+                        if !ready_signaled.load(Ordering::Acquire) && screen_state.read().is_ok_and(|state| state.ready) {
                             ready_signaled.store(true, Ordering::Release);
                         }
 
@@ -786,6 +789,9 @@ impl Proxy {
         thread::spawn(move || {
             let forward = |bytes: &[u8]| {
                 trace::bytes(Hop::Input, bytes);
+                if target.name() == "codex" {
+                    shared::note_user_keystroke(&target, &screen_state, &|_| {});
+                }
                 if let Ok(mut w) = writer.lock() {
                     let _ = w.write_all(bytes);
                     let _ = w.flush();
@@ -799,7 +805,7 @@ impl Proxy {
                 // let a routine keypress race out an approval edge arriving in
                 // the same window.
                 let publish = |a: bool| shared::publish_approval_status(a, instance.as_deref(), &current_status);
-                if shared::note_user_keystroke(&target, &screen_state, &publish) {
+                if target.name() != "codex" && shared::note_user_keystroke(&target, &screen_state, &publish) {
                     approval_clear_requested.store(true, Ordering::Release);
                 }
             };
@@ -865,6 +871,9 @@ impl Proxy {
                     let completed = match inject_server.read_client(index) {
                         Ok(InjectResult::Inject(text)) => {
                             trace::bytes(Hop::Inject, text.as_bytes());
+                            if target.name() == "codex" {
+                                shared::note_user_keystroke(&target, &screen_state, &|_| {});
+                            }
                             if let Ok(mut w) = writer.lock() {
                                 let _ = w.write_all(text.as_bytes());
                                 let _ = w.flush();
@@ -888,6 +897,24 @@ impl Proxy {
                                 QueryCommand::Screen => {
                                     let dump = screen_snapshot.read().map(|s| s.clone()).unwrap_or_default();
                                     q.respond(&dump);
+                                }
+                                QueryCommand::GuardedWake(request) => {
+                                    use super::inject::WakeWrite;
+                                    // Observe the user-input generation only
+                                    // after gaining the same writer as stdin.
+                                    let result = if target.name() == "codex"
+                                        && let Ok(mut w) = writer.lock()
+                                    {
+                                        let bytes = screen_state.read().ok().and_then(|state| request.bytes(&state));
+                                        match bytes {
+                                            Some(bytes) if w.write_all(bytes).and_then(|_| w.flush()).is_ok() => WakeWrite::Written,
+                                            Some(_) => WakeWrite::Unknown,
+                                            None => WakeWrite::Deferred,
+                                        }
+                                    } else {
+                                        WakeWrite::Deferred
+                                    };
+                                    q.respond(result.response());
                                 }
                                 QueryCommand::Unknown => q.respond("error: unknown command\n"),
                             }

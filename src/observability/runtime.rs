@@ -561,8 +561,6 @@ pub(crate) enum RuntimeConnectionKind {
 }
 #[derive(Clone, Copy, Debug)]
 pub(crate) enum ConnectionUpdate {
-    HelloValidated,
-    ReadyWritten,
     ReadingOperation,
     AwaitingReply,
     Closed(ConnectionCloseReason),
@@ -686,7 +684,7 @@ impl From<&crate::service::ServiceError> for ServiceFailureClass {
             E::Forbidden(_) => Self::Forbidden,
             E::NotFound(_) => Self::NotFound,
             E::Conflict(_) => Self::Conflict,
-            E::StaleFence => Self::StaleFence,
+            E::StaleFence | E::StaleGeneration => Self::StaleFence,
             E::Unavailable(_) => Self::Unavailable,
             E::Unsupported(_) => Self::Unsupported,
             E::OutcomeUnknown(_) => Self::OutcomeUnknown,

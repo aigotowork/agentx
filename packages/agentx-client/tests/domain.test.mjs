@@ -9,7 +9,7 @@ const reference = { name: 'mira', incarnation: '18446744073709551615' };
 const requestId = '28e0dc4a-da88-49ee-af5d-b56eddb102d8';
 const workspaceKey = '/work/target';
 const respond = body => Response.json(body);
-const descriptor = { scope: expectedScope, generation, project: '/work', tools: [], profiles: [], max_page: 100, max_text: 65536 };
+const descriptor = { scope: expectedScope, generation, project: '/work', tools: [], profiles: [], supports_workspace_members: true, supports_message_history: true, max_page: 100, max_text: 65536 };
 const view = (agent, workspace) => ({
   agent, collaboration: { status: 'adopted', workspace, role: null }, directory: '/cwd/unrelated',
   tool: 'test', status: 'listening', stored_status: 'listening', status_context: '',
@@ -18,38 +18,6 @@ const view = (agent, workspace) => ({
 
 // Scripted HTTP responses exercise the public package's projections and
 // continuation; native membership, admission and effect count are separate evidence.
-test('empty global projection retains selection-bound continuation and exposes the exact member', async () => {
-  let calls = 0;
-  const scope = await selectAgentXScope({ baseUrl, expectedScope, async fetch(request) {
-    const url = new URL(request.url);
-    if (url.pathname === '/api/v1/management') return respond(descriptor);
-    assert.equal(url.pathname, '/api/v1/agents');
-    assert.equal(url.searchParams.get('generation'), generation);
-    assert.equal(url.searchParams.get('limit'), '1');
-    calls++;
-    if (calls === 1) {
-      assert.equal(url.searchParams.get('after'), null);
-      return respond({ generation, agents: [view({ name: 'elsewhere', incarnation: '1' }, '/work/other')], current_complete: false, next: '0:elsewhere' });
-    }
-    assert.equal(url.searchParams.get('after'), '0:elsewhere');
-    return respond({ generation, agents: [view(reference, workspaceKey)], current_complete: true, next: null });
-  } });
-  const workspace = scope.workspace(workspaceKey);
-  const first = await workspace.members({ limit: 1 });
-  assert.equal(first.members.length, 0);
-  assert.equal(first.coverage.scanned, 1);
-  assert.ok(first.coverage.next);
-  await assert.rejects(scope.workspace('/work/other').members({ limit: 1, after: first.coverage.next }),
-    error => error instanceof DomainReferenceError && error.code === 'ReferenceMismatch');
-  const result = await workspace.members({ limit: 1, after: first.coverage.next });
-  assert.equal(calls, 2);
-  assert.equal(result.coverage.next, null);
-  const [{ agent, snapshot }] = result.members;
-  assert.equal(agent.address.reference.incarnation, reference.incarnation);
-  assert.equal(snapshot.facts.directory, '/cwd/unrelated');
-  assert.deepEqual(snapshot.membership, { kind: 'adopted', workspace: workspaceKey, role: null });
-});
-
 test('detached command survives response loss and recovery observes only its original receipt', async () => {
   let posted;
   let queries = 0;
@@ -93,6 +61,7 @@ function scripted(steps, selectedDescriptor = descriptor) {
   return selectAgentXScope({ baseUrl, expectedScope, async fetch(request) {
     const url = new URL(request.url);
     if (url.pathname === '/api/v1/management') return respond(selectedDescriptor);
+    assert.equal(request.headers.get('x-agentx-expected-scope'), encodeURIComponent(selectedDescriptor.scope));
     assert.ok(steps.length, `Unexpected ${request.method} ${url.pathname}`);
     return steps.shift()(request, url);
   } });
@@ -310,11 +279,7 @@ test('explicit listener verification observes a reset without rebinding scope ad
   await assert.rejects(scope.verify(), { code: 'ScopeMismatch' });
 });
 
-test('native member pages are capability gated and bind the exact Workspace and selector', async () => {
-  const older = await scripted([]);
-  assert.equal(older.supportsWorkspaceMembers, false);
-  await assert.rejects(older.workspace('global').memberPage(), { code: 'UnsupportedCapability' });
-
+test('member pages bind the exact Workspace and selector', async () => {
   const nativeCursor = 'workspace-members:fixture:0:mira';
   const steps = [(_, url) => {
     assert.equal(url.pathname, '/api/v1/workspaces/members');
@@ -328,7 +293,6 @@ test('native member pages are capability gated and bind the exact Workspace and 
     return respond({ generation, agents: [view({ name: 'elsewhere', incarnation: '2' }, '/work/other')], current_complete: true, next: null });
   }];
   const scope = await scripted(steps, { ...descriptor, supports_workspace_members: true });
-  assert.equal(scope.supportsWorkspaceMembers, true);
   const workspace = scope.workspace('global');
   const page = await workspace.memberPage({ currentOnly: true, limit: 1 });
   assert.equal(page.coverage.kind, 'native-workspace-members');
@@ -338,7 +302,6 @@ test('native member pages are capability gated and bind the exact Workspace and 
   const after = page.coverage.next;
   await assert.rejects(scope.workspace('/work/other').memberPage({ currentOnly: true, after }), { code: 'ReferenceMismatch' });
   await assert.rejects(workspace.memberPage({ currentOnly: false, after }), { code: 'ReferenceMismatch' });
-  await assert.rejects(workspace.members({ after }), { code: 'InvalidReference' });
   await assert.rejects(workspace.memberPage({ currentOnly: true, after: { workspace: workspace.address, position: '0:global' } }), { code: 'InvalidReference' });
   await assert.rejects(workspace.memberPage({ currentOnly: true, after }), { code: 'InconsistentResponse' });
   assert.equal(steps.length, 0);
@@ -430,13 +393,45 @@ test('latest and older message history keep distinct exact cursors and a forward
   assert.equal(steps.length, 0);
 });
 
-test('a descriptor without message history still supports the existing forward read', async () => {
-  const steps = [(_, url) => {
-    assert.equal(url.pathname, '/api/v1/agents/mira/messages');
-    return respond({ generation, messages: [], next_after: '0', has_more: false });
-  }];
-  const scope = await scripted(steps);
-  assert.equal(scope.descriptor.supports_message_history, undefined);
-  assert.equal((await current(scope).messages()).checkpoint.position, '0');
-  assert.equal(steps.length, 0);
+test('a missing optional read only disables its own method', async () => {
+  const workspacePage = { generation, agents: [view(reference, workspaceKey)], next: null, current_complete: true };
+  const historyPage = { generation, messages: [], live_after: '7', next_before: null };
+  for (const [missing, capability] of [['supports_workspace_members', 'workspace-members'], ['supports_message_history', 'message-history']]) {
+    const steps = [
+      (_, url) => { assert.equal(url.pathname, '/api/v1/agents'); return respond(workspacePage); },
+      (_, url) => { assert.equal(url.pathname, '/api/v1/agents/mira'); return respond(view(reference, workspaceKey)); },
+      (_, url) => { assert.equal(url.pathname, '/api/v1/agents/mira/messages'); return respond({ generation, messages: [], next_after: '7', has_more: false }); },
+      (_, url) => {
+        assert.equal(url.pathname, capability === 'workspace-members' ? '/api/v1/agents/mira/message-history' : '/api/v1/workspaces/members');
+        return respond(capability === 'workspace-members' ? historyPage : workspacePage);
+      },
+    ];
+    const scope = await scripted(steps, { ...descriptor, [missing]: undefined });
+    const workspace = scope.workspace(workspaceKey), agent = current(scope);
+    const unavailable = capability === 'workspace-members' ? workspace.memberPage() : agent.messageHistory();
+    await assert.rejects(unavailable, { code: 'UnsupportedCapability', capability });
+    assert.equal((await scope.agents()).agents.length, 1);
+    assert.equal((await agent.snapshot()).facts.can_send, true);
+    assert.equal((await agent.messages()).checkpoint.position, '7');
+    if (capability === 'workspace-members') assert.equal((await agent.messageHistory()).liveAfter.position, '7');
+    else {
+      const { members } = await workspace.memberPage();
+      await assert.rejects(members[0].agent.messageHistory(), { code: 'UnsupportedCapability', capability });
+    }
+    assert.equal(steps.length, 0);
+  }
+});
+
+test('explicit verification keeps the pinned capabilities and a server refusal is local to the read', async () => {
+  let observed = descriptor;
+  const scope = await selectAgentXScope({ baseUrl, expectedScope, async fetch(request) {
+    const path = new URL(request.url).pathname;
+    if (path === '/api/v1/management') return respond(observed);
+    assert.equal(path, '/api/v1/agents/mira/message-history');
+    return Response.json({ error: { code: 'Unsupported', message: 'operation unavailable' } }, { status: 422 });
+  } });
+  observed = { ...descriptor, supports_message_history: false };
+  assert.equal((await scope.verify()).supports_message_history, false);
+  assert.equal(scope.descriptor.supports_message_history, true);
+  await assert.rejects(current(scope).messageHistory(), { code: 'UnsupportedCapability', capability: 'message-history' });
 });

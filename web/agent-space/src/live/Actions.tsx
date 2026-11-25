@@ -38,10 +38,10 @@ function CloudStatus({ live, onDisconnect }: { live: CloudWorkbench; onDisconnec
       : <button type="button" className="live-toolbar-refresh" onClick={live.refreshData} aria-label="刷新真实数据" title="刷新真实数据">↻</button>}
     {issue && <span className="live-error" role="status">{issue}</span>}
     <details className="live-receipts">
-      <summary aria-label="连接 · 回执">{live.access === 'admin' ? '回执' : 'Scope 只读'} {pending || ''} ⓘ</summary>
+      <summary aria-label="连接 · 回执">{live.access === 'admin' ? '回执' : 'Namespace 只读'} {pending || ''} ⓘ</summary>
       <div>
         <code>{scope}</code><small>{generation}</small>
-        <small>{live.access === 'admin' ? '管理员访问' : 'Scope 访问 · 只读'}</small>
+        <small>{live.access === 'admin' ? '管理员访问' : 'Namespace 访问 · 只读'}</small>
         {entries.map(entry => {
           const { identity, receipt } = entry;
           const result = receipt?.outcome;
@@ -50,9 +50,10 @@ function CloudStatus({ live, onDisconnect }: { live: CloudWorkbench; onDisconnec
           return <section key={identity.request_id}>
             <strong>{({ launch: '启动', stop: '停止', add_workspace: '添加工作区' })[identity.kind]} · {controlStatus(entry)}</strong>
             <code>{identity.request_id}</code><small>{identity.host} · {identity.installation_id}</small>
-            {command?.kind === 'launch' && <code>{command.workspace}/{command.working_directory}</code>}
+            {command?.kind === 'launch' && <code>{command.workspace_id}{command.working_directory && '/' + command.working_directory}</code>}
+            {command?.kind === 'add_workspace' && <small>{command.name} · {command.parent}/{command.directory}</small>}
             {result?.status === 'succeeded' && <code>@{result.agent.name} · {result.agent.host} · {result.agent.incarnation}</code>}
-            {result?.status === 'workspace_added' && <code>{result.alias}</code>}
+            {result?.status === 'workspace_added' && <code>{result.workspace_id}</code>}
             {result && 'code' in result && <small title={result.code}>{problem || result.code}</small>}
             {entry.issue && <small role="status">{entry.issue}</small>}
             <button type="button" disabled={entry.busy || live.connection === 'reset'} onClick={() => void live.lookupControl(entry)}>查询原回执</button>

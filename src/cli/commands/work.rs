@@ -150,16 +150,16 @@ fn execute(operation: Operation) -> anyhow::Result<work::Response> {
     invocation.cwd = project;
     invocation.explicit_name = selection.name.clone();
     let client = Client::connect(&scope, invocation)?;
-    let generation = client.info().database_generation.clone();
+    let current_generation = || client.generation().map(str::to_owned);
     let reference = |id: String, generation: String| work::WorkRef { scope: scope_text.clone(), generation, project: project_text.clone(), id };
     let read = |generation, read| work::Request::Read { generation, project: project_text.clone(), read };
     let request = match operation {
         Operation::Show { work, generation: expected, .. } => {
-            let generation = expected.unwrap_or(generation);
+            let generation = expected.map_or_else(current_generation, Ok)?;
             read(generation.clone(), work::Read::Detail(reference(work, generation)))
         }
-        Operation::List { limit, after, .. } => read(generation, work::Read::List(work::Page { limit, after })),
-        Operation::Candidates { limit, after, .. } => read(generation, work::Read::Candidates(work::Page { limit, after })),
+        Operation::List { limit, after, .. } => read(current_generation()?, work::Read::List(work::Page { limit, after })),
+        Operation::Candidates { limit, after, .. } => read(current_generation()?, work::Read::Candidates(work::Page { limit, after })),
         Operation::Command { generation, command_id, .. } => read(generation, work::Read::Command { command_id }),
         Operation::Report { work, generation, revision, assignment, brief, command_id, payload, .. } => {
             anyhow::ensure!(payload.len() <= work::MAX_RECORD_BYTES, "payload too large");
@@ -179,8 +179,15 @@ fn execute(operation: Operation) -> anyhow::Result<work::Response> {
             work::Request::Apply(work::CommandCall { command_id, generation: generation.clone(), project: project_text.clone(), work: work.map(|id| reference(id, generation)), expected_revision: revision, command: work::Command::Operator(command) })
         }
     };
-    match client.call(crate::service::Request::Collaboration(request))? {
-        crate::service::Response::Collaboration(response) => Ok(response),
+    let generation = match &request {
+        work::Request::Read { generation, .. } => generation,
+        work::Request::Apply(call) => &call.generation,
+    };
+    let caller = crate::service::CallerContext { request_id: crate::service::RequestId(uuid::Uuid::new_v4().to_string()), invocation: client.invocation().clone(), deadline_unix_ms: None, expected_database_generation: Some(generation.clone()) };
+    match client.call_with_context(caller, crate::service::Request::Collaboration(request)) {
+        Ok(crate::service::Response::Collaboration(response)) => Ok(response),
+        Err(crate::service::ServiceError::StaleGeneration) => Ok(work::Response::Rejected(work::Failure::StaleReference)),
+        Err(error) => Err(error.into()),
         _ => anyhow::bail!("unexpected native response"),
     }
 }

@@ -1,6 +1,7 @@
 /** @aiPurpose Read AgentX messages and Provider transcripts for one exact Agent. */
+import type { HistoryReadPage } from './read-state';
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { adoptedRoleLabel, type AgentResource, type RecordChannel, type SuppliedRecords } from "../offline/model";
+import { adoptedRoleLabel, membershipKey, type AgentResource, type RecordChannel, type SuppliedRecords } from "../offline/model";
 import { HALL_STATE_LABEL } from "../scene/model";
 import { Button, ConversationBlock, ConversationComposer } from "../../uiux/systems/space/space.web";
 import type { SpaceController } from "../offline/controller";
@@ -48,8 +49,6 @@ export function Conversation({ agent, records, channel, onChannel, draft, onDraf
   }, [model, cloud, agent.id]);
   const scrollKey = JSON.stringify([agent.id, channel]);
   const preserveScroll = !!live || workspace || !!controller.supply.roster;
-  const forwardHistory = page?.mode === 'forward';
-  const latest = page?.mode === 'latest' ? page : undefined;
   const readOnly = stopped || reset || !!cloud && !cloud.canSendTo(agent.id);
   const canCompose = !readOnly && !!live?.canSendTo(agent.id);
   const sendBlocked = !!live?.blocked(agent.id);
@@ -81,7 +80,7 @@ export function Conversation({ agent, records, channel, onChannel, draft, onDraf
   const receiptFeedback = pendingReceipt ? (receipt.issue || status === 'Unknown' ? '发送结果未确定 · 草稿已保留' : '等待发送回执…')
     : status === 'Failed' ? `发送失败 · ${receipt?.operation?.error || '草稿已保留'}` : status === 'Succeeded' ? (draft ? '上一条已发送' : '已发送') : '';
   const cloudFeedback = cloud?.messageFeedback(agent.id);
-  const cloudStatus = cloud?.access === 'scope' ? 'Scope 访问 · 只读' : cloudFeedback?.busy ? '正在提交消息…'
+  const cloudStatus = cloud?.access === 'namespace' ? 'Namespace 访问 · 只读' : cloudFeedback?.busy ? '正在提交消息…'
     : cloudFeedback?.uncertain ? '发送结果未确定 · 草稿已保留'
     : cloudFeedback?.accepted && `云端已接收 · #${cloudFeedback.accepted}`;
   const composerStatus = reset ? '连接已失效 · 草稿已保留' : stopped ? '停止历史 · 只读' : uploading ? '附件上传中…' : sendIssue || cloudStatus || receiptFeedback || (!live ? '演示 · 不发送' : !canCompose ? '当前不可发送' : sendBlocked ? '发送不可用 · 查看连接与回执' : '');
@@ -112,42 +111,40 @@ export function Conversation({ agent, records, channel, onChannel, draft, onDraf
   const historySearch = searchOpen && <HistorySearch id={searchId} query={query} index={hit} count={matches.length} onQuery={text => { setQuery(text); setSeek(undefined); }} onMove={moveMatch} onClose={() => { setSearchOpen(false); searchButton.current?.focus(); }} />;
   function continueHistory() {
     if (document.hidden || reset || page?.phase !== 'ready' || !page.more) return;
-    if (latest) {
-      if (latest.older?.phase !== 'ready') return;
-      const bookmark = controller.readerLatest.get(scrollKey);
-      if (bookmark) bookmark.following = false;
-    }
+    if (page.older?.phase !== 'ready') return;
+    const bookmark = controller.readerLatest.get(scrollKey);
+    if (bookmark) bookmark.following = false;
     retryHistory();
   }
   const retryHistory = () => model ? cloud?.moreTranscriptFor(agent.id) : live?.moreMessagesFor(agent.id);
   const recordLabel = model ? "记录" : "消息";
-  const olderBoundary = latest && <OlderBoundary page={latest} label={recordLabel} reset={reset} onRead={continueHistory} onRetry={retryHistory} />;
-  const olderStatus = latest?.older?.phase === 'error' ? <>
-    <small title={latest.older.error}>更早{recordLabel}读取失败</small>
+  const olderBoundary = page && <OlderBoundary page={page} label={recordLabel} reset={reset} onRead={continueHistory} onRetry={retryHistory} />;
+  const olderStatus = page?.older?.phase === 'error' ? <>
+    <small title={page.older.error}>更早{recordLabel}读取失败</small>
     <Button disabled={reset} onClick={event => {
       event.currentTarget.closest('.conversation-layout')?.querySelector<HTMLElement>('.conversation-history')?.focus({ preventScroll: true });
       retryHistory();
     }}>重试更早{recordLabel}</Button>
-  </> : latest?.older?.phase === 'loading' && <small>正在读取更早{recordLabel}…</small>;
-  const forwardBoundary = forwardHistory && <MessageBoundary phase={page.phase} more={page.more} visibleCount={items?.length ?? 0} error={items ? page.error : undefined} reset={reset} stopped={stopped} onRetry={retryHistory} />;
-  const liveIssue = latest?.live?.phase === 'error' && <Button title={latest.live.error} disabled={reset} onClick={() => model ? void cloud?.refreshTranscript(agent.id) : live?.retryMessagesLive(agent.id)}>重试新{recordLabel}</Button>;
+  </> : page?.older?.phase === 'unavailable' ? <small role="status">{page.older.error}</small>
+    : page?.older?.phase === 'loading' && <small>正在读取更早{recordLabel}…</small>;
+  const liveIssue = page?.live?.phase === 'error' ? <Button title={page.live.error} disabled={reset} onClick={() => model ? void cloud?.refreshTranscript(agent.id) : live?.retryMessagesLive(agent.id)}>重试新{recordLabel}</Button>
+    : page?.phase === 'ready' && page.live?.phase === 'unavailable' && <small role="status">{page.live.error}</small>;
   const transcript = model && local && <TranscriptControls agent={agent} live={local} />;
   const showRecords = !!cloud || !(channel === 'model' && live && records.status === 'unavailable');
-  const legacyNotice = forwardHistory && <p className="history-order">当前服务无法直达最新 · 从最早记录开始</p>;
-  const history = <>{olderBoundary}<BoundWork agent={agent} />{transcript}{legacyNotice}{showRecords && <RecordReader key={scrollKey} agent={agent} records={records} channel={channel} followEnd={!preserveScroll} sourceInFacts={workspace} match={searchOpen ? seek?.id : undefined} forward={forwardHistory} partial={page?.more} />}{forwardBoundary}</>;
+  const history = <>{olderBoundary}<BoundWork agent={agent} />{transcript}{showRecords && <RecordReader key={scrollKey} agent={agent} records={records} channel={channel} followEnd={!preserveScroll} sourceInFacts={workspace} match={searchOpen ? seek?.id : undefined} partial={page?.more} />}</>;
   const relations = local && <RelationDisclosure key={agent.id} agent={agent} live={local} controller={controller} onOpenRelated={onOpenRelated} />;
   const actions = live && <AgentActions live={live} agent={agent} />;
   const facts = <AgentFacts key={agent.id} agent={agent} controller={controller} group={workspace ? disclosureGroup : undefined} syncDetail={!workspace || snapshot.selectedId === agent.id} source={workspace ? identity.source : undefined} provenance={workspace && records.status === 'available' ? records.provenance : undefined} actions={actions} />;
   const fork = local && <ForkControl agent={agent} live={local} />;
   const forkResult = local && <ForkFeedback key={agent.id} agent={agent} live={local} onOpen={onOpenRelated ?? controller.openExact} />;
-  const latestScroll = latest?.token && { token: latest.token, arrivals: latest.arrivals ?? 0, bookmarks: controller.readerLatest,
-    beforeLayout: `${latest.more}:${latest.older?.phase}:${latest.emptyOlder}`, firstId: items?.[0]?.id, onOlder: continueHistory };
-  const historyScroll = scrollPositions ? { key: scrollKey, positions: scrollPositions, anchors: controller.readerAnchors, ready: records.status === "available", forward: forwardHistory, onForward: forwardHistory ? continueHistory : undefined, seek, latest: latestScroll } : undefined;
+  const latestScroll = page?.token && { token: page.token, arrivals: page.arrivals ?? 0, bookmarks: controller.readerLatest,
+    beforeLayout: `${page.more}:${page.older?.phase}:${page.emptyOlder}`, firstId: items?.[0]?.id, onOlder: continueHistory };
+  const historyScroll = scrollPositions ? { key: scrollKey, positions: scrollPositions, anchors: controller.readerAnchors, ready: records.status === "available", seek, latest: latestScroll } : undefined;
   function chooseChannel(value: RecordChannel) { if (value !== channel) { setQuery(''); setSeek(undefined); onChannel(value); } }
   return <ConversationBlock workspace={workspace} workspaceControls={workspaceControls} identity={identity} exactLabel={exactLabel} channel={channel} onChannel={chooseChannel} onBack={onBack} backLabel={backLabel} presentationControl={presentationControl} facts={facts} primaryAction={fork} result={forkResult} relations={relations} history={history} olderStatus={olderStatus} liveIssue={liveIssue} composer={composer} historyScroll={historyScroll} historySearch={historySearch} searchTrigger={searchTrigger} />;
 }
 
-function OlderBoundary({ page, label, reset, onRead, onRetry }: { label: string; page: Extract<NonNullable<ReturnType<LiveSpace['messagePage']>>, { mode: 'latest' }>; reset: boolean; onRead(): void; onRetry(): void }) {
+function OlderBoundary({ page, label, reset, onRead, onRetry }: { label: string; page: HistoryReadPage; reset: boolean; onRead(): void; onRetry(): void }) {
   const root = useRef<HTMLDivElement>(null);
   const [short, setShort] = useState(false);
   useLayoutEffect(() => {
@@ -182,30 +179,7 @@ function OlderBoundary({ page, label, reset, onRead, onRetry }: { label: string;
   </div>;
 }
 
-function MessageBoundary({ phase, more, error, visibleCount, stopped, reset, onRetry }: { phase: 'loading' | 'ready' | 'error'; more: boolean; visibleCount: number; error?: string; stopped: boolean; reset: boolean; onRetry(): void }) {
-  const boundary = useRef<HTMLDivElement>(null);
-  const hint = useRef<HTMLSpanElement>(null);
-  const [noScroll, setNoScroll] = useState(false);
-  useLayoutEffect(() => {
-    const region = boundary.current?.closest<HTMLElement>('.conversation-history');
-    if (!region || !more || phase !== 'ready') return;
-    const measure = () => {
-      const end = hint.current?.getBoundingClientRect().bottom;
-      const availableEnd = region.getBoundingClientRect().top + region.clientHeight;
-      setNoScroll(!!region.clientHeight && end !== undefined && end + region.scrollTop <= availableEnd);
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(region);
-    const feed = region.querySelector('.history-feed');
-    if (feed) observer.observe(feed);
-    return () => observer.disconnect();
-  }, [more, phase, visibleCount]);
-  if (phase === 'error') return <div className="history-boundary" data-state="error">{error && <span role="status">后续消息读取失败 · {error}</span>}<button type="button" disabled={reset} onClick={onRetry}>重试消息</button></div>;
-  if (reset || phase === 'loading' && !visibleCount) return null;
-  const text = phase === 'loading' ? '正在读取后续消息…' : more ? `已读入 ${visibleCount} 条` : visibleCount ? stopped ? '已到历史末尾' : '已到当前记录末尾' : '';
-  return text && <div ref={boundary} className="history-boundary" data-state={phase}><span ref={hint} role="status">{text}{more && phase === 'ready' && !noScroll && ' · 向下继续'}</span>{more && phase === 'ready' && noScroll && <button type="button" onClick={onRetry}>继续读取</button>}</div>;
-}
+
 
 function MessageOptions({ intent, thread, replyTo, onEdit }: { intent: string; thread: string; replyTo: string; onEdit(patch: { intent?: string; thread?: string; replyTo?: string }): void }) {
   const customized = intent !== 'request' || !!thread || !!replyTo;
@@ -228,14 +202,17 @@ function TranscriptControls({ agent, live }: { agent: AgentResource; live?: Live
     ? <button type="button" disabled={live.blocked(agent.id, 'transcript')} onClick={() => void live.act(() => live.target('transcript', agent.id))}>读取 Transcript</button>
     : <small role="status">Transcript 不可用</small>)}{pending && <small role="status">读取中…</small>}{receipt && issue && receipt.operation?.status !== 'Failed' && <span role="status">{issue} <button type="button" disabled={!live?.canLookup(receipt)} onClick={() => void live?.lookup(receipt)}>查询原回执</button></span>}</div>;
 }
-function RecordReader({ agent, records, channel, followEnd, sourceInFacts, match, forward, partial }: { agent: AgentResource; records: SuppliedRecords; channel: RecordChannel; followEnd: boolean; sourceInFacts?: boolean; match?: string; forward?: boolean; partial?: boolean }) {
+function RecordReader({ agent, records, channel, followEnd, sourceInFacts, match, partial }: { agent: AgentResource; records: SuppliedRecords; channel: RecordChannel; followEnd: boolean; sourceInFacts?: boolean; match?: string; partial?: boolean }) {
   if (records.status === "loading") return <div className="record-availability" role="status">{channel === "messages" ? "正在读取消息" : "正在读取 Transcript"}</div>;
   if (records.status !== "available") return <div className="record-availability" role="status"><strong>{records.status === "error" ? "读取失败" : "记录未提供"}</strong><span>{records.reason}</span></div>;
   const empty = channel === "messages" ? partial ? "这一段没有消息" : "暂无 AgentX 消息" : "Transcript 为空";
-  return <>{!sourceInFacts && <details className="record-provenance"><summary>{channel === "model" ? "Provider 来源" : "AgentX 消息来源"} ⓘ</summary><span>{records.provenance}</span></details>}{records.items.length ? <History items={records.items} agentName={agent.name} followEnd={followEnd} compact={sourceInFacts} match={match} forward={forward} /> : <div className="record-availability">{empty}</div>}</>;
+  return <>{!sourceInFacts && <details className="record-provenance"><summary>{channel === "model" ? "Provider 来源" : "AgentX 消息来源"} ⓘ</summary><span>{records.provenance}</span></details>}{records.items.length ? <History items={records.items} agentName={agent.name} followEnd={followEnd} compact={sourceInFacts} match={match} /> : <div className="record-availability">{empty}</div>}</>;
 }
 function AgentFacts({ agent, controller, group, syncDetail, source, provenance, actions }: { agent: AgentResource; controller: SpaceController; group?: string; syncDetail: boolean; source?: string; provenance?: string; actions?: ReactNode }) {
-  const membership = agent.membership.kind === "host" ? "本地工作区未提供" : agent.membership.kind === "directory" ? agent.membership.path : agent.membership.kind === "global" ? "全局成员" : agent.membership.kind === "legacy" ? "旧记录 · 未记录归属" : "归属未知";
+  const place = agent.membership;
+  const project = place.kind === "project" ? controller.supply.cloudDirectory?.projects.find(office => office.id === membershipKey(agent)) : undefined;
+  const membership = place.kind === "project" ? <span title={place.workspaceId}>{project?.title ?? place.workspaceId}</span>
+    : place.kind === "directory" ? place.path : place.kind === "global" ? "全局成员" : place.kind === "unexposed" ? "项目未开放" : place.kind === "legacy" ? "旧记录 · 未记录归属" : "归属未知";
   function syncRouteDetail(event: React.ToggleEvent<HTMLDetailsElement>) {
     const snapshot = controller.getSnapshot();
     if (group && snapshot.selectedId !== agent.id) return;
@@ -247,7 +224,7 @@ function AgentFacts({ agent, controller, group, syncDetail, source, provenance, 
       <strong>{agent.title} · {agent.ref.host ? "云端实例" : agent.ref.record === "stopped" ? "停止历史" : "当前实例"}</strong>
       {actions}
       <p>{agent.description}</p>{agent.launchTitle && <p>职责 · {agent.launchTitle}</p>}{agent.role.kind === "adopted" && !agent.ref.host && <p>岗位说明 · {agent.role.description || "岗位说明未提供"}</p>}
-      <dl>{agent.ref.host ? <><dt>主机</dt><dd>{agent.ref.host}</dd><dt>Scope 代次</dt><dd>{agent.ref.generation}</dd><dt>实例</dt><dd>{agent.ref.incarnation}</dd></> : source && <><dt>实例来源</dt><dd>{source}</dd></>}{provenance && <><dt>记录来源</dt><dd>{provenance}</dd></>}<dt>成员归属</dt><dd>{membership}</dd><dt>独立工作目录</dt><dd>{agent.cwd ?? "未提供"}</dd><dt>采用岗位</dt><dd>{adoptedRoleLabel(agent.role)}</dd>{agent.role.kind === "adopted" && !agent.ref.host && <><dt>采用来源 / 快照</dt><dd>{agent.role.source}<br />{agent.role.revision}</dd><dt>Role 启动配置引用</dt><dd>{agent.role.profile}</dd></>}<dt>采用的启动配置</dt><dd>{agent.profile ?? "未提供"}</dd><dt>工具 / 观测模型</dt><dd>{agent.tool} / {agent.model ?? "模型未提供"}</dd><dt>精确引用</dt><dd><code>{agent.id}</code><CopyButton text={agent.id} /></dd></dl>
+      <dl>{agent.ref.host ? <><dt>主机</dt><dd>{agent.ref.host}</dd><dt>Namespace 代次</dt><dd>{agent.ref.generation}</dd><dt>实例</dt><dd>{agent.ref.incarnation}</dd></> : source && <><dt>实例来源</dt><dd>{source}</dd></>}{provenance && <><dt>记录来源</dt><dd>{provenance}</dd></>}<dt>成员归属</dt><dd>{membership}</dd><dt>独立工作目录</dt><dd>{agent.cwd ?? "未提供"}</dd><dt>采用岗位</dt><dd>{adoptedRoleLabel(agent.role)}</dd>{agent.role.kind === "adopted" && !agent.ref.host && <><dt>采用来源 / 快照</dt><dd>{agent.role.source}<br />{agent.role.revision}</dd><dt>Role 启动配置引用</dt><dd>{agent.role.profile}</dd></>}<dt>采用的启动配置</dt><dd>{agent.profile ?? "未提供"}</dd><dt>工具 / 观测模型</dt><dd>{agent.tool} / {agent.model ?? "模型未提供"}</dd><dt>精确引用</dt><dd><code>{agent.id}</code><CopyButton text={agent.id} /></dd></dl>
       {!group && <span>状态不代表任务验收。</span>}
     </div>
   </details>;

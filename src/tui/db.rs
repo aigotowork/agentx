@@ -1,27 +1,10 @@
 //! Typed daemon-backed TUI data source; preserves the last snapshot on transport errors.
 use crate::paths;
-use crate::service::queries::{
-    self, AgentFilter, SnapshotOptions,
-    info::{Legacy, Reference, Target},
-};
+use crate::service::queries::{self, AgentFilter, SnapshotOptions};
 use crate::service::{InvocationContext, Request, Response, ServiceError, client::Client};
 use crate::tui::app::DataState;
 use crate::tui::data::DataSource;
 use crate::tui::model::{Agent, Event, Message};
-use std::path::Path;
-
-/// Older daemons omit Info references. Bind the displayed rows to the very
-/// client that returned them, before they can enter the cache or a TUI visit.
-fn pin_legacy_info(agents: &mut [Agent], scope: &Path, generation: &str, stopped: bool) {
-    for agent in agents.iter_mut().filter(|agent| !agent.is_remote() && agent.info_reference.is_none()) {
-        agent.info_reference = Some(Reference {
-            scope: scope.to_owned(),
-            generation: generation.to_owned(),
-            target: Target::Incarnation { name: agent.name.clone(), bits: agent.created_at.to_bits() },
-            legacy: Some(if stopped { Legacy::StopSnapshot { stopped_at: agent.status_time } } else { Legacy::Exact }),
-        });
-    }
-}
 
 pub struct DbDataSource {
     client: Option<Client>,
@@ -56,19 +39,7 @@ impl DbDataSource {
             }
             let client = self.client.as_ref().unwrap();
             match client.call(Request::Queries(request))? {
-                Response::Queries(mut response) => {
-                    let scope = client.scope_root();
-                    let generation = &client.info().database_generation;
-                    match &mut response {
-                        queries::Response::Snapshot(snapshot) => {
-                            pin_legacy_info(&mut snapshot.agents, scope, generation, false);
-                            pin_legacy_info(&mut snapshot.stopped_agents, scope, generation, true);
-                        }
-                        queries::Response::Stopped(agents) => pin_legacy_info(agents, scope, generation, true),
-                        _ => {}
-                    }
-                    Ok(response)
-                }
+                Response::Queries(response) => Ok(response),
                 _ => Err(ServiceError::Internal("unexpected snapshot response".into())),
             }
         })();

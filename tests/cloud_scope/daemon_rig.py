@@ -95,8 +95,8 @@ class Station:
         else:
             self.write(target, source.read_text())
 
-    def command(self, label, *arguments, check=True, timeout=75):
-        result = self.raw_shell(self.invocation([self.candidate, *arguments]), timeout=timeout, check=False)
+    def command(self, label, *arguments, check=True, timeout=75, cwd=None):
+        result = self.raw_shell(self.invocation([self.candidate, *arguments], cwd=cwd), timeout=timeout, check=False)
         self.fixture.write(f"{self.label}-{label}.json",
                            {"argv": list(map(str, arguments)), "exit_code": result.returncode,
                             "stdout": result.stdout, "stderr": result.stderr})
@@ -106,21 +106,23 @@ class Station:
             require(result.returncode == 0, f"{self.label} {label}: exit {result.returncode}; see command receipt")
         return result
 
-    def invocation(self, args, *, private_admin_token=None):
+    def invocation(self, args, *, private_admin_token=None, cwd=None):
         environment = [f"{key}={value}" for key, value in self.env.items()]
         command = shlex.join(map(str, [*environment, *args]))
         # The cloud server alone expands its own private file into an environment variable.
         private = f'AGENTX_ADMIN_TOKEN="$(cat {shlex.quote(str(private_admin_token))})" ' if private_admin_token else ""
-        return f"cd {shlex.quote(str(self.workspace))} && exec env -i {private}{command}"
+        return f"cd {shlex.quote(str(cwd or self.workspace))} && exec env -i {private}{command}"
 
     def process(self, action):
         result = self.raw(["python3", self.root / STATION_SCRIPT.name, action, self.root, self.candidate], timeout=45)
         return json.loads(result.stdout)
 
-    def prepare_worker(self, url, cert, credential, host, model, model_port=None, codex_bin=None):
-        self.raw(["mkdir", "-p", "--", self.workspace / ".agentx/roles"])
-        for name, profile in (("acceptance", "acceptance-codex"), ("unavailable", "missing-profile")):
-            self.write(self.workspace / f".agentx/roles/{name}.toml",
+    def prepare_worker(self, url, cert, credential, host, model, model_port=None, codex_bin=None, *,
+                       project=None, role="acceptance"):
+        roles = (project or self.workspace) / ".agentx/roles"
+        self.raw(["mkdir", "-p", "--", roles])
+        for name, profile in ((role, "acceptance-codex"), ("unavailable", "missing-profile")):
+            self.write(roles / f"{name}.toml",
                        f'profile = "{profile}"\nprompt = "Cloud daemon acceptance role"\n')
         self.write(self.root / "scope-token", credential + "\n")
         self.transfer(cert, self.root / "ca.crt")
@@ -141,7 +143,7 @@ class Station:
         self.command("profile-create", "profile", "create", "acceptance-codex", "--tool", "codex")
         self.command("profile-default", "profile", "default", "acceptance-codex")
         self.command("connect", "daemon", "connect", "--configure-only", "--scope", self.root / "scope",
-                     "--url", url, "--host", host, "--workspace", f"work={self.workspace}",
+                     "--namespace-url", url, "--host", host, "--project-root", f"work={self.workspace}",
                      "--token-file", self.root / "scope-token")
         mode = self.raw(["stat", "-c", "%a", self.root / "scope/cloud.toml"]).stdout.strip()
         require(mode == "600", f"{host} cloud.toml must be mode 0600, got {mode}")
@@ -262,7 +264,7 @@ def topology(fixture, physical=None, east_jump=None):
         else:
             east = station("east")
             observations = []
-            drop = f"{fixture.admin}/scopes/{SCOPE}/operations"
+            drop = f"{fixture.admin}/namespaces/{SCOPE}/operations"
             with tls_front(fixture, "POST", drop, observations) as (ca, _pin, attempts):
                 fixture.start()
                 use_https(fixture, ca)

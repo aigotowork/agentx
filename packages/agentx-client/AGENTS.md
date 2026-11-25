@@ -5,15 +5,19 @@ Read [full consumer Task](../../.controller/contract-service-projections/tasks/f
 | Owner | Responsibility |
 | --- | --- |
 | `src/index.ts` | Browser-safe public package entry and independent endpoint composition |
-| `src/domain/` | [Scoped object model](../../.docs/model/typescript-domain-sdk.md): immutable addresses, native and projected Workspace member pages, exact Agent history/provenance/lifecycle, scope resources, and typed original receipt checks over Management |
+| `src/domain/` | [Scoped object model](../../.docs/model/typescript-domain-sdk.md): immutable addresses, native Workspace member pages, exact Agent history/provenance/lifecycle, scope resources, and typed original receipt checks over Management |
 | `scripts/generate.mjs`, `src/generated/{management,workbench,observation}` | Actual emitted OpenAPI → fixed generator → wire SDK/types/schema map; never hand-author generated DTOs |
 | `src/schema-codec.ts`, `src/codec.ts` | Schema-directed ordinary management integers versus marker-coded Workbench/Observation; exact native widths and strings |
 | `src/client.ts`, `src/management.ts` | Management domain operations, original operation receipt identity and local observation |
 | `src/workbench.ts`, `src/observation.ts` | Closed native variant methods; operator-only writes and passive evidence reads |
 | `src/transport.ts` | Finite listener admission/transport errors, detached retained mutation intent |
 | `src/cli*.ts` | Node-only grammar/config/files/stdin/pending request storage and actual SDK binding |
-| `src/cloud-admin.ts`, `src/cloud-scope.ts`, `src/cloud-transport.ts`, `src/cli-cloud-admin.ts`, `src/generated/cloud-*` | [Cloud scope](../../.controller/cloud-scope/AGENTS.md): separate bearer clients, native emitted admin/communication projections and private exact admin replay |
+| `src/cloud-admin.ts`, `src/cloud-namespace.ts`, `src/cloud-transport.ts`, `src/cli-cloud-admin.ts`, `src/generated/cloud-*` | [Cloud Namespace](../../.controller/cloud-namespace/AGENTS.md): separate bearer clients, native emitted admin/communication projections and private exact admin replay |
 | `tests` | Focused consumer/codec/recovery cases; finite injections are distinct from native integration |
+
+For [direct cloud reads](../../.controller/direct-calls/cloud.task.md), use Admin overview only for the deployment summary, Admin getNamespace for a selected Namespace, or the member descriptor. Treat the reported version as diagnostic. Host, Agent and Workspace inventory page calls accept the pinned generation, and the SDK requires the first page's generation when continuing its cursor. Resource, authorization, stale generation and unsupported operation errors are separate. Cloud transport and SDK wrappers preserve compact identifiers and exact write receipts. Native schemas and emitted projections remain authoritative.
+
+The Domain SDK pins one trusted Management description. `Workspace.memberPage` and `Agent.messageHistory` guard their own advertised capabilities and reject only their call with `UnsupportedCapability`; `scope.agents` supplies the separate scope-wide inventory. See [direct calls](../../.controller/direct-calls/AGENTS.md).
 
 Three base URLs remain independent. Native Services own state/authorization/effects; a typed public input never grants actor authority. Inspector output is not a management Operation. Workbench `Rejected` and Observation `LocalFailure` remain native values. Cancellation/close stops local observation only. Preserve original generation, IDs, exact references, revisions and full write input through unknown results; never refresh/retry/rebase automatically. Binary attachments stay raw bytes. Workbench/Observation CLI file inputs/stdout use actual integer markers; SDK memory uses derived bigint types.
 

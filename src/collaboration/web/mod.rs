@@ -94,14 +94,14 @@ impl Adapter {
         Client::connect_existing(&self.scope, self.invocation.clone())
     }
     fn descriptor(&self) -> api::Descriptor {
-        let client = self.client().ok();
+        let generation = self.client().and_then(|client| client.generation().map(str::to_owned)).ok();
         api::Descriptor {
             scope: self.scope.clone(),
             project: self.project.clone(),
             project_label: std::path::Path::new(&self.project).file_name().and_then(|p| p.to_str()).unwrap_or(&self.project).into(),
-            generation: client.as_ref().map(|c| c.info().database_generation.clone()),
+            available: generation.is_some(),
+            generation,
             collaboration: self.collaboration,
-            available: client.is_some(),
             limits: api::Limits {
                 text: work::MAX_TEXT as u32,
                 title: work::MAX_TITLE as u32,
@@ -119,10 +119,14 @@ impl Adapter {
             work::Request::Apply(call) => Some(call.command_id.clone()),
             _ => None,
         };
-        let result = self.client().and_then(|client| client.call(crate::service::Request::Collaboration(request)));
+        let generation = match &request {
+            work::Request::Read { generation, .. } => generation,
+            work::Request::Apply(call) => &call.generation,
+        };
+        let result = Client::connect_existing_fenced(&self.scope, self.invocation.clone(), generation).and_then(|client| client.call(crate::service::Request::Collaboration(request)));
         match result {
             Ok(crate::service::Response::Collaboration(value)) => value,
-            Err(crate::service::ServiceError::StaleFence) => work::Response::Rejected(work::Failure::StaleReference),
+            Err(crate::service::ServiceError::StaleFence | crate::service::ServiceError::StaleGeneration) => work::Response::Rejected(work::Failure::StaleReference),
             Err(crate::service::ServiceError::Forbidden(_) | crate::service::ServiceError::IdentityRequired(_)) => work::Response::Rejected(work::Failure::Forbidden),
             Err(crate::service::ServiceError::InvalidInput(reason)) => work::Response::Rejected(work::Failure::InvalidInput { field: "command".into(), reason }),
             Err(crate::service::ServiceError::OutcomeUnknown(_)) if command_id.is_some() => work::Response::Rejected(work::Failure::OutcomeUnknown { command_id: command_id.expect("apply command present") }),
@@ -179,6 +183,7 @@ fn run(launch: Launch) -> Result<(), String> {
     let invocation = InvocationContext::capture().map_err(|error| format!("cannot capture originating environment: {error}"))?;
     let invocation = operator_invocation(invocation, &project);
     let client = Client::connect(&scope, invocation.clone()).map_err(|error| format!("native service acquisition failed: {error}"))?;
+    client.info().map_err(|error| format!("native service acquisition failed: {error}"))?;
     let scope = client.scope_root().to_str().ok_or("scope must be UTF-8")?.to_owned();
     let state = Arc::new(Adapter { scope, project, invocation, collaboration: launch.collaboration, assets, calls: Arc::new(Semaphore::new(8)) });
     let runtime = tokio::runtime::Builder::new_multi_thread().worker_threads(2).max_blocking_threads(8).enable_all().build().map_err(|_| "adapter runtime unavailable")?;

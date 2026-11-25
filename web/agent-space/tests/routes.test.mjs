@@ -31,7 +31,8 @@ test('real state round trips exact current/stopped, channels, resources and pres
   const all = routeSearch('', routeFromState(controller.getSnapshot(), controller.supply));
   assert.match(all, /office=/); assert.equal(parseRoute(all).route.workspaceId, '');
   for (const query of ['?view=bad', '?tab=posts&post=a&post=b', '?agent=mora', '?scope=s&generation=g&agent=mora&incarnation=123&stopped_event=99', '?panel=directory&view=chat', '?channel=wrong', '?tab=skills&panel=mailbox', '?detail=agent']) assert.ok(parseRoute(query).issue, query);
-  assert.equal(parseRoute('?channel=notes').route.channel, 'messages');
+  assert.match(parseRoute('?channel=notes').issue, /channel/);
+  assert.equal(parseRoute('?layout=foreign&layout=sidebar').issue, '', 'unowned query keys do not affect navigation');
   assert.equal(parseRoute('?scope=s&generation=g&agent=mora&stopped_event=99').route.officeView, 'history');
 });
 test('UI navigation pushes, filter typing replaces, history hydrates without draft or attachment loss', () => {

@@ -57,7 +57,7 @@ pub(super) fn error_result(message: String) -> LaunchResult {
 /// Reconcile the retained cleanup plan after a missing reply with the original
 /// request identity. A new observation cannot recover an earlier retirement.
 fn observe(client: &Client, launcher: Option<&str>, batch_id: Option<&str>, timeout_secs: u64) -> ServiceResult<Response> {
-    let caller = CallerContext { request_id: RequestId(uuid::Uuid::new_v4().to_string()), invocation: client.invocation().clone(), deadline_unix_ms: None, expected_database_generation: Some(client.info().database_generation.clone()) };
+    let caller = CallerContext { request_id: RequestId(uuid::Uuid::new_v4().to_string()), invocation: client.invocation().clone(), deadline_unix_ms: None, expected_database_generation: None };
     let request = Request::ObserveLaunch { launcher: launcher.map(str::to_owned), batch_id: batch_id.map(str::to_owned), timeout_secs };
     let call = || client.call_with_context(caller.clone(), ServiceRequest::Hosts(request.clone()));
     let response = match call() {

@@ -43,7 +43,7 @@ fn held_owner_without_endpoint_is_unavailable_and_restart_refuses() {
     let scope = DaemonScope::prepare(directory.path()).unwrap();
     let lease = super::super::ScopeLease::acquire(scope.clone()).unwrap();
     assert_eq!(status(scope.root(), scope.root()).unwrap().state, State::Unavailable);
-    let error = stop_existing(&scope, Instant::now() + HELLO_TIMEOUT).unwrap_err();
+    let error = stop_existing(&scope, Instant::now() + STATUS_TIMEOUT).unwrap_err();
     assert!(error.to_string().contains("restart refused"));
     assert!(!owner_released(&scope).unwrap());
     lease.ensure_ownership().unwrap();
@@ -67,77 +67,80 @@ fn stop_deadline_retains_singleton_and_never_deletes_data() {
 fn startup_lock_serializes_recovery_and_cold_acquisition_without_data_access() {
     let directory = tempfile::tempdir().unwrap();
     let scope = DaemonScope::prepare(directory.path()).unwrap();
-    let first = transport::startup_lock(&scope, Instant::now() + HELLO_TIMEOUT).unwrap();
+    let first = transport::startup_lock(&scope, Instant::now() + STATUS_TIMEOUT).unwrap();
     assert!(matches!(transport::startup_lock(&scope, Instant::now() + Duration::from_millis(20)), Err(DaemonError::Deadline)));
     assert!(scope.state().join("startup.lock").is_file());
     assert!(!scope.state().join("owner.lock").exists());
     assert!(!scope.root().join("agentx.db").exists());
     drop(first);
-    assert!(transport::startup_lock(&scope, Instant::now() + HELLO_TIMEOUT).is_ok());
-}
-
-#[cfg(target_os = "linux")]
-#[test]
-fn legacy_process_evidence_requires_exact_scope_argv_and_loaded_image() {
-    let scope = Path::new("/selected");
-    assert!(legacy_arguments(&[b"/old/agentx", b"daemon", b"serve", b"--scope", b"/selected"], scope));
-    for arguments in [
-        vec![b"/old/agentx".as_slice(), b"daemon", b"serve", b"--scope", b"/other"],
-        vec![b"/old/agentx".as_slice(), b"relay-worker", b"serve", b"--scope", b"/selected"],
-        vec![b"/old/agentx".as_slice(), b"daemon", b"serve", b"--scope", b"/selected", b"extra"],
-        vec![b"/old/agentx".as_slice(), b"daemon", b"", b"serve", b"--scope", b"/selected"],
-    ] {
-        assert!(!legacy_arguments(&arguments, scope));
-    }
-    assert!(loaded_image_matches(b"/old/agentx", Path::new("/old/agentx (deleted)")));
-    assert!(!loaded_image_matches(b"/old/agentx", Path::new("/unrelated/python")));
-}
-
-#[cfg(target_os = "linux")]
-#[test]
-fn legacy_lock_evidence_rejects_wrong_owner_inode_shared_and_waiting_locks() {
-    let device = libc::makedev(8, 2);
-    let valid = "13: FLOCK ADVISORY WRITE 123 08:02:987 0 EOF\n";
-    assert!(owns_lock(valid, 123, device, 987));
-    assert!(!owns_lock(valid, 124, device, 987));
-    assert!(!owns_lock(valid, 123, device, 988));
-    assert!(!owns_lock("13: FLOCK ADVISORY READ 123 08:02:987 0 EOF", 123, device, 987));
-    assert!(!owns_lock("13: -> FLOCK ADVISORY WRITE 123 08:02:987 0 EOF", 123, device, 987));
-    assert!(!owns_lock("13: POSIX ADVISORY WRITE 123 08:02:987 0 EOF", 123, device, 987));
+    assert!(transport::startup_lock(&scope, Instant::now() + STATUS_TIMEOUT).is_ok());
 }
 
 #[cfg(unix)]
 #[test]
-fn incompatible_status_is_actionable_and_restart_does_not_signal_unverified_peer() {
+fn legacy_shutdown_uses_verified_ready_connection_and_exact_instance() {
     use super::super::{
         frame,
+        legacy::{LegacyCall, LegacyReply},
         wire::{ClientFrame, ServerFrame},
     };
-    let directory = tempfile::tempdir().unwrap();
-    let scope = DaemonScope::prepare(directory.path()).unwrap();
-    let lease = super::super::ScopeLease::acquire(scope.clone()).unwrap();
-    let listener = platform::Listener::bind(&lease).unwrap();
-    std::thread::scope(|threads| {
-        let server = &listener;
-        threads.spawn(move || {
-            for _ in 0..2 {
-                let deadline = Instant::now() + HELLO_TIMEOUT;
-                assert!(server.wait_ready(deadline).unwrap());
-                let mut stream = server.accept().unwrap().unwrap();
-                assert!(matches!(frame::read::<ClientFrame>(&mut stream, deadline).unwrap(), ClientFrame::Hello { .. }));
-                frame::write(&mut stream, &ServerFrame::Failure(DaemonError::Incompatible("old daemon rejects Hello".into())), deadline).unwrap();
-            }
-        });
-        let result = status(scope.root(), scope.root()).unwrap();
-        assert_eq!(result.state, State::Incompatible);
-        assert_eq!(result.peer.unwrap().0, std::process::id());
-        let detail = result.detail.unwrap();
-        assert!(detail.contains("daemon restart --scope"));
-        assert!(detail.contains("daemon version/cohort unavailable"));
-        assert!(detail.contains(&scope.root().display().to_string()));
-        assert!(stop_existing(&scope, Instant::now() + HELLO_TIMEOUT).is_err());
-        lease.ensure_ownership().unwrap();
-        assert!(!scope.root().join("agentx.db").exists());
-    });
-    drop(listener);
+    for selected in [3, 4] {
+        for wrong_scope in [false, true] {
+            let directory = tempfile::tempdir().unwrap();
+            let scope = DaemonScope::prepare(directory.path()).unwrap();
+            let lease = super::super::ScopeLease::acquire(scope.clone()).unwrap();
+            let listener = platform::Listener::bind(&lease).unwrap();
+            let deadline = Instant::now() + Duration::from_secs(5);
+            std::thread::scope(|threads| {
+                threads.spawn(|| {
+                    let accept = || {
+                        assert!(listener.wait_ready(deadline).unwrap());
+                        listener.accept().unwrap().unwrap()
+                    };
+                    let mut direct = accept();
+                    assert!(matches!(frame::read::<ClientFrame<String>>(&mut direct, deadline).unwrap(), ClientFrame::Call { request, .. } if request == "DaemonStatus"));
+                    frame::write(&mut direct, &ServerFrame::Failure(DaemonError::Protocol("missing field `daemon_instance`".into())), deadline).unwrap();
+                    drop(direct);
+                    for expected_epoch in (selected..=4).rev() {
+                        let mut stream = accept();
+                        assert!(matches!(frame::read::<LegacyCall>(&mut stream, deadline).unwrap(), LegacyCall::Hello { protocol_version, canonical_scope, .. } if protocol_version == expected_epoch && canonical_scope == scope.root()));
+                        if expected_epoch != selected {
+                            frame::write(&mut stream, &LegacyReply::Failure(DaemonError::Incompatible("epoch differs".into())), deadline).unwrap();
+                            continue;
+                        }
+                        let instance = "verified-old-instance";
+                        let root = if wrong_scope { directory.path().join("neighbor") } else { scope.root().into() };
+                        let info = DaemonInfo {
+                            protocol_version: selected,
+                            build_version: "old".into(),
+                            build_id: "old".into(),
+                            canonical_scope: root,
+                            daemon_instance: instance.into(),
+                            database_generation: "generation".into(),
+                            pid: std::process::id(),
+                            codex_hook: false,
+                            agent_names: false,
+                            workspace_members: false,
+                            message_history: false,
+                        };
+                        frame::write(&mut stream, &LegacyReply::Ready(info), deadline).unwrap();
+                        if wrong_scope {
+                            assert!(frame::read_optional::<LegacyCall>(&mut stream, deadline).unwrap().is_none());
+                        } else {
+                            assert!(matches!(frame::read::<LegacyCall>(&mut stream, deadline).unwrap(), LegacyCall::Shutdown { daemon_instance } if daemon_instance == instance));
+                            frame::write(&mut stream, &LegacyReply::Stopping, deadline).unwrap();
+                        }
+                    }
+                });
+                let stopped = stop_existing(&scope, deadline);
+                if wrong_scope {
+                    assert!(matches!(stopped, Err(DaemonError::Incompatible(_))));
+                } else {
+                    assert!(stopped.unwrap());
+                }
+            });
+            lease.ensure_ownership().unwrap();
+            assert!(!scope.root().join("agentx.db").exists());
+        }
+    }
 }

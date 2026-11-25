@@ -17,7 +17,7 @@ import tempfile
 import threading
 import time
 
-from fixture import require, wait_for
+from fixture import CLOUD_PROTOCOL, COMPACT_ID, require, wait_for
 
 
 def certificates(fixture, ip="127.0.0.1"):
@@ -45,11 +45,12 @@ def certificate_pin(cert):
 
 
 @contextmanager
-def tls_front(fixture, drop_method=None, drop_path=None, observed_polls=None):
-    """Use a private CA and leaf, and optionally discard one committed HTTPS response."""
+def tls_front(fixture, drop_method=None, drop_path=None, observed_polls=None, protocol_overrides=None):
+    """Use a private CA and leaf; inject a protocol version or lose one response when requested."""
     ca, cert, key = certificates(fixture)
     pin = certificate_pin(cert)
     attempts = []
+    overridden = []
     lock = threading.Lock()
 
     class Proxy(BaseHTTPRequestHandler):
@@ -67,6 +68,13 @@ def tls_front(fixture, drop_method=None, drop_path=None, observed_polls=None):
                 response = connection.getresponse()
                 data = response.read(8_000_001)
                 require(len(data) <= 8_000_000, "Fixture response exceeded the body bound")
+                protocol = (protocol_overrides or {}).get(self.path)
+                if self.command == "GET" and protocol is not None and response.status == 200:
+                    descriptor = json.loads(data)
+                    original = descriptor["protocol_version"]
+                    data = json.dumps({**descriptor, "protocol_version": protocol}).encode()
+                    with lock:
+                        overridden.append({"path": self.path, "original": original, "advertised": protocol})
                 if observe:
                     with lock:
                         observed_polls.append({"path": self.path, "started": began, "seconds": time.monotonic() - began,
@@ -109,7 +117,7 @@ def tls_front(fixture, drop_method=None, drop_path=None, observed_polls=None):
         server.server_close()
         srv.join(5)
         require(not srv.is_alive(), "Owned HTTPS terminator failed to stop")
-        fixture.write("https-proxy.json", {"url": fixture.public_url, "attempts": attempts,
+        fixture.write("https-proxy.json", {"url": fixture.public_url, "attempts": attempts, "protocol_overrides": overridden,
                                            "discarded_route": drop_path, "closed": True})
 
 
@@ -121,7 +129,7 @@ def cli(fixture, consumer, cert, attempts):
     require(pkg["name"] == "@agentx/client", "Unexpected consumer package")
     env = {**fixture.environment("cli"), "AGENTX_ADMIN_URL": fixture.public_url,
            "AGENTX_ADMIN_TOKEN": fixture.admin_token, "NODE_EXTRA_CA_CERTS": str(cert)}
-    for surface in ("admin", "scope"):
+    for surface in ("admin", "namespace"):
         export = fixture.command(f"openapi-{surface}", [fixture.candidate, "cloud-openapi", surface], env)
         packaged = json.loads((package / f"cloud-{surface}.openapi.json").read_text())
         require(json.loads(export.stdout) == packaged, f"Packaged {surface} OpenAPI differs from the native candidate export")
@@ -134,13 +142,13 @@ def cli(fixture, consumer, cert, attempts):
     def command(label, *args, check=True):
         return fixture.command(label, [executable, "admin", *args], env, check=check)
 
-    lost = command("cli-create-lost", "scopes", "create", "cli-managed", "--pending", str(pending),
+    lost = command("cli-create-lost", "namespaces", "create", "cli-managed", "--pending", str(pending),
                    "--new-token-file", str(token_file), check=False)
     require(lost.returncode != 0 and token not in lost.stdout + lost.stderr
             and fixture.admin_token not in lost.stdout + lost.stderr, "Ambiguous result must fail without exposing either credential")
     require(len(attempts) == 1 and attempts[0]["dropped"], "Exactly one committed response must be lost without automatic retry")
     require(stat.S_IMODE(pending.stat().st_mode) == 0o600, "Pending credentials must be stored in a private file")
-    before = fixture.expect("GET", fixture.admin + "/scopes/cli-managed", fixture.admin_token)
+    before = fixture.expect("GET", fixture.admin + "/namespaces/cli-managed", fixture.admin_token)
     require(before["credential_version"] == 1, "Deployment must record the change before CLI reconciliation")
     replay = json.loads(command("cli-pending-replay", "pending", "replay", str(pending)).stdout)
     require(replay["generation"] == before["generation"] and replay["credential_version"] == 1
@@ -151,21 +159,24 @@ def cli(fixture, consumer, cert, attempts):
     sdk = Path(__file__).with_name("sdk.mjs")
     # Load the package through the actual external consumer's module resolver.
     result = fixture.command("sdk-read", ["node", "--input-type=module", "--eval", sdk.read_text()],
-                             {**env, "AGENTX_SCOPE_TOKEN": token}, cwd=consumer)
+                             {**env, "AGENTX_NAMESPACE_TOKEN": token}, cwd=consumer)
     values = json.loads(result.stdout)
-    require(values["detail"]["generation"] == before["generation"] and values["page"]["items"][0]["id"] == "cli-managed",
+    require(values["detail"]["generation"] == before["generation"] and values["page"]["items"][0]["namespace_id"] == "cli-managed",
             "Public SDK reads must agree with committed CLI receipt and raw HTTP")
-    require(values["hosts"] == values["agents"] == {"items": [], "next": None}, "New scope inventory must be empty through the SDK")
-    require(values["descriptor"] == {"scope_id": "cli-managed", "generation": before["generation"], "protocol_version": 1}
-            and values["host"]["online"] and values["scoped"] == values["cross"] == {"items": [values["agent"]], "next": None},
+    require(values["hosts"] == values["agents"] == {"generation": before["generation"], "items": [], "next": None}, "New scope inventory must be empty through the SDK")
+    require(values["workspaces"] == values["adminWorkspaces"] == {"generation": before["generation"], "items": [], "next": None},
+            "A host without a project lease must read as zero Workspaces through both SDK surfaces")
+    require(values["overview"]["protocol_version"] == CLOUD_PROTOCOL
+            and values["descriptor"] == {"namespace_id": "cli-managed", "generation": before["generation"], "protocol_version": CLOUD_PROTOCOL}
+            and values["host"]["online"] and values["scoped"] == values["cross"] == {"generation": before["generation"], "items": [values["agent"]], "next": None},
             "SDK scope enrollment must appear under the same exact identity in scope and deployment reads")
 
     replacement = fixture.token()
     token_file.write_text(replacement)
-    rotated = json.loads(command("cli-rotate", "scopes", "rotate-token", "cli-managed", "--expected-version", "1",
+    rotated = json.loads(command("cli-rotate", "namespaces", "rotate-token", "cli-managed", "--expected-version", "1",
                                  "--pending", str(pending.with_name("rotation.json")), "--new-token-file", str(token_file)).stdout)
     require(rotated == {**replay, "credential_version": 2}, "CLI must rotate the exact scope without changing generation")
-    scope_api = "/scopes/cli-managed/api/v1/descriptor"
+    scope_api = "/namespaces/cli-managed/api/v1/descriptor"
     fixture.expect("GET", scope_api, token, statuses=(401, 403))
     fixture.expect("GET", scope_api, replacement)
     return {"package_version": pkg["version"], "package_integrity": json.loads((consumer / "package-lock.json").read_text())
@@ -188,7 +199,7 @@ def tui(fixture):
             def read():
                 nonlocal captured
                 captured = terminal("capture-pane", "-pt", "deployment")
-                revealed = re.search(r"New communication token[^\n]*\n[^A-Za-z0-9_-]*([A-Za-z0-9_-]{32,256})(?![A-Za-z0-9_-])", captured)
+                revealed = re.search(rf"New communication token[^\n]*\n[^A-Za-z0-9_-]*({COMPACT_ID})(?![A-Za-z0-9_-])", captured)
                 if revealed and revealed[1] not in fixture.tokens:
                     fixture.tokens.append(revealed[1])
                 if (all(string in captured for string in strings)
@@ -211,27 +222,27 @@ def tui(fixture):
                      str(fixture.candidate), "tui", "--admin-url", fixture.url)
             screen("tui-overview", "AgentX / Deployment", "n Create", fixture.url)
             keys("n")
-            screen("tui-create-dialog", "Create scope", "Scope ID")
+            screen("tui-create-dialog", "Create namespace", "Namespace ID")
             keys("-l", "tui-managed")
             keys("Tab")
-            screen("tui-create-revealed", "Save the token before submitting.")
+            screen("tui-create-revealed", "Save the token before submitting.", "New communication token")
             create_token = fixture.tokens[-1]
             keys("Enter")
             screen("tui-created", "Saved", "credential v1")
-            detail_path = fixture.admin + "/scopes/tui-managed"
+            detail_path = fixture.admin + "/namespaces/tui-managed"
             v1 = fixture.expect("GET", detail_path, fixture.admin_token)
             require(v1["credential_version"] == 1, "TUI create must reach admin inventory")
             keys("Enter")
-            screen("tui-scope-list", "1 scope ·", "n Create",
-                   row=r"^│›[ \t]+\d+/\d+[ \t]+\d+[ \t]+tui-managed[ \t]*│$", absent=("Create scope", "Saved"))
+            screen("tui-namespace-list", "1 namespace ·", "n Create",
+                   row=r"^│›[ \t]+\d+/\d+[ \t]+\d+[ \t]+tui-managed[ \t]*│$", absent=("Create namespace", "Saved"))
             keys("Right")
-            screen("tui-hosts", "[Hosts]", "tui-managed", "token v1", v1["scope_url"])
+            screen("tui-hosts", "[Hosts]", "tui-managed", "token v1", v1["namespace_url"])
             keys("Tab")
             screen("tui-agents", "[Agents]", "tui-managed", "r Rotate")
             keys("r")
-            screen("tui-rotate-dialog", "Rotate scope token")
+            screen("tui-rotate-dialog", "Rotate namespace token")
             keys("Tab")
-            screen("tui-rotation-revealed", "Save the token before submitting.")
+            screen("tui-rotation-revealed", "Save the token before submitting.", "New communication token")
             rotation_token = fixture.tokens[-1]
             require(rotation_token != create_token and create_token != fixture.admin_token,
                     "TUI must reveal a distinct private credential for each change")
@@ -240,10 +251,10 @@ def tui(fixture):
             v2 = fixture.expect("GET", detail_path, fixture.admin_token)
             require(v2["credential_version"] == 2 and v2["generation"] == v1["generation"],
                     "TUI rotation must update the authoritative version in place")
-            descriptor = "/scopes/tui-managed/api/v1/descriptor"
+            descriptor = "/namespaces/tui-managed/api/v1/descriptor"
             fixture.expect("GET", descriptor, create_token, statuses=(401, 403))
             fixture.expect("GET", descriptor, rotation_token)
-            return {"scope": v2["id"], "credential_versions": [1, 2], "generation": v2["generation"]}
+            return {"scope": v2["namespace_id"], "credential_versions": [1, 2], "generation": v2["generation"]}
         finally:
             terminal("kill-server", check=False)
 
@@ -259,9 +270,9 @@ def browser(fixture, chromium, pin):
         result = fixture.command("browser", ["node", "--input-type=module", "--eval", Path(__file__).with_name("browser.mjs").read_text()],
                                  {**env, "TMPDIR": short_path, "CLOUD_CHROME_PROFILE": short_path + "/profile"}, cwd=root, timeout=100)
     observed = json.loads(result.stdout)
-    scope = fixture.expect("GET", fixture.admin + "/scopes/web-managed", fixture.admin_token)
+    scope = fixture.expect("GET", fixture.admin + "/namespaces/web-managed", fixture.admin_token)
     require(scope["credential_version"] == 2, "Browser rotation must agree with the authoritative Scope detail")
-    descriptor = "/scopes/web-managed/api/v1/descriptor"
+    descriptor = "/namespaces/web-managed/api/v1/descriptor"
     fixture.expect("GET", descriptor, initial, statuses=(401, 403))
     fixture.expect("GET", descriptor, rotated)
-    return {**observed, "scope": scope["id"], "generation": scope["generation"]}
+    return {**observed, "scope": scope["namespace_id"], "generation": scope["generation"]}

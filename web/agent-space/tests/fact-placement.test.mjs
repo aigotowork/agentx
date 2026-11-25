@@ -1,7 +1,7 @@
 /** Regression for a portal covering its own actor after flip/clamp. */
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { placeFacts } from '../src/FactButton.geometry.ts';
+import { placeFacts } from '../uiux/systems/space/components/FactButton.geometry.ts';
 
 test('facts stay inside viewport and outside trigger across every edge, side and constrained-height route', () => {
   const cases = [

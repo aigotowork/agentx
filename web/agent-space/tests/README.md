@@ -11,6 +11,8 @@ Retained evidence is under [2026-11-15](evidence/2026-11-15/). Initial failed at
 
 For the [unified Domain SDK Space entry](../../../.controller/space-domain-sdk/unified-entry.task.md), `node --experimental-transform-types --test web/agent-space/tests/domain-office.test.mjs` exercises the actual `LiveSpace` consumer and public SDK against disposable responses: refused scope, sparse workspace continuation and retry, stopped/current discriminator isolation, late read cancellation, legacy roster and compatible receipt recovery, and confirmed generation reset. Existing route, context, relation and scene tests cover their owning guarantees. Independently built browser evidence and exact selectors belong to the Space Task.
 
+For [local direct calls](../../../.controller/direct-calls/local.task.md), run `node web/agent-space/tests/direct-calls.browser.mjs BUILD EVIDENCE` against a fresh `/space/` build. It serves disposable loopback fixtures with separately missing member/history capabilities, checks the corresponding UI, and records the original exact send receipt and single describe across browser refreshes.
+
 ## Slice 1 semantic adaptation
 
 Current cases are authored for [frontend work S1–S8](../../../.controller/agent-space-alignment/frontend-work.md). Earlier evidence above remains historical, and is not evidence for these changed fixtures or UI. The implementer has not run the final state/build/browser execution.

@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""Disposable same-user incompatible endpoint with deliberately invalid argv.
-
-Only the startup outcome runner launches this negative fixture. It holds its
-own lock but cannot establish daemon executable/argv authority for a signal.
-"""
+"""Disposable same-user endpoint that cannot supply a verified daemon instance."""
 import fcntl
 import hashlib
 import json
@@ -45,9 +41,9 @@ def main():
                     while len(body) < length:
                         part = connection.recv(length - len(body))
                         if not part:
-                            raise EOFError("truncated fixture Hello")
+                            raise EOFError("truncated fixture status Call")
                         body += part
-                    assert "Hello" in json.loads(body)
+                    assert json.loads(body)["Call"]["request"] == "DaemonStatus"
                     response = json.dumps({"Failure": {"kind": "incompatible", "detail": "owned impostor fixture"}}).encode()
                     connection.sendall(struct.pack("!I", len(response)) + response)
         finally:

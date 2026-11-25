@@ -799,6 +799,7 @@
           "NotFound",
           "Conflict",
           "StaleReference",
+          "StaleGeneration",
           "Unsupported",
           "Unavailable",
           "OutcomeUnknown",

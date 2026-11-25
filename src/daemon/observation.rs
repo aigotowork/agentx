@@ -64,20 +64,21 @@ pub(crate) struct InspectionResult {
     pub received_at: ObservationTime,
 }
 
-/// Finite native observation envelopes use the existing frame codec. They are
-/// separate from business Call/Ready, including during unknown generation.
+/// The inspection listener uses its own operations, limits and peer policy.
 #[derive(Serialize, Deserialize)]
-#[expect(clippy::large_enum_variant, reason = "Single capped Hello or native Call frame per inspection connection; retain the native envelope shape without a second representation.")]
-enum InspectionClientFrame {
-    Hello { protocol_version: u32, build_version: String, build_id: String, scope: ScopeRef },
-    Call(InspectionCall),
+enum InspectionClientFrame<R = InspectionRequest> {
+    Call {
+        scope: ScopeRef,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        expected_daemon: Option<DaemonRef>,
+        request: R,
+    },
 }
 
 #[derive(Serialize, Deserialize)]
-#[expect(clippy::large_enum_variant, reason = "Single capped native result envelope; size admission already bounds serialization and consumers retain the direct leaf result contract.")]
+#[allow(clippy::large_enum_variant, reason = "Retain direct native result types within a capped frame.")]
 enum InspectionServerFrame {
-    Ready(InspectionReady),
-    Result(InspectionResponse),
+    Result { ready: InspectionReady, response: InspectionResponse },
     Failure(DaemonError),
 }
 
@@ -105,7 +106,7 @@ pub(crate) fn resolve_existing_scope(input: ExistingScopeInput) -> ScopeLookup {
     }
 }
 
-/// Exactly one handshake and finite read/report. No acquire/start, Session,
+/// Exactly one authenticated read or report. No acquire/start, Session,
 /// ordinary Call, retry, directory repair or managed database access occurs.
 pub(crate) fn inspect_existing(scope: &ScopeRef, expected: Option<DaemonRef>, request: InspectionRequest) -> Result<InspectionResult, LocalFailure> {
     let clock = originating_clock();
@@ -120,23 +121,21 @@ pub(crate) fn inspect_existing(scope: &ScopeRef, expected: Option<DaemonRef>, re
     {
         let mut stream = platform::connect_observation(&local, deadline).map_err(|error| local_failure(error, ClientStage::Connect, clock))?;
         let (pid, incarnation) = platform::peer(&stream).map_err(|error| local_failure(error, ClientStage::PeerAuthentication, clock))?;
-        let hello = InspectionClientFrame::Hello { protocol_version: wire::PROTOCOL_VERSION, build_version: wire::BUILD_VERSION.into(), build_id: wire::build_identity().into(), scope: scope.clone() };
-        frame::write_limited(&mut stream, &hello, deadline, INSPECTION_REQUEST_BYTES).map_err(|error| local_failure(error, ClientStage::Hello, clock))?;
-        let ready = match frame::read_limited(&mut stream, deadline, INSPECTION_RESPONSE_BYTES).map_err(|error| local_failure(error, ClientStage::Hello, clock))? {
-            InspectionServerFrame::Ready(ready) => ready,
-            InspectionServerFrame::Failure(error) => return Err(local_failure(error, ClientStage::Hello, clock)),
-            _ => return Err(local_failure(DaemonError::Protocol("expected inspection Ready".into()), ClientStage::Hello, clock)),
-        };
-        if ready.protocol_version != wire::PROTOCOL_VERSION || ready.daemon.scope != *scope || ready.process.pid != pid || incarnation.as_ref().is_some_and(|value| ready.process.incarnation.as_ref() != Some(value)) {
-            return Err(local_failure(DaemonError::Incompatible("inspection protocol, scope or kernel peer differs".into()), ClientStage::Hello, clock));
-        }
-        let call = InspectionClientFrame::Call(InspectionCall { expected_daemon: expected.unwrap_or_else(|| ready.daemon.clone()), request });
+        let call = InspectionClientFrame::Call { scope: scope.clone(), expected_daemon: expected.clone(), request };
         frame::write_limited(&mut stream, &call, deadline, INSPECTION_REQUEST_BYTES).map_err(|error| local_failure(error, ClientStage::InspectionWrite, clock))?;
-        let response = match frame::read_limited(&mut stream, deadline, INSPECTION_RESPONSE_BYTES).map_err(|error| local_failure(error, ClientStage::InspectionRead, clock))? {
-            InspectionServerFrame::Result(response) => response,
+        let (ready, response) = match frame::read_limited(&mut stream, deadline, INSPECTION_RESPONSE_BYTES).map_err(|error| local_failure(error, ClientStage::InspectionRead, clock))? {
+            InspectionServerFrame::Result { ready, response } => (ready, response),
             InspectionServerFrame::Failure(error) => return Err(local_failure(error, ClientStage::InspectionRead, clock)),
-            _ => return Err(local_failure(DaemonError::Protocol("expected inspection result".into()), ClientStage::InspectionRead, clock)),
         };
+        if ready.daemon.scope != *scope || ready.process.pid != pid || incarnation.as_ref().is_some_and(|value| ready.process.incarnation.as_ref() != Some(value)) {
+            return Err(local_failure(DaemonError::Incompatible("inspection scope or kernel peer differs".into()), ClientStage::InspectionRead, clock));
+        }
+        if let Some(expected) = expected
+            && expected != ready.daemon
+            && !matches!(&response, InspectionResponse::DaemonChanged { expected: rejected, actual } if *rejected == expected && *actual == ready.daemon)
+        {
+            return Err(local_failure(DaemonError::Incompatible("inspection daemon instance changed".into()), ClientStage::InspectionRead, clock));
+        }
         let received_at = clock.now().map_err(|_| LocalFailure { stage: ClientStage::InspectionRead, kind: LocalFailureKind::ClockUnavailable, os_code: None, at: None })?;
         Ok(InspectionResult { ready, response, received_at })
     }
@@ -147,7 +146,7 @@ pub(crate) fn failure_kind(error: &DaemonError) -> LocalFailureKind {
         DaemonError::Busy => LocalFailureKind::Busy,
         DaemonError::Deadline => LocalFailureKind::TimedOut,
         DaemonError::Incompatible(_) => LocalFailureKind::Incompatible,
-        DaemonError::Protocol(_) => LocalFailureKind::Protocol,
+        DaemonError::Protocol(_) | DaemonError::InvalidInput(_) => LocalFailureKind::Protocol,
         DaemonError::Unsupported(_) => LocalFailureKind::Unsupported,
         DaemonError::StaleGeneration => LocalFailureKind::StaleGeneration,
         DaemonError::OutcomeUnknown(_) => LocalFailureKind::OutcomeUnknown,
@@ -324,7 +323,7 @@ impl ObservationState {
         })
     }
 
-    fn route(&self, peer: &AcceptedPeer, call: InspectionCall) -> InspectionResponse {
+    fn route(&self, peer: &AcceptedPeer, call: InspectionCall, response_budget: usize) -> InspectionResponse {
         if call.expected_daemon != self.daemon {
             return InspectionResponse::DaemonChanged { expected: call.expected_daemon, actual: self.daemon.clone() };
         }
@@ -343,7 +342,7 @@ impl ObservationState {
         let response = match call.request {
             InspectionRequest::Runtime(request) => InspectionResponse::Runtime(self.runtime.read(&self.daemon, peer, request)),
             InspectionRequest::Configuration(request) => InspectionResponse::Configuration(self.configuration.handle(peer, request)),
-            InspectionRequest::Events(request) => InspectionResponse::Events(self.journal.handle(request)),
+            InspectionRequest::Events(request) => InspectionResponse::Events(self.journal.handle(request, response_budget)),
         };
         if self.transitioning.load(Ordering::Acquire) || self.generation.current() != current { unavailable } else { response }
     }
@@ -480,16 +479,29 @@ fn connection(stream: &mut platform::Stream, state: &ObservationState, deadline:
     let (pid, incarnation) = platform::peer(stream)?;
     let at = state.clock.now().map_err(|error| DaemonError::Unavailable(error.to_string()))?;
     let peer = AcceptedPeer { connection: reference, process: ObservedProcess { pid, incarnation }, observed_at: at };
-    match frame::read_limited(stream, deadline, INSPECTION_REQUEST_BYTES)? {
-        InspectionClientFrame::Hello { protocol_version, scope, .. } if protocol_version == wire::PROTOCOL_VERSION && scope == state.daemon.scope => {}
-        InspectionClientFrame::Hello { .. } => return Err(DaemonError::Incompatible("inspection protocol or scope differs".into())),
-        _ => return Err(DaemonError::Protocol("inspection first frame must be Hello".into())),
+    let InspectionClientFrame::Call { scope, expected_daemon, request } = frame::read_limited::<InspectionClientFrame<Box<serde_json::value::RawValue>>>(stream, deadline, INSPECTION_REQUEST_BYTES)?;
+    if scope != state.daemon.scope {
+        return Err(DaemonError::Incompatible("inspection call belongs to another data scope".into()));
     }
-    frame::write_limited(stream, &InspectionServerFrame::Ready(state.ready()?), deadline, INSPECTION_RESPONSE_BYTES)?;
-    let call = match frame::read_limited(stream, deadline, INSPECTION_REQUEST_BYTES)? {
-        InspectionClientFrame::Call(call) => call,
-        _ => return Err(DaemonError::Protocol("expected one inspection Call".into())),
-    };
-    let response = state.route(&peer, call);
-    frame::write_limited(stream, &InspectionServerFrame::Result(response), deadline, INSPECTION_RESPONSE_BYTES)
+    use super::operation::{decode, recognize, recognize_leaf};
+    let family = recognize::<InspectionRequest>(request.get())?;
+    match family.as_str() {
+        "Runtime" => {
+            recognize_leaf::<RuntimeRequest>(&request, &family)?;
+        }
+        "Configuration" => {
+            recognize_leaf::<ConfigurationRequest>(&request, &family)?;
+        }
+        "Events" => {
+            recognize_leaf::<ObservationRequest>(&request, &family)?;
+        }
+        _ => {}
+    }
+    let call = InspectionCall { expected_daemon: expected_daemon.unwrap_or_else(|| state.daemon.clone()), request: decode(&request)? };
+    let ready = state.ready()?;
+    // Journal paging already reserves the fixed envelope. Subtract the actual
+    // description size so the complete one-frame result fits even for long paths.
+    let ready_bytes = frame::encode_limited(&ready, INSPECTION_RESPONSE_BYTES)?.len();
+    let response = state.route(&peer, call, INSPECTION_RESPONSE_BYTES.saturating_sub(ready_bytes));
+    frame::write_limited(stream, &InspectionServerFrame::Result { ready, response }, deadline, INSPECTION_RESPONSE_BYTES)
 }

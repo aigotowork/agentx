@@ -63,7 +63,7 @@ impl Runner {
                 self.host = Some(host);
                 self.thread = Some(thread);
                 Ok(json!({
-                    "execution": {"nativeScope": self.client.scope_root(), "generation": self.client.info().database_generation,
+                    "execution": {"nativeScope": self.client.scope_root(), "generation": self.client.generation()?,
                         "name": participant.canonical_name, "incarnation": participant.incarnation_bits.to_string(),
                         "workspace": self.root.cwd, "executionId": self.root.execution},
                     "role": {"name": self.role.name, "path": self.role.path, "namespace": self.role.namespace, "profile": self.role.profile},

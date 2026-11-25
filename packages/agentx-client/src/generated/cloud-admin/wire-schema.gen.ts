@@ -17,6 +17,11 @@ export const wireDocument = {
             "minimum": 0,
             "type": "integer"
           },
+          "namespaces": {
+            "format": "u-int32",
+            "minimum": 0,
+            "type": "integer"
+          },
           "observed_at": {
             "format": "int64",
             "type": "integer"
@@ -27,11 +32,7 @@ export const wireDocument = {
             "type": "integer"
           },
           "protocol_version": {
-            "format": "u-int32",
-            "minimum": 0,
-            "type": "integer"
-          },
-          "scopes": {
+            "description": "Diagnostic version; operation contracts determine compatibility.",
             "format": "u-int32",
             "minimum": 0,
             "type": "integer"
@@ -46,7 +47,7 @@ export const wireDocument = {
           "deployment_id",
           "protocol_version",
           "observed_at",
-          "scopes",
+          "namespaces",
           "hosts",
           "online_hosts",
           "agents",
@@ -56,6 +57,10 @@ export const wireDocument = {
       },
       "AgentPage": {
         "properties": {
+          "generation": {
+            "description": "Namespace generation verified in the same transaction as the page.",
+            "type": "string"
+          },
           "items": {
             "items": {
               "$ref": "#/components/schemas/CloudAgentSummary"
@@ -70,6 +75,7 @@ export const wireDocument = {
           }
         },
         "required": [
+          "generation",
           "items",
           "next"
         ],
@@ -82,18 +88,75 @@ export const wireDocument = {
             "type": "string"
           },
           "incarnation": {
+            "pattern": "^(?:[A-Za-z0-9]{12}|~human)$",
             "type": "string"
           },
           "name": {
             "type": "string"
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/AgentWorkspace"
           }
         },
         "required": [
           "name",
           "host",
-          "incarnation"
+          "incarnation",
+          "workspace"
         ],
         "type": "object"
+      },
+      "AgentWorkspace": {
+        "description": "Membership chosen when the exact Agent incarnation is prepared for launch.",
+        "oneOf": [
+          {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "project"
+                ],
+                "type": "string"
+              },
+              "workspace_id": {
+                "pattern": "^WS[A-Za-z0-9]{10}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "workspace_id",
+              "kind"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "global"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "unexposed"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "type": "object"
+          }
+        ]
       },
       "ApiError": {
         "properties": {
@@ -166,16 +229,21 @@ export const wireDocument = {
             "type": "string"
           },
           "incarnation": {
+            "pattern": "^(?:[A-Za-z0-9]{12})$",
             "type": "string"
           },
           "name": {
             "type": "string"
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/AgentWorkspace"
           }
         },
         "required": [
           "name",
           "host",
-          "incarnation"
+          "incarnation",
+          "workspace"
         ],
         "type": "object"
       },
@@ -255,12 +323,13 @@ export const wireDocument = {
                   "null"
                 ]
               },
-              "workspace": {
+              "workspace_id": {
+                "pattern": "^WS[A-Za-z0-9]{10}$",
                 "type": "string"
               }
             },
             "required": [
-              "workspace",
+              "workspace_id",
               "kind"
             ],
             "type": "object"
@@ -268,6 +337,7 @@ export const wireDocument = {
           {
             "properties": {
               "incarnation": {
+                "pattern": "^[A-Za-z0-9]{12}$",
                 "type": "string"
               },
               "kind": {
@@ -289,10 +359,6 @@ export const wireDocument = {
           },
           {
             "properties": {
-              "alias": {
-                "description": "New workspace alias to publish on this host.",
-                "type": "string"
-              },
               "create_directory": {
                 "description": "Create only the final component if absent. Parents must already exist.",
                 "type": "boolean"
@@ -309,6 +375,10 @@ export const wireDocument = {
                 ],
                 "type": "string"
               },
+              "name": {
+                "description": "Display name to publish for this project.",
+                "type": "string"
+              },
               "parent": {
                 "description": "Alias of an eligible configured export.",
                 "type": "string"
@@ -317,7 +387,7 @@ export const wireDocument = {
             "required": [
               "parent",
               "directory",
-              "alias",
+              "name",
               "create_directory",
               "kind"
             ],
@@ -347,18 +417,19 @@ export const wireDocument = {
           },
           {
             "properties": {
-              "alias": {
-                "type": "string"
-              },
               "status": {
                 "enum": [
                   "workspace_added"
                 ],
                 "type": "string"
+              },
+              "workspace_id": {
+                "pattern": "^WS[A-Za-z0-9]{10}$",
+                "type": "string"
               }
             },
             "required": [
-              "alias",
+              "workspace_id",
               "status"
             ],
             "type": "object"
@@ -488,7 +559,7 @@ export const wireDocument = {
         ],
         "type": "object"
       },
-      "CreateScope": {
+      "CreateNamespace": {
         "additionalProperties": false,
         "properties": {
           "request_id": {
@@ -497,9 +568,9 @@ export const wireDocument = {
             "type": "string"
           },
           "token": {
-            "maxLength": 256,
-            "minLength": 32,
-            "pattern": "^[A-Za-z0-9_-]+$",
+            "maxLength": 12,
+            "minLength": 12,
+            "pattern": "^[A-Za-z0-9]{12}$",
             "type": "string",
             "writeOnly": true
           }
@@ -538,6 +609,12 @@ export const wireDocument = {
           "online": {
             "type": "boolean"
           },
+          "project_roots": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "workspace_management": {
             "description": "This active control lease accepts remote workspace registration.",
             "type": [
@@ -558,12 +635,17 @@ export const wireDocument = {
           "installation_id",
           "online",
           "observed_at",
-          "workspaces"
+          "workspaces",
+          "project_roots"
         ],
         "type": "object"
       },
       "HostPage": {
         "properties": {
+          "generation": {
+            "description": "Namespace generation verified in the same transaction as the page.",
+            "type": "string"
+          },
           "items": {
             "items": {
               "$ref": "#/components/schemas/HostView"
@@ -578,6 +660,7 @@ export const wireDocument = {
           }
         },
         "required": [
+          "generation",
           "items",
           "next"
         ],
@@ -612,7 +695,7 @@ export const wireDocument = {
         "type": "string"
       },
       "MessageHistoryPage": {
-        "description": "Durable scope traffic, in descending message ID order. This is not a Provider transcript.",
+        "description": "Durable Namespace traffic, in descending message ID order. This is not a Provider transcript.",
         "properties": {
           "items": {
             "items": {
@@ -679,6 +762,104 @@ export const wireDocument = {
         ],
         "type": "object"
       },
+      "NamespacePage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/NamespaceRow"
+            },
+            "type": "array"
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next"
+        ],
+        "type": "object"
+      },
+      "NamespaceReceipt": {
+        "properties": {
+          "credential_version": {
+            "format": "u-int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "generation": {
+            "type": "string"
+          },
+          "namespace_id": {
+            "type": "string"
+          },
+          "namespace_url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "namespace_id",
+          "namespace_url",
+          "credential_version",
+          "generation"
+        ],
+        "type": "object"
+      },
+      "NamespaceRow": {
+        "properties": {
+          "agents": {
+            "format": "u-int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "credential_version": {
+            "format": "u-int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "generation": {
+            "type": "string"
+          },
+          "hosts": {
+            "format": "u-int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "namespace_id": {
+            "type": "string"
+          },
+          "namespace_url": {
+            "type": "string"
+          },
+          "online_hosts": {
+            "format": "u-int32",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "namespace_id",
+          "namespace_url",
+          "credential_version",
+          "generation",
+          "created_at",
+          "hosts",
+          "online_hosts",
+          "agents",
+          "available"
+        ],
+        "type": "object"
+      },
       "RoleCapability": {
         "additionalProperties": false,
         "properties": {
@@ -716,9 +897,9 @@ export const wireDocument = {
             "type": "string"
           },
           "token": {
-            "maxLength": 256,
-            "minLength": 32,
-            "pattern": "^[A-Za-z0-9_-]+$",
+            "maxLength": 12,
+            "minLength": 12,
+            "pattern": "^[A-Za-z0-9]{12}$",
             "type": "string",
             "writeOnly": true
           }
@@ -727,104 +908,6 @@ export const wireDocument = {
           "request_id",
           "expected_version",
           "token"
-        ],
-        "type": "object"
-      },
-      "ScopePage": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/ScopeRow"
-            },
-            "type": "array"
-          },
-          "next": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        },
-        "required": [
-          "items",
-          "next"
-        ],
-        "type": "object"
-      },
-      "ScopeReceipt": {
-        "properties": {
-          "credential_version": {
-            "format": "u-int32",
-            "minimum": 0,
-            "type": "integer"
-          },
-          "generation": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "scope_url": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "scope_url",
-          "credential_version",
-          "generation"
-        ],
-        "type": "object"
-      },
-      "ScopeRow": {
-        "properties": {
-          "agents": {
-            "format": "u-int32",
-            "minimum": 0,
-            "type": "integer"
-          },
-          "available": {
-            "type": "boolean"
-          },
-          "created_at": {
-            "format": "int64",
-            "type": "integer"
-          },
-          "credential_version": {
-            "format": "u-int32",
-            "minimum": 0,
-            "type": "integer"
-          },
-          "generation": {
-            "type": "string"
-          },
-          "hosts": {
-            "format": "u-int32",
-            "minimum": 0,
-            "type": "integer"
-          },
-          "id": {
-            "type": "string"
-          },
-          "online_hosts": {
-            "format": "u-int32",
-            "minimum": 0,
-            "type": "integer"
-          },
-          "scope_url": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "scope_url",
-          "credential_version",
-          "generation",
-          "created_at",
-          "hosts",
-          "online_hosts",
-          "agents",
-          "available"
         ],
         "type": "object"
       },
@@ -933,11 +1016,8 @@ export const wireDocument = {
         "type": "object"
       },
       "WorkspaceCapability": {
-        "additionalProperties": false,
+        "description": "Shared fields also composed into the flattened WorkspaceView schema.",
         "properties": {
-          "alias": {
-            "type": "string"
-          },
           "default_available": {
             "type": "boolean"
           },
@@ -947,28 +1027,76 @@ export const wireDocument = {
               "null"
             ]
           },
-          "managed_parent": {
-            "description": "This configured export is eligible as a parent for remote workspace registration. Set by the server from the lease header.",
-            "readOnly": true,
-            "type": [
-              "boolean",
-              "null"
-            ]
+          "name": {
+            "type": "string"
           },
           "roles": {
             "items": {
               "$ref": "#/components/schemas/RoleCapability"
             },
             "type": "array"
+          },
+          "workspace_id": {
+            "pattern": "^WS[A-Za-z0-9]{10}$",
+            "type": "string"
           }
         },
         "required": [
-          "alias",
+          "workspace_id",
+          "name",
           "default_available",
           "default_reason",
           "roles"
         ],
         "type": "object"
+      },
+      "WorkspacePage": {
+        "properties": {
+          "generation": {
+            "description": "Namespace generation verified in the same transaction as the page.",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceView"
+            },
+            "type": "array"
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "generation",
+          "items",
+          "next"
+        ],
+        "type": "object"
+      },
+      "WorkspaceView": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/WorkspaceCapability"
+          },
+          {
+            "properties": {
+              "host": {
+                "type": "string"
+              },
+              "online": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "host",
+              "online"
+            ],
+            "type": "object"
+          }
+        ]
       }
     },
     "securitySchemes": {
@@ -988,91 +1116,13 @@ export const wireDocument = {
       "name": "PolyForm-Noncommercial-1.0.0"
     },
     "title": "AgentX Deployment Administration",
-    "version": "0.7.33"
+    "version": "0.7.34"
   },
   "openapi": "3.1.0",
   "paths": {
-    "/api/v1/admin/overview": {
+    "/api/v1/admin/namespaces": {
       "get": {
-        "operationId": "getAdminOverview",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminOverview"
-                }
-              }
-            },
-            "description": ""
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            },
-            "description": "Invalid input"
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            },
-            "description": "Invalid admin credential"
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            },
-            "description": "Unknown scope"
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            },
-            "description": "Conflict"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            },
-            "description": "Storage error"
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            },
-            "description": "Unavailable"
-          }
-        },
-        "tags": []
-      }
-    },
-    "/api/v1/admin/scopes": {
-      "get": {
-        "operationId": "listAdminScopes",
+        "operationId": "listAdminNamespaces",
         "parameters": [
           {
             "in": "query",
@@ -1098,7 +1148,7 @@ export const wireDocument = {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScopePage"
+                  "$ref": "#/components/schemas/NamespacePage"
                 }
               }
             },
@@ -1132,7 +1182,7 @@ export const wireDocument = {
                 }
               }
             },
-            "description": "Unknown scope"
+            "description": "Unknown namespace"
           },
           "409": {
             "content": {
@@ -1168,9 +1218,9 @@ export const wireDocument = {
         "tags": []
       }
     },
-    "/api/v1/admin/scopes/{id}": {
+    "/api/v1/admin/namespaces/{id}": {
       "get": {
-        "operationId": "getAdminScope",
+        "operationId": "getAdminNamespace",
         "parameters": [
           {
             "in": "path",
@@ -1186,7 +1236,7 @@ export const wireDocument = {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScopeRow"
+                  "$ref": "#/components/schemas/NamespaceRow"
                 }
               }
             },
@@ -1220,7 +1270,7 @@ export const wireDocument = {
                 }
               }
             },
-            "description": "Unknown scope"
+            "description": "Unknown namespace"
           },
           "409": {
             "content": {
@@ -1256,7 +1306,7 @@ export const wireDocument = {
         "tags": []
       },
       "put": {
-        "operationId": "putAdminScope",
+        "operationId": "putAdminNamespace",
         "parameters": [
           {
             "in": "path",
@@ -1271,7 +1321,7 @@ export const wireDocument = {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateScope"
+                "$ref": "#/components/schemas/CreateNamespace"
               }
             }
           },
@@ -1282,7 +1332,7 @@ export const wireDocument = {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScopeReceipt"
+                  "$ref": "#/components/schemas/NamespaceReceipt"
                 }
               }
             },
@@ -1316,7 +1366,7 @@ export const wireDocument = {
                 }
               }
             },
-            "description": "Unknown scope"
+            "description": "Unknown namespace"
           },
           "409": {
             "content": {
@@ -1352,14 +1402,23 @@ export const wireDocument = {
         "tags": []
       }
     },
-    "/api/v1/admin/scopes/{id}/agents": {
+    "/api/v1/admin/namespaces/{id}/agents": {
       "get": {
-        "operationId": "listAdminScopeAgents",
+        "operationId": "listAdminNamespaceAgents",
         "parameters": [
           {
             "in": "path",
             "name": "id",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Expected Namespace generation. Bind the first page's generation when continuing a cursor.",
+            "in": "query",
+            "name": "generation",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -1378,7 +1437,8 @@ export const wireDocument = {
             "required": false,
             "schema": {
               "format": "u-int32",
-              "minimum": 0,
+              "maximum": 200,
+              "minimum": 1,
               "type": "integer"
             }
           },
@@ -1391,6 +1451,16 @@ export const wireDocument = {
             }
           },
           {
+            "in": "query",
+            "name": "workspace_id",
+            "required": false,
+            "schema": {
+              "pattern": "^WS[A-Za-z0-9]{10}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Include host-reported Agent facts. Omit to return identity and membership only.",
             "in": "query",
             "name": "facts",
             "required": false,
@@ -1438,7 +1508,7 @@ export const wireDocument = {
                 }
               }
             },
-            "description": "Unknown scope"
+            "description": "Unknown namespace"
           },
           "409": {
             "content": {
@@ -1474,7 +1544,7 @@ export const wireDocument = {
         "tags": []
       }
     },
-    "/api/v1/admin/scopes/{id}/changes": {
+    "/api/v1/admin/namespaces/{id}/changes": {
       "get": {
         "operationId": "adminSpaceChanges",
         "parameters": [
@@ -1542,7 +1612,7 @@ export const wireDocument = {
                 }
               }
             },
-            "description": "Unknown scope"
+            "description": "Unknown namespace"
           },
           "409": {
             "content": {
@@ -1578,14 +1648,23 @@ export const wireDocument = {
         "tags": []
       }
     },
-    "/api/v1/admin/scopes/{id}/hosts": {
+    "/api/v1/admin/namespaces/{id}/hosts": {
       "get": {
-        "operationId": "listAdminScopeHosts",
+        "operationId": "listAdminNamespaceHosts",
         "parameters": [
           {
             "in": "path",
             "name": "id",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Expected Namespace generation. Bind the first page's generation when continuing a cursor.",
+            "in": "query",
+            "name": "generation",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -1604,7 +1683,8 @@ export const wireDocument = {
             "required": false,
             "schema": {
               "format": "u-int32",
-              "minimum": 0,
+              "maximum": 200,
+              "minimum": 1,
               "type": "integer"
             }
           }
@@ -1648,7 +1728,7 @@ export const wireDocument = {
                 }
               }
             },
-            "description": "Unknown scope"
+            "description": "Unknown namespace"
           },
           "409": {
             "content": {
@@ -1684,7 +1764,7 @@ export const wireDocument = {
         "tags": []
       }
     },
-    "/api/v1/admin/scopes/{id}/hosts/{host}/capabilities": {
+    "/api/v1/admin/namespaces/{id}/hosts/{host}/capabilities": {
       "get": {
         "operationId": "getAdminHostCapabilities",
         "parameters": [
@@ -1744,7 +1824,7 @@ export const wireDocument = {
                 }
               }
             },
-            "description": "Unknown scope"
+            "description": "Unknown namespace"
           },
           "409": {
             "content": {
@@ -1780,9 +1860,9 @@ export const wireDocument = {
         "tags": []
       }
     },
-    "/api/v1/admin/scopes/{id}/messages": {
+    "/api/v1/admin/namespaces/{id}/messages": {
       "get": {
-        "operationId": "listAdminScopeMessages",
+        "operationId": "listAdminNamespaceMessages",
         "parameters": [
           {
             "in": "path",
@@ -1821,6 +1901,7 @@ export const wireDocument = {
             "name": "incarnation",
             "required": true,
             "schema": {
+              "pattern": "^(?:[A-Za-z0-9]{12})$",
               "type": "string"
             }
           },
@@ -1893,7 +1974,7 @@ export const wireDocument = {
                 }
               }
             },
-            "description": "Unknown scope"
+            "description": "Unknown namespace"
           },
           "409": {
             "content": {
@@ -1929,7 +2010,7 @@ export const wireDocument = {
         "tags": []
       },
       "post": {
-        "operationId": "sendAdminScopeMessage",
+        "operationId": "sendAdminNamespaceMessage",
         "parameters": [
           {
             "in": "path",
@@ -1989,7 +2070,7 @@ export const wireDocument = {
                 }
               }
             },
-            "description": "Unknown scope"
+            "description": "Unknown namespace"
           },
           "409": {
             "content": {
@@ -2035,7 +2116,7 @@ export const wireDocument = {
         "tags": []
       }
     },
-    "/api/v1/admin/scopes/{id}/operations": {
+    "/api/v1/admin/namespaces/{id}/operations": {
       "post": {
         "operationId": "createAdminControlOperation",
         "parameters": [
@@ -2097,7 +2178,7 @@ export const wireDocument = {
                 }
               }
             },
-            "description": "Unknown scope"
+            "description": "Unknown namespace"
           },
           "409": {
             "content": {
@@ -2133,7 +2214,7 @@ export const wireDocument = {
         "tags": []
       }
     },
-    "/api/v1/admin/scopes/{id}/operations/{request_id}": {
+    "/api/v1/admin/namespaces/{id}/operations/{request_id}": {
       "get": {
         "operationId": "getAdminControlOperation",
         "parameters": [
@@ -2193,7 +2274,7 @@ export const wireDocument = {
                 }
               }
             },
-            "description": "Unknown scope"
+            "description": "Unknown namespace"
           },
           "409": {
             "content": {
@@ -2229,9 +2310,9 @@ export const wireDocument = {
         "tags": []
       }
     },
-    "/api/v1/admin/scopes/{id}/token-rotations": {
+    "/api/v1/admin/namespaces/{id}/token-rotations": {
       "post": {
-        "operationId": "rotateAdminScopeToken",
+        "operationId": "rotateAdminNamespaceToken",
         "parameters": [
           {
             "in": "path",
@@ -2257,7 +2338,7 @@ export const wireDocument = {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScopeReceipt"
+                  "$ref": "#/components/schemas/NamespaceReceipt"
                 }
               }
             },
@@ -2291,7 +2372,7 @@ export const wireDocument = {
                 }
               }
             },
-            "description": "Unknown scope"
+            "description": "Unknown namespace"
           },
           "409": {
             "content": {
@@ -2327,9 +2408,9 @@ export const wireDocument = {
         "tags": []
       }
     },
-    "/api/v1/admin/scopes/{id}/transcript": {
+    "/api/v1/admin/namespaces/{id}/transcript": {
       "get": {
-        "operationId": "listAdminScopeTranscript",
+        "operationId": "listAdminNamespaceTranscript",
         "parameters": [
           {
             "in": "path",
@@ -2368,6 +2449,7 @@ export const wireDocument = {
             "name": "incarnation",
             "required": true,
             "schema": {
+              "pattern": "^(?:[A-Za-z0-9]{12})$",
               "type": "string"
             }
           },
@@ -2440,7 +2522,210 @@ export const wireDocument = {
                 }
               }
             },
-            "description": "Unknown scope"
+            "description": "Unknown namespace"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Storage error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unavailable"
+          }
+        },
+        "tags": []
+      }
+    },
+    "/api/v1/admin/namespaces/{id}/workspaces": {
+      "get": {
+        "operationId": "listAdminWorkspaces",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Expected Namespace generation. Bind the first page's generation when continuing a cursor.",
+            "in": "query",
+            "name": "generation",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "host",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exclusive cursor from a previous page.",
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "format": "u-int32",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspacePage"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Invalid input"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Invalid admin credential"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unknown namespace"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Storage error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unavailable"
+          }
+        },
+        "tags": []
+      }
+    },
+    "/api/v1/admin/overview": {
+      "get": {
+        "operationId": "getAdminOverview",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOverview"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Invalid input"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Invalid admin credential"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unknown namespace"
           },
           "409": {
             "content": {

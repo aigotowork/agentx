@@ -424,25 +424,14 @@ pub(crate) fn resolve_effective_dev_root(db_path: &Path) -> Option<(PathBuf, &'s
         return Some((PathBuf::from(r), "env"));
     }
 
-    read_dev_root_from_kv(db_path).map(|path| (path, "kv"))
+    read_projected_dev_root(db_path).map(|path| (path, "kv"))
 }
 
-fn read_dev_root_from_kv(db_path: &Path) -> Option<PathBuf> {
-    if !db_path.exists() {
-        return None;
-    }
-    let scope = db_path.parent()?;
-    let result = crate::service::InvocationContext::capture()
-        .and_then(|invocation| crate::service::client::Client::connect(scope, invocation))
-        .and_then(|client| client.call(crate::service::Request::Maintenance(crate::service::maintenance::Request::DevRoot)));
-    match result {
-        Ok(crate::service::Response::Maintenance(crate::service::maintenance::Response::DevRoot(value))) => value.filter(|value| !value.is_empty()).map(PathBuf::from),
-        Ok(_) => {
-            log_warn("router", "dev_root_kv_read_failed", "daemon returned a different maintenance response");
-            None
-        }
+fn read_projected_dev_root(db_path: &Path) -> Option<PathBuf> {
+    match crate::config::dev_root::read(db_path.parent()?) {
+        Ok(path) => path,
         Err(error) => {
-            log_warn("router", "dev_root_kv_read_failed", &error.to_string());
+            log_warn("router", "dev_root_projection_failed", &error.to_string());
             None
         }
     }
@@ -1002,7 +991,18 @@ fn dispatch_native_command(cmd: &str, args: &[String]) -> i32 {
         };
         parsed.had_separator = cmd_argv.iter().any(|argument| argument == "--");
         let directory_selected = parsed.dir.is_some() || parsed.workspace.is_some();
-        let connect = if parsed.delivery_status.is_some() || parsed.sender_name().is_some() || directory_selected { crate::cli::client::Session::connect } else { crate::cli::client::Session::connect_required };
+        let observe_only = parsed.delivery_status.is_some() || parsed.receipt.is_some();
+        if observe_only || (!directory_selected && (parsed.quiet || parsed.json)) {
+            match crate::cli::client::Session::for_direct_send(flags.name.as_deref(), flags.go) {
+                Ok(Some(session)) => return crate::cli::commands::send::cmd_send_client(&session, &parsed),
+                Ok(None) => {} // Resolve the exact shared provider attachment below.
+                Err(error) => {
+                    eprintln!("Error: {error}");
+                    return 1;
+                }
+            }
+        }
+        let connect = if observe_only || parsed.sender_name().is_some() || directory_selected { crate::cli::client::Session::connect } else { crate::cli::client::Session::connect_required };
         let session = match connect(flags.name.as_deref(), flags.go) {
             Ok(session) => session,
             Err(error) => {
@@ -1019,7 +1019,7 @@ fn dispatch_native_command(cmd: &str, args: &[String]) -> i32 {
             }
         };
         let runtime = crate::runtime::context::AgentxContext::from_env(&session.invocation.environment, session.invocation.cwd.clone());
-        if parsed.delivery_status.is_some() {
+        if observe_only {
             return crate::cli::commands::send::cmd_send_client(&session, &parsed);
         }
         if directory_selected && parsed.sender_name().is_none() && session.actor.is_none() && flags.name.is_none() && !runtime.is_inside_ai_tool() {
@@ -1191,9 +1191,9 @@ mod tests {
     }
 
     #[test]
-    fn read_dev_root_missing_scope_does_not_start_daemon() {
+    fn dev_root_projection_does_not_start_daemon_for_missing_scope() {
         let dir = tempfile::tempdir().unwrap();
-        assert_eq!(read_dev_root_from_kv(&dir.path().join("absent").join("agentx.db")), None);
+        assert_eq!(read_projected_dev_root(&dir.path().join("absent").join("agentx.db")), None);
         assert!(!dir.path().join("absent").exists());
     }
 

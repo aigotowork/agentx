@@ -15,8 +15,7 @@ pub(crate) fn read<T: DeserializeOwned>(stream: &mut super::platform::Stream, de
     read_limited(stream, deadline, MAX_FRAME_BYTES)
 }
 
-/// A clean close between frames is meaningful after Ready (readiness probes).
-/// A truncated prefix/body remains an error and never becomes Hello-only EOF.
+/// Distinguish a clean empty connection from a truncated frame.
 #[cfg(any(unix, windows))]
 pub(crate) fn read_optional<T: DeserializeOwned>(stream: &mut super::platform::Stream, deadline: Instant) -> Result<Option<T>, DaemonError> {
     read_limited_optional(stream, deadline, MAX_FRAME_BYTES)
@@ -52,8 +51,13 @@ pub(crate) fn write<T: Serialize>(stream: &mut super::platform::Stream, value: &
 #[cfg(any(unix, windows))]
 pub(crate) fn write_limited<T: Serialize>(stream: &mut super::platform::Stream, value: &T, deadline: Instant, maximum: usize) -> Result<(), DaemonError> {
     let body = encode_limited(value, maximum)?;
+    write_encoded(stream, &body, deadline)
+}
+
+#[cfg(any(unix, windows))]
+pub(super) fn write_encoded(stream: &mut super::platform::Stream, body: &[u8], deadline: Instant) -> Result<(), DaemonError> {
     write_bytes(stream, &(body.len() as u32).to_be_bytes(), deadline)?;
-    write_bytes(stream, &body, deadline)
+    write_bytes(stream, body, deadline)
 }
 
 pub(crate) fn encode_limited<T: Serialize>(value: &T, maximum: usize) -> Result<Vec<u8>, DaemonError> {

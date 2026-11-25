@@ -134,7 +134,7 @@ impl Fixture {
     fn ready(&self, scope: &DaemonScope) -> DaemonInfo {
         let deadline = Instant::now() + Duration::from_secs(10);
         loop {
-            if let Ok((_, info)) = self.connect(scope) {
+            if let Ok(info) = self.read_status(scope) {
                 return info;
             }
             assert!(Instant::now() < deadline, "daemon never became ready; evidence at {}", self.root.path().display());
@@ -142,27 +142,16 @@ impl Fixture {
         }
     }
 
-    fn connect(&self, scope: &DaemonScope) -> Result<(super::platform::Stream, DaemonInfo), DaemonError> {
-        let deadline = Instant::now() + Duration::from_secs(2);
-        let mut stream = super::platform::connect(scope, deadline)?;
-        let (peer_pid, _) = super::platform::peer(&stream)?;
-        super::frame::write(&mut stream, &ClientFrame::Hello { protocol_version: PROTOCOL_VERSION, build_version: BUILD_VERSION.into(), build_id: self.build_id.clone(), canonical_scope: scope.root().to_path_buf() }, deadline)?;
-        match super::frame::read(&mut stream, deadline)? {
-            ServerFrame::Ready(info) if info.pid == peer_pid && info.canonical_scope == scope.root() && info.build_id == self.build_id && info.build_version == BUILD_VERSION && info.protocol_version == PROTOCOL_VERSION => Ok((stream, info)),
-            ServerFrame::Failure(error) => Err(error),
-            _ => Err(DaemonError::Protocol("fixture readiness identity mismatch".into())),
+    fn read_status(&self, scope: &DaemonScope) -> Result<DaemonInfo, DaemonError> {
+        let info = super::probe(scope)?;
+        if info.build_id != self.build_id || info.build_version != BUILD_VERSION || info.protocol_version != PROTOCOL_VERSION {
+            return Err(DaemonError::Protocol("fixture status identity mismatch".into()));
         }
+        Ok(info)
     }
 
     fn call(&self, scope: &DaemonScope, caller: CallerContext, request: Request) -> Result<crate::service::ServiceResult<Response>, DaemonError> {
-        let (mut stream, info) = self.connect(scope)?;
-        let deadline = Instant::now() + Duration::from_secs(5);
-        super::frame::write(&mut stream, &ClientFrame::Call { daemon_instance: info.daemon_instance, caller, request }, deadline)?;
-        match super::frame::read(&mut stream, deadline)? {
-            ServerFrame::Result { result, .. } => Ok(result),
-            ServerFrame::Failure(error) => Err(error),
-            _ => Err(DaemonError::Protocol("fixture expected operation result".into())),
-        }
+        super::call(scope, caller, request)
     }
 
     fn caller(&self, info: &DaemonInfo, request_id: &str) -> CallerContext {
@@ -430,18 +419,18 @@ fn controlled_pty_message_delivery(tool: &str, recovery: bool, missed_stop: bool
     let launch_context: serde_json::Value = serde_json::from_str(before.launch_context.as_deref().unwrap()).unwrap();
     let identity = crate::sys::process::identity(child_pid).expect("positive launched child incarnation");
     assert_eq!(launch_context["pid_identity"], identity);
+    let control = fixture.root.path().join("qoder-control.json");
+    let advance = |event: &str| {
+        let temporary = control.with_extension("tmp");
+        fs::write(&temporary, serde_json::json!({"event": event}).to_string()).unwrap();
+        fs::rename(temporary, &control).unwrap();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while !observations().iter().any(|row| row["kind"] == "controlled-state" && row["command"]["event"] == event) {
+            assert!(Instant::now() < deadline, "{event} was not handled: {:?}", observations());
+            std::thread::sleep(Duration::from_millis(20));
+        }
+    };
     if recovery || missed_stop {
-        let control = fixture.root.path().join("qoder-control.json");
-        let advance = |event: &str| {
-            let temporary = control.with_extension("tmp");
-            fs::write(&temporary, serde_json::json!({"event": event}).to_string()).unwrap();
-            fs::rename(temporary, &control).unwrap();
-            let deadline = Instant::now() + Duration::from_secs(5);
-            while !observations().iter().any(|row| row["kind"] == "controlled-state" && row["command"]["event"] == event) {
-                assert!(Instant::now() < deadline, "{event} was not handled: {:?}", observations());
-                std::thread::sleep(Duration::from_millis(20));
-            }
-        };
         if missed_stop {
             advance("StartWithoutStop");
             assert_eq!(record().status_context, "model:request");
@@ -503,9 +492,28 @@ fn controlled_pty_message_delivery(tool: &str, recovery: bool, missed_stop: bool
     assert_eq!(code, 0, "{stderr}");
     assert!(events.lines().filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok()).any(|event| event["data"]["text"] == "controlled child to parent ready" && event["instance"] == name), "actual child message missing: {events}");
     let body = "controlled parent to idle child exact receipt";
+    if tool == "codex" {
+        advance("ShowPicker");
+    }
     let (code, sent, stderr) = fixture.cli(scope.root(), &["send", "--json", "--iam", parent, &format!("@{name}"), "--", body]);
     assert_eq!(code, 0, "send={sent}; stderr={stderr}");
+    let picker_closed = if tool == "codex" {
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while record().status_context != "tui:input-overlay" {
+            assert!(Instant::now() < deadline, "active picker was not classified: {:?}", observations());
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        assert!(!observations().iter().any(|row| row["kind"] == "input"), "wrote at a menu");
+        advance("ClosePicker");
+        Some(Instant::now())
+    } else {
+        None
+    };
     let delivered = await_observation("delivered");
+    if let Some(picker_closed) = picker_closed {
+        assert!(picker_closed.elapsed() < Duration::from_secs(2), "picker close did not wake the pending path promptly");
+        assert_eq!(observations().iter().filter(|row| row["kind"] == "submitted").count(), 1, "must submit exactly one wake");
+    }
     assert!(delivered["outputs"].as_array().unwrap().iter().any(|value| value["hookSpecificOutput"]["additionalContext"].as_str().is_some_and(|text| text.contains(body))), "wrong hook output: {delivered}");
     let deadline = Instant::now() + Duration::from_secs(5);
     let after = loop {
@@ -531,7 +539,8 @@ fn controlled_pty_message_delivery(tool: &str, recovery: bool, missed_stop: bool
     let confirmed = delivery_report(&first_event);
     assert_eq!(confirmed["recipients"][0]["mailbox"], "confirmed");
     assert_eq!(confirmed["recipients"][0]["participant"]["incarnation_bits"], original.incarnation_bits);
-    assert_eq!(confirmed["recipients"][0]["host"]["protocol"], PROTOCOL_VERSION);
+    assert_eq!(confirmed["recipients"][0]["host"]["child"]["pid"], child_pid);
+    assert_eq!(confirmed["recipients"][0]["host"]["child"]["incarnation"], identity);
     assert!(confirmed["recipients"][0]["host"]["last_poll"].is_number());
     let parent_before = fixture.hook_record(&scope, &info, parent);
     let (code, _, stderr) = fixture.cli(scope.root(), &["send", "--delivery-status", &first_event, "--json", "--iam", parent]);
@@ -539,9 +548,7 @@ fn controlled_pty_message_delivery(tool: &str, recovery: bool, missed_stop: bool
     let parent_after = fixture.hook_record(&scope, &info, parent);
     assert_eq!((parent_after.last_event_id, &parent_after.status, &parent_after.status_context), (parent_before.last_event_id, &parent_before.status, &parent_before.status_context), "report lookup must not drain mail or change caller activity");
 
-    let control = fixture.root.path().join("qoder-control.json");
-    fs::write(&control, r#"{"event":"UserPromptSubmit"}"#).unwrap();
-    await_observation("controlled-state");
+    advance("UserPromptSubmit");
     let queued_body = "queued during active turn; recover across daemon reconnect";
     let (code, output, stderr) = fixture.cli(scope.root(), &["send", "--json", "--iam", parent, &format!("@{name}"), "--", queued_body]);
     assert_eq!(code, 0, "{output}; {stderr}");
@@ -617,6 +624,27 @@ fn controlled_pty_message_delivery(tool: &str, recovery: bool, missed_stop: bool
     assert!(handles.iter().any(|(pid, _)| *pid == restarted.pid));
     assert!(handles.iter().all(|(pid, _)| *pid == restarted.pid));
     assert!(!fixture.launched_processes().is_empty());
+
+    if tool == "codex" {
+        advance("HoldNextReceipt");
+        let submissions_before = observations().iter().filter(|row| row["kind"] == "submitted").count();
+        let target = format!("@{resumed_name}");
+        let (code, output, stderr) = fixture.cli(scope.root(), &["send", "--json", "--iam", parent, &target, "--", "accepted without a hook receipt"]);
+        assert_eq!(code, 0, "{output}; {stderr}");
+        let event = serde_json::from_str::<serde_json::Value>(&output).unwrap()["event_id"].as_i64().unwrap().to_string();
+        await_observation("submitted-without-receipt");
+        let deadline = Instant::now() + Duration::from_secs(15);
+        loop {
+            let report = delivery_report(&event);
+            assert_eq!(report["recipients"][0]["mailbox"], "pending", "{report}");
+            assert_eq!(observations().iter().filter(|row| row["kind"] == "submitted").count(), submissions_before + 1, "the host may not retype an unconfirmed wake");
+            if report["recipients"][0]["context"] == "tui:wake-unacknowledged" {
+                break;
+            }
+            assert!(Instant::now() < deadline, "unconfirmed wake did not latch: {report}");
+            std::thread::sleep(Duration::from_millis(200));
+        }
+    }
 }
 
 /// Snapshot every readable same-user process descriptor referring to the exact
@@ -721,7 +749,7 @@ fn process_restart_retains_generation_reset_rejects_stale_client() {
     assert!(handles.iter().all(|(pid, _)| *pid == before.pid));
     first.kill().unwrap();
     first.wait().unwrap();
-    let deadline = Instant::now() + Duration::from_secs(5);
+    let deadline = Instant::now() + Duration::from_secs(8);
     let status = loop {
         if let Some(status) = follower.try_wait().unwrap() {
             break status;
@@ -742,33 +770,21 @@ fn process_restart_retains_generation_reset_rejects_stale_client() {
     };
     assert_ne!(after.database_generation, reset.database_generation);
     let result = fixture.call(&scope, fixture.caller(&after, "old-generation"), Request::Maintenance(crate::service::maintenance::Request::Summary));
-    assert!(matches!(result, Err(DaemonError::StaleGeneration) | Ok(Err(crate::service::ServiceError::StaleFence))), "stale client was admitted: {result:?}");
+    assert!(matches!(result, Err(DaemonError::StaleGeneration) | Ok(Err(crate::service::ServiceError::StaleGeneration))), "stale client was admitted: {result:?}");
 }
 
 #[test]
 #[ignore = "requires fixed AGENTX_ACCEPTANCE_BINARY and disposable Linux process execution"]
-fn process_protocol_mismatch_rejects_and_compatible_builds_connect() {
+fn process_direct_wire_rejects_an_unknown_operation_and_serves_shared_operations() {
     let fixture = Fixture::new();
     let scope = fixture.scope("scope");
     let _daemon = fixture.spawn_daemon(&scope);
-    fixture.ready(&scope);
-    for (version, build, build_id) in [
-        (PROTOCOL_VERSION + 1, BUILD_VERSION.to_owned(), fixture.build_id.clone()),
-        (PROTOCOL_VERSION, "incompatible-fixture".into(), fixture.build_id.clone()),
-        (PROTOCOL_VERSION, BUILD_VERSION.to_owned(), format!("native-build-v1:{}", uuid::Uuid::new_v4())),
-        (PROTOCOL_VERSION, BUILD_VERSION.to_owned(), fixture.artifact_sha256.clone()),
-    ] {
-        let deadline = Instant::now() + Duration::from_secs(3);
-        let mut stream = super::platform::connect(&scope, deadline).unwrap();
-        super::frame::write(&mut stream, &ClientFrame::Hello { protocol_version: version, build_version: build, build_id, canonical_scope: scope.root().to_path_buf() }, deadline).unwrap();
-        let reply: ServerFrame = super::frame::read(&mut stream, deadline).unwrap();
-        if version != PROTOCOL_VERSION {
-            assert!(matches!(reply, ServerFrame::Failure(DaemonError::Incompatible(_))));
-        } else {
-            assert!(matches!(reply, ServerFrame::Ready(_)));
-        }
-    }
     let info = fixture.ready(&scope);
+    let deadline = Instant::now() + Duration::from_secs(3);
+    let mut stream = super::platform::connect(&scope, deadline).unwrap();
+    super::frame::write(&mut stream, &ClientFrame::Call { canonical_scope: scope.root().into(), daemon_instance: None, caller: fixture.caller(&info, "future-operation"), request: serde_json::json!({"Events":"FutureEventOperation"}) }, deadline)
+        .unwrap();
+    assert!(matches!(super::frame::read::<ServerFrame>(&mut stream, deadline).unwrap(), ServerFrame::Failure(DaemonError::Unsupported(operation)) if operation == "Events.FutureEventOperation"));
     assert_eq!(fixture.summary(&scope, &info).event_count, 0);
 }
 
@@ -804,11 +820,6 @@ fn process_native_cohort_copy_audit_and_running_path_replacement() {
     let after = fixture.ready(&scope);
     assert_eq!(after.pid, original.pid);
     assert_eq!(after.build_id, original.build_id);
-    let deadline = Instant::now() + Duration::from_secs(3);
-    let mut stream = super::platform::connect(&scope, deadline).unwrap();
-    super::frame::write(&mut stream, &ClientFrame::Hello { protocol_version: PROTOCOL_VERSION, build_version: BUILD_VERSION.into(), build_id: replacement_cohort, canonical_scope: scope.root().to_path_buf() }, deadline).unwrap();
-    assert!(matches!(super::frame::read::<ServerFrame>(&mut stream, deadline).unwrap(), ServerFrame::Ready(_)));
-    drop(stream);
     assert_eq!(fixture.summary(&scope, &after).event_count, 0);
     println!("native copied cohort={} postlink audit_sha256={changed_sha}; running replacement retained pid={} cohort={}", fixture.build_id, after.pid, after.build_id);
 }
@@ -838,8 +849,13 @@ fn process_abandoned_reply_reconciles_after_restart_without_duplicate_message() 
     let mut caller = fixture.caller(&info, "stable-lost-reply");
     caller.invocation.explicit_name = Some(names[0].clone());
     let submission = Submission { recipients: vec![names[1].clone()], text: "one durable frozen message".into(), envelope: Default::default(), external_sender: None, broadcast_confirmed: false, inline_bundle: None };
-    let (mut stream, ready) = fixture.connect(&scope).unwrap();
-    super::frame::write(&mut stream, &ClientFrame::Call { daemon_instance: ready.daemon_instance, caller: caller.clone(), request: Request::Messages(MessageRequest::Submit(submission.clone())) }, Instant::now() + Duration::from_secs(3)).unwrap();
+    let mut stream = super::platform::connect(&scope, Instant::now() + Duration::from_secs(3)).unwrap();
+    super::frame::write(
+        &mut stream,
+        &ClientFrame::Call { canonical_scope: scope.root().into(), daemon_instance: Some(info.daemon_instance.clone()), caller: caller.clone(), request: Request::Messages(MessageRequest::Submit(submission.clone())) },
+        Instant::now() + Duration::from_secs(3),
+    )
+    .unwrap();
     // Deliberately abandon the only reply. A successful socket write says
     // nothing about commit; the durable acceptance lookup below is authoritative.
     drop(stream);

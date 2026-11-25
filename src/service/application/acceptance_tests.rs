@@ -167,7 +167,7 @@ fn delivery_poll_reader_serves_committed_mail_and_fences_progress() {
         app.handle(&caller, heartbeat.clone()).unwrap();
         let persisted: serde_json::Value = serde_json::from_str(&app.db.kv_get(key).unwrap().unwrap()).unwrap();
         assert_eq!(persisted["last_poll"], last_poll);
-        assert_eq!(persisted["protocol"], crate::daemon::PROTOCOL_VERSION);
+        assert!(persisted.get("protocol").is_none());
         assert_eq!(app.db.get_instance_full("lobo").unwrap().unwrap().last_event_id, 0);
 
         // Replace the durable registration while retaining participant and peer.

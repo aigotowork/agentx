@@ -64,39 +64,49 @@ npm run generate --prefix packages/agentx-client -- /ABS/ACTUAL_SPEC_DIR
 
 One whole consumer build/check and one concentrated retained-workspace integration follow the complete generated batch. Existing public tarball evidence is not repeated per method or ordinary handoff. No registry publication or installed/live adoption is included.
 
-## Cloud deployment and scopes
+## Cloud deployment and Namespaces
 
-云端管理和消息通信使用不同的地址和 Bearer。管理端使用部署根地址，例如 `https://agentx.example`；通信端使用管理回执的 `scope_url`，也可直接传入完整的 `/scopes/ID/api/v1` 地址。两个客户端均要求 HTTPS，只有 loopback 允许 HTTP，并拒绝重定向。
+云端管理和消息通信使用不同的地址和 Bearer。管理端使用部署根地址，例如 `https://agentx.example`；通信端使用管理回执的 `namespace_url`，也可直接传入完整的 `/namespaces/ID/api/v1` 地址。两个客户端均要求 HTTPS，只有 loopback 允许 HTTP，并拒绝重定向。
 
 ```ts
-import { createCloudAdminClient, createCloudScopeClient } from '@agentx/client';
+import { createCloudAdminClient, createCloudNamespaceClient } from '@agentx/client';
 
 const admin = createCloudAdminClient({ baseUrl: deploymentUrl, token: adminToken });
-const overview = await admin.overview();
-const scope = await admin.getScope('office');
-const communication = createCloudScopeClient({ baseUrl: scope.scope_url, token: scopeToken });
-const descriptor = await communication.describe();
-const agents = await communication.listAgents();
+const namespace = await admin.getNamespace('office');
+const adminHosts = await admin.listHosts(namespace.namespace_id, { generation: namespace.generation });
+
+const communication = createCloudNamespaceClient({ baseUrl: namespace.namespace_url, token: namespaceToken });
+const { generation } = await communication.describe();
+const agents = await communication.listAgents({ generation, host: 'host-a', limit: 50 });
+if (agents.next) {
+  await communication.listAgents({ generation, host: 'host-a', limit: 50, after: agents.next });
+}
 const exactAgent = agents.items[0];
 if (exactAgent) {
-  const history = await communication.listMessages({ ...exactAgent, generation: descriptor.generation });
+  const { host, name, incarnation } = exactAgent;
+  const history = await communication.listMessages({ host, name, incarnation, generation });
   // Pass history.next as the exclusive before cursor when it is non-null.
 }
 ```
 
-`CloudAdminTypes` 和 `CloudScopeTypes` 按原生 OpenAPI 组件名导出。两者的 64 位时间戳在 SDK 中为 `bigint`；标识和消息 ID 仍为字符串。管理方法包括 `overview`、`listScopes`、`getScope`、`listHosts`、`listAgents`、`putScope` 和 `rotateScopeToken`。通信方法包括 `describe`、`listHosts`、`listAgents`、`listMessages`、`renewHost`、`registerAgent`、`retireAgent`、`send`、`getOperation`、`claimInbox`、`confirmInbox` 和 `recoverInbox`。各调用可传 `{ signal }`。查看[通信契约](../../.controller/cloud-scope/communication-wire.md)了解写入的代次要求、原始消息查询及投递确认。
+管理控制台用 `overview()` 展示部署概况；打开指定 Namespace 只需 `getNamespace(id)`，成员入口只需 `describe()`。主机、Agent 和 Workspace 的页应带上已有的 `generation`；如果第一页尚未绑定，就从响应取得 `generation`，与 `next` 一起传给下一页。遇到 `stale_generation` 时丢弃旧页和游标，从新的 Namespace 读取重新开始。`unsupported_operation` 只表示所调用的操作不可用。协议版本供诊断，请求路径仍为 `/api/v1`。云端令牌和 Agent 实例标识必须是 12 位 ASCII 字母数字，项目标识必须是 `WS` 加 10 位 ASCII 字母数字。项目地址仍由主机和项目标识共同确定。
 
-先保留完整的写入参数，再提交请求。管理 SDK 的 `CloudAdminOutcomeUnknown` 含 Scope、操作、请求 ID，不含令牌；由调用方决定是否向同一部署显式重放原请求。通信 SDK 的 `CloudScopeOutcomeUnknown` 要用原请求或 claim 身份来核对。客户端不会自动重试、变更代次或释放 claim。
+`CloudAdminTypes` 和 `CloudNamespaceTypes` 按原生 OpenAPI 组件名导出。两者的 64 位时间戳在 SDK 中为 `bigint`；标识和消息 ID 仍为字符串。管理方法包括 `overview`、`listNamespaces`、`getNamespace`、`listHosts`、`listWorkspaces`、`listAgents`、`putNamespace` 和 `rotateNamespaceToken`。通信方法包括 `describe`、`listHosts`、`listWorkspaces`、`listAgents`、`listMessages`、`renewHost`、`registerAgent`、`retireAgent`、`send`、`getOperation`、`claimInbox`、`confirmInbox` 和 `recoverInbox`。各调用可传 `{ signal }`。查看[通信契约](../../.controller/cloud-scope/communication-wire.md)了解写入的代次要求、原始消息查询及投递确认；标识及版本以 [Cloud v2 清理契约](../../.controller/cloud-namespace/cleanup.md)为准。
+
+先保留完整的写入参数，再提交请求。管理 SDK 的 `CloudAdminOutcomeUnknown` 含 Namespace、操作、请求 ID，不含令牌；由调用方决定是否向同一部署显式重放原请求。通信 SDK 的 `CloudNamespaceOutcomeUnknown` 要用原请求或 claim 身份来核对。客户端不会自动重试、变更代次或释放 claim。
 
 ```sh
 # Set AGENTX_ADMIN_URL and AGENTX_ADMIN_TOKEN before remote commands.
 agentx-http admin overview
-agentx-http admin scopes list --limit 20
-agentx-http admin scopes show office
-agentx-http admin scopes hosts office
-agentx-http admin scopes agents office --host host-a
-agentx-http admin scopes create office --pending ./office-create.json
-agentx-http admin scopes rotate-token office --expected-version 1 --pending ./office-rotation.json
+agentx-http admin namespaces list --limit 20
+agentx-http admin namespaces show office
+agentx-http admin namespaces hosts office --limit 20
+# Continue with the generation and next values returned by the first page:
+agentx-http admin namespaces hosts office --generation GENERATION --after CURSOR --limit 20
+agentx-http admin namespaces workspaces office --host host-a
+agentx-http admin namespaces agents office --host host-a --workspace-id WORKSPACE_ID
+agentx-http admin namespaces create office --pending ./office-create.json
+agentx-http admin namespaces rotate-token office --expected-version 1 --pending ./office-rotation.json
 # After an unknown result, explicitly replay the retained request against the same deployment:
 agentx-http admin pending replay ./office-rotation.json
 # Explicitly print the proposed token as JSON; this does not check whether it is active:
@@ -105,13 +115,13 @@ agentx-http admin pending reveal ./office-rotation.json
 
 都可以省略 `--pending`；CLI 默认用 `$XDG_STATE_HOME/agentx-http/cloud-admin`（未设置则用 `~/.local/state`），派发前保存带原 URL、部署 ID 和请求参数的私有文件。重放前会检查当前部署 ID。在 POSIX 上文件模式为 0600，重放和显示拒绝读取其他用户可访问的文件。普通回执和错误不显示令牌。默认生成令牌，也可用 `--new-token-file FILE|-` 从文件或 stdin 提供。远程命令的管理 URL 优先取 `--admin-url`，其次为 `AGENTX_ADMIN_URL`，然后才取配置的 `admin_url`；管理令牌只取 `AGENTX_ADMIN_TOKEN`。
 
-启用云端管理的主机可通过 `getHostCapabilities(scope, host)` 查看安装标识、目录更新时间、可用工作区和角色。调用 `submitControlOperation(scope, original)` 提交一项启动或停止；`getControlOperation(scope, requestId)` 读取回执，`recoverControlOperation(scope, original)` 还会核对原始代次、主机安装与完整命令。通信端的同名消息回执是另一资源。查看[云端控制契约](../../.controller/cloud-daemon/wire.md)了解状态和代次。
+启用云端管理的主机可通过 `getHostCapabilities(namespace, host)` 查看安装标识、目录更新时间、可用工作区和角色。调用 `submitControlOperation(namespace, original)` 提交一项启动或停止；`getControlOperation(namespace, requestId)` 读取回执，`recoverControlOperation(namespace, original)` 还会核对原始代次、主机安装与完整命令。通信端的同名消息回执是另一资源。查看[云端控制契约](../../.controller/cloud-daemon/wire.md)了解状态和代次。
 
 ```sh
 agentx-http admin hosts capabilities office --host host-a
 # Use values returned by capabilities for G and I. Omit --role for default Codex.
 agentx-http admin operations launch office --generation G --host host-a --installation-id I \
-  --workspace studio --name nova --title 'Review notes' --task 'Summarize the latest notes.'
+  --workspace-id WORKSPACE_ID --name nova --title 'Review notes' --task 'Summarize the latest notes.'
 agentx-http admin operations show office --request-id Q
 # Use the exact name and incarnation from the intended Agent row or launch receipt.
 agentx-http admin operations stop office --generation G --host host-a --installation-id I \
@@ -126,13 +136,13 @@ agentx-http admin operations stop office --generation G --host host-a --installa
 npm run generate --prefix packages/agentx-client -- --cloud /ABS/AGENTX_CANDIDATE
 ```
 
-选择性更新时可在命令尾部加 `admin` 或 `scope`。云端生成不会覆盖本地三个 listener 的投影。
+选择性更新时可在命令尾部加 `admin` 或 `namespace`。云端生成不会覆盖本地三个 listener 的投影。
 
 ## Scoped domain objects
 
-`selectAgentXScope({ baseUrl, expectedScope })` 用可信的原生作用域路径选择 Management listener，并固定数据库代次。`scope.verify()` 可以主动确认 listener 仍是同一作用域、同一代次；原有句柄不会随检查切换。用 `scope.workspaces()` 查找工作区，`workspace.roles()` 读当前有效岗位定义；Agent 快照记录启动时实际采用的岗位。`workspace.members({ limit, after })` 是兼容的全局分页投影：一页可能没有成员，但 `coverage.next` 仍可继续。`scope.workspace('global')` 只表示明确采纳的全局工作区；旧记录和未知归属各自保留。
+`selectAgentXScope({ baseUrl, expectedScope })` 读取一次 Management 描述，确认可信的原生作用域并固定数据库代次。后续操作直接使用原代次；`scope.verify()` 用于显式复核作用域和代次，原有句柄不会自动切换。成员分页或消息历史缺失时，仅对应方法返回 `UnsupportedCapability`；错误的 `capability` 指明 `workspace-members` 或 `message-history`。如果服务返回 `StaleGeneration`，先重新选择作用域，再取得新对象和游标。用 `scope.workspaces()` 查工作区，`workspace.roles()` 读当前岗位定义；Agent 快照保留启动时实际采用的岗位。
 
-若 `scope.supportsWorkspaceMembers` 为真，`workspace.memberPage({ limit, after, currentOnly })` 则由原生先筛成员，再分页。翻页请沿用同一个 `currentOnly` 和该方法返回的 `coverage.next`；不能混用两种游标。旧 listener 缺少能力声明时，由应用明确选择兼容投影。
+`workspace.memberPage({ limit, after, currentOnly })` 由原生服务先按归属筛选再分页。翻页沿用同一个 `currentOnly` 和返回的 `coverage.next`。`scope.workspace('global')` 只表示明确归属全局的成员；全作用域概览用 `scope.agents()`，包含旧记录和未知归属。
 
 若 `scope.descriptor.supports_message_history === true`，用 `agent.messageHistory()` 直接读取最近 20 条，按事件顺序显示。使用返回的 `nextBefore` 作为 `agent.messageHistory({ before })` 的参数可翻阅更早消息；`null` 表示已到头。只用最新页的 `liveAfter` 调用 `agent.messages({ after })` 继续收取新消息。旧页的 `liveAfter` 固定为 `null`。两类游标都绑定原 listener、代次和精确 Agent，不能互换。能力字段缺失时可继续用 `agent.messages()` 顺序读取。
 
@@ -140,9 +150,7 @@ npm run generate --prefix packages/agentx-client -- --cloud /ABS/AGENTX_CANDIDAT
 import { selectAgentXScope, OutcomeUnknown } from '@agentx/client';
 
 const scope = await selectAgentXScope({ baseUrl, expectedScope });
-const agent = scope.agent(savedCurrentAgentAddress); // or obtain a current handle with workspace.members()
-const snapshot = await agent.snapshot();
-const history = await agent.messages({ limit: 20 });
+const agent = scope.agent(savedCurrentAgentAddress); // or obtain a current handle with workspace.memberPage()
 const prepared = agent.prepareMessage({ text: 'Please review', intent: 'request' }, requestId);
 await saveOriginalCommand(prepared); // caller-owned; save before dispatch
 try {
@@ -160,7 +168,7 @@ if (receipt.status === 'Succeeded') {
 
 `scope.prepareLaunch` / `scope.launch` 与 `workspace.prepareLaunch` / `workspace.launch` 接受显式启动参数；Workspace 版本固定工作区，启动时由原生解析角色选择。启动、恢复或分叉成功时，只用 `result.agentAddresses` 导航到原回执记录的精确实例。没有保留精确地址的旧回执返回 `null`，仍可读其名称和诊断。Agent 生命周期与标签操作也采用先准备再派发的方式。`scope.attachments` 注册及下载附件；`scope.inbox` 分开读取与标记所选信件；`scope.directory` 分开预览路由与实际发送；`scope.officeActivity` 只观察已接纳的活动。各分页游标仅在原作用域和选择下有效。
 
-查看 [发送示例](examples/scoped-send.mjs)、[Transcript 与恢复示例](examples/scoped-transcript.mjs) 或 [完整对象模型](../../.docs/model/typescript-domain-sdk.md)。原有地址观察 `scope.operation(prepared.operation)` 仍返回原生回执；已知命令时的类型化回执也保留 `.receipt`。丢失响应或回执不匹配时，请保留原命令并查询原 ID。过期代次、回执缺失、等待超时与 `Unknown` 均不能作为重发依据。
+查看 [发送示例](examples/scoped-send.mjs)、[Transcript 与恢复示例](examples/scoped-transcript.mjs) 或 [完整对象模型](../../.docs/model/typescript-domain-sdk.md)。发送示例直接使用之前保存的 `snapshot.address` JSON。原有地址观察 `scope.operation(prepared.operation)` 仍返回原生回执；已知命令时的类型化回执也保留 `.receipt`。丢失响应或回执不匹配时，请保留原命令并查询原 ID。过期代次、回执缺失、等待超时与 `Unknown` 均不能作为重发依据。
 
 ## Build and public installation
 

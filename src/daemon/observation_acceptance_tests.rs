@@ -14,7 +14,7 @@ use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
 use super::observation::{self, InspectionRequest, InspectionResponse};
-use super::wire::{BUILD_VERSION, ClientFrame, DaemonInfo, PROTOCOL_VERSION, ServerFrame};
+use super::wire::{ClientFrame, ServerFrame};
 use super::{DaemonError, DaemonScope};
 use crate::observability::configuration::ConfigurationRequest;
 use crate::observability::context::{DaemonRef, EvidenceValue, ScopeRef};
@@ -46,7 +46,7 @@ impl Drop for ObserverChild {
 }
 
 /// Passive reads may encounter two genuine response tails after receiving a
-/// previous Result. Retry only the known pre-Ready close class, within one
+/// previous Result. Retry only the known capacity close class, within one
 /// finite window; owner responses and epoch/peer/protocol errors are never retried.
 fn read_with_capacity_retry<T>(deadline: Instant, mut read: impl FnMut() -> Result<T, crate::observability::runtime::LocalFailure>) -> Result<T, crate::observability::runtime::LocalFailure> {
     loop {
@@ -59,13 +59,13 @@ fn read_with_capacity_retry<T>(deadline: Instant, mut read: impl FnMut() -> Resu
 
 fn is_capacity_close(error: &crate::observability::runtime::LocalFailure) -> bool {
     use crate::observability::runtime::ClientStage;
-    error.stage == ClientStage::Hello && error.kind == LocalFailureKind::Io && matches!(error.os_code, Some(nix::libc::ECONNRESET | nix::libc::ECONNABORTED | nix::libc::EPIPE))
+    matches!(error.stage, ClientStage::InspectionWrite | ClientStage::InspectionRead) && error.kind == LocalFailureKind::Io && matches!(error.os_code, Some(nix::libc::ECONNRESET | nix::libc::ECONNABORTED | nix::libc::EPIPE))
 }
 
 #[test]
 fn passive_read_retry_is_bounded_and_does_not_hide_authority_failures() {
     use crate::observability::runtime::{ClientStage, LocalFailure};
-    let reset = LocalFailure { stage: ClientStage::Hello, kind: LocalFailureKind::Io, os_code: Some(nix::libc::ECONNRESET), at: None };
+    let reset = LocalFailure { stage: ClientStage::InspectionWrite, kind: LocalFailureKind::Io, os_code: Some(nix::libc::ECONNRESET), at: None };
     let mut attempts = 0;
     let recovered = read_with_capacity_retry(Instant::now() + BOUND, || {
         attempts += 1;
@@ -74,7 +74,7 @@ fn passive_read_retry_is_bounded_and_does_not_hide_authority_failures() {
     .unwrap();
     assert_eq!((recovered, attempts), (7, 2));
     for failure in [
-        LocalFailure { stage: ClientStage::InspectionRead, ..reset.clone() },
+        LocalFailure { stage: ClientStage::Connect, ..reset.clone() },
         LocalFailure { kind: LocalFailureKind::StaleGeneration, ..reset.clone() },
         LocalFailure { kind: LocalFailureKind::Incompatible, ..reset.clone() },
         LocalFailure { stage: ClientStage::PeerAuthentication, kind: LocalFailureKind::PeerRejected, ..reset.clone() },
@@ -147,6 +147,7 @@ struct Fixture {
     gate: Arc<DispatchGate>,
     entered: mpsc::Receiver<()>,
     calls: Arc<AtomicUsize>,
+    initial_generation: String,
 }
 
 impl Fixture {
@@ -176,13 +177,16 @@ impl Fixture {
                 Ok(GatedApplication { inner, gate: thread_gate, entered: sender, calls: thread_calls })
             })
         });
-        let fixture = Self { directory, scope, reference, stop, thread: Some(thread), gate, entered, calls };
+        let mut fixture = Self { directory, scope, reference, stop, thread: Some(thread), gate, entered, calls, initial_generation: String::new() };
         fixture.wait_snapshot(|value| matches!(value.generation.value, EvidenceValue::Present(_)));
         let deadline = Instant::now() + BOUND;
-        while super::probe(&fixture.scope).is_err() {
+        fixture.initial_generation = loop {
+            if let Ok(info) = super::probe(&fixture.scope) {
+                break info.database_generation;
+            }
             assert!(Instant::now() < deadline, "ordinary listener never became ready");
             std::thread::sleep(Duration::from_millis(5));
-        }
+        };
         fixture.wait_snapshot(|value| value.gauges.business_connections == 0);
         fixture
     }
@@ -212,15 +216,8 @@ impl Fixture {
         }
     }
 
-    fn connect_business(&self) -> (super::platform::Stream, DaemonInfo) {
-        let deadline = Instant::now() + BOUND;
-        let mut stream = super::platform::connect(&self.scope, deadline).unwrap();
-        super::frame::write(&mut stream, &ClientFrame::Hello { protocol_version: PROTOCOL_VERSION, build_version: BUILD_VERSION.into(), build_id: super::wire::build_identity().into(), canonical_scope: self.scope.root().to_path_buf() }, deadline)
-            .unwrap();
-        match super::frame::read(&mut stream, deadline).unwrap() {
-            ServerFrame::Ready(info) => (stream, info),
-            other => panic!("ordinary readiness rejected: {}", serde_json::to_string(&other).unwrap()),
-        }
+    fn connect_business(&self) -> super::platform::Stream {
+        super::platform::connect(&self.scope, Instant::now() + BOUND).unwrap()
     }
 
     fn send_watermark(&self, id: &str) -> super::platform::Stream {
@@ -228,10 +225,10 @@ impl Fixture {
     }
 
     fn send(&self, id: &str, mut invocation: InvocationContext, request: Request) -> super::platform::Stream {
-        let (mut stream, info) = self.connect_business();
+        let mut stream = self.connect_business();
         invocation.cwd = self.directory.path().to_path_buf();
-        let caller = CallerContext { request_id: RequestId(id.into()), invocation, deadline_unix_ms: None, expected_database_generation: Some(info.database_generation) };
-        super::frame::write(&mut stream, &ClientFrame::Call { daemon_instance: info.daemon_instance, caller, request }, Instant::now() + BOUND).unwrap();
+        let caller = CallerContext { request_id: RequestId(id.into()), invocation, deadline_unix_ms: None, expected_database_generation: Some(self.initial_generation.clone()) };
+        super::frame::write(&mut stream, &ClientFrame::Call { canonical_scope: self.scope.root().into(), daemon_instance: None, caller, request }, Instant::now() + BOUND).unwrap();
         stream
     }
 
@@ -524,10 +521,10 @@ fn inspection_remains_callable_with_all_thirty_two_ordinary_workers_occupied() {
     let fixture = Fixture::start(false);
     let mut occupied = Vec::new();
     for _ in 0..32 {
-        occupied.push(fixture.connect_business().0);
+        occupied.push(fixture.connect_business());
     }
     let started = Instant::now();
-    let snapshot = fixture.snapshot();
+    let snapshot = fixture.wait_snapshot(|value| value.gauges.business_connections == 32);
     assert!(started.elapsed() < Duration::from_millis(1_500), "passive lane exceeded the one-second contract plus harness scheduling margin");
     assert_eq!(snapshot.gauges.business_connections, 32);
     assert_eq!(snapshot.gauges.executing_jobs, 0);
@@ -556,7 +553,7 @@ fn inspection_distinguishes_running_and_queued_requests_while_application_is_hel
     fixture.wait_snapshot(|value| value.gauges.business_connections == 17);
     let mut occupied = Vec::new();
     for _ in 0..15 {
-        occupied.push(fixture.connect_business().0);
+        occupied.push(fixture.connect_business());
     }
     let started = Instant::now();
     let snapshot = fixture.wait_snapshot(|value| value.gauges.business_connections == 32 && value.gauges.executing_jobs == 1 && value.gauges.queued_jobs == 16);
@@ -629,7 +626,7 @@ fn reset_rotates_observation_epoch_and_rejects_already_queued_old_generation() {
         other => panic!("native reset failed: {}", serde_json::to_string(&other).unwrap()),
     };
     let stale_reply = super::frame::read(&mut stale, Instant::now() + BOUND).unwrap();
-    assert!(matches!(stale_reply, ServerFrame::Failure(DaemonError::StaleGeneration) | ServerFrame::Result { result: Err(crate::service::ServiceError::StaleFence), .. }));
+    assert!(matches!(stale_reply, ServerFrame::Failure(DaemonError::StaleGeneration) | ServerFrame::Result { result: Err(crate::service::ServiceError::StaleGeneration), .. }));
     fixture.wait_snapshot(|value| value.gauges.executing_jobs == 0 && value.gauges.queued_jobs == 0);
     let after = fixture.head();
     assert_eq!(before.stream.epoch.daemon, after.stream.epoch.daemon);

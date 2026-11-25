@@ -8,10 +8,10 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const [mode, candidate, selection, ...rest] = process.argv.slice(2);
 let sources;
 if (mode === '--cloud') {
-  if (!candidate || (selection && !['admin', 'scope'].includes(selection)) || rest.length) {
-    throw new Error('Usage: npm run generate -- --cloud CANDIDATE [admin|scope]');
+  if (!candidate || (selection && !['admin', 'namespace'].includes(selection)) || rest.length) {
+    throw new Error('Usage: npm run generate -- --cloud CANDIDATE [admin|namespace]');
   }
-  sources = (selection ? [selection] : ['admin', 'scope']).map(surface => ({
+  sources = (selection ? [selection] : ['admin', 'namespace']).map(surface => ({
     domain: `cloud-${surface}`,
     read: () => execFileSync(resolve(candidate), ['cloud-openapi', surface], { encoding: 'utf8' }),
   }));

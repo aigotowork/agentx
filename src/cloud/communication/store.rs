@@ -1,4 +1,4 @@
-//! Scope-owned SQLite transactions. Reach callers only through the typed scope operations.
+//! Scope-owned SQLite transactions. Reach callers only through the typed Namespace operations.
 mod inbox;
 pub(super) mod transcript;
 
@@ -12,12 +12,18 @@ use std::{
 };
 
 const DB_NAME: &str = "communication.sqlite3";
+use crate::cloud::{identifiers, storage};
+
 const TRANSCRIPT_SCHEMA: &str = include_str!("store/transcript.sql");
 const MESSAGE_HISTORY_INDEXES: &str = include_str!("store/message-history-indexes.sql");
 const LEASE_SECONDS: i64 = 60;
-const MESSAGE_COLUMNS: &str = "id,from_name,from_host,from_incarnation,to_name,to_host,to_incarnation,body,intent,reply_to,thread,created_at";
+const MESSAGE_COLUMNS: &str = "id,from_name,from_host,from_incarnation,to_name,to_host,to_incarnation,body,intent,reply_to,thread,created_at,
+    (SELECT workspace_id FROM agents WHERE name=from_name AND incarnation=from_incarnation),
+    (SELECT workspace_global FROM agents WHERE name=from_name AND incarnation=from_incarnation),
+    (SELECT workspace_id FROM agents WHERE name=to_name AND incarnation=to_incarnation),
+    (SELECT workspace_global FROM agents WHERE name=to_name AND incarnation=to_incarnation)";
 fn operator() -> AgentView {
-    AgentView { host: OPERATOR_HOST.into(), name: OPERATOR_NAME.into(), incarnation: OPERATOR_INCARNATION.into() }
+    AgentView { host: OPERATOR_HOST.into(), name: OPERATOR_NAME.into(), incarnation: OPERATOR_INCARNATION.into(), workspace: AgentWorkspace::Unexposed }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -32,9 +38,11 @@ pub(in crate::cloud) enum Error {
     Conflict(&'static str),
     #[error("agent already has an outstanding inbox claim")]
     ClaimOutstanding,
-    #[error("scope generation has changed")]
+    #[error("unsupported cloud Namespace database format")]
+    SchemaVersion,
+    #[error("Namespace generation has changed")]
     Generation,
-    #[error("scope credential has changed")]
+    #[error("Namespace credential has changed")]
     Credential,
     #[error("sender host is offline; renew its heartbeat")]
     Offline,
@@ -42,12 +50,12 @@ pub(in crate::cloud) enum Error {
     Installation,
     #[error("exact agent registration is no longer current")]
     Agent,
+    #[error("exact Agent registration does not belong to the requested workspace")]
+    AgentWorkspace,
     #[error("exact daemon lease is no longer current")]
     Lease,
     #[error("requested workspace or role is unavailable")]
     Capability,
-    #[error("the workspace alias is already published on this host")]
-    WorkspaceAliasTaken,
     #[error("report does not match the exact control claim")]
     ControlClaim,
     #[error("control claim already has a different terminal outcome")]
@@ -56,11 +64,11 @@ pub(in crate::cloud) enum Error {
     Sql(#[from] rusqlite::Error),
     #[error(transparent)]
     Json(#[from] serde_json::Error),
-    #[error("scope operation worker failed")]
+    #[error("Namespace operation worker failed")]
     Worker,
-    #[error("request body exceeds the scope size limit")]
+    #[error("request body exceeds the Namespace size limit")]
     PayloadTooLarge,
-    #[error("all scope wait slots are occupied")]
+    #[error("all Namespace wait slots are occupied")]
     WaitCapacity,
 }
 
@@ -69,29 +77,19 @@ pub(in crate::cloud) type Result<T> = std::result::Result<T, Error>;
 pub(super) fn initialize(root: &Path, generation: &str) -> anyhow::Result<()> {
     std::fs::create_dir_all(root)?;
     let mut conn = open(root, OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_CREATE)?;
-    conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;")?;
     let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
-    tx.execute_batch(include_str!("store/schema.sql"))?;
-    tx.execute_batch(MESSAGE_HISTORY_INDEXES)?;
-    tx.execute_batch(TRANSCRIPT_SCHEMA)?;
-    tx.execute("INSERT OR IGNORE INTO scope_metadata(singleton,generation) VALUES(1,?1)", [generation])?;
+    storage::provision(&tx, storage::NAMESPACE_FORMAT, "Namespace", || {
+        tx.execute_batch(include_str!("store/schema.sql"))?;
+        tx.execute_batch(MESSAGE_HISTORY_INDEXES)?;
+        tx.execute_batch(TRANSCRIPT_SCHEMA)?;
+        tx.execute_batch(crate::cloud::control::SCHEMA)?;
+        tx.execute("INSERT INTO scope_metadata(singleton,generation) VALUES(1,?1)", [generation])?;
+        Ok(())
+    })?;
     check_generation(&tx, generation)?;
     tx.commit()?;
+    conn.execute_batch("PRAGMA journal_mode=WAL;")?;
     Ok(())
-}
-
-/// Install additive read schema on scope databases created by older deployments.
-pub(in crate::cloud) fn upgrade_message_history(root: &Path, generation: &str) -> Result<()> {
-    transaction(
-        root,
-        generation,
-        true,
-        || true,
-        |conn, _| {
-            conn.execute_batch(MESSAGE_HISTORY_INDEXES)?;
-            Ok(conn.execute_batch(TRANSCRIPT_SCHEMA)?)
-        },
-    )
 }
 
 pub(in crate::cloud) fn transaction<T>(root: &Path, generation: &str, write: bool, credential_valid: impl Fn() -> bool, action: impl FnOnce(&Connection, i64) -> Result<T>) -> Result<T> {
@@ -103,6 +101,9 @@ pub(in crate::cloud) fn transaction<T>(root: &Path, generation: &str, write: boo
     let tx = conn.transaction_with_behavior(behavior)?;
     if !credential_valid() {
         return Err(Error::Credential);
+    }
+    if storage::version(&tx)? != storage::NAMESPACE_FORMAT {
+        return Err(Error::SchemaVersion);
     }
     check_generation(&tx, generation)?;
     let result = action(&tx, now())?;
@@ -130,7 +131,7 @@ fn check_generation(conn: &Connection, expected: &str) -> Result<()> {
     Ok(())
 }
 
-fn now() -> i64 {
+pub(in crate::cloud) fn now() -> i64 {
     SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs().try_into().unwrap_or(i64::MAX)
 }
 
@@ -167,6 +168,27 @@ pub(in crate::cloud) fn opaque(value: &str) -> Result<()> {
     Ok(())
 }
 
+pub(in crate::cloud) fn workspace_id(value: &str) -> Result<()> {
+    if !identifiers::valid_workspace_id(value) {
+        return Err(Error::Invalid("Workspace ID requires WS followed by ten ASCII letters or digits"));
+    }
+    Ok(())
+}
+
+pub(in crate::cloud) fn incarnation(value: &str) -> Result<()> {
+    if !identifiers::valid_incarnation(value) {
+        return Err(Error::Invalid("Agent incarnation requires exactly 12 ASCII letters or digits"));
+    }
+    Ok(())
+}
+
+pub(in crate::cloud) fn workspace(value: &AgentWorkspace) -> Result<()> {
+    match value {
+        AgentWorkspace::Project { workspace_id: id } => workspace_id(id),
+        _ => Ok(()),
+    }
+}
+
 fn message_id(value: &str) -> Result<i64> {
     if value.len() > 19 || value.starts_with('0') || !value.bytes().all(|byte| byte.is_ascii_digit()) {
         return Err(Error::Invalid("message IDs are positive decimal strings"));
@@ -182,7 +204,7 @@ fn page_limit(limit: Option<u32>, default: u32, max: u32) -> Result<usize> {
     Ok(limit as usize)
 }
 
-pub(super) fn hosts(conn: &Connection, now: i64, input: HostQuery) -> Result<HostPage> {
+pub(super) fn hosts(conn: &Connection, now: i64, generation: String, input: HostQuery) -> Result<HostPage> {
     if let Some(after) = &input.after {
         host_name(after)?;
     }
@@ -194,25 +216,28 @@ pub(super) fn hosts(conn: &Connection, now: i64, input: HostQuery) -> Result<Hos
     } else {
         None
     };
-    Ok(HostPage { items, next })
+    Ok(HostPage { generation, items, next })
 }
 
-pub(super) fn agents(conn: &Connection, now: i64, input: AgentQuery) -> Result<AgentPage> {
+pub(super) fn agents(conn: &Connection, now: i64, generation: String, input: AgentQuery) -> Result<AgentPage> {
     if let Some(after) = &input.after {
         name(after)?;
     }
     if let Some(host) = &input.host {
         host_name(host)?;
     }
+    if let Some(id) = &input.workspace_id {
+        workspace_id(id)?;
+    }
     let limit = page_limit(input.limit, 50, DIRECTORY_LIMIT)?;
-    let mut items = query_agents(conn, now, input.after.as_deref().unwrap_or(""), input.host.as_deref(), limit as i64 + 1, input.facts.unwrap_or(false))?;
+    let mut items = query_agents(conn, now, &input, limit as i64 + 1)?;
     let next = if items.len() > limit {
         items.pop();
         items.last().map(|item| item.name.clone())
     } else {
         None
     };
-    Ok(AgentPage { items, next })
+    Ok(AgentPage { generation, items, next })
 }
 
 fn query_hosts(conn: &Connection, now: i64, after: &str, limit: i64) -> rusqlite::Result<Vec<HostView>> {
@@ -224,24 +249,33 @@ fn query_hosts(conn: &Connection, now: i64, after: &str, limit: i64) -> rusqlite
     .collect()
 }
 
-fn read_agent(row: &Row<'_>, start: usize) -> rusqlite::Result<AgentView> {
-    Ok(AgentView { name: row.get(start)?, host: row.get(start + 1)?, incarnation: row.get(start + 2)? })
+fn read_workspace(row: &Row<'_>, start: usize) -> rusqlite::Result<AgentWorkspace> {
+    Ok(match row.get(start)? {
+        Some(workspace_id) => AgentWorkspace::Project { workspace_id },
+        None if row.get(start + 1)? => AgentWorkspace::Global,
+        None => AgentWorkspace::Unexposed,
+    })
 }
 
-fn query_agents(conn: &Connection, now: i64, after: &str, host: Option<&str>, limit: i64, facts: bool) -> Result<Vec<CloudAgentSummary>> {
+fn read_agent(row: &Row<'_>, start: usize) -> rusqlite::Result<AgentView> {
+    Ok(AgentView { name: row.get(start)?, host: row.get(start + 1)?, incarnation: row.get(start + 2)?, workspace: read_workspace(row, start + 3)? })
+}
+
+fn query_agents(conn: &Connection, now: i64, query: &AgentQuery, limit: i64) -> Result<Vec<CloudAgentSummary>> {
     let mut stmt = conn.prepare(
-        "SELECT a.name,a.host,a.incarnation,f.facts,f.reported_at FROM agents a
+        "SELECT a.name,a.host,a.incarnation,a.workspace_id,a.workspace_global,f.facts,f.reported_at FROM agents a
          LEFT JOIN agent_facts f ON ?4 AND f.name=a.name AND f.incarnation=a.incarnation
-         WHERE a.retired=0 AND a.name>?1 AND (?2 IS NULL OR a.host=?2) ORDER BY a.name LIMIT ?3",
+         WHERE a.retired=0 AND a.name>?1 AND (?2 IS NULL OR a.host=?2) AND (?5 IS NULL OR a.workspace_id=?5)
+         ORDER BY a.name LIMIT ?3",
     )?;
-    let mut rows = stmt.query(params![after, host, limit, facts])?;
+    let mut rows = stmt.query(params![query.after.as_deref().unwrap_or(""), query.host, limit, query.facts.unwrap_or(false), query.workspace_id])?;
     let mut result = Vec::new();
     while let Some(row) = rows.next()? {
-        let AgentView { name, host, incarnation } = read_agent(row, 0)?;
-        let value: Option<String> = row.get(3)?;
-        let reported: Option<i64> = row.get(4)?;
+        let AgentView { name, host, incarnation, workspace } = read_agent(row, 0)?;
+        let value: Option<String> = row.get(5)?;
+        let reported: Option<i64> = row.get(6)?;
         let facts = transcript::decode_facts(value.zip(reported), now, false)?;
-        result.push(CloudAgentSummary { name, host, incarnation, facts });
+        result.push(CloudAgentSummary { name, host, incarnation, workspace, facts });
     }
     Ok(result)
 }
@@ -273,28 +307,51 @@ fn current_host(conn: &Connection, now: i64, host: &str, installation_id: &str, 
 }
 
 pub(in crate::cloud) fn active_agent(conn: &Connection, key: &str) -> Result<Option<AgentView>> {
-    Ok(conn.query_row("SELECT name,host,incarnation FROM agents WHERE name=?1 AND retired=0", [key], |row| read_agent(row, 0)).optional()?)
+    Ok(conn.query_row("SELECT name,host,incarnation,workspace_id,workspace_global FROM agents WHERE name=?1 AND retired=0", [key], |row| read_agent(row, 0)).optional()?)
 }
 
-fn current_agent(conn: &Connection, now: i64, agent: &AgentView, installation_id: &str) -> Result<()> {
+/// Resolve the immutable exact registration, including after retirement.
+pub(in crate::cloud) fn exact_agent(conn: &Connection, host: &str, name: &str, incarnation: &str) -> Result<Option<AgentView>> {
+    Ok(conn.query_row("SELECT name,host,incarnation,workspace_id,workspace_global FROM agents WHERE name=?1 AND host=?2 AND incarnation=?3", params![name, host, incarnation], |row| read_agent(row, 0)).optional()?)
+}
+
+fn exact_match(a: &AgentView, b: &AgentView) -> bool {
+    a.name == b.name && a.host == b.host && a.incarnation == b.incarnation
+}
+
+fn current_agent(conn: &Connection, now: i64, agent: &AgentView, installation_id: &str) -> Result<AgentView> {
     name(&agent.name)?;
-    opaque(&agent.incarnation)?;
+    incarnation(&agent.incarnation)?;
+    workspace(&agent.workspace)?;
     current_host(conn, now, &agent.host, installation_id, true)?;
-    if active_agent(conn, &agent.name)?.as_ref() != Some(agent) {
-        return Err(Error::Agent);
-    }
-    Ok(())
+    active_agent(conn, &agent.name)?.filter(|active| exact_match(active, agent)).ok_or(Error::Agent)
 }
 
 pub(in crate::cloud) fn register_agent(conn: &Connection, now: i64, agent_name: String, input: AgentRegistration) -> Result<AgentView> {
     name(&agent_name)?;
-    opaque(&input.incarnation)?;
+    incarnation(&input.incarnation)?;
     current_host(conn, now, &input.host, &input.installation_id, true)?;
-    let agent = AgentView { name: agent_name, host: input.host, incarnation: input.incarnation };
+    let workspace_id = match &input.workspace {
+        AgentWorkspace::Project { workspace_id: id } => {
+            workspace_id(id)?;
+            Some(id.as_str())
+        }
+        _ => None,
+    };
+    let agent = AgentView { name: agent_name, host: input.host, incarnation: input.incarnation, workspace: input.workspace.clone() };
     if let Some(active) = active_agent(conn, &agent.name)? {
-        return if active == agent { Ok(active) } else { Err(Error::Conflict("agent name already has a registered instance")) };
+        return if exact_match(&active, &agent) && active.workspace == agent.workspace {
+            Ok(active)
+        } else if exact_match(&active, &agent) {
+            Err(Error::Conflict("exact Agent workspace membership is immutable"))
+        } else {
+            Err(Error::Conflict("agent name already has a registered instance"))
+        };
     }
-    let count = conn.execute("INSERT INTO agents(name,host,incarnation) VALUES(?1,?2,?3) ON CONFLICT(name,incarnation) DO NOTHING", params![agent.name, agent.host, agent.incarnation])?;
+    let count = conn.execute(
+        "INSERT INTO agents(name,host,incarnation,workspace_id,workspace_global) VALUES(?1,?2,?3,?4,?5) ON CONFLICT(name,incarnation) DO NOTHING",
+        params![agent.name, agent.host, agent.incarnation, workspace_id, matches!(agent.workspace, AgentWorkspace::Global)],
+    )?;
     if count == 0 {
         return Err(Error::Conflict("retired agent incarnation cannot be registered again"));
     }
@@ -303,13 +360,12 @@ pub(in crate::cloud) fn register_agent(conn: &Connection, now: i64, agent_name: 
 
 pub(in crate::cloud) fn retire_agent(conn: &Connection, now: i64, agent_name: String, input: AgentRegistration) -> Result<AgentView> {
     name(&agent_name)?;
-    opaque(&input.incarnation)?;
+    incarnation(&input.incarnation)?;
+    workspace(&input.workspace)?;
     current_host(conn, now, &input.host, &input.installation_id, false)?;
-    let changed = conn.execute("UPDATE agents SET retired=1 WHERE name=?1 AND host=?2 AND incarnation=?3", params![agent_name, input.host, input.incarnation])?;
-    if changed == 0 {
-        return Err(Error::Agent);
-    }
-    Ok(AgentView { name: agent_name, host: input.host, incarnation: input.incarnation })
+    let agent = exact_agent(conn, &input.host, &agent_name, &input.incarnation)?.ok_or(Error::Agent)?;
+    conn.execute("UPDATE agents SET retired=1 WHERE name=?1 AND host=?2 AND incarnation=?3", params![agent.name, agent.host, agent.incarnation])?;
+    Ok(agent)
 }
 
 fn recipient(conn: &Connection, to: &str, reply_to: Option<i64>) -> Result<AgentView> {
@@ -339,14 +395,23 @@ fn read_message(row: &Row<'_>) -> rusqlite::Result<MessageView> {
         "ack" => Intent::Ack,
         _ => return Err(rusqlite::Error::InvalidQuery),
     };
-    Ok(MessageView { id: id.to_string(), from: read_agent(row, 1)?, to: read_agent(row, 4)?, body: row.get(7)?, intent, reply_to: row.get::<_, Option<i64>>(9)?.map(|id| id.to_string()), thread: row.get(10)?, created_at: row.get(11)? })
+    Ok(MessageView {
+        id: id.to_string(),
+        from: AgentView { name: row.get(1)?, host: row.get(2)?, incarnation: row.get(3)?, workspace: read_workspace(row, 12)? },
+        to: AgentView { name: row.get(4)?, host: row.get(5)?, incarnation: row.get(6)?, workspace: read_workspace(row, 14)? },
+        body: row.get(7)?,
+        intent,
+        reply_to: row.get::<_, Option<i64>>(9)?.map(|id| id.to_string()),
+        thread: row.get(10)?,
+        created_at: row.get(11)?,
+    })
 }
 
 /// Page by durable message ID without reading the inbox or resolving current short names.
 pub(super) fn list_messages(conn: &Connection, input: MessageHistoryQuery) -> Result<MessageHistoryPage> {
     name(&input.name)?;
     host_name(&input.host)?;
-    opaque(&input.incarnation)?;
+    incarnation(&input.incarnation)?;
     let limit = page_limit(input.limit, 20, BATCH_LIMIT)?;
     if input.after.is_some() && input.before.is_some() {
         return Err(Error::Invalid("choose either before or after"));
@@ -397,7 +462,7 @@ fn validate_body(body: &str) -> Result<()> {
 }
 
 fn replay(conn: &Connection, request_id: &str, fingerprint: &[u8]) -> Result<Option<MessageView>> {
-    let existing = conn.query_row(&format!("SELECT {MESSAGE_COLUMNS},fingerprint FROM messages WHERE request_id=?1"), [request_id], |row| Ok((read_message(row)?, row.get::<_, Vec<u8>>(12)?))).optional()?;
+    let existing = conn.query_row(&format!("SELECT {MESSAGE_COLUMNS},fingerprint FROM messages WHERE request_id=?1"), [request_id], |row| Ok((read_message(row)?, row.get::<_, Vec<u8>>(16)?))).optional()?;
     match existing {
         Some((message, original)) if original == fingerprint => Ok(Some(message)),
         Some(_) => Err(Error::Conflict("request ID already belongs to another send")),
@@ -432,23 +497,25 @@ pub(super) fn send_human_message(conn: &Connection, now: i64, input: SendHumanMe
     validate_body(&input.body)?;
     name(&input.to.name)?;
     host_name(&input.to.host)?;
-    opaque(&input.to.incarnation)?;
+    incarnation(&input.to.incarnation)?;
+    workspace(&input.to.workspace)?;
 
     // Scope members cannot reserve IDs in the administrator's replay namespace.
     let request_id = format!("~space:{}", input.request_id);
+    // Membership is data attached to the address, not part of a send's replay identity.
+    let mut input = input;
+    input.to.workspace = AgentWorkspace::Unexposed;
     let fingerprint = Sha256::digest(serde_json::to_vec(&input)?);
     if let Some(message) = replay(conn, &request_id, &fingerprint)? {
         return Ok(message);
     }
-    if active_agent(conn, &input.to.name)?.as_ref() != Some(&input.to) {
-        return Err(Error::Agent);
-    }
+    let to = active_agent(conn, &input.to.name)?.filter(|active| exact_match(active, &input.to)).ok_or(Error::Agent)?;
 
     let from = operator();
     // Keep both message foreign keys intact without exposing a host or active Agent.
     conn.execute("INSERT OR IGNORE INTO hosts(name,installation_id,last_seen) VALUES(?1,?1,0)", [&from.host])?;
     conn.execute("INSERT OR IGNORE INTO agents(name,host,incarnation,retired) VALUES(?1,?2,?3,1)", params![from.name, from.host, from.incarnation])?;
-    insert_message(conn, now, &request_id, &fingerprint, NewMessage { from, to: input.to, body: input.body, intent: Intent::Request, reply_to: None, thread: None })
+    insert_message(conn, now, &request_id, &fingerprint, NewMessage { from, to, body: input.body, intent: Intent::Request, reply_to: None, thread: None })
 }
 
 pub(super) fn send(conn: &Connection, now: i64, input: SendMessage) -> Result<MessageView> {
@@ -457,12 +524,16 @@ pub(super) fn send(conn: &Connection, now: i64, input: SendMessage) -> Result<Me
     if input.thread.as_ref().is_some_and(|thread| thread.trim().is_empty() || thread.len() > 128 || thread.chars().any(char::is_control)) {
         return Err(Error::Invalid("thread must be nonblank, at most 128 bytes and contain no control characters"));
     }
+    incarnation(&input.from.incarnation)?;
+    workspace(&input.from.workspace)?;
     let reply_to = input.reply_to.as_deref().map(message_id).transpose()?;
+    let mut input = input;
+    input.from.workspace = AgentWorkspace::Unexposed;
     let fingerprint = Sha256::digest(serde_json::to_vec(&input)?);
     if let Some(message) = replay(conn, &input.request_id, &fingerprint)? {
         return Ok(message);
     }
-    current_agent(conn, now, &input.from, &input.installation_id)?;
+    let from = current_agent(conn, now, &input.from, &input.installation_id)?;
     let to = recipient(conn, &input.to, reply_to)?;
     let natural = input.request_id.starts_with(NATURAL_REPLY_PREFIX);
     if natural && (to.host != OPERATOR_HOST || input.intent != Intent::Ack || reply_to.is_none()) {
@@ -494,18 +565,18 @@ pub(super) fn send(conn: &Connection, now: i64, input: SendMessage) -> Result<Me
             }
         }
     }
-    insert_message(conn, now, &input.request_id, &fingerprint, NewMessage { from: input.from, to, body: input.body, intent: input.intent, reply_to, thread: input.thread })
+    insert_message(conn, now, &input.request_id, &fingerprint, NewMessage { from, to, body: input.body, intent: input.intent, reply_to, thread: input.thread })
 }
 
 pub(super) fn operation(conn: &Connection, request_id: String) -> Result<MessageOperation> {
     opaque(&request_id)?;
     let (message, confirmed, claimed) = conn
-        .query_row(&format!("SELECT {MESSAGE_COLUMNS},confirmed,claim_id IS NOT NULL FROM messages WHERE request_id=?1"), [&request_id], |row| Ok((read_message(row)?, row.get::<_, bool>(12)?, row.get::<_, bool>(13)?)))
+        .query_row(&format!("SELECT {MESSAGE_COLUMNS},confirmed,claim_id IS NOT NULL FROM messages WHERE request_id=?1"), [&request_id], |row| Ok((read_message(row)?, row.get::<_, bool>(16)?, row.get::<_, bool>(17)?)))
         .optional()?
         .ok_or(Error::NotFound("send request ID was not found"))?;
     let status = if confirmed {
         OperationStatus::Confirmed
-    } else if active_agent(conn, &message.to.name)?.as_ref() != Some(&message.to) {
+    } else if active_agent(conn, &message.to.name)?.is_none_or(|active| !exact_match(&active, &message.to)) {
         OperationStatus::Undeliverable
     } else if claimed {
         OperationStatus::Claimed

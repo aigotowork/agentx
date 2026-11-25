@@ -40,6 +40,10 @@ impl ManagementService {
         Self { scope, project, invocation, workers }
     }
 
+    pub(crate) fn scope_root(&self) -> &std::path::Path {
+        &self.scope
+    }
+
     /// Bounded native Agent page; this read does not run maintenance.
     pub(crate) fn list_agents(&self, input: ListAgentsInput) -> ServiceResult<AgentPage> {
         let request = list_request(&input)?;
@@ -104,29 +108,31 @@ impl ManagementService {
         self.submit_command(&input.generation, input.request_id, command)
     }
 
-    pub(crate) fn client(&self, generation: Option<&str>) -> Result<Client, ServiceError> {
-        let client = Client::connect_existing(&self.scope, self.invocation.clone())?;
-        if generation.is_some_and(|expected| expected != client.info().database_generation) {
-            return Err(ServiceError::StaleFence);
-        }
-        Ok(client)
+    fn client(&self, generation: &str) -> ServiceResult<Client> {
+        Client::connect_existing_fenced(&self.scope, self.invocation.clone(), generation)
+    }
+    /// Host-only work needs a native observation to confirm its generation fence.
+    fn verify_generation(&self, generation: &str) -> ServiceResult<()> {
+        self.client(generation)?.info()?;
+        Ok(())
     }
     pub(crate) fn call(&self, generation: &str, request: Request) -> Result<Response, ServiceError> {
-        let client = self.client(Some(generation))?;
+        let client = self.client(generation)?;
         match client.call(crate::service::Request::Management(request))? {
             crate::service::Response::Management(result) => Ok(result),
             _ => Err(ServiceError::Internal("unexpected management response".into())),
         }
     }
     pub(crate) fn describe(&self) -> Result<Descriptor, ServiceError> {
-        let client = self.client(None)?;
+        let client = Client::connect_existing(&self.scope, self.invocation.clone())?;
+        let info = client.info()?;
         let catalog = crate::config::profiles::ProfileCatalog::load(&self.scope).map_err(|e| ServiceError::InvalidInput(e.to_string()))?;
         Ok(Descriptor {
             supports_labels: true,
-            supports_workspace_members: client.info().workspace_members,
-            supports_message_history: client.info().message_history,
-            generation: client.info().database_generation.clone(),
-            scope: self.scope.to_string_lossy().into(),
+            supports_workspace_members: info.workspace_members,
+            supports_message_history: info.message_history,
+            generation: info.database_generation.clone(),
+            scope: client.scope_root().to_string_lossy().into(),
             project: self.project.to_string_lossy().into(),
             tools: crate::integrations::registry::ALL.iter().filter(|spec| spec.released).map(|spec| spec.name.into()).collect(),
             profiles: catalog.profiles.into_iter().map(|(name, profile)| ProfileView { name, tool: profile.tool, description: profile.description.unwrap_or_default() }).collect(),
@@ -146,7 +152,7 @@ impl ManagementService {
             working_directory = if requested.is_absolute() { requested } else { self.project.join(requested) };
         }
         let permit = self.workers.clone().try_acquire_owned().ok();
-        let client = self.client(Some(generation))?;
+        let client = self.client(generation)?;
         let crate::service::Response::Management(Response::Grant(grant)) = client.call(crate::service::Request::Management(Request::Submit { request_id: request_id.clone(), command, admit: permit.is_some() }))? else {
             return Err(ServiceError::Internal("unexpected admission response".into()));
         };

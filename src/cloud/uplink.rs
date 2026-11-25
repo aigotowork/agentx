@@ -8,7 +8,7 @@ mod journal;
 #[cfg(target_os = "linux")]
 mod worker;
 #[cfg(target_os = "linux")]
-mod workspaces;
+pub(super) mod workspaces;
 
 use std::sync::{Arc, atomic::AtomicBool, mpsc};
 use std::thread::{Scope, ScopedJoinHandle};

@@ -1,0 +1,3 @@
+# Native direct-call verification
+
+Read the [native protocol and upgrade guide](../../.docs/architecture/daemon.md). Run the daemon tests through `cargo test --locked --bin agentx daemon::`. For an upgrade test, supply absolute native executable paths in `AGENTX_ACCEPTANCE_BINARY`, `AGENTX_UPGRADE_V0731`, and `AGENTX_UPGRADE_V0733`, and run `cargo test --locked --bin agentx published_daemons_drain_without_changing_the_neighbor_or_old_receipt -- --ignored`. The fixture owns both disposable scopes and preserves original messages and receipts. The published v0.7.31 release only supplies an AMD64 Linux native archive.

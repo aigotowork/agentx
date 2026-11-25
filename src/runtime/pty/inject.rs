@@ -5,6 +5,7 @@ use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 #[cfg(unix)]
 use std::os::fd::AsRawFd;
+use std::time::Duration;
 
 /// Magic prefix for query commands (not injection)
 const QUERY_PREFIX: u8 = 0x00;
@@ -32,7 +33,117 @@ pub struct QueryClient {
 #[derive(Debug)]
 pub enum QueryCommand {
     Screen,
+    GuardedWake(GuardedWake),
     Unknown,
+}
+
+/// Fixed internal operations; the guard never grants authority for arbitrary
+/// text or approval keys on behalf of the automatic mailbox.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum WakeKey {
+    Marker,
+    Enter,
+    RecoveryMarker,
+    RecoveryEnter,
+}
+
+impl WakeKey {
+    fn wire(self) -> &'static str {
+        match self {
+            Self::Marker => "marker",
+            Self::Enter => "enter",
+            Self::RecoveryMarker => "recover-marker",
+            Self::RecoveryEnter => "recover-enter",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct GuardedWake {
+    key: WakeKey,
+    frame: u64,
+    user_input: u64,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum WakeWrite {
+    Written,
+    Deferred,
+    Unknown,
+}
+
+impl GuardedWake {
+    pub(crate) fn new(key: WakeKey, frame: u64, user_input: u64) -> Self {
+        Self { key, frame, user_input }
+    }
+
+    fn parse(command: &str) -> Option<Self> {
+        let mut words = command.split_ascii_whitespace();
+        if words.next()? != "CODEX-WAKE" {
+            return None;
+        }
+        let key = match words.next()? {
+            "marker" => WakeKey::Marker,
+            "enter" => WakeKey::Enter,
+            "recover-marker" => WakeKey::RecoveryMarker,
+            "recover-enter" => WakeKey::RecoveryEnter,
+            _ => return None,
+        };
+        let request = Self::new(key, words.next()?.parse().ok()?, words.next()?.parse().ok()?);
+        words.next().is_none().then_some(request)
+    }
+
+    pub(crate) fn bytes(self, state: &crate::messaging::delivery::ScreenState) -> Option<&'static [u8]> {
+        use crate::messaging::delivery::{SUBMIT_SETTLE_COOLDOWN_MS, WAKE_TRIGGER};
+        if self.frame != state.codex_frame
+            || self.user_input != state.codex_user_input
+            || !state.ready
+            || state.approval
+            || state.codex_overlay
+            || state.startup_loading
+            || state.last_user_input.elapsed() < Duration::from_millis(super::shared::USER_ACTIVITY_COOLDOWN_MS)
+        {
+            return None;
+        }
+        use crate::agents::recovery::PROMPT;
+        match self.key {
+            WakeKey::Marker | WakeKey::RecoveryMarker if state.prompt_empty && state.last_prompt_submit.is_none_or(|t| t.elapsed() >= Duration::from_millis(SUBMIT_SETTLE_COOLDOWN_MS)) => {
+                Some(if self.key == WakeKey::Marker { WAKE_TRIGGER.as_bytes() } else { PROMPT.as_bytes() })
+            }
+            WakeKey::Enter if state.input_text.as_deref() == Some(WAKE_TRIGGER) => Some(b"\r"),
+            WakeKey::RecoveryEnter if state.input_text.as_deref() == Some(PROMPT) => Some(b"\r"),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn send(self, port: u16) -> WakeWrite {
+        let addr = std::net::SocketAddr::from(([127, 0, 0, 1], port));
+        let timeout = Duration::from_millis(500);
+        let Ok(mut stream) = TcpStream::connect_timeout(&addr, timeout) else { return WakeWrite::Deferred };
+        if stream.set_write_timeout(Some(timeout)).is_err() || stream.set_read_timeout(Some(timeout)).is_err() {
+            return WakeWrite::Deferred;
+        }
+        let key = self.key.wire();
+        let mut response = String::new();
+        if writeln!(stream, "\0CODEX-WAKE {key} {} {}", self.frame, self.user_input).is_err() || stream.shutdown(std::net::Shutdown::Write).is_err() || stream.take(32).read_to_string(&mut response).is_err() {
+            return WakeWrite::Unknown;
+        }
+        match response.as_str() {
+            "written" => WakeWrite::Written,
+            "deferred" => WakeWrite::Deferred,
+            _ => WakeWrite::Unknown,
+        }
+    }
+}
+
+impl WakeWrite {
+    pub(super) fn response(self) -> &'static str {
+        match self {
+            Self::Written => "written",
+            Self::Deferred => "deferred",
+            Self::Unknown => "unknown",
+        }
+    }
 }
 
 impl QueryClient {
@@ -178,7 +289,7 @@ impl InjectServer {
                         let cmd = std::str::from_utf8(&data[1..]).unwrap_or("").trim();
                         let command = match cmd {
                             "SCREEN" => QueryCommand::Screen,
-                            _ => QueryCommand::Unknown,
+                            _ => GuardedWake::parse(cmd).map_or(QueryCommand::Unknown, QueryCommand::GuardedWake),
                         };
                         let (stream, _) = self.clients.remove(index);
                         return Ok(InjectResult::Query(QueryClient { stream, command }));
@@ -343,4 +454,30 @@ mod tests {
         assert_eq!(read_next(&mut server), "text");
         assert_eq!(read_next(&mut server), "\r");
     }
+}
+
+#[cfg(test)]
+#[test]
+fn guarded_codex_write_checks_current_frame_user_and_exclusive_composer() {
+    use crate::messaging::delivery::{ScreenState, WAKE_TRIGGER};
+    use std::time::Instant;
+
+    let mut state = ScreenState { ready: true, prompt_empty: true, codex_frame: 4, codex_user_input: 9, last_user_input: Instant::now() - Duration::from_secs(1), ..ScreenState::default() };
+    let marker = GuardedWake::parse("CODEX-WAKE marker 4 9").unwrap();
+    assert_eq!(marker.bytes(&state), Some(WAKE_TRIGGER.as_bytes()));
+    assert!(GuardedWake::parse("CODEX-WAKE arbitrary 4 9").is_none());
+    state.codex_frame += 1;
+    assert_eq!(marker.bytes(&state), None, "old observations cannot write after a new frame");
+    state.prompt_empty = false;
+    state.input_text = Some(WAKE_TRIGGER.into());
+    let enter = GuardedWake::new(WakeKey::Enter, 5, 9);
+    assert_eq!(enter.bytes(&state), Some(b"\r".as_slice()));
+    state.input_text = None;
+    assert_eq!(enter.bytes(&state), None, "unknown or multiline input cannot own a wake");
+    state.input_text = Some(WAKE_TRIGGER.into());
+    state.codex_overlay = true;
+    assert_eq!(enter.bytes(&state), None);
+    state.codex_overlay = false;
+    state.codex_user_input += 1;
+    assert_eq!(enter.bytes(&state), None, "a new user input invalidates the attempt even after cooldown");
 }

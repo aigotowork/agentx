@@ -149,9 +149,18 @@ fn preview(data: &[u8]) -> String {
 /// `instance_name`/`current_status` plumbing); it is invoked on the approval
 /// edge exactly as the Unix proxy invoked `self.publish_approval_status`.
 pub(super) fn update_delivery_state(screen_state: &Arc<RwLock<ScreenState>>, screen: &ScreenTracker, target: &PtyTarget, launch_phase_active: &Arc<AtomicBool>, publish: &dyn Fn(bool)) {
+    use super::screen::CodexInput;
+    let codex = target.known_tool() == Some(Tool::Codex);
+    let startup = codex && launch_phase_active.load(Ordering::Acquire) && screen.is_codex_startup_loading();
     let mut approval_changed = None;
+    let mut wake = None;
     if let Ok(mut state) = screen_state.write() {
-        state.ready = screen.is_ready();
+        let before = (state.ready, state.approval, state.prompt_empty, state.codex_overlay, state.startup_loading);
+        state.ready = if codex { !startup && screen.codex_input().ready() } else { screen.is_ready() };
+        if codex {
+            state.codex_frame = screen.frame_revision();
+            state.codex_overlay = matches!(screen.codex_input(), CodexInput::Overlay);
+        }
         // Cursor and Codex can briefly erase their approval surfaces during
         // redraws (Codex does this on focus changes). Latch positive detection
         // until the scrape stays negative (or output goes quiet on a negative
@@ -170,7 +179,7 @@ pub(super) fn update_delivery_state(screen_state: &Arc<RwLock<ScreenState>>, scr
             approval_changed = Some(approval);
         }
         state.approval = approval;
-        let input_text = screen.get_input_box_text(target.name());
+        let input_text = if startup { None } else { screen.get_input_box_text(target.name()) };
         let new_prompt_empty = input_text.as_ref().is_some_and(|t| t.is_empty());
         // Stamp submit-edge cooldown when input transitions from a known
         // non-empty value to empty or briefly undetected. Guards against
@@ -190,7 +199,10 @@ pub(super) fn update_delivery_state(screen_state: &Arc<RwLock<ScreenState>>, scr
         // Claude only: a blocked bare wake comes back into the input box, and
         // the gate must not mistake agentx's own trigger for a user draft.
         state.leftover_wake = matches!(target.known_tool(), Some(Tool::Claude)) && screen.is_claude_leftover_wake();
-        state.startup_loading = matches!(target.known_tool(), Some(Tool::Codex)) && launch_phase_active.load(Ordering::Acquire) && screen.is_codex_startup_loading();
+        state.startup_loading = startup;
+        if codex && before != (state.ready, state.approval, state.prompt_empty, state.codex_overlay, state.startup_loading) {
+            wake = state.codex_wait_port;
+        }
         // visible_tail is only consumed by the launch-blocked heuristic;
         // skip the screen walk + allocation once launch phase is over.
         state.visible_tail = if launch_phase_active.load(Ordering::Acquire) { screen.visible_tail(5, 500) } else { None };
@@ -198,6 +210,12 @@ pub(super) fn update_delivery_state(screen_state: &Arc<RwLock<ScreenState>>, scr
         state.cols = screen.cols();
     }
 
+    if let Some(port) = wake {
+        // No lock or daemon RPC on the rendering path. If the hint is lost
+        // the pending worker still has an absolute fallback deadline.
+        let addr = std::net::SocketAddr::from(([127, 0, 0, 1], port));
+        let _ = std::net::TcpStream::connect_timeout(&addr, Duration::from_millis(5));
+    }
     if let Some(approval) = approval_changed {
         publish(approval);
     }
@@ -235,6 +253,15 @@ pub(super) fn clear_injected_approval_state(target: &PtyTarget, screen_state: &A
 /// Record a genuine user keystroke against the shared delivery state.
 ///
 /// Genuine keystrokes answering a title-detected approval clear it immediately.
+pub(super) fn invalidate_codex_resize(state: &RwLock<ScreenState>, screen: &ScreenTracker) {
+    if let Ok(mut state) = state.write() {
+        state.ready = false;
+        state.prompt_empty = false;
+        state.input_text = None;
+        state.codex_frame = screen.frame_revision();
+    }
+}
+
 /// Cursor and Codex approvals clear only when the prompt leaves the screen.
 ///
 /// Returns `true` only when a standing approval was actually cleared — matching
@@ -248,6 +275,9 @@ pub(super) fn note_user_keystroke(target: &PtyTarget, screen_state: &Arc<RwLock<
     let mut approval_cleared = false;
     if let Ok(mut state) = screen_state.write() {
         state.last_user_input = Instant::now();
+        if target.name() == "codex" {
+            state.codex_user_input = state.codex_user_input.wrapping_add(1);
+        }
         if !screen_authoritative {
             approval_cleared = state.approval;
             state.approval = false;
@@ -1508,7 +1538,7 @@ No session found matching 'never-saved'"
         let launch = Arc::new(AtomicBool::new(false));
         let edges = std::cell::RefCell::new(Vec::new());
         let publish = |a: bool| edges.borrow_mut().push(a);
-        let dialog = "\x1b[2J\x1b[H\u{203a} 1. Yes, proceed (y)\r\n  2. No (esc)\r\n\r\n  Press enter to confirm or esc to cancel\r\n";
+        let dialog = "\x1b[2J\x1b[16;1H\u{203a} 1. Yes, proceed (y)\r\n  2. No (esc)\r\n\r\n  Press enter to confirm or esc to cancel\r\n";
         let idle = |screen: &mut ScreenTracker, level: char| screen.process(format!("\x1b[2J\x1b[H voice \u{25cc} muted\r\n   mic {level}{level}{level}\r\n\r\n\u{203a} Ask Codex to do anything\r\n\r\n  ? for shortcuts\r\n").as_bytes());
         let backdate = |state: &Arc<RwLock<ScreenState>>| {
             let mut s = state.write().unwrap();

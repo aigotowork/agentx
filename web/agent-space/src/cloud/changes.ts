@@ -1,7 +1,7 @@
-import type { CloudScopeTypes } from '@agentx/client';
+import type { CloudNamespaceTypes } from '@agentx/client';
 import type { Session } from './model';
 
-export type Revisions = CloudScopeTypes['SpaceChanges'];
+export type Revisions = CloudNamespaceTypes['SpaceChanges'];
 
 function pause(ms: number, signal: AbortSignal) {
   return new Promise<void>(resolve => {
@@ -14,15 +14,14 @@ function pause(ms: number, signal: AbortSignal) {
 
 /** One active request per visible workbench. A timeout returns the same small revision record. */
 export async function watchChanges(session: Session, signal: AbortSignal,
-  changed: (next: Revisions, previous?: Revisions) => Promise<void>, failed: (failure: unknown) => boolean,
-  fallback: () => void) {
+  changed: (next: Revisions, previous?: Revisions) => Promise<void>, failed: (failure: unknown) => boolean) {
   let previous: Revisions | undefined;
   let backoff = 1000;
   while (!signal.aborted) {
     const cursor = previous && [previous.epoch, previous.roster, previous.messages, previous.transcript].join('.');
     try {
       const query = { generation: session.generation, cursor };
-      const next = await (session.access === 'admin' ? session.client.spaceChanges(session.scope, query, { signal }) : session.client.spaceChanges(query, { signal }));
+      const next = await (session.access === 'admin' ? session.client.spaceChanges(session.namespace, query, { signal }) : session.client.spaceChanges(query, { signal }));
       signal.throwIfAborted();
       await changed(next, previous);
       previous = next;
@@ -31,10 +30,6 @@ export async function watchChanges(session: Session, signal: AbortSignal,
       await pause(500, signal);
     } catch (error) {
       if (signal.aborted || failed(error)) return;
-      if (typeof error === 'object' && error && 'status' in error && error.status === 404) {
-        fallback();
-        return;
-      }
       await pause(backoff, signal);
       backoff = Math.min(30_000, backoff * 2);
     }

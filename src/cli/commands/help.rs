@@ -187,6 +187,7 @@ const SEND_HELP: &[HelpEntry] = &[
     ("send @name", "Message from stdin (pipe or heredoc)"),
     ("send @name --file <path>", "Message from file"),
     ("send @name --base64 <encoded>", "Message from base64 string"),
+    ("send --receipt REQUEST_ID [--json]", "Read the original send receipt by ID without resending"),
     ("send --delivery-status ID [--json]", "Read accepted-message delivery facts without resending or draining mail"),
     ("", ""),
     ("", "Everything after -- is the message (no quotes needed)."),

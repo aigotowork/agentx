@@ -20,7 +20,7 @@
     "sdk": {
       "label": "Domain SDK",
       "order": [
-        "AgentXScope", "Workspace", "NativeMemberPage", "MemberPage", "CurrentAgent",
+        "AgentXScope", "Workspace", "NativeMemberPage", "CurrentAgent",
         "MessagePage", "Transcript", "LaunchRelationsPage", "PreparedOperation", "TypedOperationHandle",
         "TypedOperationReceipt", "LaunchResult", "Attachments", "HumanInbox", "DirectoryRoutes",
         "OfficeActivityPage", "Agent", "StoppedAgent", "RoleCatalog", "AgentSnapshot",
@@ -57,7 +57,7 @@
     "tab": "SDK 总览",
     "title": "作用域、会话与操作回执",
     "groups": [
-      {"label": "01 / 工作空间与成员", "nodeIds": ["AgentXScope", "Workspace", "NativeMemberPage", "MemberPage"]},
+      {"label": "01 / 工作空间与成员", "nodeIds": ["AgentXScope", "Workspace", "NativeMemberPage"]},
       {"label": "02 / 会话记录与来路", "nodeIds": ["CurrentAgent", "MessagePage", "Transcript", "LaunchRelationsPage"]},
       {"label": "03 / 命令、回执与启动身份", "nodeIds": ["PreparedOperation", "TypedOperationHandle", "TypedOperationReceipt", "LaunchResult"]},
       {"label": "04 / 作用域内资源", "nodeIds": ["Attachments", "HumanInbox", "DirectoryRoutes", "OfficeActivityPage"]}
@@ -66,14 +66,13 @@
     "highlightFrom": "Workspace.memberPage"
   },
   "neighborOrder": [
-    "MemberCursor", "Agent", "AgentSnapshot", "MemberCoverage", "Membership",
+    "Agent", "AgentSnapshot", "Membership",
     "OperationAddress", "OperationReceipt", "NativeMemberCursor", "NativeMemberPage", "MessagePage",
     "Transcript", "LaunchRelationsPage", "PreparedOperation", "TypedOperationHandle", "TypedOperationReceipt",
     "LaunchResult"
   ],
   "methodAnnotations": {
-    "Workspace.members": ["BoundedWorkspaceMemberProjection", "NativeWorkspaceMembershipPaging"],
-    "Workspace.memberPage": ["NativeWorkspaceMembershipPaging", "BoundedWorkspaceMemberProjection"]
+    "Workspace.memberPage": ["NativeWorkspaceMembershipPaging"]
   },
   "walkthrough": {
     "scenarioId": "office-conversation-draft",
@@ -114,7 +113,6 @@
     }
   },
   "lenses": [
-    {"id": "members", "label": "Workspace.members", "detail": "MemberPage", "scene": "method", "subjectId": "Workspace.members"},
     {"id": "recovery", "label": "send", "detail": "Operation 恢复", "scene": "sequence"},
     {"id": "native-members", "label": "Workspace.memberPage", "detail": "原生成员分页", "scene": "method", "subjectId": "Workspace.memberPage"},
     {"id": "typed-recovery", "label": "operation(prepared)", "detail": "类型化回执", "scene": "method", "subjectId": "AgentXScope.operation"}

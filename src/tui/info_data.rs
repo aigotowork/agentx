@@ -1,5 +1,4 @@
 //! Exact Agent Info subjects and read-only row projections for the navigation worker.
-mod legacy;
 
 use super::model::{Agent, AgentStatus};
 
@@ -47,7 +46,7 @@ use crate::{
         client::Client,
         queries::{
             self,
-            info::{Facts, Legacy, Projection, Reference, Section, Target},
+            info::{Facts, Projection, Reference, Section, Target},
         },
     },
 };
@@ -91,7 +90,6 @@ impl Subject {
             }
             Target::Incarnation { name: relation.name.clone(), bits }
         };
-        reference.legacy = reference.legacy.map(|_| Legacy::Exact);
         let agent = Agent {
             info_reference: Some(reference),
             name: relation.name,
@@ -194,13 +192,9 @@ fn summary_rows(subject: &Subject, title: Option<&str>, creation: Option<f64>, p
 }
 
 pub(super) fn summary(subject: &Subject) -> Vec<Row> {
-    if subject.agent.info_reference.as_ref().is_some_and(|reference| matches!(reference.legacy, Some(Legacy::StopSnapshot { .. }))) {
-        // Legacy stopped rows may contain a fabricated creation time and
-        // default Provider. Only matching retained events can supply them.
-        return summary_rows(subject, None, None, None, subject.agent.status);
-    }
     let (creation, provider) = match subject.agent.info_reference.as_ref().map(|reference| &reference.target) {
         Some(Target::Stopped { bits, .. }) => (bits.map(f64::from_bits), None),
+        None if !subject.agent.is_remote() => (None, None),
         _ => (Some(subject.agent.created_at), Some(subject.agent.tool.name())),
     };
     summary_rows(subject, None, creation, provider, subject.agent.status)
@@ -208,8 +202,8 @@ pub(super) fn summary(subject: &Subject) -> Vec<Row> {
 
 /// Bind every detail call to the scope and generation that supplied the row.
 fn connect(reference: &Reference) -> ServiceResult<Client> {
-    let client = Client::connect_existing(&reference.scope, InvocationContext::capture()?)?;
-    if client.scope_root() != reference.scope || client.info().database_generation != reference.generation {
+    let client = Client::connect_existing_fenced(&reference.scope, InvocationContext::capture()?, &reference.generation)?;
+    if client.scope_root() != reference.scope {
         return Err(ServiceError::StaleFence);
     }
     Ok(client)
@@ -218,7 +212,6 @@ fn connect(reference: &Reference) -> ServiceResult<Client> {
 struct Reader<'a> {
     client: &'a Client,
     reference: &'a Reference,
-    legacy: Option<legacy::Record>,
 }
 
 impl Reader<'_> {
@@ -230,27 +223,18 @@ impl Reader<'_> {
     }
 
     fn facts(&self) -> ServiceResult<Box<Facts>> {
-        if let Some(record) = &self.legacy {
-            return Ok(Box::new(record.saved.facts(None)));
-        }
         let Projection::Facts(facts) = self.query(Section::Facts)? else { return Err(unexpected("Agent Info facts")) };
         Ok(facts)
     }
 
-    fn bindings(&self, subject: &Subject) -> ServiceResult<Vec<FileBindingView>> {
-        if let Some(record) = &self.legacy {
-            return subject.assignment().map_or_else(|| Ok(Vec::new()), |owner| record.bindings(self.client, &owner));
-        }
+    fn bindings(&self) -> ServiceResult<Vec<FileBindingView>> {
         let Projection::Bindings(files) = self.query(Section::Bindings)? else { return Err(unexpected("bindings")) };
         Ok(files)
     }
 
-    fn relations(&self, after: Option<String>, limit: u32) -> ServiceResult<(Option<u64>, LaunchRelations)> {
-        if let Some(record) = &self.legacy {
-            return record.relations(self.client, after, limit).map(|page| (None, page));
-        }
+    fn relations(&self, after: Option<String>, limit: u32) -> ServiceResult<(u64, LaunchRelations)> {
         let Projection::Relations { page, total_children } = self.query(Section::Relations { after, limit })? else { return Err(unexpected("launch relations")) };
-        Ok((Some(total_children), page))
+        Ok((total_children, page))
     }
 }
 
@@ -288,7 +272,9 @@ pub(super) fn read(subject: &Subject, page: &Page) -> Result<Vec<Row>, String> {
         return Ok(available_rows(subject, page, "Only fields synced from the remote device are available."));
     }
     let unavailable = || Ok(available_rows(subject, page, "No exact saved record is available for this visit."));
-    let Some(reference) = subject.agent.info_reference.as_ref() else { return unavailable() };
+    let Some(reference) = subject.agent.info_reference.as_ref() else {
+        return Ok(available_rows(subject, page, "Exact Agent Info requires a current AgentX daemon."));
+    };
     let client = match connect(reference) {
         Ok(client) => client,
         Err(error) if missing(&error) => return unavailable(),
@@ -297,12 +283,7 @@ pub(super) fn read(subject: &Subject, page: &Page) -> Result<Vec<Row>, String> {
     if let Page::Task(path) | Page::TaskBody(path) = page {
         return task_rows(subject, Path::new(path), matches!(page, Page::TaskBody(_)));
     }
-    let legacy = match reference.legacy.as_ref().map(|mode| legacy::Record::load(&client, reference, mode)).transpose() {
-        Ok(record) => record,
-        Err(error) if missing(&error) => return unavailable(),
-        Err(error) => return Err(error.to_string()),
-    };
-    let reader = Reader { client: &client, reference, legacy };
+    let reader = Reader { client: &client, reference };
     match read_page(subject, page, &reader) {
         Ok(rows) => Ok(rows),
         Err(error) if missing(&error) => unavailable(),
@@ -323,29 +304,12 @@ fn read_page(subject: &Subject, page: &Page, reader: &Reader<'_>) -> ServiceResu
             })
         }
         Page::Bootstrap | Page::Instructions => {
-            if let Some(record) = &reader.legacy {
-                let adopted = record.saved.collaboration();
-                let instructions = adopted.as_ref().and_then(|saved| saved.role.as_ref()).map(|role| role.prompt.clone());
-                return Ok(if matches!(page, Page::Instructions) {
-                    text_rows(instructions)
-                } else {
-                    let mut rows = vec![Row::text("", "The full frozen Bootstrap is unavailable from this daemon.")];
-                    add(&mut rows, "Saved Role instructions", instructions);
-                    add(&mut rows, "Saved instruction additions", adopted.and_then(|saved| saved.instruction_additions));
-                    rows
-                });
-            }
             let section = if matches!(page, Page::Bootstrap) { Section::Bootstrap } else { Section::Instructions };
             let Projection::Text(text) = reader.query(section)? else { return Err(unexpected("instructions")) };
             Ok(text_rows(text))
         }
         Page::ProfileArgs => {
-            let profile = if let Some(record) = &reader.legacy {
-                record.saved.profile()
-            } else {
-                let Projection::ProfileArguments(profile) = reader.query(Section::ProfileArguments)? else { return Err(unexpected("saved arguments")) };
-                profile
-            };
+            let Projection::ProfileArguments(profile) = reader.query(Section::ProfileArguments)? else { return Err(unexpected("saved arguments")) };
             let Some(profile) = profile else { return Ok(vec![Row::text("Profile", "No saved launch profile")]) };
             Ok(vec![Row::text("Merge", if profile.replace_args { "Replace base arguments" } else { "Override base arguments" }), Row::text("Base", arguments(&profile.definition.args)), Row::text("Overrides", arguments(&profile.overrides))])
         }
@@ -361,7 +325,7 @@ fn read_page(subject: &Subject, page: &Page, reader: &Reader<'_>) -> ServiceResu
             Ok(rows)
         }
         Page::Bindings => {
-            let files = reader.bindings(subject)?;
+            let files = reader.bindings()?;
             Ok(if files.is_empty() { vec![Row::text("Bindings", "No recorded bindings")] } else { files.into_iter().map(binding_row).collect() })
         }
         Page::Task(_) | Page::TaskBody(_) => unreachable!("file pages are read before native projections"),
@@ -377,7 +341,7 @@ fn agent_rows(subject: &Subject, reader: &Reader<'_>, facts: &Facts) -> Vec<Row>
     if let Some(name) = profile {
         rows.push(Row::page("Profile", name, Page::Profile));
     }
-    match reader.bindings(subject) {
+    match reader.bindings() {
         Ok(mut files) if files.len() == 1 => rows.push(binding_row(files.remove(0))),
         Ok(files) if !files.is_empty() => rows.push(Row::page("Bindings", files.len().to_string(), Page::Bindings)),
         Err(error) if !missing(&error) => rows.push(Row::page("Bindings · Retry", error.to_string(), Page::Bindings)),
@@ -387,7 +351,7 @@ fn agent_rows(subject: &Subject, reader: &Reader<'_>, facts: &Facts) -> Vec<Row>
         Ok((total_children, page)) => {
             rows.push(if let Some(upstream) = page.upstream { relation_row(subject, "From", upstream) } else { Row::text("From", if page.origin == "external" { "External launch" } else { "Unknown origin" }) });
             if page.next.is_some() {
-                rows.push(Row::page("Children", total_children.map(|count| count.to_string()).unwrap_or_default(), Page::Children));
+                rows.push(Row::page("Children", total_children.to_string(), Page::Children));
             } else {
                 rows.extend(page.downstream.into_iter().map(|child| relation_row(subject, "Child", child)));
             }

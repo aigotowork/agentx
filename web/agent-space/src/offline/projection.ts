@@ -1,8 +1,8 @@
 /** @aiPurpose Exact membership and current/stopped projections shared by scene, navigation and resource readers. */
-import { adoptedRoleLabel, membershipKey, type AgentResource, type AgentSpaceSupply, type Post } from "./model";
+import { adoptedRoleLabel, matchesOffice, membershipKey, type AgentResource, type AgentSpaceSupply, type Post } from "./model";
 import type { SpaceSnapshot } from "./controller";
 export function officeMembers(supply: AgentSpaceSupply, office: string): readonly AgentResource[] {
-  return supply.agents.filter(agent => !office || membershipKey(agent) === office);
+  return supply.agents.filter(agent => matchesOffice(agent, office));
 }
 export function currentMembers(agents: readonly AgentResource[]): readonly AgentResource[] { return agents.filter(agent => agent.ref.record === "current"); }
 export function matchingPostMembers(supply: AgentSpaceSupply, post: Post): readonly AgentResource[] {

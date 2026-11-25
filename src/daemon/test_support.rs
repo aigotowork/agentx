@@ -70,7 +70,7 @@ fn retained_client_daemon_disappearance_fails_without_reopening_managed_storage(
     let directory = tempfile::Builder::new().prefix("agentx-client-no-fallback-").tempdir().unwrap();
     let database = directory.path().join("agentx.db");
     let daemon = TestDaemon::start(directory.path(), &database);
-    let client = crate::service::client::Client::connect_existing(directory.path(), InvocationContext::default()).unwrap();
+    let client = crate::service::client::Client::connect(directory.path(), InvocationContext::default()).unwrap();
     client.call(Request::Events(crate::events::service::Request::Watermark)).unwrap();
     drop(daemon);
     // Removing only this closed fixture DB makes an illicit fallback observable:
@@ -80,4 +80,5 @@ fn retained_client_daemon_disappearance_fails_without_reopening_managed_storage(
     assert!(!database.exists(), "client recreated managed storage after IPC loss");
     assert!(matches!(client.call(Request::Participants(crate::agents::service::Request::List)), Err(ServiceError::Unavailable(_))));
     assert!(!database.exists());
+    assert!(!directory.path().join(".daemon/startup.lock").exists(), "a retained caller attempted startup after losing its daemon");
 }
