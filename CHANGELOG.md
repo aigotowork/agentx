@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.7.35]
+
+- Recover a live Codex Agent whose failed turn ended without a Stop hook. Recovery checks the latest completed turn in the same session before offering or submitting a continuation.
+- Running Unix daemons restore missing native and observation socket paths after temporary-directory cleanup. Startup waits for the scope owner, and restart can reconnect and authenticate it during repair.
+
 ## [0.7.34]
 
 - Native AgentX commands now send operations directly. Unsupported features fail individually, and a lost send response can be checked with `agentx send --receipt REQUEST_ID`.

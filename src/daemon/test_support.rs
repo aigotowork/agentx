@@ -82,3 +82,23 @@ fn retained_client_daemon_disappearance_fails_without_reopening_managed_storage(
     assert!(!database.exists());
     assert!(!directory.path().join(".daemon/startup.lock").exists(), "a retained caller attempted startup after losing its daemon");
 }
+
+#[cfg(unix)]
+#[test]
+fn missing_socket_paths_recover_under_the_original_owner() {
+    let directory = tempfile::Builder::new().prefix("agentx-unlinked-").tempdir().unwrap();
+    let daemon = TestDaemon::start(directory.path(), &directory.path().join("agentx.db"));
+    let original = super::probe(&daemon.scope).unwrap();
+    std::fs::remove_file(daemon.scope.observation_socket_path(false).unwrap()).unwrap();
+    std::fs::remove_file(daemon.scope.existing_socket_path().unwrap()).unwrap();
+    let current = super::transport::acquire(&daemon.scope).unwrap();
+    assert_eq!(current.daemon_instance, original.daemon_instance);
+    assert_eq!(current.database_generation, original.database_generation);
+    let deadline = Instant::now() + Duration::from_secs(3);
+    while super::platform::connect_observation(&daemon.scope, deadline).is_err() {
+        assert!(Instant::now() < deadline);
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    std::fs::remove_file(daemon.scope.existing_socket_path().unwrap()).unwrap();
+    assert!(!super::lifecycle::stop_existing(&daemon.scope, deadline).unwrap());
+}
