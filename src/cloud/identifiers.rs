@@ -1,6 +1,7 @@
 //! Compact v2 cloud identifiers. Installation, lease, claim and explicit request keys have separate contracts.
 use rand::distr::{Alphanumeric, SampleString};
 
+#[cfg(target_os = "linux")]
 const ALPHABET: &[u8; 62] = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 const LENGTH: usize = 12;
 const WORKSPACE_PREFIX: &[u8; 2] = b"WS";
@@ -25,6 +26,7 @@ pub(super) fn valid_workspace_id(value: &str) -> bool {
     is_compact(value) && value.as_bytes().starts_with(WORKSPACE_PREFIX)
 }
 
+#[cfg(target_os = "linux")]
 pub(super) fn workspace_from_digest(digest: &[u8; 32]) -> String {
     let mut number = u64::from_be_bytes(digest[..8].try_into().unwrap());
     let mut output = [b'0'; LENGTH];

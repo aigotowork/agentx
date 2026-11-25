@@ -25,11 +25,13 @@ mod windows;
 mod wire;
 
 pub use scope::{DaemonScope, DatabaseGeneration, ScopeLease};
+#[cfg(all(test, target_os = "linux"))]
+pub(crate) use transport::call;
+#[cfg(test)]
+pub(crate) use transport::probe;
 #[cfg(test)]
 pub(crate) use transport::shutdown;
 pub(crate) use transport::{acquire, call_bound, describe, request_deadline};
-#[cfg(test)]
-pub(crate) use transport::{call, probe};
 pub(crate) use wire::{DaemonInfo, build_identity};
 
 use serde::{Deserialize, Serialize};

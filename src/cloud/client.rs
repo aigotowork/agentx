@@ -30,6 +30,7 @@ use clap::{CommandFactory, Parser};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::json;
 use sha2::{Digest, Sha256};
+#[cfg(target_os = "linux")]
 use uuid::Uuid;
 
 use super::communication::types::{AgentView, ClaimInbox, CloudAgentSummary, ConfirmInbox, HostView, InboxBatch, InboxConfirmation, Intent, MessageOperation, MessageView, SendMessage};
