@@ -432,10 +432,15 @@ pub(crate) fn run(lease: &super::ScopeLease, state: Arc<ObservationState>, stop:
     };
     // Declaration order closes the listener before joining its bounded workers.
     let mut workers = InspectionWorkers(Vec::new());
-    let listener = listener;
+    #[cfg(unix)]
+    let mut listener = listener;
     let mut maintained_at = Instant::now();
     while !stop.load(Ordering::Acquire) {
         if lease.ensure_ownership().is_err() {
+            break;
+        }
+        #[cfg(unix)]
+        if listener.restore_if_missing(lease).is_err() {
             break;
         }
         state.synchronize_epoch();

@@ -202,7 +202,9 @@ fn accept_connections(lease: &ScopeLease, queues: JobQueues, stop: Arc<AtomicBoo
             state.runtime.admission_tick(at);
         }
         admission.reap_finished();
-        let listener = admission.listener.as_ref().expect("listener lives through admission");
+        let listener = admission.listener.as_mut().expect("listener lives through admission");
+        #[cfg(unix)]
+        listener.restore_if_missing(lease)?;
         if !listener.wait_ready(Instant::now() + CONTROL_TICK)? {
             continue;
         }

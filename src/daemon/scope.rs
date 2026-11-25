@@ -245,7 +245,7 @@ impl ScopeLease {
     }
 }
 
-fn private_directory(path: &Path) -> Result<(), DaemonError> {
+pub(super) fn private_directory(path: &Path) -> Result<(), DaemonError> {
     #[cfg(unix)]
     let created = {
         use std::os::unix::fs::DirBuilderExt;

@@ -139,6 +139,7 @@ pub(crate) struct Listener {
     path: std::path::PathBuf,
     device: u64,
     inode: u64,
+    checked_at: std::time::Instant,
 }
 
 #[cfg(unix)]
@@ -157,7 +158,7 @@ impl Listener {
     }
 
     fn bind_path(lease: &ScopeLease, path: std::path::PathBuf) -> Result<Self, DaemonError> {
-        use std::os::unix::fs::{FileTypeExt, MetadataExt};
+        use std::os::unix::fs::FileTypeExt;
         lease.ensure_ownership()?;
         match std::fs::symlink_metadata(&path) {
             Ok(metadata) if metadata.file_type().is_socket() => std::fs::remove_file(&path)?,
@@ -165,11 +166,36 @@ impl Listener {
             Err(error) if error.kind() == io::ErrorKind::NotFound => {}
             Err(error) => return Err(error.into()),
         }
+        Self::bind_empty(path)
+    }
+
+    fn bind_empty(path: std::path::PathBuf) -> Result<Self, DaemonError> {
+        use std::os::unix::fs::MetadataExt;
         let socket = std::os::unix::net::UnixListener::bind(&path)?;
         socket.set_nonblocking(true)?;
         crate::sys::fs::set_private(&path)?;
         let metadata = std::fs::symlink_metadata(&path)?;
-        Ok(Self { socket, path, device: metadata.dev(), inode: metadata.ino() })
+        Ok(Self { socket, path, device: metadata.dev(), inode: metadata.ino(), checked_at: std::time::Instant::now() })
+    }
+
+    /// Temp-directory cleanup may unlink a live listener. Only bind a missing
+    /// pathname under the original lease. Existing connections keep their fds.
+    pub(crate) fn restore_if_missing(&mut self, lease: &ScopeLease) -> Result<(), DaemonError> {
+        use std::os::unix::fs::MetadataExt;
+        if self.checked_at.elapsed() < std::time::Duration::from_millis(250) {
+            return Ok(());
+        }
+        self.checked_at = std::time::Instant::now();
+        match std::fs::symlink_metadata(&self.path) {
+            Ok(meta) if (meta.dev(), meta.ino()) == (self.device, self.inode) => return Ok(()),
+            Ok(_) => return Err(DaemonError::Unavailable("daemon endpoint was replaced".into())),
+            Err(err) if err.kind() == io::ErrorKind::NotFound => {}
+            Err(err) => return Err(err.into()),
+        }
+        lease.ensure_ownership()?;
+        super::scope::private_directory(self.path.parent().expect("absolute socket path"))?;
+        *self = Self::bind_empty(self.path.clone())?;
+        Ok(())
     }
 
     /// Socket readiness wakes admission immediately. The deadline bounds only

@@ -66,7 +66,16 @@ fn failed(row: &InstanceRow, session: &str) -> bool {
         && row.model_request.as_ref().is_some_and(|state| state.phase == RequestPhase::Failed && state.session_id == session && state.error.is_some())
 }
 fn eligible(row: &InstanceRow, episode: &Episode) -> bool {
-    episode.stopped && episode.failure.is_some() && failed(row, &episode.session) && super::cleanup_store::tracked_process_state(row) == super::service::TrackedProcessState::Alive
+    if episode.failure.is_none() || !failed(row, &episode.session) || super::cleanup_store::tracked_process_state(row) != super::service::TrackedProcessState::Alive {
+        return false;
+    }
+    // A provider error can end the turn without delivering the Stop hook.
+    episode.stopped
+        || row.model_request.as_ref().is_some_and(|model| {
+            let Some(error) = &model.error else { return false };
+            error.turn_id == model.turn_id
+                && crate::transcript::codex_completion::latest_turn_completion(std::path::Path::new(&row.transcript_path), &episode.session, &model.turn_id).is_some_and(|completed| completed >= error.last_error_at.saturating_mul(1000))
+        })
 }
 
 fn pty_host(db: &AgentxDb, row: &InstanceRow) -> bool {
@@ -267,4 +276,29 @@ pub(crate) fn native_host(db: &AgentxDb, row: &InstanceRow, session: &str, actio
     }
     save(db, &episode)?;
     Ok(NativeOutcome::Changed(true))
+}
+
+#[cfg(test)]
+#[test]
+fn missing_stop_hook_requires_current_turn_completion() {
+    use serde_json::json;
+    use std::io::Write;
+    let dir = tempfile::tempdir().unwrap();
+    let mut rollout = tempfile::NamedTempFile::new_in(dir.path()).unwrap();
+    let db = AgentxDb::open_at(&dir.path().join("agentx.db")).unwrap();
+    let pid = std::process::id();
+    let model = json!({"session_id":"session","turn_id":"turn","model":"fixture","phase":"failed","retired_turns":[],
+        "error":{"turn_id":"turn","source":"hook","reason":"403","error_since":1,"last_error_at":1,"consecutive_failures":1}});
+    let fields = json!({"tool":"codex","pid":pid,"created_at":5.0,"status":"error","status_context":ERROR_CONTEXT,
+        "session_id":"session","transcript_path":rollout.path(),"model_request":model.to_string(),
+        "launch_context":json!({"pid_identity":crate::sys::process::identity(pid).unwrap()}).to_string()});
+    db.save_instance_named("kera", fields.as_object().unwrap()).unwrap();
+    let row = db.get_instance_full("kera").unwrap().unwrap();
+    let episode = Episode { participant: exact(&row), session: "session".into(), unresolved: true, failure: Some("failure".into()), stopped: false, attempt: None };
+    writeln!(rollout, "{}", json!({"type":"session_meta","payload":{"id":"session"}})).unwrap();
+    assert!(!eligible(&row, &episode));
+    writeln!(rollout, "{}", json!({"timestamp":"2026-11-20T08:09:10Z","type":"event_msg","payload":{"type":"task_complete","turn_id":"turn"}})).unwrap();
+    assert!(eligible(&row, &episode));
+    writeln!(rollout, "{}", json!({"type":"event_msg","payload":{"type":"task_started","turn_id":"next"}})).unwrap();
+    assert!(!eligible(&row, &episode));
 }

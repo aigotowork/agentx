@@ -35,3 +35,7 @@ Freeze the selection by exact participant and failure observation. Admission rec
 Report each Agent separately. A queued request waits for the selected adapter; repeated commands can return the same request and any observed submission or uncertainty. Missing or changed targets report a skip. Distinguish request acceptance from host submission. Only a subsequent model-request success observation resolves the error; neither CLI exit nor a quiet terminal does so. An empty discovery result is a normal no-op. Missing or ineligible explicit names, execution failures, and unknown submissions produce a nonzero batch result without preventing other eligible targets from running.
 
 Verify with a disposable managed Codex fixture: a failed model request stops, recovery submits one continuation in the original session, and a later successful request clears the error. Also cover an in-flight retry, approval or occupied prompt, process exit, a same-name successor or changed episode during selection, deduplication, unknown submits and label filtering. The [Delivery](../../.controller/agent-recover/delivery.delivery.md) records actual source and verification status.
+
+### Missing Codex Stop hook
+
+When Codex closes a failed turn without a Stop hook, manual recovery also accepts a complete root rollout record for that session and exact turn. The completion timestamp must be at or after the latest failure. Discovery and submission recheck the evidence, and host admission still checks the current process and prompt.

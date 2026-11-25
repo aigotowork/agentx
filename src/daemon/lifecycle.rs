@@ -83,12 +83,15 @@ pub(crate) fn restart_with_upgrade(path: &Path) -> Result<(DaemonInfo, bool), Da
     Ok((info, upgraded))
 }
 
-fn stop_existing(scope: &DaemonScope, deadline: Instant) -> Result<bool, DaemonError> {
+pub(super) fn stop_existing(scope: &DaemonScope, deadline: Instant) -> Result<bool, DaemonError> {
     let status_deadline = deadline.min(Instant::now() + STATUS_TIMEOUT);
-    let mut stream = match platform::connect_existing(scope, status_deadline) {
-        Ok(stream) => stream,
-        Err(error) if missing_endpoint(&error) && owner_released(scope)? => return Ok(false),
-        Err(error) => return Err(DaemonError::Unavailable(format!("restart refused: cannot authenticate selected-scope daemon ({error}); no replacement started"))),
+    let mut stream = loop {
+        match platform::connect_existing(scope, status_deadline) {
+            Ok(stream) => break stream,
+            Err(error) if missing_endpoint(&error) && owner_released(scope)? => return Ok(false),
+            Err(error) if missing_endpoint(&error) && Instant::now() < status_deadline => std::thread::park_timeout(Duration::from_millis(20)),
+            Err(error) => return Err(DaemonError::Unavailable(format!("restart refused: cannot authenticate selected-scope daemon ({error}); no replacement started"))),
+        }
     };
     let peer = platform::peer(&stream)?;
     match transport::status_on(scope, &mut stream, None, status_deadline) {
@@ -112,7 +115,7 @@ fn absolute(path: &Path, cwd: &Path) -> PathBuf {
 
 /// A noncreating lock check distinguishes absent admission from an initializing
 /// or draining owner. Never remove, truncate or replace the lifetime lock.
-fn owner_released(scope: &DaemonScope) -> Result<bool, DaemonError> {
+pub(super) fn owner_released(scope: &DaemonScope) -> Result<bool, DaemonError> {
     let mut options = OpenOptions::new();
     options.read(true).write(true);
     #[cfg(unix)]

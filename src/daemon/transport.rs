@@ -102,7 +102,7 @@ fn connect_locked(scope: &DaemonScope, deadline: Instant) -> Result<platform::St
     if Instant::now() >= deadline {
         return Err(DaemonError::Deadline);
     }
-    let mut child = observation::stage(ClientStage::Spawn, || spawn_daemon(scope))?;
+    let mut child = None;
     let mut exit_status = None;
     loop {
         match attempt() {
@@ -110,7 +110,12 @@ fn connect_locked(scope: &DaemonScope, deadline: Instant) -> Result<platform::St
             Err(error) if missing_endpoint(&error) => {}
             Err(error) => return Err(error),
         }
-        if exit_status.is_none() {
+        if child.is_none() && super::lifecycle::owner_released(scope)? {
+            child = Some(observation::stage(ClientStage::Spawn, || spawn_daemon(scope))?);
+        }
+        if exit_status.is_none()
+            && let Some(child) = &mut child
+        {
             exit_status = observation::stage(ClientStage::Discovery, || child.try_wait().map_err(DaemonError::from))?;
         }
         if let Err(error) = observation::stage(ClientStage::Discovery, || pause(deadline)) {
