@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 import http.client
 import json
 from pathlib import Path
+import re
 import shlex
 import stat
 import tempfile
@@ -14,7 +15,7 @@ from urllib.parse import urlparse
 
 from acceptance import provision, request_id
 from daemon_rig import SCOPE, model_forward, topology
-from fixture import Deployment, require, wait_for
+from fixture import COMPACT_ID, WORKSPACE_ID, Deployment, compact_id, exact, require, wait_for
 from management import certificate_pin
 from native import Model
 
@@ -22,7 +23,7 @@ from native import Model
 DENIED = (401, 403)
 TERMINAL = {"succeeded", "failed", "uncertain"}
 NETWORK_PROOF = """import errno, os, socket, sys
-bad = {"AGENTX_SCOPE_TOKEN", "AGENTX_ADMIN_TOKEN", "AGENTX_CLOUD_CONTEXT"}.intersection(os.environ)
+bad = {"AGENTX_NAMESPACE_TOKEN", "AGENTX_ADMIN_TOKEN", "AGENTX_CLOUD_CONTEXT"}.intersection(os.environ)
 if bad:
     raise SystemExit("unexpected cloud credential variables: " + ", ".join(sorted(bad)))
 try:
@@ -61,16 +62,16 @@ class SandboxedModel(Model):
 class PublicControl:
     def __init__(self, fixture, token, generation):
         self.fixture, self.token, self.generation = fixture, token, generation
-        self.scope = f"/scopes/{SCOPE}/api/v1"
-        self.admin = f"{fixture.admin}/scopes/{SCOPE}"
+        self.scope = f"/namespaces/{SCOPE}/api/v1"
+        self.admin = f"{fixture.admin}/namespaces/{SCOPE}"
         self.operations = self.admin + "/operations"
 
     def capabilities(self, host, statuses=(200,)):
         return self.fixture.expect("GET", f"{self.admin}/hosts/{host}/capabilities",
                                    self.fixture.admin_token, statuses=statuses)
 
-    def agents(self):
-        page = self.fixture.expect("GET", self.admin + "/agents", self.fixture.admin_token)
+    def agents(self, **query):
+        page = self.fixture.expect("GET", self.admin + "/agents", self.fixture.admin_token, query=query)
         return page["items"]
 
     def payload(self, host, command):
@@ -102,7 +103,7 @@ class PublicControl:
                 f"Remote control failed: {receipt['request_id']} {receipt['outcome']}")
         agent = receipt["outcome"]["agent"]
         require(agent["host"] == payload["host"] and agent["name"] == payload["command"]["name"]
-                and agent["incarnation"], "Successful control receipt must identify the exact affected Agent")
+                and re.fullmatch(COMPACT_ID, agent["incarnation"]), "Successful control receipt must identify the exact affected Agent")
         return receipt
 
     def confirmed(self, message_request):
@@ -112,7 +113,7 @@ class PublicControl:
 
         return wait_for("confirmed Provider delivery", confirmed_message, 40, interval=0.5)
 
-    def await_host(self, name):
+    def await_host(self, name, validate_default=True):
         def online():
             status, row = self.fixture.request("GET", f"{self.admin}/hosts/{name}/capabilities", self.fixture.admin_token)
             if status == 404:
@@ -125,13 +126,15 @@ class PublicControl:
                 "Control lease must identify its exact scope generation and installation")
         require(isinstance(host["observed_at"], int) and abs(time.time() - host["observed_at"]) < 30,
                 "Capabilities must identify when the live catalogue was observed")
-        workspace, = host["workspaces"]
-        require(workspace["alias"] == "work" and workspace["default_available"] and workspace["default_reason"] is None,
-                "Capabilities must expose only the configured alias and its local default")
-        roles = {entry["name"]: entry for entry in workspace["roles"]}
-        require(roles["acceptance"]["available"] and roles["acceptance"]["reason"] is None
-                and not roles["unavailable"]["available"] and roles["unavailable"]["reason"],
-                "Catalogue must distinguish an eligible local role from an unresolvable role")
+        if validate_default:
+            workspace, = host["workspaces"]
+            require(host["project_roots"] == ["work"] and workspace["name"] == "workspace"
+                    and re.fullmatch(WORKSPACE_ID, workspace["workspace_id"]) and workspace["default_available"]
+                    and workspace["default_reason"] is None, "Capabilities must separate a project from its root alias")
+            roles = {entry["name"]: entry for entry in workspace["roles"]}
+            require(roles["acceptance"]["available"] and roles["acceptance"]["reason"] is None
+                    and not roles["unavailable"]["available"] and roles["unavailable"]["reason"],
+                    "Catalogue must distinguish an eligible local role from an unresolvable role")
         return host
 
 
@@ -153,7 +156,7 @@ class PhysicalConsumers:
         env = {**fixture.environment("physical-browser"), "CLOUD_BROWSER": str(self.chromium),
                "CLOUD_BROWSER_URL": fixture.public_url, "CLOUD_CERT_PIN": certificate_pin(fixture.runtime / "tls.crt"),
                "CLOUD_ADMIN_TOKEN": fixture.admin_token, "CLOUD_EVIDENCE": str(fixture.directory),
-               "CLOUD_CONTROL_LAUNCH": json.dumps({"scope": SCOPE, "host": payload["host"], **command})}
+               "CLOUD_CONTROL_LAUNCH": json.dumps({"namespace": SCOPE, "host": payload["host"], **command})}
         helper = Path(__file__).with_name("browser.mjs").resolve()
         with tempfile.TemporaryDirectory(prefix="agentx-cloud-chrome-", dir="/tmp") as temporary:
             result = fixture.command("browser-launch", ["node", helper],
@@ -213,7 +216,7 @@ def rejected_controls(control, host, launch):
     require(bad_lease["code"] == "stale_lease", "A scope bearer alone must not acquire a foreign lease")
     for field, code in (("generation", "stale_generation"), ("installation_id", "host_conflict")):
         control.reject({**launch, "request_id": request_id(), field: request_id()}, code)
-    for field, value, code in (("workspace", "unexported", "capability_unavailable"),
+    for field, value, code in (("workspace_id", "WS000000000F", "capability_unavailable"),
                                ("role", "unavailable", "capability_unavailable"),
                                ("role", "unknown", "capability_unavailable"), ("name", "bad/name", "invalid_input"),
                                ("initial_prompt", "x" * (16 * 1024 + 1), "invalid_input"),
@@ -231,13 +234,16 @@ def lease_fencing(control):
     legacy = control.capabilities("legacy")
     require(not legacy["online"] and legacy["observed_at"] is None and not legacy["workspaces"],
             "A legacy communication heartbeat must not enable daemon administration")
-    control.reject(control.payload(legacy, {"kind": "launch", "workspace": "work"}), "host_offline")
+    workspace_id = "WS000000000A"
+    control.reject(control.payload(legacy, {"kind": "launch", "workspace_id": workspace_id}), "host_offline")
 
     host_route = f"{control.scope}/hosts/fence/control"
     identity = {"generation": control.generation, "installation_id": request_id(), "lease_id": request_id()}
-    catalogue = {"workspaces": [{"alias": "work", "default_available": True, "default_reason": None, "roles": []}]}
+    catalogue = {"project_roots": ["work"],
+                 "workspaces": [{"workspace_id": workspace_id, "name": "workspace", "default_available": True,
+                                 "default_reason": None, "roles": []}]}
     host = fixture.expect("PUT", f"{host_route}/lease", control.token, {**identity, **catalogue})
-    command = {"kind": "launch", "workspace": "work"}
+    command = {"kind": "launch", "workspace_id": workspace_id}
     claimed, queued = (control.payload(host, command) for _ in range(2))
     control.submit(claimed)
     claim = fixture.expect("POST", f"{host_route}/poll", control.token, identity)["operation"]
@@ -274,8 +280,9 @@ def stop(control, host, agent, submit=None):
     payload = control.payload(host, {"kind": "stop", "name": agent["name"], "incarnation": agent["incarnation"]})
     (submit or control.submit)(payload)
     receipt = control.succeeded(payload)
-    require(receipt["outcome"]["agent"] == agent, "Stop operation did not refer to the exact original incarnation")
-    wait_for("stopped Agent removed from active cloud inventory", lambda: agent not in control.agents())
+    require(exact(receipt["outcome"]["agent"]) == exact(agent), "Stop operation did not refer to the exact original incarnation")
+    wait_for("stopped Agent removed from active cloud inventory",
+             lambda: all(exact(row) != exact(agent) for row in control.agents()))
     return receipt
 
 
@@ -301,10 +308,11 @@ def prove_round_trip(control, model, east, west, receiver, west_host):
             "Both confirmed receipts must retain the exact request/reply relation")
     agents = control.agents()
     sender, = [row for row in agents if row["host"] == west_host["host"] and row["name"] == "sender"]
-    require(len(agents) == 2 and receiver in agents and request["from"] == sender and request["to"] == receiver,
+    require(len(agents) == 2 and receiver in agents and exact(request["from"]) == exact(sender)
+            and exact(request["to"]) == exact(receiver),
             "Cloud inventory, confirmed receipts and Provider observations must use the same two Agent identities")
     native_list = json.loads(east.command("native-list", "list", "--json").stdout)
-    require(all(any(all(row.get(key) == value for key, value in agent.items()) for row in native_list)
+    require(all(any(all(row.get(key) == value for key, value in exact(agent).items()) for row in native_list)
                 for agent in agents), "Ordinary native list did not return the same exact cloud identities")
     inspected = json.loads(west.command("native-inspect-send", "send", "--iam", sender["name"],
                                         "--operation", model.request_id).stdout)
@@ -326,7 +334,8 @@ def reconnect(control, east, west, east_host, east_peer, prior):
     require(offline["installation_id"] == east_host["installation_id"] and offline["workspaces"] == east_host["workspaces"],
             "Offline row must retain its observed catalogue and selected installation")
     require(control.capabilities("west")["online"], "East disconnect must not disturb the west lease")
-    new_launch = control.payload(east_host, {"kind": "launch", "workspace": "work", "name": "restart"})
+    new_launch = control.payload(east_host, {"kind": "launch", "workspace_id": east_host["workspaces"][0]["workspace_id"],
+                                             "name": "restart"})
     control.reject(new_launch, "host_offline")
     replay = control.submit(prior)
     require(replay == control.receipt(prior) and replay["status"] == "succeeded",
@@ -355,7 +364,7 @@ def exercise(fixture, physical, physical_codex=None, consumer=None, chromium=Non
         port = model_forward(fixture, east, model.server.server_port) if physical else None
         require(control.agents() == [], "Provisioned cloud scope must start with no Agents")
         def prepare(station, model_port):
-            station.prepare_worker(scope["scope_url"], ca, control.token, station.label, model, model_port,
+            station.prepare_worker(scope["namespace_url"], ca, control.token, station.label, model, model_port,
                                    codex_bin=physical_codex)
             return cold_start(station)
 
@@ -371,7 +380,8 @@ def exercise(fixture, physical, physical_codex=None, consumer=None, chromium=Non
                                        and row["empty"] and 1 <= row["seconds"] <= 12], 20)
             fixture.write("idle-control-polls.json", sample)
 
-        payload = control.payload(east_host, {"kind": "launch", "workspace": "work", "role": "acceptance",
+        payload = control.payload(east_host, {"kind": "launch", "workspace_id": east_host["workspaces"][0]["workspace_id"],
+                                              "role": "acceptance",
                                               "name": "receiver", "title": "Daemon acceptance",
                                               "initial_prompt": model.ready_prompt})
         rejected_controls(control, east_host, payload)
@@ -402,9 +412,9 @@ def exercise(fixture, physical, physical_codex=None, consumer=None, chromium=Non
             sender, messages = prove_round_trip(control, model, east, west, receiver, west_host)
             west_worker, = west.process("workers")
         diagnostics = east.command("online-diagnostics", "daemon", "status").stdout
-        require("Cloud daemon: online" in diagnostics and scope["scope_url"] in diagnostics,
+        require("Cloud daemon: online" in diagnostics and scope["namespace_url"] in diagnostics,
                 "Local diagnostics must identify the live cloud connection without its credential")
-        stale = control.payload(east_host, {"kind": "stop", "name": receiver["name"], "incarnation": request_id()})
+        stale = control.payload(east_host, {"kind": "stop", "name": receiver["name"], "incarnation": compact_id()})
         control.reject(stale, "stale_agent")
         require(receiver in control.agents(), "Stale stop had a side effect on the current exact target")
         east_stop = stop(control, east_host, receiver, consum.stop if consum else None)

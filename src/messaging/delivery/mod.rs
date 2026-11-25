@@ -371,6 +371,8 @@ pub(crate) fn gate_block_detail(reason: &str) -> &'static str {
         "user_active" => "user is typing",
         "submit_settle" => "waiting for prompt submit to settle",
         "not_ready" => "prompt not visible",
+        "input_overlay" => "waiting for the current terminal menu to close",
+        "startup_loading" => "waiting for Codex to finish starting",
         "output_unstable" => "output still streaming",
         "prompt_has_text" => "uncommitted text in prompt",
         "approval" => "waiting for user approval",
@@ -649,6 +651,11 @@ pub struct ScreenState {
     /// `ScreenTracker::is_codex_startup_loading`); the launch-blocked heuristic
     /// waits it out rather than reading a quiet loading screen as settled.
     pub startup_loading: bool,
+    pub codex_overlay: bool,
+    pub codex_frame: u64,
+    pub codex_user_input: u64,
+    /// Only armed while delivery has mail and is waiting on the local gate.
+    pub codex_wait_port: Option<u16>,
 }
 
 impl Default for ScreenState {
@@ -668,6 +675,10 @@ impl Default for ScreenState {
             nav_overlay: false,
             leftover_wake: false,
             startup_loading: false,
+            codex_overlay: false,
+            codex_frame: 0,
+            codex_user_input: 0,
+            codex_wait_port: None,
         }
     }
 }
@@ -774,6 +785,12 @@ pub(crate) fn evaluate_gate(config: &ToolConfig, state: &DeliveryState, is_idle:
         && submit_at.elapsed().as_millis() < SUBMIT_SETTLE_COOLDOWN_MS as u128
     {
         return GateResult { safe: false, reason: "submit_settle" };
+    }
+    if screen.startup_loading {
+        return GateResult { safe: false, reason: "startup_loading" };
+    }
+    if screen.codex_overlay {
+        return GateResult { safe: false, reason: "input_overlay" };
     }
     if config.require_ready_prompt && !screen.ready {
         return GateResult { safe: false, reason: "not_ready" };
@@ -1098,7 +1115,7 @@ mod tests {
             approval_scrape_negative_since: None,
             nav_overlay: false,
             leftover_wake: false,
-            startup_loading: false,
+            ..ScreenState::default()
         }
     }
 

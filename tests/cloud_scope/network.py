@@ -9,13 +9,14 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import secrets
 import signal
 import shutil
 import subprocess
 import tempfile
 import time
 import uuid
+
+from fixture import compact_id
 
 
 def main():
@@ -34,8 +35,7 @@ def main():
     consumer = args.consumer.resolve(strict=True)
     if not (consumer / "node_modules/@agentx/client/dist/index.js").exists():
         p.error("--consumer requires an installed @agentx/client package")
-    env = dict(os.environ, AGENTX_ADMIN_TOKEN=secrets.token_urlsafe(32),
-               AGENTX_SCOPE_TOKEN=secrets.token_urlsafe(32))
+    env = dict(os.environ, AGENTX_ADMIN_TOKEN=compact_id(), AGENTX_NAMESPACE_TOKEN=compact_id())
     prefix = "agentx-cloud-" + uuid.uuid4().hex[:12]
     containers, networks = [], []
 
@@ -45,21 +45,21 @@ def main():
 
     def client(host, body, admin=False):
         preamble = """
-import { createCloudAdminClient, createCloudScopeClient } from '@agentx/client';
+import { createCloudAdminClient, createCloudNamespaceClient } from '@agentx/client';
 import assert from 'node:assert/strict';
 import { hostname } from 'node:os';
 const origin='https://cloud:8443', host=hostname(), name=host==='west'?'luna':'nova';
-const scope=createCloudScopeClient({baseUrl:origin+'/scopes/global',token:process.env.AGENTX_SCOPE_TOKEN});
-const agent={host,name,incarnation:host+'-instance'};
+const scope=createCloudNamespaceClient({baseUrl:origin+'/namespaces/global',token:process.env.AGENTX_NAMESPACE_TOKEN});
+const agent={host,name,incarnation:host==='west'?'WestAgent001':'EastAgent001',workspace:{kind:'unexposed'}};
 """
-        flags = ["-e", "AGENTX_SCOPE_TOKEN"]
+        flags = ["-e", "AGENTX_NAMESPACE_TOKEN"]
         if admin:
             flags += ["-e", "AGENTX_ADMIN_TOKEN"]
         res = docker("exec", "-i", *flags, prefix + "-" + host, "node", "--input-type=module", "-",
                      script=preamble + body, check=False)
         if res.returncode:
             detail = res.stderr
-            for key in ("AGENTX_SCOPE_TOKEN", "AGENTX_ADMIN_TOKEN"):
+            for key in ("AGENTX_NAMESPACE_TOKEN", "AGENTX_ADMIN_TOKEN"):
                 detail = detail.replace(env[key], "[redacted]")
             raise RuntimeError(detail)
         return res.stdout.strip()
@@ -115,8 +115,8 @@ https://cloud:8443 {
                              "-v", f"{candidate}:/usr/local/bin/agentx:ro",
                              "-v", f"{Path(__file__).resolve().parent}:/scenario:ro",
                              "-e", "HOME=/tmp/home", "-e", "CODEX_HOME=/tmp/home/.codex", "-e", "AGENTX_DIR=/tmp/ax",
-                             "-e", "AGENTX_SCOPE_URL=https://cloud:8443/scopes/global", "-e", "SSL_CERT_FILE=/ca.pem",
-                             "-e", "CLOUD_ACCEPTANCE_MODEL_KEY=local-model-no-real-credential", "-e", "AGENTX_SCOPE_TOKEN",
+                             "-e", "AGENTX_NAMESPACE_URL=https://cloud:8443/namespaces/global", "-e", "SSL_CERT_FILE=/ca.pem",
+                             "-e", "CLOUD_ACCEPTANCE_MODEL_KEY=local-model-no-real-credential", "-e", "AGENTX_NAMESPACE_TOKEN",
                              "-e", "PYTHONDONTWRITEBYTECODE=1", "-e", "PATH=/usr/local/bin:/usr/bin:/bin"]
                     code_mode = args.codex_bin.with_name("codex-code-mode-host")
                     if code_mode.is_file():
@@ -128,7 +128,7 @@ https://cloud:8443 {
             client("west", """
 const admin=createCloudAdminClient({baseUrl:origin,token:process.env.AGENTX_ADMIN_TOKEN});
 for(let i=0;;i++){try{await admin.overview();break}catch(error){if(i===20)throw error;await new Promise(r=>setTimeout(r,250))}}
-await admin.putScope('global',{request_id:'provision',token:process.env.AGENTX_SCOPE_TOKEN});
+await admin.putNamespace('global',{request_id:'provision',token:process.env.AGENTX_NAMESPACE_TOKEN});
 """, admin=True)
             init = """
 const {generation}=await scope.describe(), installation_id=host+'-install';
@@ -137,7 +137,7 @@ const input={generation,installation_id};
             for host in ("west", "east"):
                 client(host, init + """
 await scope.renewHost(host,input);
-await scope.registerAgent(name,{...input,host,incarnation:agent.incarnation});
+await scope.registerAgent(name,{...input,host,incarnation:agent.incarnation,workspace:agent.workspace});
 """)
             client("west", init + """
 await scope.send({...input,request_id:'request',from:agent,to:'@east/nova',body:'request over HTTPS',intent:'request'});
@@ -165,26 +165,26 @@ assert.equal(reply.message.reply_to,request.message.id);
                     # The SDK probe reserved the same real host with a synthetic installation.
                     # Use a second scope to exercise normal native enrollment independently.
                     if host == "east":
-                        env["AGENTX_SCOPE_TOKEN"] = secrets.token_urlsafe(32)
+                        env["AGENTX_NAMESPACE_TOKEN"] = compact_id()
                         client("west", """
 const admin=createCloudAdminClient({baseUrl:origin,token:process.env.AGENTX_ADMIN_TOKEN});
-await admin.putScope('native',{request_id:'native-provision',token:process.env.AGENTX_SCOPE_TOKEN});
+await admin.putNamespace('native',{request_id:'native-provision',token:process.env.AGENTX_NAMESPACE_TOKEN});
 """, admin=True)
                     docker("exec", "-d", prefix + "-" + host, "python3", "/scenario/network_model.py")
                     for _ in range(50):
                         if native(host, "test", "-s", "/tmp/model-ids.json", check=False).returncode == 0:
                             break
                         time.sleep(0.15)
-                    launched = docker("exec", "-w", "/tmp", "-e", "AGENTX_SCOPE_TOKEN",
-                                      "-e", "AGENTX_SCOPE_URL=https://cloud:8443/scopes/native", prefix + "-" + host,
+                    launched = docker("exec", "-w", "/tmp", "-e", "AGENTX_NAMESPACE_TOKEN",
+                                      "-e", "AGENTX_NAMESPACE_URL=https://cloud:8443/namespaces/native", prefix + "-" + host,
                                       "agentx", "launch", "--tool", "codex", "--name", name, "--headless", "--go",
                                       "--json", "--agentx-prompt", prompt, check=False)
                     if launched.returncode:
-                        raise RuntimeError(f"{host} native launch: {launched.stderr.replace(env['AGENTX_SCOPE_TOKEN'], '[redacted]')}")
+                        raise RuntimeError(f"{host} native launch: {launched.stderr.replace(env['AGENTX_NAMESPACE_TOKEN'], '[redacted]')}")
                 request_id = json.loads(native("west", "cat", "/tmp/model-ids.json").stdout)[0]
                 reply_id = json.loads(native("east", "cat", "/tmp/model-ids.json").stdout)[1]
                 client("west", """
-const nativeScope=createCloudScopeClient({baseUrl:origin+'/scopes/native',token:process.env.AGENTX_SCOPE_TOKEN});
+const nativeScope=createCloudNamespaceClient({baseUrl:origin+'/namespaces/native',token:process.env.AGENTX_NAMESPACE_TOKEN});
 const [requestId,replyId] = """ + json.dumps([request_id, reply_id]) + """;
 for(let i=0;;i++) {
   try {

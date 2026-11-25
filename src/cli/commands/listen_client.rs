@@ -23,7 +23,7 @@ fn call(session: &Session, request: Events) -> ServiceResult<EventResult> {
 /// Begin/End are retained by listener ID, so a lost reply can recover using the
 /// original request identity without reacquiring another daemon/generation.
 fn retained_call(session: &Session, request: Events) -> ServiceResult<EventResult> {
-    let caller = CallerContext { request_id: RequestId(uuid::Uuid::new_v4().to_string()), invocation: session.invocation.clone(), deadline_unix_ms: None, expected_database_generation: Some(session.client.info().database_generation.clone()) };
+    let caller = CallerContext { request_id: RequestId(uuid::Uuid::new_v4().to_string()), invocation: session.invocation.clone(), deadline_unix_ms: None, expected_database_generation: None };
     let request = Request::Events(request);
     let result = match session.client.call_with_context(caller.clone(), request.clone()) {
         Err(ServiceError::OutcomeUnknown(_)) => session.client.call_with_context(caller, request),

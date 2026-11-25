@@ -27,17 +27,16 @@ export function WorkspaceLayout(props: {
  */
 export function ConversationLayout(props: { header: ReactNode; history: ReactNode; composer?: ReactNode; context?: ReactNode; feedback?: ReactNode; historyScroll?: ConversationScroll; liveIssue?: ReactNode; olderStatus?: ReactNode }) {
   const { scroll, unread, jumpToLatest, scrolled, demand, touchStart } = useConversationScroll(props.historyScroll);
-  const controlledHistory = props.historyScroll?.forward || !!props.historyScroll?.latest;
+  const controlledHistory = !!props.historyScroll?.latest;
   const newLabel = `${unread} 条新消息 · 回到最新`;
   return <section className="conversation-layout" aria-label="当前会话">
     <header className="conversation-heading">{props.header}</header>
     <div className="conversation-feedback">{props.feedback}</div>
-    <div className="conversation-history" aria-label="会话历史" tabIndex={0} data-controlled-history={controlledHistory || undefined} data-forward-history={props.historyScroll?.forward || undefined} ref={scroll}
+    <div className="conversation-history" aria-label="会话历史" tabIndex={0} data-controlled-history={controlledHistory || undefined} ref={scroll}
         onScroll={event => scrolled(event.currentTarget)}
         onWheel={event => demand(event.currentTarget, event.deltaY)}
         onKeyDown={event => {
           if (event.target !== event.currentTarget) return;
-          if (['End', 'PageDown', 'ArrowDown'].includes(event.key) || event.key === ' ' && !event.shiftKey) demand(event.currentTarget, 1);
           if (['Home', 'PageUp', 'ArrowUp'].includes(event.key) || event.key === ' ' && event.shiftKey) demand(event.currentTarget, -1);
         }}
         onTouchStart={event => { touchStart.current = event.touches.length === 1 ? event.touches[0].clientY : undefined; }}

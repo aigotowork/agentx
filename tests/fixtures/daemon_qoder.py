@@ -127,6 +127,8 @@ def main():
     original = termios.tcgetattr(0)
     tty.setraw(0)
     composer = ''
+    picker = False
+    hold_receipt = False
 
     def render():
         columns, rows = os.get_terminal_size(1)
@@ -136,7 +138,19 @@ def main():
                    ' > '+(composer or '  Type your message or @path/to/file'),
                    rule, ' Qwen3.8-Flash Model · ctx ░░░░░░░░░░ 0% · /work/dir']
         if tool == 'codex':
-            content = ['Controlled Codex fixture', '› '+composer, '', '  ? for shortcuts']
+            # The normal frame retains a copy of the modal footer in history.
+            # Put the cursor back into the live composer as stock Codex does.
+            history = '\x1b[2;1H      enter select · esc back' if rows > 10 else ''
+            if picker:
+                screen = f'\x1b[2J{history}\x1b[{max(1, rows-5)};1H'
+                modal = '  Implement this plan?\r\n\r\n› 1. Yes\r\n  2. Stay in Plan mode\r\n\r\n  enter select · esc back'
+                os.write(1, (screen+modal+'\x1b[?25l').encode())
+                return
+            row = max(1, rows-3)
+            frame = f'\x1b[2J{history}\x1b[{row};1H› {composer}\r\n\r\n  Plan mode · ? for shortcuts'
+            col = min(columns, 3 + len(composer))
+            os.write(1, (frame+f'\x1b[{row};{col}H\x1b[?25h').encode())
+            return
         screen = '\x1b[2J\x1b[H'+f'\x1b[{max(1, rows-len(content)+1)};1H'
         os.write(1, (screen+'\r\n'.join(content)).encode())
 
@@ -153,7 +167,12 @@ def main():
                 command = json.loads(control.read_text())
                 if command != last_control:
                     event = command['event']
-                    if missed_stop and event == 'StartWithoutStop':
+                    if event in ('ShowPicker', 'ClosePicker'):
+                        picker = event == 'ShowPicker'
+                        render()
+                    elif event == 'HoldNextReceipt':
+                        hold_receipt = True
+                    elif missed_stop and event == 'StartWithoutStop':
                         rollout_event('task_started')
                         hook('PreModelRequest', turn_id='missed', model='fixture')
                         composer = 'a user draft'
@@ -181,7 +200,7 @@ def main():
                         hook(event, prompt='controlled active turn', stop_hook_active=False)
                     record('controlled-state', command=command)
                     last_control = command
-            if not select.select([0], [], [], 1)[0]:
+            if not select.select([0], [], [], 0.05 if tool == "codex" else 1)[0]:
                 continue
             data = os.read(0, 4096)
             if not data:
@@ -202,7 +221,10 @@ def main():
                     if composer:
                         prompt, composer = composer, ''
                         record('submitted', prompt=prompt)
-                        if recovery and prompt == 'Continue the current task.':
+                        if hold_receipt and prompt == '<agentx>':
+                            hold_receipt = False
+                            record('submitted-without-receipt')
+                        elif recovery and prompt == 'Continue the current task.':
                             hook('UserPromptSubmit', prompt=prompt)
                             hook('PreModelRequest', turn_id='continued', model='fixture')
                             record('recovery-started', session=session)

@@ -16,10 +16,10 @@ const trustedHost = embeddedScope != null
   : undefined;
 
 const root = createRoot(document.getElementById("root")!);
-const cloudScope = cloudEntry(location.pathname);
-if (cloudScope !== null) {
+const cloudNamespace = cloudEntry(location.pathname);
+if (cloudNamespace !== null) {
   const CloudSpace = lazy(() => import("./cloud/CloudSpace").then(module => ({ default: module.CloudSpace })));
-  root.render(<StrictMode><Suspense fallback={<p role="status">正在打开云端 Space…</p>}><CloudSpace scope={cloudScope} /></Suspense></StrictMode>);
+  root.render(<StrictMode><Suspense fallback={<p role="status">正在打开云端 Space…</p>}><CloudSpace namespace={cloudNamespace} /></Suspense></StrictMode>);
 } else {
   const inspection = mountSpaceInspection();
   root.render(<StrictMode><App inspection={inspection} host={trustedHost} previewCaption={env.VITE_AGENT_SPACE_PREVIEW_CAPTION} /></StrictMode>);

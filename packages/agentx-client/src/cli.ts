@@ -63,16 +63,18 @@ observe config head [--expected-epoch FILE] | observe config show REF_FILE|-
 observe config compare LEFT_REF_FILE RIGHT_REF_FILE [--field TAGGED_JSON]...
 observe events describe | observe events read --window FILE|- [--limit N]
 admin overview
-admin scopes list [--after CURSOR --limit N] | admin scopes show ID
-admin scopes hosts ID [--after CURSOR --limit N]
-admin scopes agents ID [--host HOST --after CURSOR --limit N]
-admin hosts capabilities SCOPE --host HOST
-admin operations add-workspace SCOPE CONTROL --workspace ALIAS --parent ROOT_ALIAS --directory PATH [--create-directory]
-admin operations launch SCOPE CONTROL --workspace ALIAS [--role ROLE --name NAME --title TITLE --task TEXT]
-admin operations stop SCOPE CONTROL --name NAME --incarnation INCARNATION
-admin operations show SCOPE --request-id ID
-admin scopes create ID [ADMINWRITE]
-admin scopes rotate-token ID --expected-version N [ADMINWRITE]
+admin namespaces list [--after CURSOR --limit N] | admin namespaces show ID
+admin namespaces hosts ID [--generation G] [--after CURSOR --limit N]
+admin namespaces agents ID [--generation G] [--host HOST --workspace-id ID --after CURSOR --limit N]
+admin namespaces workspaces ID [--generation G] [--host HOST --after CURSOR --limit N]
+  For inventory --after, pass --generation from the original page.
+admin hosts capabilities NAMESPACE --host HOST
+admin operations add-workspace NAMESPACE CONTROL --name NAME --parent ROOT_ALIAS --directory PATH [--create-directory]
+admin operations launch NAMESPACE CONTROL --workspace-id ID [--role ROLE --name NAME --title TITLE --task TEXT --directory PATH --create-directory]
+admin operations stop NAMESPACE CONTROL --name NAME --incarnation INCARNATION
+admin operations show NAMESPACE --request-id ID
+admin namespaces create ID [ADMINWRITE]
+admin namespaces rotate-token ID --expected-version N [ADMINWRITE]
 admin pending replay FILE | admin pending reveal FILE
 
 Global options (any position): --management-url URL, --workbench-url URL,
@@ -180,7 +182,7 @@ main().catch((error: unknown) => {
   if (error instanceof ObservationStopped) { code = error.code; exit = code === 'Canceled' ? 130 : 124; detail.identity = error.identity; detail.lastOperation = error.lastOperation; }
   if (error instanceof AdapterDisconnected) { code = 'AdapterDisconnected'; exit = error.cause instanceof Error && error.cause.name === 'TimeoutError' ? 124 : 2; }
   if (error instanceof CloudAdminError) { code = error.code; exit = code === 'DeadlineExceeded' ? 124 : error.status && error.status >= 400 ? 1 : 2; detail.status = error.status; }
-  if (error instanceof CloudAdminOutcomeUnknown) { code = error.code; exit = 3; detail.operation = error.operation; detail.scope_id = error.scopeId; detail.request_id = error.requestId; }
+  if (error instanceof CloudAdminOutcomeUnknown) { code = error.code; exit = 3; detail.operation = error.operation; detail.namespace_id = error.namespaceId; detail.request_id = error.requestId; }
   if (error instanceof ProtocolError) { code = error.code; detail.schema = error.schema; detail.rawText = error.rawText; }
   if (error instanceof UsageError) code = 'InvalidInput';
   if (error instanceof Error && error.name === 'TimeoutError') { code = 'DeadlineExceeded'; exit = 124; }

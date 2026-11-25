@@ -4,6 +4,7 @@
 //! - `Config`: Runtime env vars (AGENTX_DIR, AGENTX_INSTANCE_NAME, etc.) — startup-only, used by router/client
 //! - `AgentxConfig`: User config from TOML + env vars — the user-facing settings in [`FIELDS`]
 
+pub(crate) mod dev_root;
 pub(crate) mod file;
 pub(crate) mod observation;
 pub(crate) mod profiles;

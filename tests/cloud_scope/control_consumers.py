@@ -14,24 +14,26 @@ import tempfile
 from pathlib import Path
 
 from acceptance import provision
-from fixture import Deployment, require, wait_for
+from fixture import COMPACT_ID, Deployment, project, require, wait_for
 from management import tls_front
 
 
 def exercise(fixture, cli, chromium, ca, dropped_replies):
     created, scope = provision(fixture, "lab")
-    origin = "/scopes/lab/api/v1"
-    admin = fixture.admin + "/scopes/lab"
+    origin = "/namespaces/lab/api/v1"
+    admin = fixture.admin + "/namespaces/lab"
     admin_token = fixture.admin_token
     scope_token = created["token"]
     target = {"generation": scope["generation"], "installation_id": "installation-test"}
     host = "host-a"
     base = f"{origin}/hosts/{host}/control"
     lease = {**target, "lease_id": "lease-test"}
-    catalogue = {"alias": "lab-work", "default_available": True, "default_reason": None,
+    workspace_id = "WS000000000B"
+    catalogue = {"workspace_id": workspace_id, "name": "lab-work", "default_available": True, "default_reason": None,
                  "roles": [{"name": "reviewer", "available": True, "reason": None},
                            {"name": "unavailable", "available": False, "reason": "tool_unavailable"}]}
-    fixture.expect("PUT", base + "/lease", scope_token, {**lease, "workspaces": [catalogue]})
+    renewal = {**lease, "workspaces": [catalogue], "project_roots": ["work"]}
+    fixture.expect("PUT", base + "/lease", scope_token, renewal)
     env = {**fixture.environment("control-cli"), "AGENTX_ADMIN_TOKEN": admin_token, "AGENTX_ADMIN_URL": fixture.url,
            "SSL_CERT_FILE": str(ca)}
 
@@ -48,15 +50,16 @@ def exercise(fixture, cli, chromium, ca, dropped_replies):
 
     def register(agent):
         fixture.expect("PUT", origin + f"/agents/{agent['name']}", scope_token,
-                       {**target, "host": agent["host"], "incarnation": agent["incarnation"]})
+                       {**target, "host": agent["host"], "incarnation": agent["incarnation"],
+                        "workspace": agent["workspace"]})
 
     caps = cli_call("packaged-capabilities", ["hosts", "capabilities", "lab", "--host", host])
-    assert caps["online"] and caps["observed_at"] > 0 and caps["workspaces"] == [catalogue]
+    assert caps["online"] and caps["observed_at"] > 0 and caps["workspaces"] == [catalogue] and caps["project_roots"] == ["work"]
 
     # Reuse the same embedded browser helper as the actual physical lane.
     if chromium:
         with tempfile.TemporaryDirectory(prefix="cloud-control-chrome-") as profile:
-            command = {"scope": "lab", "host": host, "workspace": "lab-work", "role": "reviewer",
+            command = {"namespace": "lab", "host": host, "workspace_id": workspace_id, "role": "reviewer",
                        "name": "browser_agent", "title": "Browser control", "initial_prompt": "Read the acceptance notes."}
             browser_env = {**fixture.environment("control-browser"), "CLOUD_ADMIN_TOKEN": admin_token,
                            "CLOUD_BROWSER_URL": fixture.url, "CLOUD_BROWSER": chromium, "CLOUD_CERT_PIN": "",
@@ -67,7 +70,8 @@ def exercise(fixture, cli, chromium, ca, dropped_replies):
             browser_receipt = json.loads(output.stdout)["receipt"]
             claim = poll()
             assert claim["request_id"] == browser_receipt["request_id"]
-            browser_agent = {"host": host, "name": command["name"], "incarnation": "18446744073709551615"}
+            browser_agent = {"host": host, "name": command["name"], "incarnation": "BrowserInc01",
+                             "workspace": project(workspace_id)}
             register(browser_agent)
             complete(claim, browser_agent)
             operation = cli_call("packaged-stop", ["operations", "stop", "lab", "--generation", caps["generation"],
@@ -105,7 +109,7 @@ def exercise(fixture, cli, chromium, ca, dropped_replies):
                 (fixture.directory / (label + ".txt")).write_text(fixture.redact(rendered))
 
         try:
-            fixture.expect("PUT", base + "/lease", scope_token, {**lease, "workspaces": [catalogue]})
+            fixture.expect("PUT", base + "/lease", scope_token, renewal)
             terminal("new-session", "-d", "-s", "control", "-x", "92", "-y", "24",
                      str(fixture.candidate), "tui", "--admin-url", fixture.public_url)
             screen("tui-control-overview", "AgentX / Deployment", "lab", "o Receipt")
@@ -126,7 +130,7 @@ def exercise(fixture, cli, chromium, ca, dropped_replies):
             keys("-l", "Review the fixture.")
             keys("Enter")
             capture = screen("tui-control-launch-lost-reply", "Submission not confirmed", "Enter Check")
-            request_id = re.search(r"[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}",
+            request_id = re.search(rf"\b{COMPACT_ID}\b",
                                    capture.split("Submission not confirmed", 1)[1])[0]
             assert dropped_replies == [{"status": 200, "dropped": True}]
             keys("Enter")
@@ -134,9 +138,10 @@ def exercise(fixture, cli, chromium, ca, dropped_replies):
             assert len(dropped_replies) == 1, "Receipt lookup must not resend"
             queued = poll()
             assert queued["request_id"] == request_id
-            assert queued["command"] == {"kind": "launch", "workspace": "lab-work", "role": "reviewer", "name": "terminal_agent",
+            assert queued["command"] == {"kind": "launch", "workspace_id": workspace_id, "role": "reviewer", "name": "terminal_agent",
                                           "title": "Terminal control", "initial_prompt": "Review the fixture."}
-            agent = {"host": host, "name": "terminal_agent", "incarnation": "18446744073709551614"}
+            agent = {"host": host, "name": "terminal_agent", "incarnation": "Terminal0001",
+                     "workspace": project(workspace_id)}
             register(agent)
             complete(queued, agent)
             keys("Enter")
@@ -176,7 +181,7 @@ def main():
     fixture = Deployment(args.candidate, args.evidence)
     try:
         # CLI and Web use the direct candidate; only the TUI crosses the once-dropping TLS terminator.
-        with tls_front(fixture, drop_method="POST", drop_path="/api/v1/admin/scopes/lab/operations") as (ca, _, attempts):
+        with tls_front(fixture, drop_method="POST", drop_path="/api/v1/admin/namespaces/lab/operations") as (ca, _, attempts):
             fixture.start()
             fixture.result["cases"]["control_consumers"] = exercise(fixture, args.cli.absolute(), args.chromium, ca, attempts)
     finally:

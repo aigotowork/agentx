@@ -1,7 +1,7 @@
 //! `agentx relay` command — cross-device sync via MQTT pub/sub.
 
 use crate::relay::broker::BrokerProbe;
-use crate::relay::token::{DecodedToken, encode_join_token};
+use crate::relay::token::{DecodedToken, decode_join_token, encode_join_token};
 use crate::relay::{self, DEFAULT_BROKERS};
 use crate::service::client::Client;
 use crate::shared::ansi::{FG_GRAY, FG_GREEN, FG_RED, FG_YELLOW, RESET};
@@ -41,12 +41,6 @@ fn parse_broker_flags(argv: &[String]) -> (Option<String>, Option<String>, Vec<S
 /// Returns round-trip ms or None on failure.
 fn ping_broker(host: &str, port: u16, use_tls: bool) -> Option<u32> {
     crate::relay::broker::ping_broker(host, port, use_tls).map(|ms| ms as u32)
-}
-
-/// Decode a join token. Returns the parsed structure including the optional
-/// PSK; legacy tokens have `psk = None` and are rejected by `relay_connect`.
-fn decode_join_token(token: &str) -> Option<DecodedToken> {
-    relay::token::decode_join_token(token)
 }
 
 /// Build the "Add devices" / "current group" join token from current config,
@@ -655,34 +649,10 @@ fn relay_connect(client: &Client, argv: &[String]) -> i32 {
         return relay_toggle(client, true);
     }
 
-    let token_str = token_str.unwrap();
-
-    // Decode token
-    let decoded = match decode_join_token(&token_str) {
-        Some(r) => r,
-        None => {
-            eprintln!("Invalid token.");
-            return 1;
-        }
+    let Some(DecodedToken { relay_id, broker_url: token_broker, psk }) = decode_join_token(&token_str.unwrap()) else {
+        eprintln!("Invalid Relay join token. Copy a current token from the source device.");
+        return 1;
     };
-
-    let psk = match decoded.psk {
-        Some(p) => p,
-        None => {
-            eprintln!(
-                "Legacy token (v0x01/v0x02) — rejected.\n\
-                 \n\
-                 This agentx build requires a token that carries the relay key. Ask the source\n  \
-                 device to upgrade agentx and run\n  \
-                 agentx relay new\n\
-                 then re-share the new token. The new token format is v0x04 (~67 chars)."
-            );
-            return 1;
-        }
-    };
-
-    let relay_id = decoded.relay_id;
-    let token_broker = decoded.broker_url;
 
     let effective_broker = broker_url.unwrap_or(token_broker);
 
@@ -833,7 +803,7 @@ mod tests {
         let decoded = decode_join_token(&token).unwrap();
         assert_eq!(decoded.relay_id, relay_id);
         assert_eq!(decoded.broker_url, broker);
-        assert_eq!(decoded.psk, Some(psk));
+        assert_eq!(decoded.psk, psk);
     }
 
     #[test]
@@ -845,7 +815,7 @@ mod tests {
         let decoded = decode_join_token(&token).unwrap();
         assert_eq!(decoded.relay_id, relay_id);
         assert_eq!(decoded.broker_url, broker);
-        assert_eq!(decoded.psk, Some(psk));
+        assert_eq!(decoded.psk, psk);
     }
 
     #[test]
@@ -893,14 +863,6 @@ mod tests {
         assert_eq!(doc["relay"]["token"].as_str(), Some(""));
         assert_eq!(doc["relay"]["psk"].as_str(), Some(psk_b64.as_str()));
         assert_eq!(doc["relay"]["enabled"].as_bool(), Some(true));
-    }
-
-    #[test]
-    fn test_legacy_token_rejected_in_connect_decode() {
-        // A v0x01 (plaintext) token decodes to psk=None; relay_connect refuses
-        // it instead of writing config.
-        let decoded = decode_join_token("AaGyw9Tl9niQq83vEjRWeJAA").unwrap();
-        assert!(decoded.psk.is_none());
     }
 
     #[test]

@@ -5,6 +5,10 @@ export type ClientOptions = {
 };
 
 export type AgentPage = {
+    /**
+     * Namespace generation verified in the same transaction as the page.
+     */
+    generation: string;
     items: Array<CloudAgentSummary>;
     next: string | null;
 };
@@ -14,12 +18,26 @@ export type AgentRegistration = {
     host: string;
     incarnation: string;
     installation_id: string;
+    workspace: AgentWorkspace;
 };
 
 export type AgentView = {
     host: string;
     incarnation: string;
     name: string;
+    workspace: AgentWorkspace;
+};
+
+/**
+ * Membership chosen when the exact Agent incarnation is prepared for launch.
+ */
+export type AgentWorkspace = {
+    kind: 'project';
+    workspace_id: string;
+} | {
+    kind: 'global';
+} | {
+    kind: 'unexposed';
 };
 
 export type ClaimInbox = {
@@ -45,6 +63,7 @@ export type CloudAgentSummary = {
     host: string;
     incarnation: string;
     name: string;
+    workspace: AgentWorkspace;
 };
 
 export type CloudTranscriptRecord = {
@@ -77,16 +96,12 @@ export type ControlCommand = {
      * Slash-separated path relative to the workspace export. Omit or send an empty string for its root.
      */
     working_directory?: string | null;
-    workspace: string;
+    workspace_id: string;
 } | {
     incarnation: string;
     kind: 'stop';
     name: string;
 } | {
-    /**
-     * New workspace alias to publish on this host.
-     */
-    alias: string;
     /**
      * Create only the final component if absent. Parents must already exist.
      */
@@ -97,6 +112,10 @@ export type ControlCommand = {
     directory: string;
     kind: 'add_workspace';
     /**
+     * Display name to publish for this project.
+     */
+    name: string;
+    /**
      * Alias of an eligible configured export.
      */
     parent: string;
@@ -106,8 +125,8 @@ export type ControlOutcome = {
     agent: AgentView;
     status: 'succeeded';
 } | {
-    alias: string;
     status: 'workspace_added';
+    workspace_id: string;
 } | {
     code: string;
     status: 'failed';
@@ -135,8 +154,11 @@ export type ControlStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'unc
 
 export type Descriptor = {
     generation: string;
+    namespace_id: string;
+    /**
+     * Diagnostic version; operation contracts determine compatibility.
+     */
     protocol_version: number;
-    scope_id: string;
 };
 
 export type HostCapabilities = {
@@ -149,6 +171,7 @@ export type HostCapabilities = {
     installation_id: string;
     observed_at: bigint | null;
     online: boolean;
+    project_roots: Array<string>;
     /**
      * This active control lease accepts remote workspace registration.
      */
@@ -157,6 +180,10 @@ export type HostCapabilities = {
 };
 
 export type HostPage = {
+    /**
+     * Namespace generation verified in the same transaction as the page.
+     */
+    generation: string;
     items: Array<HostView>;
     next: string | null;
 };
@@ -185,7 +212,7 @@ export type InboxConfirmation = {
 export type Intent = 'request' | 'inform' | 'ack';
 
 /**
- * Durable scope traffic, in descending message ID order. This is not a Provider transcript.
+ * Durable Namespace traffic, in descending message ID order. This is not a Provider transcript.
  */
 export type MessageHistoryPage = {
     items: Array<MessageView>;
@@ -207,6 +234,11 @@ export type MessageView = {
     reply_to: string | null;
     thread: string | null;
     to: AgentView;
+};
+
+export type NamespaceError = {
+    code: string;
+    message: string;
 };
 
 export type OperationStatus = 'accepted' | 'claimed' | 'confirmed' | 'undeliverable';
@@ -248,6 +280,7 @@ export type RenewControlLease = {
     installation_id: string;
     lease_id: string;
     previous_lease_id?: string | null;
+    project_roots: Array<string>;
     workspaces: Array<WorkspaceCapability>;
 };
 
@@ -263,11 +296,6 @@ export type RoleCapability = {
     available: boolean;
     name: string;
     reason: string | null;
-};
-
-export type ScopeError = {
-    code: string;
-    message: string;
 };
 
 export type SendMessage = {
@@ -298,77 +326,68 @@ export type TranscriptHistoryPage = {
     next: string | null;
 };
 
+/**
+ * Shared fields also composed into the flattened WorkspaceView schema.
+ */
 export type WorkspaceCapability = {
-    alias: string;
     default_available: boolean;
     default_reason: string | null;
-    /**
-     * This configured export is eligible as a parent for remote workspace registration. Set by the server from the lease header.
-     */
-    readonly managed_parent?: boolean | null;
+    name: string;
     roles: Array<RoleCapability>;
+    workspace_id: string;
 };
 
-export type HostCapabilitiesWritable = {
+export type WorkspacePage = {
     /**
-     * This control lease accepts workspace-relative launch directories.
+     * Namespace generation verified in the same transaction as the page.
      */
-    directory_launch?: boolean | null;
     generation: string;
+    items: Array<WorkspaceView>;
+    next: string | null;
+};
+
+export type WorkspaceView = WorkspaceCapability & {
     host: string;
-    installation_id: string;
-    observed_at: bigint | null;
     online: boolean;
-    /**
-     * This active control lease accepts remote workspace registration.
-     */
-    workspace_management?: boolean | null;
-    workspaces: Array<WorkspaceCapabilityWritable>;
 };
 
-export type RenewControlLeaseWritable = {
-    generation: string;
-    installation_id: string;
-    lease_id: string;
-    previous_lease_id?: string | null;
-    workspaces: Array<WorkspaceCapabilityWritable>;
-};
-
-export type WorkspaceCapabilityWritable = {
-    alias: string;
-    default_available: boolean;
-    default_reason: string | null;
-    roles: Array<RoleCapability>;
-};
-
-export type ScopeListAgentsData = {
+export type NamespaceListAgentsData = {
     body?: never;
     path?: never;
     query?: {
+        /**
+         * Expected Namespace generation. Bind the first page's generation when continuing a cursor.
+         */
+        generation?: string;
         after?: string;
         limit?: number;
         host?: string;
+        workspace_id?: string;
         /**
-         * Include host-reported Agent facts. Omit for identity-only legacy clients.
+         * Include host-reported Agent facts. Omit to return identity and membership only.
          */
         facts?: boolean;
     };
     url: '/agents';
 };
 
-export type ScopeListAgentsErrors = {
-    default: ScopeError;
+export type NamespaceListAgentsErrors = {
+    /**
+     * Stale Namespace generation
+     */
+    409: NamespaceError;
+    default: NamespaceError;
 };
 
-export type ScopeListAgentsError = ScopeListAgentsErrors[keyof ScopeListAgentsErrors];
+export type NamespaceListAgentsError = NamespaceListAgentsErrors[keyof NamespaceListAgentsErrors];
 
-export type ScopeListAgentsResponses = {
+export type NamespaceListAgentsResponses = {
     200: AgentPage;
 };
 
-export type ScopeListAgentsResponse = ScopeListAgentsResponses[keyof ScopeListAgentsResponses];
+export type NamespaceListAgentsResponse = NamespaceListAgentsResponses[keyof NamespaceListAgentsResponses];
 
-export type ScopeRegisterAgentData = {
+export type NamespaceRegisterAgentData = {
     body: AgentRegistration;
     path: {
         name: string;
@@ -377,19 +396,19 @@ export type ScopeRegisterAgentData = {
     url: '/agents/{name}';
 };
 
-export type ScopeRegisterAgentErrors = {
-    default: ScopeError;
+export type NamespaceRegisterAgentErrors = {
+    default: NamespaceError;
 };
 
-export type ScopeRegisterAgentError = ScopeRegisterAgentErrors[keyof ScopeRegisterAgentErrors];
+export type NamespaceRegisterAgentError = NamespaceRegisterAgentErrors[keyof NamespaceRegisterAgentErrors];
 
-export type ScopeRegisterAgentResponses = {
+export type NamespaceRegisterAgentResponses = {
     200: AgentView;
 };
 
-export type ScopeRegisterAgentResponse = ScopeRegisterAgentResponses[keyof ScopeRegisterAgentResponses];
+export type NamespaceRegisterAgentResponse = NamespaceRegisterAgentResponses[keyof NamespaceRegisterAgentResponses];
 
-export type ScopeRetireAgentData = {
+export type NamespaceRetireAgentData = {
     body: AgentRegistration;
     path: {
         name: string;
@@ -398,19 +417,19 @@ export type ScopeRetireAgentData = {
     url: '/agents/{name}/retire';
 };
 
-export type ScopeRetireAgentErrors = {
-    default: ScopeError;
+export type NamespaceRetireAgentErrors = {
+    default: NamespaceError;
 };
 
-export type ScopeRetireAgentError = ScopeRetireAgentErrors[keyof ScopeRetireAgentErrors];
+export type NamespaceRetireAgentError = NamespaceRetireAgentErrors[keyof NamespaceRetireAgentErrors];
 
-export type ScopeRetireAgentResponses = {
+export type NamespaceRetireAgentResponses = {
     200: AgentView;
 };
 
-export type ScopeRetireAgentResponse = ScopeRetireAgentResponses[keyof ScopeRetireAgentResponses];
+export type NamespaceRetireAgentResponse = NamespaceRetireAgentResponses[keyof NamespaceRetireAgentResponses];
 
-export type ScopeSpaceChangesData = {
+export type NamespaceSpaceChangesData = {
     body?: never;
     path?: never;
     query: {
@@ -420,60 +439,68 @@ export type ScopeSpaceChangesData = {
     url: '/changes';
 };
 
-export type ScopeSpaceChangesErrors = {
-    default: ScopeError;
+export type NamespaceSpaceChangesErrors = {
+    default: NamespaceError;
 };
 
-export type ScopeSpaceChangesError = ScopeSpaceChangesErrors[keyof ScopeSpaceChangesErrors];
+export type NamespaceSpaceChangesError = NamespaceSpaceChangesErrors[keyof NamespaceSpaceChangesErrors];
 
-export type ScopeSpaceChangesResponses = {
+export type NamespaceSpaceChangesResponses = {
     200: SpaceChanges;
 };
 
-export type ScopeSpaceChangesResponse = ScopeSpaceChangesResponses[keyof ScopeSpaceChangesResponses];
+export type NamespaceSpaceChangesResponse = NamespaceSpaceChangesResponses[keyof NamespaceSpaceChangesResponses];
 
-export type ScopeDescribeData = {
+export type NamespaceDescribeData = {
     body?: never;
     path?: never;
     query?: never;
     url: '/descriptor';
 };
 
-export type ScopeDescribeErrors = {
-    default: ScopeError;
+export type NamespaceDescribeErrors = {
+    default: NamespaceError;
 };
 
-export type ScopeDescribeError = ScopeDescribeErrors[keyof ScopeDescribeErrors];
+export type NamespaceDescribeError = NamespaceDescribeErrors[keyof NamespaceDescribeErrors];
 
-export type ScopeDescribeResponses = {
+export type NamespaceDescribeResponses = {
     200: Descriptor;
 };
 
-export type ScopeDescribeResponse = ScopeDescribeResponses[keyof ScopeDescribeResponses];
+export type NamespaceDescribeResponse = NamespaceDescribeResponses[keyof NamespaceDescribeResponses];
 
-export type ScopeListHostsData = {
+export type NamespaceListHostsData = {
     body?: never;
     path?: never;
     query?: {
+        /**
+         * Expected Namespace generation. Bind the first page's generation when continuing a cursor.
+         */
+        generation?: string;
         after?: string;
         limit?: number;
     };
     url: '/hosts';
 };
 
-export type ScopeListHostsErrors = {
-    default: ScopeError;
+export type NamespaceListHostsErrors = {
+    /**
+     * Stale Namespace generation
+     */
+    409: NamespaceError;
+    default: NamespaceError;
 };
 
-export type ScopeListHostsError = ScopeListHostsErrors[keyof ScopeListHostsErrors];
+export type NamespaceListHostsError = NamespaceListHostsErrors[keyof NamespaceListHostsErrors];
 
-export type ScopeListHostsResponses = {
+export type NamespaceListHostsResponses = {
     200: HostPage;
 };
 
-export type ScopeListHostsResponse = ScopeListHostsResponses[keyof ScopeListHostsResponses];
+export type NamespaceListHostsResponse = NamespaceListHostsResponses[keyof NamespaceListHostsResponses];
 
-export type ScopeRenewHostData = {
+export type NamespaceRenewHostData = {
     body: HostRegistration;
     path: {
         host: string;
@@ -482,55 +509,51 @@ export type ScopeRenewHostData = {
     url: '/hosts/{host}';
 };
 
-export type ScopeRenewHostErrors = {
-    default: ScopeError;
+export type NamespaceRenewHostErrors = {
+    default: NamespaceError;
 };
 
-export type ScopeRenewHostError = ScopeRenewHostErrors[keyof ScopeRenewHostErrors];
+export type NamespaceRenewHostError = NamespaceRenewHostErrors[keyof NamespaceRenewHostErrors];
 
-export type ScopeRenewHostResponses = {
+export type NamespaceRenewHostResponses = {
     200: HostView;
 };
 
-export type ScopeRenewHostResponse = ScopeRenewHostResponses[keyof ScopeRenewHostResponses];
+export type NamespaceRenewHostResponse = NamespaceRenewHostResponses[keyof NamespaceRenewHostResponses];
 
-export type ScopeRenewControlLeaseData = {
-    body: RenewControlLeaseWritable;
+export type NamespaceRenewControlLeaseData = {
+    body: RenewControlLease;
     headers?: {
         /**
          * Comma-separated supported features. Advertise workspace_management to accept remote workspace registration.
          */
         'X-AgentX-Features'?: string | null;
-        /**
-         * Comma-separated aliases of configured parent exports present in the lease catalogue; used with workspace_management.
-         */
-        'X-AgentX-Workspace-Parents'?: string | null;
     };
     path: {
         host: string;
     };
     query?: {
         /**
-         * Advertises native support for scoped working-directory launch.
+         * Advertises native support for a project-relative launch directory.
          */
         directory_launch?: boolean;
     };
     url: '/hosts/{host}/control/lease';
 };
 
-export type ScopeRenewControlLeaseErrors = {
-    default: ScopeError;
+export type NamespaceRenewControlLeaseErrors = {
+    default: NamespaceError;
 };
 
-export type ScopeRenewControlLeaseError = ScopeRenewControlLeaseErrors[keyof ScopeRenewControlLeaseErrors];
+export type NamespaceRenewControlLeaseError = NamespaceRenewControlLeaseErrors[keyof NamespaceRenewControlLeaseErrors];
 
-export type ScopeRenewControlLeaseResponses = {
+export type NamespaceRenewControlLeaseResponses = {
     200: HostCapabilities;
 };
 
-export type ScopeRenewControlLeaseResponse = ScopeRenewControlLeaseResponses[keyof ScopeRenewControlLeaseResponses];
+export type NamespaceRenewControlLeaseResponse = NamespaceRenewControlLeaseResponses[keyof NamespaceRenewControlLeaseResponses];
 
-export type ScopeReportControlOperationData = {
+export type NamespaceReportControlOperationData = {
     body: ReportControlOperation;
     path: {
         host: string;
@@ -540,19 +563,19 @@ export type ScopeReportControlOperationData = {
     url: '/hosts/{host}/control/operations/{request_id}/report';
 };
 
-export type ScopeReportControlOperationErrors = {
-    default: ScopeError;
+export type NamespaceReportControlOperationErrors = {
+    default: NamespaceError;
 };
 
-export type ScopeReportControlOperationError = ScopeReportControlOperationErrors[keyof ScopeReportControlOperationErrors];
+export type NamespaceReportControlOperationError = NamespaceReportControlOperationErrors[keyof NamespaceReportControlOperationErrors];
 
-export type ScopeReportControlOperationResponses = {
+export type NamespaceReportControlOperationResponses = {
     200: ControlReceipt;
 };
 
-export type ScopeReportControlOperationResponse = ScopeReportControlOperationResponses[keyof ScopeReportControlOperationResponses];
+export type NamespaceReportControlOperationResponse = NamespaceReportControlOperationResponses[keyof NamespaceReportControlOperationResponses];
 
-export type ScopePollControlOperationData = {
+export type NamespacePollControlOperationData = {
     body: PollControlOperation;
     path: {
         host: string;
@@ -561,76 +584,76 @@ export type ScopePollControlOperationData = {
     url: '/hosts/{host}/control/poll';
 };
 
-export type ScopePollControlOperationErrors = {
-    default: ScopeError;
+export type NamespacePollControlOperationErrors = {
+    default: NamespaceError;
 };
 
-export type ScopePollControlOperationError = ScopePollControlOperationErrors[keyof ScopePollControlOperationErrors];
+export type NamespacePollControlOperationError = NamespacePollControlOperationErrors[keyof NamespacePollControlOperationErrors];
 
-export type ScopePollControlOperationResponses = {
+export type NamespacePollControlOperationResponses = {
     200: ControlPoll;
 };
 
-export type ScopePollControlOperationResponse = ScopePollControlOperationResponses[keyof ScopePollControlOperationResponses];
+export type NamespacePollControlOperationResponse = NamespacePollControlOperationResponses[keyof NamespacePollControlOperationResponses];
 
-export type ScopeClaimInboxData = {
+export type NamespaceClaimInboxData = {
     body: ClaimInbox;
     path?: never;
     query?: never;
     url: '/inbox/claim';
 };
 
-export type ScopeClaimInboxErrors = {
-    default: ScopeError;
+export type NamespaceClaimInboxErrors = {
+    default: NamespaceError;
 };
 
-export type ScopeClaimInboxError = ScopeClaimInboxErrors[keyof ScopeClaimInboxErrors];
+export type NamespaceClaimInboxError = NamespaceClaimInboxErrors[keyof NamespaceClaimInboxErrors];
 
-export type ScopeClaimInboxResponses = {
+export type NamespaceClaimInboxResponses = {
     200: InboxBatch;
 };
 
-export type ScopeClaimInboxResponse = ScopeClaimInboxResponses[keyof ScopeClaimInboxResponses];
+export type NamespaceClaimInboxResponse = NamespaceClaimInboxResponses[keyof NamespaceClaimInboxResponses];
 
-export type ScopeConfirmInboxData = {
+export type NamespaceConfirmInboxData = {
     body: ConfirmInbox;
     path?: never;
     query?: never;
     url: '/inbox/confirm';
 };
 
-export type ScopeConfirmInboxErrors = {
-    default: ScopeError;
+export type NamespaceConfirmInboxErrors = {
+    default: NamespaceError;
 };
 
-export type ScopeConfirmInboxError = ScopeConfirmInboxErrors[keyof ScopeConfirmInboxErrors];
+export type NamespaceConfirmInboxError = NamespaceConfirmInboxErrors[keyof NamespaceConfirmInboxErrors];
 
-export type ScopeConfirmInboxResponses = {
+export type NamespaceConfirmInboxResponses = {
     200: InboxConfirmation;
 };
 
-export type ScopeConfirmInboxResponse = ScopeConfirmInboxResponses[keyof ScopeConfirmInboxResponses];
+export type NamespaceConfirmInboxResponse = NamespaceConfirmInboxResponses[keyof NamespaceConfirmInboxResponses];
 
-export type ScopeRecoverInboxData = {
+export type NamespaceRecoverInboxData = {
     body: RecoverInbox;
     path?: never;
     query?: never;
     url: '/inbox/recover';
 };
 
-export type ScopeRecoverInboxErrors = {
-    default: ScopeError;
+export type NamespaceRecoverInboxErrors = {
+    default: NamespaceError;
 };
 
-export type ScopeRecoverInboxError = ScopeRecoverInboxErrors[keyof ScopeRecoverInboxErrors];
+export type NamespaceRecoverInboxError = NamespaceRecoverInboxErrors[keyof NamespaceRecoverInboxErrors];
 
-export type ScopeRecoverInboxResponses = {
+export type NamespaceRecoverInboxResponses = {
     200: InboxBatch;
 };
 
-export type ScopeRecoverInboxResponse = ScopeRecoverInboxResponses[keyof ScopeRecoverInboxResponses];
+export type NamespaceRecoverInboxResponse = NamespaceRecoverInboxResponses[keyof NamespaceRecoverInboxResponses];
 
-export type ScopeListMessagesData = {
+export type NamespaceListMessagesData = {
     body?: never;
     path?: never;
     query: {
@@ -651,38 +674,38 @@ export type ScopeListMessagesData = {
     url: '/messages';
 };
 
-export type ScopeListMessagesErrors = {
-    default: ScopeError;
+export type NamespaceListMessagesErrors = {
+    default: NamespaceError;
 };
 
-export type ScopeListMessagesError = ScopeListMessagesErrors[keyof ScopeListMessagesErrors];
+export type NamespaceListMessagesError = NamespaceListMessagesErrors[keyof NamespaceListMessagesErrors];
 
-export type ScopeListMessagesResponses = {
+export type NamespaceListMessagesResponses = {
     200: MessageHistoryPage;
 };
 
-export type ScopeListMessagesResponse = ScopeListMessagesResponses[keyof ScopeListMessagesResponses];
+export type NamespaceListMessagesResponse = NamespaceListMessagesResponses[keyof NamespaceListMessagesResponses];
 
-export type ScopeSendMessageData = {
+export type NamespaceSendMessageData = {
     body: SendMessage;
     path?: never;
     query?: never;
     url: '/messages';
 };
 
-export type ScopeSendMessageErrors = {
-    default: ScopeError;
+export type NamespaceSendMessageErrors = {
+    default: NamespaceError;
 };
 
-export type ScopeSendMessageError = ScopeSendMessageErrors[keyof ScopeSendMessageErrors];
+export type NamespaceSendMessageError = NamespaceSendMessageErrors[keyof NamespaceSendMessageErrors];
 
-export type ScopeSendMessageResponses = {
+export type NamespaceSendMessageResponses = {
     200: MessageView;
 };
 
-export type ScopeSendMessageResponse = ScopeSendMessageResponses[keyof ScopeSendMessageResponses];
+export type NamespaceSendMessageResponse = NamespaceSendMessageResponses[keyof NamespaceSendMessageResponses];
 
-export type ScopeGetOperationData = {
+export type NamespaceGetOperationData = {
     body?: never;
     path: {
         request_id: string;
@@ -691,19 +714,19 @@ export type ScopeGetOperationData = {
     url: '/operations/{request_id}';
 };
 
-export type ScopeGetOperationErrors = {
-    default: ScopeError;
+export type NamespaceGetOperationErrors = {
+    default: NamespaceError;
 };
 
-export type ScopeGetOperationError = ScopeGetOperationErrors[keyof ScopeGetOperationErrors];
+export type NamespaceGetOperationError = NamespaceGetOperationErrors[keyof NamespaceGetOperationErrors];
 
-export type ScopeGetOperationResponses = {
+export type NamespaceGetOperationResponses = {
     200: MessageOperation;
 };
 
-export type ScopeGetOperationResponse = ScopeGetOperationResponses[keyof ScopeGetOperationResponses];
+export type NamespaceGetOperationResponse = NamespaceGetOperationResponses[keyof NamespaceGetOperationResponses];
 
-export type ScopeListTranscriptData = {
+export type NamespaceListTranscriptData = {
     body?: never;
     path?: never;
     query: {
@@ -724,33 +747,67 @@ export type ScopeListTranscriptData = {
     url: '/transcript';
 };
 
-export type ScopeListTranscriptErrors = {
-    default: ScopeError;
+export type NamespaceListTranscriptErrors = {
+    default: NamespaceError;
 };
 
-export type ScopeListTranscriptError = ScopeListTranscriptErrors[keyof ScopeListTranscriptErrors];
+export type NamespaceListTranscriptError = NamespaceListTranscriptErrors[keyof NamespaceListTranscriptErrors];
 
-export type ScopeListTranscriptResponses = {
+export type NamespaceListTranscriptResponses = {
     200: TranscriptHistoryPage;
 };
 
-export type ScopeListTranscriptResponse = ScopeListTranscriptResponses[keyof ScopeListTranscriptResponses];
+export type NamespaceListTranscriptResponse = NamespaceListTranscriptResponses[keyof NamespaceListTranscriptResponses];
 
-export type ScopePublishTranscriptData = {
+export type NamespacePublishTranscriptData = {
     body: PublishTranscript;
     path?: never;
     query?: never;
     url: '/transcript';
 };
 
-export type ScopePublishTranscriptErrors = {
-    default: ScopeError;
+export type NamespacePublishTranscriptErrors = {
+    default: NamespaceError;
 };
 
-export type ScopePublishTranscriptError = ScopePublishTranscriptErrors[keyof ScopePublishTranscriptErrors];
+export type NamespacePublishTranscriptError = NamespacePublishTranscriptErrors[keyof NamespacePublishTranscriptErrors];
 
-export type ScopePublishTranscriptResponses = {
+export type NamespacePublishTranscriptResponses = {
     200: boolean;
 };
 
-export type ScopePublishTranscriptResponse = ScopePublishTranscriptResponses[keyof ScopePublishTranscriptResponses];
+export type NamespacePublishTranscriptResponse = NamespacePublishTranscriptResponses[keyof NamespacePublishTranscriptResponses];
+
+export type NamespaceListWorkspacesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Expected Namespace generation. Bind the first page's generation when continuing a cursor.
+         */
+        generation?: string;
+        host?: string;
+        /**
+         * Exclusive cursor from a previous page.
+         */
+        after?: string;
+        limit?: number;
+    };
+    url: '/workspaces';
+};
+
+export type NamespaceListWorkspacesErrors = {
+    /**
+     * Stale Namespace generation
+     */
+    409: NamespaceError;
+    default: NamespaceError;
+};
+
+export type NamespaceListWorkspacesError = NamespaceListWorkspacesErrors[keyof NamespaceListWorkspacesErrors];
+
+export type NamespaceListWorkspacesResponses = {
+    200: WorkspacePage;
+};
+
+export type NamespaceListWorkspacesResponse = NamespaceListWorkspacesResponses[keyof NamespaceListWorkspacesResponses];

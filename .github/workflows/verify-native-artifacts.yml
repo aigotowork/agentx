@@ -36,3 +36,14 @@ jobs:
           VERSION: ${{ fromJSON(inputs.plan).releases[0].app_version }}
           ARTIFACT_DIR: ${{ runner.temp }}/agentx-release
         run: python .github/scripts/verify-native-artifact.py "$ARTIFACT_DIR" "$TARGET" "$VERSION"
+      - name: Upgrade a published 0.7.33 daemon and retain its receipt
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET: ${{ matrix.targets[0] }}
+          VERSION: ${{ fromJSON(inputs.plan).releases[0].app_version }}
+          ARTIFACT_DIR: ${{ runner.temp }}/agentx-release
+          LEGACY_DIR: ${{ runner.temp }}/agentx-legacy-0.7.33
+        run: |
+          gh release download v0.7.33 -R "$GITHUB_REPOSITORY" -p "agentx-$TARGET.*" -D "$LEGACY_DIR"
+          python .github/scripts/verify-native-upgrade.py "$ARTIFACT_DIR" "$LEGACY_DIR" "$TARGET" "$VERSION"

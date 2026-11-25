@@ -8,7 +8,7 @@ const { SpaceController } = await import('../src/offline/controller.ts');
 const { emptySupply } = await import('../src/live/projection.ts');
 
 const listener = 'http://disposable.invalid';
-const descriptor = { scope: 'isolated', generation: 'g', project: '/office', tools: [], profiles: [], max_page: 100, max_text: 65536 };
+const descriptor = { scope: 'isolated', generation: 'g', project: '/office', tools: [], profiles: [], supports_workspace_members: true, supports_message_history: true, max_page: 100, max_text: 65536 };
 const { scope, generation } = descriptor;
 const ref = { name: 'same', incarnation: '1', stopped_event: null };
 const archivedRef = { name: ref.name, incarnation: null, stopped_event: '20' };
@@ -53,11 +53,14 @@ async function fixture(t, status) {
     switch (url.pathname) {
       case '/api/v1/management': return Response.json({ ...descriptor, scope: reportedScope });
       case '/api/v1/workspaces': return Response.json({ generation, workspaces: [], coverage: { errors: [], agent_limit_reached: false, scan_limit_reached: false, agent_pages: 1, directories_examined: 0 } });
+      case '/api/v1/workspaces/members':
       case '/api/v1/agents': return Response.json({ generation, agents: [row, archived], next: null, current_complete: true });
       case '/api/v1/agents/same':
         assert.equal(url.searchParams.get('incarnation'), ref.incarnation);
         assert.equal(url.searchParams.get('stopped_event'), null);
         return Response.json(row);
+      case '/api/v1/agents/same/message-history':
+        return Response.json({ generation, messages: [], next_before: null, live_after: '0' });
       case '/api/v1/agents/same/messages':
         assert.equal(url.searchParams.get('incarnation'), ref.incarnation);
         return Response.json({ generation, messages: [], next_after: 'checkpoint', has_more: false });

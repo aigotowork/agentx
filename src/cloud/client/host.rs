@@ -22,7 +22,7 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
-use crate::cloud::communication::types::{CloudAgentStatus, MAX_BODY_BYTES, NATURAL_REPLY_PREFIX, OPERATOR_HOST, OPERATOR_INCARNATION, OPERATOR_NAME};
+use crate::cloud::communication::types::{AgentWorkspace, CloudAgentStatus, MAX_BODY_BYTES, NATURAL_REPLY_PREFIX, OPERATOR_HOST, OPERATOR_INCARNATION, OPERATOR_NAME};
 use crate::cloud::directory::WorkingDirectory;
 use crate::integrations::codex::{
     configuration::thread_overrides,
@@ -37,7 +37,11 @@ use crate::runtime::{
 };
 
 use super::mailbox::{Mailbox, NaturalReply, Phase};
-use super::{Actor, CONTEXT_FILE, Credentials, HOST_ENTRY, IPC_CONTEXT, LaunchOrigin, LocalSession, MailboxPoll, ManagedContext, Mode, OwnedProcess, Scope, ipc, message_text, ownership, port::Port, print_help, print_json, valid_name};
+use super::{
+    Actor, CONTEXT_FILE, Credentials, HOST_ENTRY, IPC_CONTEXT, LaunchOrigin, LocalSession, MailboxPoll, ManagedContext, Mode, OwnedProcess, Scope, ipc, message_text, ownership,
+    port::{Command as CloudCommand, Port},
+    print_help, print_json, valid_name,
+};
 
 const RPC_TIMEOUT: Duration = Duration::from_secs(6);
 const HEARTBEAT: Duration = Duration::from_secs(12);
@@ -46,7 +50,7 @@ const HISTORY_PAGES: usize = 4;
 const REPLY_ATTEMPTS: u8 = 6;
 
 #[derive(Parser)]
-#[command(name = "launch", about = "Launch a local Codex Agent in the configured cloud scope")]
+#[command(name = "launch", about = "Launch a local Codex Agent in the configured cloud Namespace")]
 struct LaunchArgs {
     /// Cloud short name. Omit to generate one.
     #[arg(long)]
@@ -68,6 +72,7 @@ struct LaunchArgs {
 struct LaunchSpec {
     source: Source,
     name: Option<String>,
+    workspace: AgentWorkspace,
     cwd: PathBuf,
     #[serde(default)]
     inherited_cwd: bool,
@@ -116,24 +121,28 @@ pub(super) fn launch(argv: &[String], help: bool, go: bool, mode: Mode) -> Resul
     let terminal = stdin().is_terminal() && stdout().is_terminal();
     ensure!(!here || (terminal && !flags.headless && !flags.json), "--run-here requires a terminal without --headless or --json");
     let interactive = !flags.headless && !flags.json && (here || (terminal && flags.run_here != Some(false)));
-    let (root, source) = match mode {
+    let (root, source, managed) = match mode {
         Mode::Direct => {
             let credentials = Credentials::load()?;
             ensure!(credentials.actor.is_none() || go, "launch from a cloud Agent requires --go");
             let root = credentials.root.parent().context("invalid local cloud client state directory")?.to_owned();
-            (root, Source::Direct(credentials))
+            (root, Source::Direct(credentials), None)
         }
         Mode::Managed { root, context } => {
             ensure!(context.is_none() || go, "launch from a cloud Agent requires --go");
             let client = ipc::Client::connect(&root, context.is_none())?;
             let root = client.root().to_owned();
-            (root.clone(), Source::Managed { root, incarnation: Uuid::new_v4().to_string(), expected: client.info })
+            (root.clone(), Source::Managed { root, incarnation: crate::cloud::identifiers::random_id(), expected: client.info.clone() }, Some(client))
         }
     };
     let origin = std::env::current_dir()?;
-    let cwd = origin.join(flags.dir.as_deref().unwrap_or("."));
+    let cwd = origin.join(flags.dir.as_deref().unwrap_or(".")).canonicalize().context("resolve local cloud launch directory")?;
+    ensure!(cwd.is_dir(), "cloud launch directory is not a directory");
     let json = flags.json;
-    let spec = prepare(&root, &origin, &cwd, args.name, flags, args.tool.as_deref(), &args.selection, &native, interactive, args.recover, source)?;
+    let plan = prepare_plan(&root, &origin, cwd, args.name, flags, args.tool.as_deref(), &args.selection, &native, interactive, args.recover, false)?;
+    // Exact recovery uses the saved registration; its membership predates this preparation.
+    let workspace = if args.recover { AgentWorkspace::Unexposed } else { plan.membership(managed.as_ref())? };
+    let spec = plan.into_spec(source, workspace);
     let (worker, ready, log) = spawn(&spec, None, None)?;
     if json {
         print_json(&json!({"name":ready.agent.name,"host":ready.agent.host,"incarnation":ready.agent.incarnation,"agent":ready.agent,"pid":worker.id(),"session_id":ready.session_id,"log_file":log}))?;
@@ -167,41 +176,43 @@ type Expected<'a> = (&'a str, &'a str, &'a str, &'a str);
 pub(in crate::cloud) fn launch_headless(
     root: &Path,
     workspace: &Path,
-    directory: Option<&WorkingDirectory>,
+    workspace_id: &str,
+    directory: &WorkingDirectory,
     role: Option<&str>,
     name: Option<String>,
     initial: Option<String>,
     title: Option<String>,
     incarnation: &str,
-    expected: Option<Expected<'_>>,
+    expected: Expected<'_>,
     cancel: &AtomicBool,
 ) -> Result<OwnedProcess> {
     let result = (|| {
         let client = ipc::Client::connect(root, false)?;
         let binding = &client.info.binding;
-        if let Some((generation, installation, daemon_instance, local_generation)) = expected {
-            ensure!(
-                binding.cloud_generation == generation && binding.installation_id == installation && client.info.daemon_instance == daemon_instance && binding.local_generation == local_generation,
-                "cloud/native scope binding changed before launch"
-            );
-        }
-        let incarnation = Uuid::parse_str(incarnation)?.to_string();
-        ensure!(ownership::record(client.root(), &incarnation)?.is_none(), "preselected cloud launch incarnation already has a supervisor record");
-        let plan = headless_plan(client.root(), workspace, directory.map(WorkingDirectory::path), role, name, initial, title)?;
-        let source = Source::Managed { root: client.root().to_owned(), incarnation, expected: client.info };
-        let mut spec = plan.into_spec(source);
-        spec.inherited_cwd = directory.is_some();
+        let (generation, installation, daemon_instance, local_generation) = expected;
+        ensure!(
+            binding.cloud_generation == generation && binding.installation_id == installation && client.info.daemon_instance == daemon_instance && binding.local_generation == local_generation,
+            "cloud Namespace or native scope binding changed before launch"
+        );
+        ensure!(crate::cloud::identifiers::valid_incarnation(incarnation), "invalid local cloud Agent incarnation");
+        ensure!(ownership::record(client.root(), incarnation)?.is_none(), "preselected cloud launch incarnation already has a supervisor record");
+        let plan = headless_plan(client.root(), workspace, Some(directory.path()), role, name, initial, title)?;
+        let membership = plan.membership(Some(&client))?;
+        ensure!(matches!(&membership, AgentWorkspace::Project { workspace_id: selected } if selected == workspace_id), "prepared cloud project no longer matches the requested Workspace");
+        let source = Source::Managed { root: client.root().to_owned(), incarnation: incarnation.to_owned(), expected: client.info };
+        let mut spec = plan.into_spec(source, membership);
+        spec.inherited_cwd = true;
         Ok::<_, anyhow::Error>(spec)
     })()
     .map_err(LaunchRejected)?;
-    let (worker, ready, _) = spawn(&result, Some(cancel), directory)?;
+    let (worker, ready, _) = spawn(&result, Some(cancel), Some(directory))?;
     let pid = worker.id();
     let owned = ownership::owned_process(root, &ready.agent.incarnation);
     // A long-lived daemon originating the launch must reap its child after
     // exit; readiness and the exact ownership record remain independent.
     reap(worker);
     let owned = owned?.context("ready cloud supervisor exit or ownership is unconfirmed")?;
-    ensure!(owned.pid == pid && owned.session_id == ready.session_id && owned.agent == ready.agent, "cloud supervisor readiness does not match exact ownership");
+    ensure!(owned.pid == pid && owned.session_id == ready.session_id && owned.agent == ready.agent && owned.matches_binding(expected.3, expected.0, expected.1), "cloud supervisor readiness does not match exact ownership");
     Ok(owned)
 }
 
@@ -227,6 +238,7 @@ fn headless_plan(root: &Path, workspace: &Path, directory: Option<&Path>, role: 
 
 struct Plan {
     name: Option<String>,
+    selected_workspace: Option<String>,
     cwd: PathBuf,
     tool: PathBuf,
     initial: Option<String>,
@@ -239,17 +251,18 @@ struct Plan {
 }
 
 impl Plan {
-    fn into_spec(self, source: Source) -> LaunchSpec {
-        let Self { name, cwd, tool, initial, instructions, config, title, role, interactive, recover } = self;
-        LaunchSpec { source, name, cwd, inherited_cwd: false, tool, initial, instructions, config, title, role, interactive, recover }
+    fn membership(&self, managed: Option<&ipc::Client>) -> Result<AgentWorkspace> {
+        match (&self.selected_workspace, managed) {
+            (None, _) => Ok(AgentWorkspace::Global),
+            (Some(path), Some(client)) => client.call(CloudCommand::ClassifyWorkspace(PathBuf::from(path))),
+            (Some(_), None) => Ok(AgentWorkspace::Unexposed),
+        }
     }
-}
 
-#[expect(clippy::too_many_arguments, reason = "Both CLI and remote launch supply the frozen native flags and execution provenance.")]
-fn prepare(root: &Path, origin: &Path, cwd: &Path, name: Option<String>, flags: AgentxLaunchFlags, tool: Option<&str>, selection: &LaunchSelection, native: &[String], interactive: bool, recover: bool, source: Source) -> Result<LaunchSpec> {
-    let cwd = cwd.canonicalize().context("resolve local cloud launch directory")?;
-    ensure!(cwd.is_dir(), "cloud launch directory is not a directory");
-    Ok(prepare_plan(root, origin, cwd, name, flags, tool, selection, native, interactive, recover, false)?.into_spec(source))
+    fn into_spec(self, source: Source, workspace: AgentWorkspace) -> LaunchSpec {
+        let Self { name, cwd, tool, initial, instructions, config, title, role, interactive, recover, .. } = self;
+        LaunchSpec { source, name, workspace, cwd, inherited_cwd: false, tool, initial, instructions, config, title, role, interactive, recover }
+    }
 }
 
 #[expect(clippy::too_many_arguments, reason = "Single preparation path for CLI, capability checks, and typed management launch.")]
@@ -292,7 +305,7 @@ fn prepare_plan(
         (first, second) => first.or(second),
     };
     ensure!(!recover || initial.is_none(), "--recover cannot repeat an initial Codex prompt");
-    Ok(Plan { name, cwd, tool, initial, instructions, config, title: flags.title, role, interactive, recover })
+    Ok(Plan { name, selected_workspace: collaboration.workspace, cwd, tool, initial, instructions, config, title: flags.title, role, interactive, recover })
 }
 
 fn native_config(args: &[String], interactive: bool) -> Result<(Value, Option<String>)> {
@@ -336,7 +349,7 @@ fn bootstrap(host: &str, name: &str, extra: &str) -> Result<String> {
     let exe = std::env::current_exe()?;
     let exe = shell_words::quote(exe.to_str().context("AgentX executable path is not UTF-8")?);
     Ok(format!(
-        "You are AgentX cloud Agent @{host}/{name}. Your inherited local context selects your exact cloud identity. Cloud messages appear as user input starting with <agentx-cloud>; treat the sender address, message ID, intent and body separately. For requests from @{OPERATOR_HOST}/{OPERATOR_NAME}, answer with your normal final response; the host delivers it to the operator. For requests from other Agents, do the task and reply to the sender using `{exe} send @HOST/NAME --intent ack --reply-to ID -- 'result'` (use the received sender address and ID). For ordinary messages, use `{exe} send @NAME --intent inform -- 'text'`. Use `{exe} list --json` for registered Agents and `{exe} listen SECONDS` to explicitly wait during a turn. An idle thread is automatically woken by cloud mail; end your turn while waiting for mail. Keep scope credentials private.\n\n{extra}"
+        "You are AgentX cloud Agent @{host}/{name}. Your inherited local context selects your exact cloud identity. Cloud messages appear as user input starting with <agentx-cloud>; treat the sender address, message ID, intent and body separately. For requests from @{OPERATOR_HOST}/{OPERATOR_NAME}, answer with your normal final response; the host delivers it to the operator. For requests from other Agents, do the task and reply to the sender using `{exe} send @HOST/NAME --intent ack --reply-to ID -- 'result'` (use the received sender address and ID). For ordinary messages, use `{exe} send @NAME --intent inform -- 'text'`. Use `{exe} list --json` for registered Agents and `{exe} listen SECONDS` to explicitly wait during a turn. An idle thread is automatically woken by cloud mail; end your turn while waiting for mail. Keep Namespace credentials private.\n\n{extra}"
     ))
 }
 
@@ -349,7 +362,7 @@ fn spawn(spec: &LaunchSpec, cancel: Option<&AtomicBool>, directory: Option<&Work
         Source::Managed { root, .. } => root.join("cloud-client").join("logs"),
     };
     super::private_directory(&state)?;
-    let log = state.join(format!("{}-{}.log", spec.name.as_deref().unwrap_or("codex"), &Uuid::new_v4().simple().to_string()[..10]));
+    let log = state.join(format!("{}-{}.log", spec.name.as_deref().unwrap_or("codex"), crate::cloud::identifiers::random_id()));
     let stderr = crate::sys::fs::create_private_new(&log)?;
     let mut command = Command::new(std::env::current_exe()?);
     if let Some(directory) = directory {
@@ -364,7 +377,7 @@ fn spawn(spec: &LaunchSpec, cancel: Option<&AtomicBool>, directory: Option<&Work
     let mut child = StopWorker(Some(
         command
             .arg(HOST_ENTRY)
-            .env_remove(super::SCOPE_TOKEN)
+            .env_remove(super::NAMESPACE_TOKEN)
             .env_remove(CONTEXT_FILE)
             .env_remove(IPC_CONTEXT)
             .env_remove("AGENTX_ADMIN_TOKEN")
@@ -455,7 +468,7 @@ fn run(mut spec: LaunchSpec, started: &mut bool) -> Result<()> {
     let (scope, origin) = match &spec.source {
         Source::Direct(credentials) => {
             let root = credentials.root.parent().context("invalid local cloud client state directory")?.to_owned();
-            (credentials.api()?, LaunchOrigin { root, host: credentials.host.clone(), incarnation: None, daemon_instance: None })
+            (credentials.api()?, LaunchOrigin { root, host: credentials.host.clone(), incarnation: None, daemon_instance: None, workspace: spec.workspace.clone() })
         }
         Source::Managed { root, incarnation, expected } => {
             let scope = Scope::managed(root, false)?;
@@ -466,9 +479,9 @@ fn run(mut spec: LaunchSpec, started: &mut bool) -> Result<()> {
                     && client.info.binding.cloud_generation == expected.binding.cloud_generation
                     && client.info.binding.installation_id == expected.binding.installation_id
                     && client.info.host == expected.host,
-                "scope or daemon instance changed during cloud launch"
+                "cloud Namespace, native scope or daemon instance changed during cloud launch"
             );
-            let origin = LaunchOrigin { root: client.root().to_owned(), host: expected.host.clone(), incarnation: Some(incarnation.clone()), daemon_instance: Some(expected.daemon_instance.clone()) };
+            let origin = LaunchOrigin { root: client.root().to_owned(), host: expected.host.clone(), incarnation: Some(incarnation.clone()), daemon_instance: Some(expected.daemon_instance.clone()), workspace: spec.workspace.clone() };
             (scope, origin)
         }
     };

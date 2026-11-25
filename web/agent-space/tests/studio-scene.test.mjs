@@ -73,7 +73,7 @@ test('synthetic current and stopped namesakes keep separate route and draft iden
   controller.writeDraft(current.id, 'current-only');
   assert(!controller.openConversation(stopped.id, 'actor'));
   controller.openExact(stopped.id);
-  const parsed = parseRoute(routeSearch('?supply=studio&art=studio', routeFromState(controller.getSnapshot(), supply)));
+  const parsed = parseRoute(routeSearch('?supply=studio&style=studio', routeFromState(controller.getSnapshot(), supply)));
   assert.equal(parsed.issue, '');
   assert.equal(parsed.route.target.stopped_event, stopped.ref.stopped_event);
   assert.equal(controller.getSnapshot().drafts[stopped.id], undefined);

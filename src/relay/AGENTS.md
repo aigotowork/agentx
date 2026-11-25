@@ -2,6 +2,8 @@
 
 Read the [Relay model](../../.docs/architecture/relay.md), [native operations](service.rs) and [active Task](../../.controller/domain-daemon/tasks/relay.md) before changing behavior. The Task owns actual implementation and independent evidence status.
 
+[Join tokens](token.rs) only admit the format emitted by the current encoder; a decoded token always contains the 32-byte Relay key. The public broker list is append-only because the token carries the broker index.
+
 `service_store.rs`, `pull.rs`, `backfill.rs` and push projection helpers are daemon-only persistence adapters. MQTT and actual runtime/file/process effects belong to the worker after application dispatch returns. `persistence.rs` is the typed client binding; it never opens managed SQLite or falls back after IPC failure. No daemon handler may call it or any other same-daemon client.
 
 Local queue/peer display and targeting use native Snapshot through `snapshot_client`. Supply the originating own-device UUID; peers retain every short mapping, and status presentation owns per-device grouping/online sorting. The snapshot handler returns database failures rather than an empty successful projection. Health remains the canonical native Status projection.

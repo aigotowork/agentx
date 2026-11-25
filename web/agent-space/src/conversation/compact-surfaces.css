@@ -206,7 +206,7 @@
   background: var(--surface-selected);
   box-shadow: inset var(--focus-width) 0 var(--accent);
 }
-.history-order, .history-boundary, .history-older {
+.history-boundary, .history-older {
   max-inline-size: var(--reading-width);
   margin: var(--space-0) auto;
   padding: var(--space-1) var(--space-4);

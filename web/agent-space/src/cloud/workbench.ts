@@ -1,18 +1,18 @@
-import { CloudAdminError, type CloudControlInput, type CloudHostCapabilities } from '@agentx/client';
+/** @aiPurpose Compose Namespace catalogue, exact conversations and Admin controls for the shared App. */
+import { newCloudId, CloudAdminError, type CloudAdminTypes, type CloudControlInput, type CloudHostCapabilities } from '@agentx/client';
 import type { MessageInput } from '../../../management/api/native';
-import { hostGroup, type AgentSpaceSupply, type Office, type RecordChannel } from '../offline/model';
+import { type AgentSpaceSupply, type CloudOffice, type RecordChannel } from '../offline/model';
 import type { RouteTarget } from '../navigation/route';
 import { watchChanges } from './changes';
 import { CloudHistory, messagePage } from './history';
-import { CloudTranscriptReader } from './transcript';
-import { agentsPage, cloudPageSize, cloudProblem, fenced, hostsPage, projectCloudAgent, resolveAgent, ScopeChanged, ScopeUnavailable, type CloudHost, type CloudRosterAgent, type Session } from './model';
+import { CloudTranscriptReader, readTranscriptPage } from './transcript';
+import { agentsPage, cloudPageSize, cloudProblem, hostsPage, projectCloudAgent, projectCloudOffice, resolveAgent, unsupportedCloudOperation, workspacesPage, NamespaceChanged, NamespaceUnavailable, type CloudHost, type CloudRosterAgent, type CloudSubject, type PageQuery, type Session } from './model';
 import { CloudOperations, controlPending, type ControlEntry } from './operations';
-import { cloudNavigation, sameAgent, type CloudAgent } from './route';
+import { cloudNavigation, cloudOfficeQuery, sameAgent, type CloudAgent } from './route';
 
-type Roster = { rows: Map<string, CloudRosterAgent>; next: string | null; pages: number; phase: 'loading' | 'ready' | 'error'; error?: string };
-type PendingSend = { input: { generation: string; request_id: string; to: CloudAgent; body: string }; done?: () => void; busy: boolean; uncertain: boolean };
+type Roster = { rows: Map<string, CloudRosterAgent>; next: string | null; pages: number; phase: 'loading' | 'ready' | 'error' | 'unavailable'; error?: string };
+type PendingSend = { input: CloudAdminTypes['SendHumanMessage']; done?: () => void; busy: boolean; uncertain: boolean };
 const roster = (): Roster => ({ rows: new Map(), next: null, pages: 0, phase: 'loading' });
-const MESSAGE_REFRESH_MS = 15_000;
 const RECEIPT_REFRESH_MS = 5_000;
 const isDefiniteRejection = (error: unknown) => error instanceof CloudAdminError && error.status !== undefined
   && error.status >= 400 && error.status < 500 && ![408, 425, 429].includes(error.status);
@@ -25,6 +25,8 @@ export class CloudWorkbench {
   readonly access;
   readonly operations?: CloudOperations;
   hosts: readonly CloudHost[] = [];
+  private projects: readonly CloudOffice[] = [];
+  private catalogPhase: 'loading' | 'ready' | 'error' = 'loading';
   connection: 'connecting' | 'pinned' | 'failed' | 'reset' = 'pinned';
   error = '';
   catalogError = '';
@@ -32,10 +34,10 @@ export class CloudWorkbench {
   private office = '';
   private currentRoster = roster();
   private rosterRead?: AbortController;
-  private hostRead?: AbortController;
+  private catalogRead?: AbortController;
+  private refreshCatalogAfterRead = false;
   private lifetime?: AbortController;
   private watcher?: AbortController;
-  private changeMode: 'connecting' | 'watch' | 'legacy' = 'connecting';
   private receiptTimer?: ReturnType<typeof setTimeout>;
   private checkingReceipts = false;
   private desired: readonly string[] = [];
@@ -43,7 +45,7 @@ export class CloudWorkbench {
   private follow?: { id: string; controller: AbortController };
   private readers = new Map<string, CloudHistory>();
   private transcripts = new Map<string, CloudTranscriptReader>();
-  private known = new Map<string, { agent: CloudRosterAgent; current: boolean }>();
+  private known = new Map<string, { agent: CloudSubject; current: boolean }>();
   private retired = new Set<string>();
   private sends = new Map<string, PendingSend>();
   private launchFollowers = new Map<string, (project: () => string) => void>();
@@ -52,9 +54,9 @@ export class CloudWorkbench {
   private completedControls = new Set<string>();
   private refreshRosterAfterRead = false;
   constructor(private readonly session: Session, private readonly publish: (supply: AgentSpaceSupply) => void) {
-    this.navigation = cloudNavigation(session.scope, session.generation);
+    this.navigation = cloudNavigation(session.namespace, session.generation);
     this.access = session.access;
-    this.descriptor = { scope: session.scope, generation: session.generation, max_text: 64 * 1024 };
+    this.descriptor = { scope: session.namespace, generation: session.generation, max_text: 64 * 1024 };
     if (session.access === 'admin') this.operations = new CloudOperations(session, this.emit, this.failure);
   }
   get more() { return !!this.currentRoster.next; }
@@ -66,26 +68,33 @@ export class CloudWorkbench {
         this.watcher = new AbortController();
         const signal = AbortSignal.any([controller.signal, this.watcher.signal]);
         void watchChanges(this.session, signal, async (next, previous) => {
-          this.changeMode = 'watch';
+          if (this.error && this.connection === 'pinned') { this.error = ''; this.emit(); }
           const reset = !previous || next.epoch !== previous.epoch;
-          if (reset || next.roster !== previous?.roster || this.currentRoster.phase === 'error') {
+          const rosterChanged = reset || next.roster !== previous?.roster;
+          if (rosterChanged || this.currentRoster.phase === 'error') {
             if (this.rosterRead) this.refreshRosterAfterRead = true;
             else this.refreshMembers();
-            if (reset || this.catalogError) this.retryCatalog();
-            else if (this.operations?.entries.some(controlPending)) void this.checkReceipts(signal);
+            if (this.operations?.entries.some(controlPending)) void this.checkReceipts(signal);
           }
+          if (rosterChanged || this.catalogError) this.invalidateCatalogue();
           const id = this.selected;
           const reader = id && this.readers.get(id);
           if (reader && (reset || next.messages !== previous?.messages || reader.page.phase === 'error' || reader.liveFailed)) {
-            reader.incremental = true;
             await reader.update(signal, 'latest', true);
           }
           if (id && !signal.aborted && (reset || next.transcript !== previous?.transcript)) await this.refreshTranscript(id, signal);
-        }, error => { this.failure(error); this.emit(); return this.connection === 'reset'; }, () => {
-          this.changeMode = 'legacy';
-          this.refreshData();
-          this.follow?.controller.abort(); this.follow = undefined;
-          this.followSelected();
+        }, error => {
+          this.failure(error);
+          if (unsupportedCloudOperation(error)) {
+            if (!this.currentRoster.pages) this.refreshMembers();
+            if (this.catalogPhase === 'loading') this.retryCatalog();
+            this.error = '此服务不支持监视云端更新，请手动刷新。';
+            this.emit();
+            return true;
+          }
+          if (this.connection === 'pinned') this.error = '无法监视云端更新，正在重试。';
+          this.emit();
+          return this.connection === 'reset';
         });
       }
       this.followSelected();
@@ -94,7 +103,8 @@ export class CloudWorkbench {
     document.addEventListener('visibilitychange', visibility, { signal: controller.signal });
     visibility();
     return () => {
-      controller.abort(); this.rosterRead?.abort(); this.hostRead?.abort(); this.rosterRead = this.hostRead = undefined;
+      controller.abort(); this.rosterRead?.abort(); this.catalogRead?.abort(); this.rosterRead = this.catalogRead = undefined;
+      this.refreshCatalogAfterRead = false;
       clearTimeout(this.receiptTimer); this.receiptTimer = undefined;
       this.desired = []; this.selected = null; this.follow = undefined;
     };
@@ -102,13 +112,29 @@ export class CloudWorkbench {
   private get signal() { return this.lifetime?.signal; }
   private id(agent: CloudAgent) { return projectCloudAgent(agent, this.session).id; }
   private failure = (error: unknown) => {
-    if (error instanceof ScopeChanged || error instanceof ScopeUnavailable
+    if (error instanceof NamespaceChanged || error instanceof NamespaceUnavailable
       || error instanceof CloudAdminError && ([401, 403].includes(error.status ?? 0) || error.code === 'stale_generation')) {
       this.connection = 'reset';
       this.watcher?.abort();
+      this.rosterRead?.abort();
+      this.catalogRead?.abort();
       this.error = cloudProblem(error, '云端连接已失效，请重新登录。');
+      this.currentRoster = { ...roster(), phase: 'error', error: this.error };
+      this.catalogPhase = 'error';
+      this.catalogError = this.error;
+      this.hosts = [];
+      this.projects = [];
+      // Keep exact display identities for open drafts while invalidating their data and actions.
+      for (const entry of this.known.values()) {
+        const { host, name, incarnation, workspace } = entry.agent;
+        entry.agent = { host, name, incarnation, workspace };
+        entry.current = false;
+      }
+      this.readers.clear();
+      this.transcripts.clear();
       this.followSelected();
       this.scheduleReceipts();
+      this.emit();
     }
   };
   private active() {
@@ -118,18 +144,17 @@ export class CloudWorkbench {
   }
   private emit = () => {
     if (this.signal?.aborted) return;
-    const group = new Set([...this.hosts.map(host => host.name), ...[...this.currentRoster.rows.values()].map(agent => agent.host), ...[...this.known.values()].map(row => row.agent.host)]);
-    const workspaces: Office[] = [...group].sort().map(host => ({ id: hostGroup(host), title: host, origin: 'cloud-host' }));
     const agents = [...this.currentRoster.rows.values()].filter(agent => !this.stoppedByReceipt.has(this.id(agent))).map(agent => projectCloudAgent(agent, this.session));
     const subjects = [...this.known].map(([id, { agent }]) => projectCloudAgent(this.currentRoster.rows.get(id) ?? agent, this.session,
       this.transcripts.get(id)?.facts, this.retired.has(id) || this.stoppedByReceipt.has(id)));
     const { phase, error, next } = this.currentRoster;
     this.publish({
-      mode: 'live', scope: { cloud: true, id: this.session.scope, generation: this.session.generation, coverage: '云端已注册实例 · 显示主机已上报的状态与工作目录' },
-      workspaces, agents, subjects, posts: [],
+      mode: 'live', scope: { cloud: true, id: this.session.namespace, generation: this.session.generation, coverage: '云端已注册实例 · 显示主机已上报的状态与工作目录' },
+      workspaces: this.projects, cloudDirectory: { phase: this.catalogPhase, hosts: this.hosts, projects: this.projects }, agents, subjects, posts: [],
       population: { revision: this.currentRoster.pages, complete: phase === 'ready' && !next },
-      roster: { kind: 'cloud-registration', office: this.office, phase, error, more: !!next, exhausted: phase === 'ready' && !next, emptyPage: !agents.length },
-      records: (id: string, channel: RecordChannel) => channel === 'model' ? this.transcripts.get(id)?.records ?? { status: 'loading' }
+      roster: { office: this.office, phase, error, more: !!next },
+      records: (id: string, channel: RecordChannel) => this.connection === 'reset' ? { status: 'unavailable', reason: this.error }
+        : channel === 'model' ? this.transcripts.get(id)?.records ?? { status: 'loading' }
         : this.readers.get(id)?.records ?? { status: 'loading' },
     });
   };
@@ -147,30 +172,28 @@ export class CloudWorkbench {
     const request = this.rosterRead = new AbortController();
     const signal = AbortSignal.any([request.signal, this.signal]);
     const current = this.currentRoster;
-    const host = this.office.startsWith('host:') ? this.office.slice(5) : undefined;
+    const query = cloudOfficeQuery(this.office);
     if (!current.pages || append) { current.phase = 'loading'; this.emit(); }
     try {
       const rows = append ? new Map(current.rows) : new Map<string, CloudRosterAgent>();
       let after = append ? current.next ?? undefined : undefined;
       let read = append ? current.pages : 0;
       const count = Math.max(1, pages ?? 1);
-      await fenced(this.session, signal, async () => {
-        for (let i = 0; i < count; i++) {
-          const page = await agentsPage(this.session, { host, after, limit: cloudPageSize }, signal);
-          signal.throwIfAborted();
-          if (page.next && page.next === after) throw new Error('成员清单游标未前进');
-          for (const agent of page.items) {
-            if (!host || host === agent.host) rows.set(this.id(agent), agent);
-          }
-          read++; after = page.next ?? undefined;
-          if (!after) break;
+      for (let i = 0; i < count; i++) {
+        const page = await agentsPage(this.session, { ...query, after, limit: cloudPageSize }, signal);
+        signal.throwIfAborted();
+        if (page.next && page.next === after) throw new Error('成员清单游标未前进');
+        for (const agent of page.items) {
+          if (inSelection(agent, query)) rows.set(this.id(agent), agent);
         }
-      });
-      signal.throwIfAborted();
-      // A partial or host-filtered snapshot cannot evict an exact reader from a different page.
+        read++; after = page.next ?? undefined;
+        if (!after) break;
+      }
+      // A partial or project-filtered snapshot cannot evict an exact reader from another office.
       for (const [id, entry] of this.known) {
-        if (rows.has(id)) { entry.current = true; this.retired.delete(id); }
-        else if ((!host || host === entry.agent.host) && (rowsHasReplacement(rows, entry.agent) || (!after && current.rows.has(id)))) {
+        const fresh = rows.get(id);
+        if (fresh) { entry.agent = fresh; entry.current = true; this.retired.delete(id); }
+        else if (inSelection(entry.agent, query) && (rowsHasReplacement(rows, entry.agent) || (!after && current.rows.has(id)))) {
           entry.current = false; this.retired.add(id);
         }
       }
@@ -178,7 +201,8 @@ export class CloudWorkbench {
     } catch (error) {
       if (!signal.aborted) {
         this.failure(error);
-        current.phase = 'error'; current.error = cloudProblem(error, '无法读取云端成员。');
+        current.phase = unsupportedCloudOperation(error) ? 'unavailable' : 'error';
+        current.error = cloudProblem(error, '无法读取云端成员。');
       }
     } finally {
       if (this.rosterRead === request) {
@@ -197,30 +221,41 @@ export class CloudWorkbench {
     else if (this.currentRoster.next) void this.loadRoster(true);
   };
   loadMore = this.moreMembers;
-  retryCatalog = () => { void this.loadHosts(); };
-  private async loadHosts() {
-    if (this.hostRead || !this.signal || this.signal.aborted || this.connection === 'reset') return;
-    const request = this.hostRead = new AbortController();
+  retryCatalog = () => { void this.loadCatalogue(); };
+  private invalidateCatalogue() {
+    if (this.catalogRead) this.refreshCatalogAfterRead = true;
+    else this.retryCatalog();
+  }
+  private async loadCatalogue() {
+    if (this.catalogRead || !this.signal || this.signal.aborted || this.connection === 'reset') return;
+    const request = this.catalogRead = new AbortController();
     const signal = AbortSignal.any([request.signal, this.signal]);
     try {
-      const hosts = new Map<string, CloudHost>();
-      let after: string | undefined;
-      await fenced(this.session, signal, async () => {
-        do {
-          const page = await hostsPage(this.session, { after, limit: 100 }, signal);
-          signal.throwIfAborted();
-          for (const host of page.items) hosts.set(host.name, host);
-          if (page.next && page.next === after) throw new Error('主机目录游标未前进');
-          after = page.next ?? undefined;
-        } while (after);
-      });
+      const reportFailure = (error: unknown) => {
+        if (!signal.aborted) this.failure(error);
+        throw error;
+      };
+      const [hosts, projects] = await Promise.allSettled([
+        readCatalogue(query => hostsPage(this.session, query, signal), signal).catch(reportFailure),
+        readCatalogue(query => workspacesPage(this.session, query, signal), signal).catch(reportFailure),
+      ]);
       signal.throwIfAborted();
-      this.hosts = [...hosts.values()];
+      if (hosts.status === 'fulfilled') this.hosts = hosts.value;
+      if (projects.status === 'fulfilled') this.projects = projects.value.map(projectCloudOffice);
+      if (hosts.status === 'rejected') throw hosts.reason;
+      if (projects.status === 'rejected') throw projects.reason;
+      this.catalogPhase = 'ready';
       this.catalogError = '';
     } catch (error) {
-      if (!signal.aborted) { this.failure(error); this.catalogError = cloudProblem(error, '无法读取主机目录。'); }
+      if (!signal.aborted) { this.failure(error); this.catalogPhase = 'error'; this.catalogError = cloudProblem(error, '无法读取项目目录。'); }
     } finally {
-      if (this.hostRead === request) this.hostRead = undefined;
+      if (this.catalogRead === request) {
+        this.catalogRead = undefined;
+        if (this.refreshCatalogAfterRead) {
+          this.refreshCatalogAfterRead = false;
+          this.retryCatalog();
+        }
+      }
       if (!signal.aborted) this.emit();
     }
   }
@@ -255,21 +290,34 @@ export class CloudWorkbench {
       this.scheduleReceipts();
     }
   }
-  openReference = async (target: RouteTarget, request: AbortSignal) => {
-    if (target.scope !== this.session.scope || target.generation !== this.session.generation
+  openReference = async (target: RouteTarget, request: AbortSignal, office: string) => {
+    if (target.scope !== this.session.namespace || target.generation !== this.session.generation
       || !target.host || !target.incarnation || target.record !== 'current') throw new Error('云端实例引用与当前连接不匹配');
     const signal = AbortSignal.any([this.active(), request]);
     const agent = { host: target.host, name: target.name, incarnation: target.incarnation };
     try {
+      const missing = (error: unknown) => {
+        if (!unsupportedCloudOperation(error)) throw error;
+        return undefined;
+      };
       const [initial, current] = await Promise.all([
-        messagePage(this.session, agent, signal),
-        this.session.access === 'admin' ? resolveAgent(this.session, agent, signal) : null,
+        messagePage(this.session, agent, signal).catch(missing),
+        resolveAgent(this.session, agent, signal).catch(missing),
       ]);
       signal.throwIfAborted();
-      const id = this.remember(current ?? agent, !!current);
+      let history = initial?.items.flatMap(item => [item.from, item.to]).find(item => sameAgent(item, agent));
+      if (!current && !history && (!initial || cloudOfficeQuery(office).workspace_id)) {
+        // An empty AgentX mailbox has no membership metadata. The exact Transcript envelope carries it.
+        history = (await readTranscriptPage(this.session, agent, signal)).agent;
+      }
+      this.active();
+      signal.throwIfAborted();
+      const id = this.remember(current ?? history ?? agent, !!current);
       if (!this.readers.has(id)) {
         const reader = this.createReader(agent);
-        reader.seed(initial); this.readers.set(id, reader);
+        if (initial) reader.seed(initial);
+        else reader.unavailable();
+        this.readers.set(id, reader);
       }
       this.emit();
     } catch (error) {
@@ -277,7 +325,7 @@ export class CloudWorkbench {
       throw new Error(cloudProblem(error, '无法读取此精确的云端实例'));
     }
   };
-  private remember(agent: CloudRosterAgent, current: boolean) {
+  private remember(agent: CloudSubject, current: boolean) {
     const id = this.id(agent);
     this.known.set(id, { agent, current });
     return id;
@@ -285,6 +333,7 @@ export class CloudWorkbench {
   private createReader(agent: CloudAgent) { return new CloudHistory(agent, this.session, this.emit, this.failure); }
   select = (id: string | null) => this.selectReaders(id ? [id] : [], id);
   selectReaders = (ids: readonly string[], selected: string | null = ids[0] ?? null) => {
+    if (this.connection === 'reset') return;
     if (selected === this.selected && ids.length === this.desired.length && ids.every((id, index) => id === this.desired[index])) return;
     const previous = this.desired, previousSelected = this.selected;
     this.desired = ids;
@@ -317,14 +366,7 @@ export class CloudWorkbench {
     const controller = new AbortController();
     this.follow = { id, controller };
     const signal = AbortSignal.any([life, controller.signal]);
-    let timer: ReturnType<typeof setTimeout>;
-    signal.addEventListener('abort', () => clearTimeout(timer), { once: true });
-    const read = async () => {
-      await reader.update(signal, 'latest');
-      if (!signal.aborted && this.changeMode === 'legacy') timer = setTimeout(() => void read(), MESSAGE_REFRESH_MS);
-    };
-    reader.incremental = this.changeMode === 'watch';
-    void read();
+    void reader.update(signal, 'latest');
   }
   refreshTranscript = (id: string, request?: AbortSignal) => {
     const life = this.signal;
@@ -353,7 +395,8 @@ export class CloudWorkbench {
   private currentAgent(id: string) {
     if (this.retired.has(id) || this.stoppedByReceipt.has(id)) return;
     const known = this.known.get(id);
-    return this.currentRoster.rows.get(id) ?? (known?.current ? known.agent : undefined);
+    const agent = this.currentRoster.rows.get(id) ?? (known?.current ? known.agent : undefined);
+    return agent?.workspace ? { host: agent.host, name: agent.name, incarnation: agent.incarnation, workspace: agent.workspace } : undefined;
   }
   blocked(key: string) {
     return this.session.access !== 'admin' || this.connection !== 'pinned' || this.sends.has(key)
@@ -378,7 +421,7 @@ export class CloudWorkbench {
   async send(id: string, message: MessageInput, done: () => void) {
     const agent = this.currentAgent(id);
     if (!agent || this.blocked(id) || !message.text.trim() || new TextEncoder().encode(message.text).length > this.descriptor.max_text) throw new Error('消息为空、过长或精确实例当前不可发送。');
-    const pending = { input: { generation: this.session.generation, to: { host: agent.host, name: agent.name, incarnation: agent.incarnation }, request_id: crypto.randomUUID(), body: message.text }, done, busy: false, uncertain: false };
+    const pending = { input: { generation: this.session.generation, to: agent, request_id: newCloudId(), body: message.text }, done, busy: false, uncertain: false };
     this.sends.set(id, pending);
     await this.finishSend(id, pending);
   }
@@ -392,7 +435,7 @@ export class CloudWorkbench {
     pending.busy = true;
     this.emit();
     try {
-      const result = await this.session.client.sendHumanMessage(this.session.scope, pending.input, { signal });
+      const result = await this.session.client.sendHumanMessage(this.session.namespace, pending.input, { signal });
       signal.throwIfAborted();
       if (!sameAgent(result.to, pending.input.to) || result.body !== pending.input.body || !/^[1-9][0-9]{0,19}$/.test(result.id)) throw new Error('云端消息回执不匹配');
       this.sends.delete(id);
@@ -405,7 +448,7 @@ export class CloudWorkbench {
       this.failure(error);
       if (isDefiniteRejection(error) && !pending.uncertain) {
         this.sends.delete(id);
-        if (error instanceof CloudAdminError && [404, 409].includes(error.status ?? 0)) this.retired.add(id);
+        if (error instanceof CloudAdminError && ['not_found', 'stale_agent'].includes(error.code)) this.retired.add(id);
         throw new Error(cloudProblem(error, '云端拒绝了这条消息。'));
       }
       pending.uncertain = true;
@@ -417,11 +460,11 @@ export class CloudWorkbench {
   async catalogue(host: string, request?: AbortSignal) {
     const life = this.active();
     const signal = request ? AbortSignal.any([life, request]) : life;
-    if (this.session.access !== 'admin') throw new Error('Scope 访问为只读。');
+    if (this.session.access !== 'admin') throw new Error('Namespace 访问为只读。');
     try {
-      const value = await this.session.client.getHostCapabilities(this.session.scope, host, { signal });
+      const value = await this.session.client.getHostCapabilities(this.session.namespace, host, { signal });
       signal.throwIfAborted();
-      if (value.generation !== this.session.generation) throw new ScopeChanged();
+      if (value.generation !== this.session.generation) throw new NamespaceChanged();
       return value;
     } catch (error) {
       if (!signal.aborted) { this.failure(error); this.emit(); }
@@ -436,18 +479,18 @@ export class CloudWorkbench {
     if (!value.online || !value.installation_id || captured.host !== value.host || captured.generation !== value.generation
       || captured.installation_id !== value.installation_id) throw new Error('主机安装已变化或当前离线，请重新选择。');
     if (command.kind === 'launch') {
-      const workspace = value.workspaces.find(item => item.alias === command.workspace);
+      const workspace = value.workspaces.find(item => item.workspace_id === command.workspace_id);
       if (!workspace || !(command.role ? workspace.roles.some(role => role.name === command.role && role.available) : workspace.default_available)) throw new Error('所选工作区或岗位已不可用。');
       if ((command.working_directory != null || command.create_directory != null) && value.directory_launch !== true) throw new Error('此主机仅支持从工作区根目录启动。');
     } else if (command.kind === 'add_workspace') {
-      if (!value.workspace_management || !value.workspaces.some(item => item.alias === command.parent && item.managed_parent)) throw new Error('此主机无法在所选位置添加工作区。');
+      if (!value.workspace_management || !value.project_roots.includes(command.parent)) throw new Error('此主机无法在所选位置添加工作区。');
     } else {
       const agent = id && this.currentAgent(id);
       if (!agent || !sameAgent(agent, { host: captured.host, name: command.name, incarnation: command.incarnation })
         || !await resolveAgent(this.session, agent, signal)) throw new Error('原实例已不在当前注册清单；不会停止同名实例。');
     }
     if (this.blocked(key)) throw new Error('操作不可用或原回执尚未确定。');
-    const request_id = crypto.randomUUID();
+    const request_id = newCloudId();
     if (command.kind === 'launch' && followLaunch) this.launchFollowers.set(request_id, followLaunch);
     try {
       const entry = await this.operations.submit({ generation: this.session.generation, host: value.host, installation_id: value.installation_id,
@@ -467,6 +510,10 @@ export class CloudWorkbench {
   private recordOutcome(entry: ControlEntry) {
     const outcome = entry.receipt?.outcome;
     const requestId = entry.identity.request_id;
+    if (outcome?.status === 'workspace_added' && !this.completedControls.has(requestId)) {
+      this.completedControls.add(requestId);
+      this.invalidateCatalogue();
+    }
     if (outcome?.status === 'succeeded' && !this.completedControls.has(requestId)) {
       this.completedControls.add(requestId);
       if (this.rosterRead) this.refreshRosterAfterRead = true;
@@ -482,7 +529,7 @@ export class CloudWorkbench {
     if (outcome.status !== 'succeeded' || this.connection !== 'pinned' || this.signal?.aborted) return;
     follow(() => {
       const id = this.id(outcome.agent);
-      this.remember(outcome.agent, this.currentRoster.rows.has(id));
+      this.remember(outcome.agent, true);
       if (!this.readers.has(id)) this.readers.set(id, this.createReader(outcome.agent));
       this.emit();
       return id;
@@ -491,5 +538,24 @@ export class CloudWorkbench {
 }
 
 function rowsHasReplacement(rows: ReadonlyMap<string, CloudAgent>, agent: CloudAgent) {
-  return [...rows.values()].some(row => row.name === agent.name && !sameAgent(row, agent));
+  return [...rows.values()].some(row => row.host === agent.host && row.name === agent.name && !sameAgent(row, agent));
+}
+
+function inSelection(agent: CloudSubject, query: ReturnType<typeof cloudOfficeQuery>) {
+  return (!query.host || agent.host === query.host) && (!query.workspace_id
+    || agent.workspace?.kind === 'project' && agent.workspace.workspace_id === query.workspace_id);
+}
+
+async function readCatalogue<T>(read: (query: PageQuery) => Promise<{ items: T[]; next: string | null }>, signal: AbortSignal) {
+  const items: T[] = [], seen = new Set<string>();
+  let after: string | undefined;
+  do {
+    const page = await read({ after, limit: 100 });
+    signal.throwIfAborted();
+    items.push(...page.items);
+    if (page.next && seen.has(page.next)) throw new Error('目录游标未前进');
+    if (page.next) seen.add(page.next);
+    after = page.next ?? undefined;
+  } while (after);
+  return items;
 }

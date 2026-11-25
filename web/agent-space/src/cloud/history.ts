@@ -1,21 +1,22 @@
-import type { CloudScopeTypes } from '@agentx/client';
-import type { MessageReadPage } from '../live/domain-office';
+import type { CloudNamespaceTypes } from '@agentx/client';
+import type { HistoryReadPage } from '../conversation/read-state';
 import type { HistoryRecord, SuppliedRecords } from '../offline/model';
-import { cloudProblem, cloudTime, type Session } from './model';
+import { cloudProblem, cloudTime, unsupportedCloudOperation, type Session } from './model';
 import { exactLabel, sameAgent, type CloudAgent } from './route';
 
-export type CloudMessage = CloudScopeTypes['MessageView'];
-type Page = CloudScopeTypes['MessageHistoryPage'];
-type Lane = { phase: 'ready' | 'loading' | 'error'; error?: string };
+export type CloudMessage = CloudNamespaceTypes['MessageView'];
+type Page = CloudNamespaceTypes['MessageHistoryPage'];
+type Lane = { phase: 'ready' | 'loading' | 'error' | 'unavailable'; error?: string };
 const pageSize = 20;
 const olderId = (a: string, b: string) => a.length < b.length || (a.length === b.length && a < b);
 const validId = (id: string) => /^[1-9][0-9]{0,19}$/.test(id);
 
-export async function messagePage(session: Session, agent: CloudAgent, signal: AbortSignal, before?: string, limit = pageSize, after?: string): Promise<Page> {
+export async function messagePage(session: Session, agent: CloudAgent, signal: AbortSignal, cursors?: { before?: string; after?: string }): Promise<Page> {
   const { host, name, incarnation } = agent;
-  const query = { generation: session.generation, host, name, incarnation, before, after, limit };
+  const { before, after } = cursors ?? {};
+  const query = { generation: session.generation, host, name, incarnation, before, after, limit: pageSize };
   const result = await (session.access === 'admin'
-    ? session.client.listMessages(session.scope, query, { signal })
+    ? session.client.listMessages(session.namespace, query, { signal })
     : session.client.listMessages(query, { signal }));
   signal.throwIfAborted();
   let previous = before ?? after;
@@ -51,14 +52,14 @@ export class CloudHistory {
   private sorted: HistoryRecord[] = [];
   constructor(readonly agent: CloudAgent, private session: Session, private changed: () => void, private failed: (error: unknown) => void) {}
 
-  incremental = false;
   get liveFailed() { return this.live.phase === "error"; }
-  get page(): MessageReadPage {
-    return { ...this.phase, mode: 'latest', more: this.next !== null, token: this.seeded ? this.token : undefined,
+  get page(): HistoryReadPage {
+    return { ...this.phase, more: this.next !== null, token: this.seeded ? this.token : undefined,
       arrivals: this.arrivals, older: this.older, live: this.live };
   }
   get records(): SuppliedRecords {
-    if (this.seeded) return { status: 'available', provenance: '云端 Scope 已持久化的 AgentX 消息', items: this.sorted };
+    if (this.phase.phase === 'unavailable') return { status: 'unavailable', reason: this.phase.error ?? '消息历史不可用' };
+    if (this.seeded) return { status: 'available', provenance: '云端 Namespace 已持久化的 AgentX 消息', items: this.sorted };
     return this.phase.phase === 'error' ? { status: 'error', reason: this.phase.error ?? '读取失败' } : { status: 'loading' };
   }
   private merge(items: readonly CloudMessage[]) {
@@ -81,8 +82,11 @@ export class CloudHistory {
     this.seeded = true;
     this.phase = { phase: 'ready' };
   }
+  unavailable() {
+    this.phase = { phase: 'unavailable', error: '此服务不支持读取消息历史。' };
+  }
   async update(signal: AbortSignal, mode: 'latest' | 'older', invalidated = false) {
-    if (signal.aborted) return;
+    if (signal.aborted || this.phase.phase === 'unavailable') return;
     if (mode === 'older' && this.seeded) return this.read(signal, mode);
     const pending = this.latestRead;
     if (pending) {
@@ -103,7 +107,11 @@ export class CloudHistory {
       this.changed();
       try { this.seed(await messagePage(this.session, this.agent, signal)); }
       catch (error) {
-        if (!signal.aborted) { this.failed(error); this.phase = { phase: 'error', error: cloudProblem(error, '无法读取这条精确会话。') }; }
+        if (!signal.aborted) {
+          this.failed(error);
+          if (unsupportedCloudOperation(error)) this.unavailable();
+          else this.phase = { phase: 'error', error: cloudProblem(error, '无法读取这条精确会话。') };
+        }
       } finally { if (!signal.aborted) this.changed(); }
       return;
     }
@@ -114,13 +122,13 @@ export class CloudHistory {
     if (mode === 'older') this.changed();
     try {
       if (mode === 'older') {
-        const result = await messagePage(this.session, this.agent, signal, this.next!);
+        const result = await messagePage(this.session, this.agent, signal, { before: this.next! });
         this.next = result.next;
         this.merge(result.items);
-      } else if (this.incremental) {
+      } else {
         let cursor = this.head ?? '0';
         do {
-          const result = await messagePage(this.session, this.agent, signal, undefined, pageSize, cursor);
+          const result = await messagePage(this.session, this.agent, signal, { after: cursor });
           const added = this.merge(result.items);
           this.head = result.items.at(-1)?.id ?? this.head;
           this.arrivals += added;
@@ -128,23 +136,6 @@ export class CloudHistory {
           if (!result.next) break;
           cursor = result.next;
         } while (!signal.aborted);
-      } else {
-        const head = this.head;
-        // The legacy API only pages backwards. Probe one row and read more only to bridge a changed head.
-        const first = await messagePage(this.session, this.agent, signal, undefined, head ? 1 : pageSize);
-        let result = first;
-        const unseen: CloudMessage[] = [];
-        // A busy channel can add more than one page between reads. Advance only after the gap is filled.
-        while (true) {
-          unseen.push(...result.items.filter(item => !head || olderId(head, item.id)));
-          if (!head || !result.next || !olderId(head, result.next)) break;
-          result = await messagePage(this.session, this.agent, signal, result.next);
-        }
-        if (!head) this.next = first.next;
-        this.head = first.items[0]?.id ?? head;
-        const added = this.merge(unseen);
-        this.arrivals += added;
-        changed ||= added > 0;
       }
       lane.phase = 'ready'; lane.error = undefined;
     } catch (error) {

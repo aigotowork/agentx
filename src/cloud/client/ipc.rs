@@ -14,6 +14,7 @@ use anyhow::{Context, Result, bail, ensure};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::Value;
 
+use crate::cloud::uplink::workspaces::{ProjectRoots, membership};
 use crate::daemon::{DaemonScope, DatabaseGeneration, ScopeLease, frame, platform};
 
 use super::{
@@ -118,11 +119,20 @@ pub(crate) struct IpcServer {
 
 impl IpcServer {
     pub(crate) fn start(lease: &ScopeLease, config: &crate::cloud::connection::Config, host: &str, installation_id: &str) -> Result<Self> {
-        let url = config.url.trim_end_matches('/').to_owned();
-        let http = Http::new(&format!("{url}/api/v1"), &config.token)?;
+        let namespace_url = config.namespace_url.trim_end_matches('/').to_owned();
+        let http = Http::new(&format!("{namespace_url}/api/v1"), &config.token)?;
         let listener = platform::Listener::bind_cloud(lease)?;
-        let state =
-            Arc::new(Server { root: lease.scope().root().to_owned(), daemon_instance: lease.instance().to_owned(), local_generation: lease.database_generation(), http, url, host: host.to_owned(), installation_id: installation_id.to_owned() });
+        let state = Arc::new(Server {
+            root: lease.scope().root().to_owned(),
+            state: lease.scope().state().to_owned(),
+            project_roots: config.project_roots.clone(),
+            daemon_instance: lease.instance().to_owned(),
+            local_generation: lease.database_generation(),
+            http,
+            namespace_url,
+            host: host.to_owned(),
+            installation_id: installation_id.to_owned(),
+        });
         let stop = Arc::new(AtomicBool::new(false));
         let cancel = stop.clone();
         let thread = thread::Builder::new().name("cloud-local-ipc".into()).spawn(move || {
@@ -172,10 +182,12 @@ impl Drop for IpcServer {
 
 struct Server {
     root: PathBuf,
+    state: PathBuf,
+    project_roots: ProjectRoots,
     daemon_instance: String,
     local_generation: DatabaseGeneration,
     http: Http,
-    url: String,
+    namespace_url: String,
     host: String,
     installation_id: String,
 }
@@ -201,12 +213,17 @@ impl Server {
         ensure!(!local_generation.is_empty(), "native scope generation unavailable");
         if matches!(&request.command, Command::Info) {
             ensure!(request.binding.is_none(), "cloud IPC discovery cannot carry a binding");
-            let cloud_generation = checked_descriptor(&self.http, &self.url)?.generation;
+            let cloud_generation = checked_descriptor(&self.http, &self.namespace_url)?.generation;
             return Ok(serde_json::to_value(Info { binding: Binding { local_generation, cloud_generation, installation_id: self.installation_id.clone() }, host: self.host.clone(), daemon_instance: self.daemon_instance.clone() })?);
         }
         let binding = request.binding.context("missing cloud IPC scope binding")?;
         ensure!(binding.local_generation == local_generation && binding.installation_id == self.installation_id, "stale native cloud IPC scope generation or installation");
         match &mut request.command {
+            Command::ClassifyWorkspace(path) => {
+                let classified = membership(&self.state, &self.namespace_url, &binding.cloud_generation, &self.installation_id, &self.host, &self.project_roots, Some(path))?;
+                ensure!(self.local_generation.current() == binding.local_generation, "native scope generation changed during workspace selection");
+                return Ok(serde_json::to_value(classified)?);
+            }
             Command::Resolve(selection) => return Ok(serde_json::to_value(self.resolve(&binding, selection, pid, identity)?)?),
             Command::Claim(body) => {
                 ensure!(body.limit == Some(1) && body.wait_ms.is_none_or(|ms| ms <= 1500), "cloud IPC permits one mailbox item and a bounded wait");
@@ -238,7 +255,7 @@ impl Server {
             heartbeat(&self.http, actor)?;
             ensure!(self.local_generation.current() == binding.local_generation, "native scope generation changed during registration");
         }
-        request.command.upstream(&self.http)
+        request.command.upstream(&self.http, &binding.cloud_generation)
     }
 
     fn check_record(&self, binding: &Binding, record: &Record) -> Result<()> {
@@ -290,7 +307,7 @@ impl Server {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cloud::communication::types::{AgentView, RecoverInbox};
+    use crate::cloud::communication::types::{AgentView, AgentWorkspace, RecoverInbox};
     use uuid::Uuid;
 
     fn endpoint(root: PathBuf) -> (Server, Binding) {
@@ -298,10 +315,10 @@ mod tests {
         let generation = Uuid::new_v4().to_string();
         local_generation.publish(generation.clone()).unwrap();
         let installation_id = Uuid::new_v4().to_string();
-        let url = "http://127.0.0.1:1/scopes/test".to_owned();
-        let http = Http::new(&format!("{url}/api/v1"), "test-bearer").unwrap();
+        let namespace_url = "http://127.0.0.1:1/namespaces/test".to_owned();
+        let http = Http::new(&format!("{namespace_url}/api/v1"), "TestBearer12").unwrap();
         let binding = Binding { local_generation: generation, cloud_generation: Uuid::new_v4().to_string(), installation_id: installation_id.clone() };
-        let server = Server { root, local_generation, daemon_instance: Uuid::new_v4().to_string(), http, url, host: "alpha".into(), installation_id };
+        let server = Server { state: root.join(".daemon"), root, project_roots: ProjectRoots::new(), local_generation, daemon_instance: Uuid::new_v4().to_string(), http, namespace_url, host: "alpha".into(), installation_id };
         (server, binding)
     }
 
@@ -323,7 +340,7 @@ mod tests {
         let command = Command::Recover(RecoverInbox {
             generation: binding.cloud_generation.clone(),
             installation_id: binding.installation_id.clone(),
-            agent: AgentView { name: "sender".into(), host: "alpha".into(), incarnation: Uuid::new_v4().to_string() },
+            agent: AgentView { name: "sender".into(), host: "alpha".into(), incarnation: crate::cloud::identifiers::random_id(), workspace: AgentWorkspace::Unexposed },
             claim_id: Uuid::new_v4().to_string(),
             release: true,
         });
@@ -334,7 +351,7 @@ mod tests {
     fn hosted_process_cannot_spoof_operator_selection() {
         let root = tempfile::tempdir().unwrap();
         let (server, binding) = endpoint(root.path().to_owned());
-        let agent = AgentView { name: "sender".into(), host: server.host.clone(), incarnation: Uuid::new_v4().to_string() };
+        let agent = AgentView { name: "sender".into(), host: server.host.clone(), incarnation: crate::cloud::identifiers::random_id(), workspace: AgentWorkspace::Unexposed };
         let actor = Actor { generation: binding.cloud_generation.clone(), installation_id: binding.installation_id.clone(), agent: agent.clone() };
         let mut process = Record::start(actor, binding.local_generation.clone()).unwrap();
         process.session = Some("test-session".into());

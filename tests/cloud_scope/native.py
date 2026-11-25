@@ -3,6 +3,7 @@
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
+import re
 from pathlib import Path
 import re
 import select
@@ -13,7 +14,7 @@ import tempfile
 import threading
 import uuid
 
-from fixture import require, wait_for
+from fixture import COMPACT_ID, exact, require, wait_for
 
 
 def sse(response_id, item):
@@ -217,10 +218,10 @@ def stop_private_processes(fixture, roots):
 
 def run(fixture, credential, certificate=None):
     scope = "native-agents"
-    admin_path = fixture.admin + f"/scopes/{scope}"
+    admin_path = fixture.admin + f"/namespaces/{scope}"
     origin = fixture.public_url if certificate else fixture.url
-    hosts = {host: {**fixture.environment(host), "AGENTX_SCOPE_URL": origin + f"/scopes/{scope}",
-                    "AGENTX_SCOPE_TOKEN": credential, "AGENTX_HOST_NAME": host} for host in ("east", "west")}
+    hosts = {host: {**fixture.environment(host), "AGENTX_NAMESPACE_URL": origin + f"/namespaces/{scope}",
+                    "AGENTX_NAMESPACE_TOKEN": credential, "AGENTX_HOST_NAME": host} for host in ("east", "west")}
     codex = shutil.which("codex", path=hosts["east"]["PATH"])
     require(codex, "Native acceptance requires a real Codex CLI on PATH")
     version = fixture.command("codex-version", [codex, "--version"], hosts["east"]).stdout.strip()
@@ -256,14 +257,15 @@ def run(fixture, credential, certificate=None):
             wait_for("Both real Codex tool calls finish", lambda: model.seen("request-complete") and model.seen("reply-complete"))
             agents = fixture.expect("GET", admin_path + "/agents", fixture.admin_token)["items"]
             require({(agent["host"], agent["name"]) for agent in agents} == {("east", "receiver"), ("west", "sender")}
-                    and all(set(agent) == {"host", "name", "incarnation"} for agent in agents),
+                    and all(set(agent) == {"host", "name", "incarnation", "workspace"}
+                            and re.fullmatch(COMPACT_ID, agent["incarnation"]) for agent in agents),
                     "Admin inventory must agree with the two native actors and omit local process data")
             listing = json.loads(child("west", "native-list", "list", "--json").stdout)
-            require(sorted(listing, key=lambda agent: agent["name"]) == sorted(agents, key=lambda agent: agent["name"]),
+            require(sorted(map(exact, listing), key=lambda agent: agent["name"]) == sorted(map(exact, agents), key=lambda agent: agent["name"]),
                     "Native list and admin HTTP must agree on exact Agents")
 
             def confirmed(request_id):
-                route = f"/scopes/{scope}/api/v1/operations/{request_id}"
+                route = f"/namespaces/{scope}/api/v1/operations/{request_id}"
                 receipt = fixture.expect("GET", route, credential)
                 return receipt["message"] if receipt["status"] == "confirmed" else False
 
@@ -280,7 +282,7 @@ def run(fixture, credential, certificate=None):
             wait_for("Real Codex receives the operator request and finishes its reply tool call",
                      lambda: model.seen("operator-reply-complete"), 30)
             answer = wait_for("Operator response reaches durable history", lambda: confirmed(model.operator_reply_id))
-            page = fixture.expect("GET", conversation, fixture.admin_token, query={**request["to"], "generation": generation, "limit": 2})
+            page = fixture.expect("GET", conversation, fixture.admin_token, query={**exact(request["to"]), "generation": generation, "limit": 2})
             require(page["items"] == [answer, operator_message] and answer["from"] == operator_message["to"]
                     and answer["to"] == operator_message["from"] and answer["reply_to"] == operator_message["id"]
                     and answer["body"] == model.operator_reply,

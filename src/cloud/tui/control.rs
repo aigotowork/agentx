@@ -1,6 +1,7 @@
 //! Cloud administration dialogs. The server owns admission and effects; the dialog retains exact input.
-use super::{ADMIN, AgentView, Http, HttpError, KeyCode, KeyEvent, KeyModifiers, Theme, display, encode, http_error, scope_path};
+use super::{ADMIN, AgentView, Http, HttpError, KeyCode, KeyEvent, KeyModifiers, Theme, display, encode, http_error, namespace_path};
 use crate::cloud::control::types::{ControlCommand, ControlOutcome, ControlReceipt, ControlStatus, CreateControlOperation, HostCapabilities};
+use crate::cloud::identifiers::{random_id, valid_workspace_id};
 use anyhow::{Result, ensure};
 use ratatui::{
     Frame,
@@ -8,18 +9,17 @@ use ratatui::{
     text::Line,
     widgets::{Block, Clear, Paragraph, Wrap},
 };
-use uuid::Uuid;
 
 #[derive(Clone)]
-pub(super) struct ScopeTarget {
+pub(super) struct NamespaceTarget {
     pub id: String,
     pub generation: String,
 }
 
 pub(super) enum Job {
-    Catalogue(ScopeTarget, String),
-    Submit(ScopeTarget, CreateControlOperation),
-    Lookup(ScopeTarget, String, Option<CreateControlOperation>),
+    Catalogue(NamespaceTarget, String),
+    Submit(NamespaceTarget, CreateControlOperation),
+    Lookup(NamespaceTarget, String, Option<CreateControlOperation>),
 }
 
 pub(super) enum Update {
@@ -28,8 +28,8 @@ pub(super) enum Update {
     LookedUp(Result<ControlReceipt>),
 }
 
-fn check_receipt(receipt: ControlReceipt, scope: &ScopeTarget, id: &str, original: Option<&CreateControlOperation>) -> Result<ControlReceipt> {
-    ensure!(receipt.generation == scope.generation && receipt.request_id == id, "operation receipt identity mismatch");
+fn check_receipt(receipt: ControlReceipt, namespace: &NamespaceTarget, id: &str, original: Option<&CreateControlOperation>) -> Result<ControlReceipt> {
+    ensure!(receipt.generation == namespace.generation && receipt.request_id == id, "operation receipt identity mismatch");
     if let Some(input) = original {
         ensure!(receipt.host == input.host && receipt.installation_id == input.installation_id && receipt.command == input.command, "operation receipt differs from the original request");
     }
@@ -40,11 +40,13 @@ fn check_receipt(receipt: ControlReceipt, scope: &ScopeTarget, id: &str, origina
             agent.host == receipt.host
                 && match &receipt.command {
                     ControlCommand::Stop { name, incarnation } => &agent.name == name && &agent.incarnation == incarnation,
-                    ControlCommand::Launch { name, .. } => name.as_ref().is_none_or(|name| name == &agent.name),
+                    ControlCommand::Launch { name, workspace_id, .. } => {
+                        name.as_ref().is_none_or(|name| name == &agent.name) && matches!(&agent.workspace, crate::cloud::communication::types::AgentWorkspace::Project { workspace_id: observed } if observed == workspace_id)
+                    }
                     ControlCommand::AddWorkspace { .. } => false,
                 }
         }
-        (ControlStatus::Succeeded, Some(ControlOutcome::WorkspaceAdded { alias })) => receipt.claim_id.is_some() && matches!(&receipt.command, ControlCommand::AddWorkspace { alias: requested, .. } if requested == alias),
+        (ControlStatus::Succeeded, Some(ControlOutcome::WorkspaceAdded { workspace_id })) => receipt.claim_id.is_some() && valid_workspace_id(workspace_id) && matches!(&receipt.command, ControlCommand::AddWorkspace { .. }),
         (ControlStatus::Failed, Some(ControlOutcome::Failed { .. })) | (ControlStatus::Uncertain, Some(ControlOutcome::Uncertain { .. })) => true,
         _ => false,
     };
@@ -55,21 +57,21 @@ fn check_receipt(receipt: ControlReceipt, scope: &ScopeTarget, id: &str, origina
 impl Job {
     pub(super) fn execute(self, http: &Http) -> Update {
         match self {
-            Self::Catalogue(scope, host) => Update::Catalogue((|| {
-                let path = format!("{}/hosts/{}/capabilities", scope_path(&scope.id), encode(&host));
+            Self::Catalogue(namespace, host) => Update::Catalogue((|| {
+                let path = format!("{}/hosts/{}/capabilities", namespace_path(&namespace.id), encode(&host));
                 let data: HostCapabilities = http.request("GET", &path, None)?;
-                ensure!(data.generation == scope.generation && data.host == host, "host catalogue identity mismatch");
+                ensure!(data.generation == namespace.generation && data.host == host, "host catalogue identity mismatch");
                 Ok(data)
             })()),
-            Self::Submit(scope, input) => Update::Submitted((|| {
-                let path = format!("{}/operations", scope_path(&scope.id));
+            Self::Submit(namespace, input) => Update::Submitted((|| {
+                let path = format!("{}/operations", namespace_path(&namespace.id));
                 let receipt = http.request("POST", &path, Some(&serde_json::to_value(&input)?))?;
-                check_receipt(receipt, &scope, &input.request_id, Some(&input))
+                check_receipt(receipt, &namespace, &input.request_id, Some(&input))
             })()),
-            Self::Lookup(scope, id, original) => Update::LookedUp((|| {
-                let path = format!("{ADMIN}/scopes/{}/operations/{}", encode(&scope.id), encode(&id));
+            Self::Lookup(namespace, id, original) => Update::LookedUp((|| {
+                let path = format!("{ADMIN}/namespaces/{}/operations/{}", encode(&namespace.id), encode(&id));
                 let receipt = http.request("GET", &path, None)?;
-                check_receipt(receipt, &scope, &id, original.as_ref())
+                check_receipt(receipt, &namespace, &id, original.as_ref())
             })()),
         }
     }
@@ -116,7 +118,7 @@ impl Default for Draft {
 }
 
 pub(super) struct Dialog {
-    scope: ScopeTarget,
+    namespace: NamespaceTarget,
     target: Target,
     catalogue: Option<HostCapabilities>,
     draft: Draft,
@@ -133,24 +135,24 @@ fn trustworthy_status(error: &anyhow::Error) -> Option<u16> {
 }
 
 impl Dialog {
-    fn new(scope: ScopeTarget, target: Target) -> Self {
-        Self { scope, target, catalogue: None, draft: Draft::default(), phase: Phase::Draft, notice: None }
+    fn new(namespace: NamespaceTarget, target: Target) -> Self {
+        Self { namespace, target, catalogue: None, draft: Draft::default(), phase: Phase::Draft, notice: None }
     }
 
-    pub(super) fn launch(scope: ScopeTarget, host: String) -> Self {
-        Self::new(scope, Target::Launch(host))
+    pub(super) fn launch(namespace: NamespaceTarget, host: String) -> Self {
+        Self::new(namespace, Target::Launch(host))
     }
 
-    pub(super) fn stop(scope: ScopeTarget, agent: AgentView) -> Self {
-        Self::new(scope, Target::Stop(agent))
+    pub(super) fn stop(namespace: NamespaceTarget, agent: AgentView) -> Self {
+        Self::new(namespace, Target::Stop(agent))
     }
 
-    pub(super) fn lookup(scope: ScopeTarget) -> Self {
-        Self::new(scope, Target::Lookup)
+    pub(super) fn lookup(namespace: NamespaceTarget) -> Self {
+        Self::new(namespace, Target::Lookup)
     }
 
     pub(super) fn load(&self) -> Option<Job> {
-        Some(Job::Catalogue(self.scope.clone(), self.target.host()?.to_owned()))
+        Some(Job::Catalogue(self.namespace.clone(), self.target.host()?.to_owned()))
     }
 
     pub(super) fn worker_interrupted(&mut self) {
@@ -207,7 +209,7 @@ impl Dialog {
     fn apply_catalogue(&mut self, updated: HostCapabilities) {
         if let Some(current) = &self.catalogue {
             if let Some(workspace) = self.draft.workspace.and_then(|index| current.workspaces.get(index)) {
-                self.draft.workspace = updated.workspaces.iter().position(|item| item.alias == workspace.alias);
+                self.draft.workspace = updated.workspaces.iter().position(|item| item.workspace_id == workspace.workspace_id);
                 if let Some(role) = self.draft.role.filter(|index| *index > 0).and_then(|index| workspace.roles.get(index - 1)) {
                     self.draft.role = self.draft.workspace.and_then(|index| updated.workspaces[index].roles.iter().position(|item| item.name == role.name)).map(|index| index + 1);
                 }
@@ -266,19 +268,19 @@ impl Dialog {
                     return Err("Use lowercase letters, digits or underscore for the Agent name.");
                 }
                 let title = crate::agents::launch_title::normalize(provided(&self.draft.title).as_deref()).map_err(|_| "Use a short single-line title.")?;
-                ControlCommand::Launch { workspace: workspace.alias.clone(), role, name, title, initial_prompt: provided(&self.draft.task), working_directory: None, create_directory: None }
+                ControlCommand::Launch { workspace_id: workspace.workspace_id.clone(), role, name, title, initial_prompt: provided(&self.draft.task), working_directory: None, create_directory: None }
             }
             Target::Stop(agent) => ControlCommand::Stop { name: agent.name.clone(), incarnation: agent.incarnation.clone() },
             Target::Lookup => unreachable!(),
         };
-        Ok(CreateControlOperation { generation: self.scope.generation.clone(), request_id: Uuid::new_v4().to_string(), host: capabilities.host.clone(), installation_id: capabilities.installation_id.clone(), command })
+        Ok(CreateControlOperation { generation: self.namespace.generation.clone(), request_id: random_id(), host: capabilities.host.clone(), installation_id: capabilities.installation_id.clone(), command })
     }
 
     fn submit(&mut self) -> Option<Job> {
         match self.make_input() {
             Ok(input) => {
                 self.phase = Phase::Sending(input.clone(), false);
-                Some(Job::Submit(self.scope.clone(), input))
+                Some(Job::Submit(self.namespace.clone(), input))
             }
             Err(message) => {
                 self.notice = Some(message.into());
@@ -290,18 +292,18 @@ impl Dialog {
     pub(super) fn key(&mut self, key: KeyEvent) -> Option<Job> {
         match (&self.phase, key.code) {
             (Phase::Sending(_, _), _) => None,
-            (Phase::Unknown(input, _) | Phase::Known(_, Some(input)), KeyCode::Enter | KeyCode::F(5)) => Some(Job::Lookup(self.scope.clone(), input.request_id.clone(), Some(input.clone()))),
-            (Phase::Known(receipt, None), KeyCode::Enter | KeyCode::F(5)) => Some(Job::Lookup(self.scope.clone(), receipt.request_id.clone(), None)),
+            (Phase::Unknown(input, _) | Phase::Known(_, Some(input)), KeyCode::Enter | KeyCode::F(5)) => Some(Job::Lookup(self.namespace.clone(), input.request_id.clone(), Some(input.clone()))),
+            (Phase::Known(receipt, None), KeyCode::Enter | KeyCode::F(5)) => Some(Job::Lookup(self.namespace.clone(), receipt.request_id.clone(), None)),
             (Phase::Unknown(input, true), KeyCode::F(6)) => {
                 let input = input.clone();
                 self.phase = Phase::Sending(input.clone(), true);
-                Some(Job::Submit(self.scope.clone(), input))
+                Some(Job::Submit(self.namespace.clone(), input))
             }
             (Phase::Draft, KeyCode::F(5)) => self.load(),
             (Phase::Draft, KeyCode::Enter) if matches!(self.target, Target::Lookup) => {
                 let id = self.draft.request.trim();
                 if !id.is_empty() && !matches!(id, "." | "..") && id.bytes().all(|byte| byte.is_ascii_alphanumeric() || b"_.:-".contains(&byte)) {
-                    Some(Job::Lookup(self.scope.clone(), id.to_owned(), None))
+                    Some(Job::Lookup(self.namespace.clone(), id.to_owned(), None))
                 } else {
                     self.notice = Some("Enter the original request ID.".into());
                     None
@@ -362,7 +364,7 @@ impl Dialog {
         let workspace = self.draft.workspace.and_then(|index| data.workspaces.get(index));
         if matches!(self.target, Target::Launch(_)) {
             let mut editors = vec![
-                ("Workspace", workspace.map_or_else(|| if data.workspaces.is_empty() { "No exported workspace".into() } else { "Select a workspace".into() }, |row| display(&row.alias))),
+                ("Workspace", workspace.map_or_else(|| if data.workspaces.is_empty() { "No exported workspace".into() } else { "Select a workspace".into() }, |row| display(&row.name))),
                 (
                     "Role",
                     match (workspace, self.draft.role) {
@@ -398,11 +400,11 @@ impl Dialog {
         let target_height = if matches!(self.target, Target::Stop(_)) { 2 } else { 1 };
         let status_height = if self.notice.is_some() || pending { 2 } else { 0 };
         let [target_area, body, status, keys] = Layout::vertical([Constraint::Length(target_height), Constraint::Min(3), Constraint::Length(status_height), Constraint::Length(2)]).areas(inner);
-        let scope = display(&self.scope.id);
+        let namespace = display(&self.namespace.id);
         let target = match &self.target {
-            Target::Launch(host) => format!("{scope} / {}", display(host)),
-            Target::Stop(agent) => format!("{scope} / {}\n@{} · {}", display(&agent.host), display(&agent.name), display(&agent.incarnation)),
-            Target::Lookup => format!("Scope: {scope}"),
+            Target::Launch(host) => format!("{namespace} / {}", display(host)),
+            Target::Stop(agent) => format!("{namespace} / {}\n@{} · {}", display(&agent.host), display(&agent.name), display(&agent.incarnation)),
+            Target::Lookup => format!("Namespace: {namespace}"),
         };
         frame.render_widget(Paragraph::new(target), target_area);
         let lines = match &self.phase {
@@ -469,14 +471,14 @@ fn receipt_lines(receipt: &ControlReceipt) -> Vec<String> {
     };
     let mut lines = vec![status.into(), format!("Request: {}", display(&receipt.request_id))];
     match &receipt.command {
-        ControlCommand::Launch { workspace, role, .. } => lines.push(format!("Launch: {} / {}", display(workspace), display(role.as_deref().unwrap_or("Default Codex")))),
+        ControlCommand::Launch { workspace_id, role, .. } => lines.push(format!("Launch: {} / {}", display(workspace_id), display(role.as_deref().unwrap_or("Default Codex")))),
         ControlCommand::Stop { name, incarnation } => lines.push(format!("Stop: @{} · {}", display(name), display(incarnation))),
-        ControlCommand::AddWorkspace { parent, directory, alias, .. } => lines.push(format!("Add workspace: {} / {} as {}", display(parent), display(directory), display(alias))),
+        ControlCommand::AddWorkspace { parent, directory, name, .. } => lines.push(format!("Add workspace: {} / {} as {}", display(parent), display(directory), display(name))),
     }
     if let Some(outcome) = &receipt.outcome {
         match outcome {
             ControlOutcome::Succeeded { agent } => lines.push(format!("Agent: @{} · {}", display(&agent.name), display(&agent.incarnation))),
-            ControlOutcome::WorkspaceAdded { alias } => lines.push(format!("Workspace added: {}", display(alias))),
+            ControlOutcome::WorkspaceAdded { workspace_id } => lines.push(format!("Workspace added: {}", display(workspace_id))),
             ControlOutcome::Failed { code } | ControlOutcome::Uncertain { code } => lines.push(format!("Code: {}", display(code))),
         }
     }
@@ -489,21 +491,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn workspace_receipt_displays_registration_and_rejects_a_different_alias() {
-        let scope = ScopeTarget { id: "office".into(), generation: "generation".into() };
+    fn workspace_receipt_displays_registration_and_rejects_a_missing_identity() {
+        let namespace = NamespaceTarget { id: "office".into(), generation: "generation".into() };
         let mut receipt = ControlReceipt {
-            generation: scope.generation.clone(),
+            generation: namespace.generation.clone(),
             request_id: "operation-1".into(),
             host: "worker".into(),
             installation_id: "installation-1".into(),
-            command: ControlCommand::AddWorkspace { parent: "root".into(), directory: "projects/test".into(), alias: "test".into(), create_directory: false },
+            command: ControlCommand::AddWorkspace { parent: "root".into(), directory: "projects/test".into(), name: "test".into(), create_directory: false },
             status: ControlStatus::Succeeded,
             claim_id: Some("claim-1".into()),
-            outcome: Some(ControlOutcome::WorkspaceAdded { alias: "test".into() }),
+            outcome: Some(ControlOutcome::WorkspaceAdded { workspace_id: "WS0000000001".into() }),
         };
-        let verified = check_receipt(receipt.clone(), &scope, "operation-1", None).unwrap();
-        assert!(receipt_lines(&verified).iter().any(|line| line == "Workspace added: test"));
-        receipt.outcome = Some(ControlOutcome::WorkspaceAdded { alias: "other".into() });
-        assert!(check_receipt(receipt, &scope, "operation-1", None).is_err());
+        let verified = check_receipt(receipt.clone(), &namespace, "operation-1", None).unwrap();
+        assert!(receipt_lines(&verified).iter().any(|line| line == "Workspace added: WS0000000001"));
+        receipt.outcome = Some(ControlOutcome::WorkspaceAdded { workspace_id: String::new() });
+        assert!(check_receipt(receipt, &namespace, "operation-1", None).is_err());
     }
 }

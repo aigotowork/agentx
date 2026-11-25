@@ -8,6 +8,14 @@ use std::path::{Path, PathBuf};
 fn internal(error: impl std::fmt::Display) -> ServiceError {
     ServiceError::Internal(error.to_string())
 }
+/// Publish the legacy durable setting before the first listener call.
+pub(super) fn publish_dev_root(db: &AgentxDb) -> ServiceResult<()> {
+    let value = db.kv_get(DEV_ROOT_KV_KEY).map_err(internal)?;
+    let encoded = value.as_deref().filter(|value| !value.is_empty()).map(crate::config::dev_root::encode).transpose().map_err(internal)?;
+    let scope = db.path().parent().expect("scoped database");
+    crate::config::dev_root::publish(scope, encoded.as_deref()).map_err(internal)
+}
+
 fn open_archive(path: &Path) -> rusqlite::Result<rusqlite::Connection> {
     rusqlite::Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
 }
@@ -226,7 +234,10 @@ pub(crate) fn handle(db: &AgentxDb, context: &RequestContext, request: Request) 
             Ok(Response::DevRoot(value.map_err(internal)?.filter(|value| !value.is_empty())))
         }
         Request::SetDevRoot { value } => {
+            let encoded = value.as_deref().filter(|value| !value.is_empty()).map(crate::config::dev_root::encode).transpose().map_err(|error| ServiceError::InvalidInput(error.to_string()))?;
             db.kv_set(DEV_ROOT_KV_KEY, value.as_deref()).map_err(internal)?;
+            let scope = db.path().parent().expect("scoped database");
+            crate::config::dev_root::publish(scope, encoded.as_deref()).map_err(|error| ServiceError::OutcomeUnknown(format!("dev-root setting was stored but its local selector could not be published: {error}")))?;
             Ok(Response::Updated)
         }
         Request::TipSeen { participant, tip } => Ok(Response::TipSeen(participant.is_empty() || db.kv_get(&format!("tip:{participant}:{tip}")).map_err(internal)?.is_some())),

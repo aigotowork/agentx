@@ -35,6 +35,42 @@ pub(crate) enum Request {
     Relay(crate::relay::service::Request),
 }
 
+impl Request {
+    /// A current-scope operation may choose its generation in the daemon.
+    /// Operations using retained identifiers/cursors or destructive intent
+    /// require a generation already held by the caller.
+    pub(crate) fn requires_generation(&self) -> bool {
+        use crate::agents::service::Request as Agent;
+        use crate::events::service::Request as Events;
+        use crate::messaging::service::Request as Message;
+        !matches!(
+            self,
+            Self::Participants(Agent::Resolve | Agent::Lookup { .. } | Agent::Record { .. } | Agent::List)
+                | Self::CodexHook(_)
+                | Self::Messages(Message::Submit(_) | Message::Preview(_) | Message::Acceptance { .. })
+                | Self::Events(Events::Watermark | Events::Subscriptions)
+                | Self::Queries(
+                    queries::Request::Diagnostics
+                        | queries::Request::Listing { .. }
+                        | queries::Request::ListingLabels { .. }
+                        | queries::Request::AgentNames(_)
+                        | queries::Request::Snapshot(_)
+                        | queries::Request::FilteredSnapshot { .. }
+                        | queries::Request::Stopped
+                        | queries::Request::StoppedHistory { .. }
+                        | queries::Request::FilteredStopped(_)
+                        | queries::Request::StoppedTargets { .. }
+                        | queries::Request::Terminals
+                        | queries::Request::MatchingTerminals { .. }
+                        | queries::Request::TranscriptInventory { .. }
+                        | queries::Request::SearchTimeline { .. }
+                )
+                | Self::Maintenance(maintenance::Request::Summary | maintenance::Request::DevRoot | maintenance::Request::Archives { .. })
+                | Self::Management(crate::management::contract::Request::AdoptedWorkspaces)
+        )
+    }
+}
+
 /// The domain outcome, distinct from transport acceptance and external effects.
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 #[expect(clippy::large_enum_variant, reason = "One inline domain outcome per bounded IPC reply; preserve the finite native envelope without lint-only boxing")]

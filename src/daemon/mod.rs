@@ -6,25 +6,33 @@ mod acceptance_tests;
 #[cfg(all(test, unix))]
 mod compatibility_tests;
 pub(crate) mod frame;
+mod legacy;
 pub(crate) mod lifecycle;
 pub(crate) mod observation;
 #[cfg(test)]
 mod observation_acceptance_tests;
+mod operation;
 pub(crate) mod platform;
 mod scope;
 mod server;
 #[cfg(test)]
 pub(crate) mod test_support;
 mod transport;
+#[cfg(all(test, any(unix, windows)))]
+mod upgrade_acceptance_tests;
 #[cfg(windows)]
 mod windows;
 mod wire;
 
 pub use scope::{DaemonScope, DatabaseGeneration, ScopeLease};
+#[cfg(all(test, target_os = "linux"))]
+pub(crate) use transport::call;
+#[cfg(test)]
+pub(crate) use transport::probe;
 #[cfg(test)]
 pub(crate) use transport::shutdown;
-pub(crate) use transport::{acquire, call, call_codex_hook, probe};
-pub(crate) use wire::{DaemonInfo, PROTOCOL_VERSION, build_identity};
+pub(crate) use transport::{acquire, call_bound, describe, request_deadline};
+pub(crate) use wire::{DaemonInfo, build_identity};
 
 use serde::{Deserialize, Serialize};
 
@@ -46,6 +54,8 @@ pub enum DaemonError {
     AlreadyRunning,
     #[error("daemon is incompatible: {0}")]
     Incompatible(String),
+    #[error("invalid operation input: {0}")]
+    InvalidInput(String),
     #[error("invalid daemon protocol: {0}")]
     Protocol(String),
     #[error("daemon is busy")]

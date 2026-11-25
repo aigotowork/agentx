@@ -92,13 +92,14 @@ export async function serveWorkspace(build, port = 0, host = '127.0.0.1', { long
           return json(receipt);
         }
         if (method !== 'GET') return json({}, 405);
-        if (path === '/api/v1/management') return json({ scope, generation, project, profiles, tools: ['fixture'], max_page: 100, max_text: 65536, ...(workbench && { supports_message_history: true }) });
+        if (path === '/api/v1/management') return json({ scope, generation, project, profiles, tools: ['fixture'], max_page: 100, max_text: 65536, supports_workspace_members: true, supports_message_history: true });
         if (workbench && path === sampleAttachment.url) {
           return response.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', 'content-disposition': 'attachment; filename="review-notes.txt"' }).end(sampleAttachmentText);
         }
         if (path === '/api/v1/workspaces') return json({ generation, workspaces: [{ path: project, sources: ['adopted'] }], coverage: { errors: [], agent_limit_reached: false, scan_limit_reached: false, agent_pages: 1, directories_examined: 1 } });
         if (path === '/api/v1/roles') return json({ generation, workspace: url.searchParams.get('workspace') === 'global' ? null : url.searchParams.get('workspace'), roles: [] });
         if (path === '/api/v1/office-activity') return json({ generation, next_after: '0', has_more: false, messages: [], created: [], human_messages: [], human_has_more: false, human_unhandled_count: 0 });
+        if (path === '/api/v1/workspaces/members') return json({ generation, agents: [...agents.values()].filter(agent => agent.collaboration.workspace === url.searchParams.get('workspace')), next: null, current_complete: true });
         if (path === '/api/v1/agents') return json({ generation, agents: [...agents.values()], next: null, current_complete: true });
         const operation = path.match(/^\/api\/v1\/operations\/([^/]+)$/);
         if (operation) return receipts.has(operation[1]) ? json(receipts.get(operation[1])) : json({ error: { code: 'NotFound', message: '未观察到原操作回执' } }, 404);
@@ -107,12 +108,11 @@ export async function serveWorkspace(build, port = 0, host = '127.0.0.1', { long
         if (!agent || url.searchParams.get('incarnation') !== agent.agent.incarnation) return json({}, 404);
         if (exact[2] === 'messages') {
           const list = messages.get(exact[1]), after = Number(url.searchParams.get('after') ?? 0);
-          const limit = workbench ? Number(url.searchParams.get('limit') ?? 20) : 12;
+          const limit = Number(url.searchParams.get('limit') ?? 20);
           const page = list.filter(item => Number(item.id) > after).slice(0, limit);
           return json({ generation, messages: page, has_more: list.length > after + page.length, next_after: page.at(-1)?.id ?? String(after) });
         }
         if (exact[2] === 'message-history') {
-          if (!workbench) return json({}, 404);
           if (url.searchParams.get('generation') !== generation) return json({ error: { code: 'StaleReference', message: '样例连接已变化' } }, 409);
           const list = messages.get(exact[1]), before = url.searchParams.get('before');
           const limit = Number(url.searchParams.get('limit') ?? 20);

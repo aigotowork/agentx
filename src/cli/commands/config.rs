@@ -242,7 +242,7 @@ pub fn config_get(key: &str) -> (String, &'static str) {
     crate::config::file::get_for_scope(&crate::paths::agentx_dir(), &std::env::vars().collect(), key)
 }
 #[cfg(test)]
-use crate::config::file::{config_set_at_path, drop_old_delivery_keys_at};
+use crate::config::file::config_set_at_path;
 
 // ── Instance Config ──────────────────────────────────────────────────────
 
@@ -473,7 +473,6 @@ fn cmd_config_impl(host: &ConfigHost, args: &ConfigArgs) -> i32 {
         }
         return 0;
     }
-    crate::config::file::drop_old_delivery_keys(&host.scope);
     let json_mode = args.json;
     let edit_mode = args.edit;
     let unset_mode = args.unset;
@@ -1604,9 +1603,14 @@ mod tests {
         let directory = tempfile::Builder::new().prefix("agentx-config-file-only-").tempdir().unwrap();
         let invocation = crate::service::InvocationContext { cwd: directory.path().into(), ..Default::default() };
         let host = ConfigHost { scope: directory.path().into(), invocation: &invocation, session: None };
-        for arguments in [vec!["config", "timeout", "6789"], vec!["config", "timeout", "--json"], vec!["config", "timeout", "--info"]] {
+        std::fs::write(host.path(), "[launch.claude]\ndelivery = \"inject\"\n").unwrap();
+        assert_eq!(cmd_config_impl(&host, &ConfigArgs::try_parse_from(["config", "timeout", "6789"]).unwrap()), 0);
+        let saved = std::fs::read_to_string(host.path()).unwrap();
+        for arguments in [["config", "timeout", "--json"], ["config", "timeout", "--info"]] {
             assert_eq!(cmd_config_impl(&host, &ConfigArgs::try_parse_from(arguments).unwrap()), 0);
         }
+        assert!(saved.contains("delivery = \"inject\""));
+        assert_eq!(std::fs::read_to_string(host.path()).unwrap(), saved);
         assert_eq!(host.get("AGENTX_TIMEOUT"), ("6789".into(), "toml"));
         assert!(!directory.path().join("agentx.db").exists());
     }
@@ -1765,6 +1769,7 @@ mod tests {
                 panic!("dev root");
             };
             assert_eq!(value, if arguments.contains(&"--unset") { None } else { Some("/tmp/worktree".into()) });
+            assert_eq!(crate::config::dev_root::read(directory.path()).unwrap(), value.map(PathBuf::from));
         }
     }
 
@@ -1788,24 +1793,6 @@ mod tests {
         let parsed: toml::Table = std::fs::read_to_string(path).unwrap().parse().unwrap();
         assert_eq!(parsed["launch"]["pi"]["args"].as_str(), Some("--model safe-model"));
         assert!(parsed.get("pi").is_none(), "no stray top-level [pi]");
-    }
-
-    #[test]
-    fn old_delivery_keys_are_dropped_and_the_rest_kept() {
-        let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("config.toml");
-        let old = "# mine\n[launch.claude]\nargs = \"--x\"\ndelivery = \"inject\"\n\n\
-                   [launch.copilot]\ndelivery = \"inject\"\nidle_delivery = \"inject\"\n";
-        std::fs::write(&path, old).unwrap();
-        drop_old_delivery_keys_at(&path);
-        let content = std::fs::read_to_string(&path).unwrap();
-        assert!(!content.contains("\ndelivery"), "{content}");
-        assert!(content.contains("# mine") && content.contains("args = \"--x\""), "{content}");
-        assert!(content.contains("idle_delivery = \"inject\""), "{content}");
-
-        let missing = dir.path().join("none.toml");
-        drop_old_delivery_keys_at(&missing);
-        assert!(!missing.exists());
     }
 
     #[test]

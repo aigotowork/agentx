@@ -1,5 +1,6 @@
 use super::*;
-use crate::cloud::communication::types::AgentRegistration;
+use crate::cloud::communication::store::transaction;
+use crate::cloud::control::workspaces::{expiry_window, page};
 
 const GEN: &str = "generation-one";
 const HOST: &str = "worker";
@@ -30,9 +31,17 @@ impl Fixture {
                 db,
                 now,
                 HOST.into(),
-                &RenewControlLease { generation: GEN.into(), installation_id: INSTALLATION.into(), lease_id: lease_id.into(), previous_lease_id: previous_lease_id.map(str::to_owned), workspaces: workspaces.clone() },
+                &RenewControlLease {
+                    generation: GEN.into(),
+                    installation_id: INSTALLATION.into(),
+                    lease_id: lease_id.into(),
+                    previous_lease_id: previous_lease_id.map(str::to_owned),
+                    workspaces: workspaces.clone(),
+                    project_roots: vec!["main".into()],
+                },
                 &features,
             )
+            .map(|(capabilities, _)| capabilities)
         })
     }
 
@@ -53,8 +62,12 @@ impl Fixture {
     }
 
     fn agent(&self, now: i64, incarnation: &str, retire: bool) -> AgentView {
+        self.agent_in(now, incarnation, retire, AgentWorkspace::Project { workspace_id: "WS0000000001".into() })
+    }
+
+    fn agent_in(&self, now: i64, incarnation: &str, retire: bool, workspace: AgentWorkspace) -> AgentView {
         self.at(now, |db, now| {
-            let input = AgentRegistration { generation: GEN.into(), installation_id: INSTALLATION.into(), host: HOST.into(), incarnation: incarnation.into() };
+            let input = AgentRegistration { generation: GEN.into(), installation_id: INSTALLATION.into(), host: HOST.into(), incarnation: incarnation.into(), workspace: workspace.clone() };
             if retire { store::retire_agent(db, now, "worker-agent".into(), input) } else { store::register_agent(db, now, "worker-agent".into(), input) }
         })
         .unwrap()
@@ -88,101 +101,124 @@ fn directory_launch_requires_support_and_replays_only_the_original_path() {
     assert!(matches!(f.submit(101, "new", command("subdir", false)), Err(Error::Conflict(_))));
 }
 
-#[test]
-fn control_schema_upgrade_preserves_legacy_leases_and_receipts() {
-    for (version, downgrade) in [(1, "ALTER TABLE control_leases DROP COLUMN directory_launch; PRAGMA user_version=1;"), (2, "PRAGMA user_version=2;")] {
-        let f = Fixture::new();
-        f.enroll_features(100, FIRST, None, catalogue(), LeaseFeatures { directory_launch: true, ..Default::default() }).unwrap();
-        let command = launch(None, None);
-        let queued = f.submit(100, "before-upgrade", command.clone()).unwrap();
-        store::transaction(
-            f.0.path(),
-            GEN,
-            true,
-            || true,
-            |db, _| {
-                db.execute_batch("ALTER TABLE control_leases DROP COLUMN workspace_management;")?;
-                Ok(db.execute_batch(downgrade)?)
-            },
-        )
-        .unwrap();
+fn workspace_features() -> LeaseFeatures {
+    LeaseFeatures { workspace_management: true, ..Default::default() }
+}
 
-        let legacy = transaction(f.0.path(), GEN, false, || true, |db, _| capabilities(db, 101, GEN.into(), HOST.into())).unwrap();
-        assert!(legacy.online);
-        assert_eq!(legacy.directory_launch, (version == 2).then_some(true));
-        assert_eq!(legacy.workspace_management, None);
-        assert_eq!(legacy.workspaces[0].managed_parent, None);
-        assert_eq!(f.submit(101, "before-upgrade", command).unwrap(), queued);
+fn add_workspace(parent: &str, directory: &str, name: &str) -> ControlCommand {
+    ControlCommand::AddWorkspace { parent: parent.into(), directory: directory.into(), name: name.into(), create_directory: true }
+}
+
+#[test]
+fn workspace_and_stop_inputs_reject_retired_identifier_formats() {
+    let f = Fixture::new();
+    let mut invalid = catalogue();
+    invalid[0].workspace_id = "ws_g1IMogNN8O8DXrbzbvh4TOT3_Oxzn-06yjXb6OTskPI".into();
+    assert!(matches!(f.enroll(100, FIRST, None, invalid.clone()), Err(Error::Invalid(_))));
+    f.enroll(100, FIRST, None, catalogue()).unwrap();
+    let mut legacy_launch = launch(None, None);
+    if let ControlCommand::Launch { workspace_id, .. } = &mut legacy_launch {
+        *workspace_id = invalid.pop().unwrap().workspace_id;
     }
-}
-
-fn workspace_features(parent: &str) -> LeaseFeatures {
-    LeaseFeatures { workspace_management: true, managed_parents: [parent.to_owned()].into(), ..Default::default() }
-}
-
-fn add_workspace(parent: &str, directory: &str, alias: &str) -> ControlCommand {
-    ControlCommand::AddWorkspace { parent: parent.into(), directory: directory.into(), alias: alias.into(), create_directory: true }
+    assert!(matches!(f.submit(100, "launch-legacy-id", legacy_launch), Err(Error::Invalid(_))));
+    let stop = ControlCommand::Stop { name: "worker-agent".into(), incarnation: "550e8400-e29b-41d4-a716-446655440000".into() };
+    assert!(matches!(f.submit(100, "stop-legacy-id", stop), Err(Error::Invalid(_))));
 }
 
 #[test]
-fn workspace_admission_requires_a_live_supporting_lease_and_an_exact_parent() {
+fn workspace_admission_uses_root_aliases_and_allows_duplicate_display_names() {
     let f = Fixture::new();
     let mut workspaces = catalogue();
-    workspaces.push(WorkspaceCapability { alias: "remote".into(), managed_parent: Some(true), ..workspaces[0].clone() });
-    let command = add_workspace("main", "projects/new", "new");
+    workspaces.push(WorkspaceCapability { workspace_id: "WS0000000002".into(), ..workspaces[0].clone() });
+    let command = add_workspace("main", "projects/new", "Example");
     let legacy = f.enroll(100, FIRST, None, workspaces.clone()).unwrap();
     assert_eq!(legacy.workspace_management, None);
-    assert_eq!(legacy.workspaces[1].managed_parent, None);
     assert!(matches!(f.submit(100, "legacy", command.clone()), Err(Error::Capability)));
-    assert!(matches!(f.enroll_features(101, FIRST, None, workspaces.clone(), workspace_features("unknown")), Err(Error::Invalid(_))));
-    let negotiated = f.enroll_features(101, FIRST, None, workspaces.clone(), workspace_features("main")).unwrap();
+    let negotiated = f.enroll_features(101, FIRST, None, workspaces.clone(), workspace_features()).unwrap();
     assert_eq!(negotiated.workspace_management, Some(true));
-    assert_eq!(negotiated.workspaces[0].managed_parent, Some(true));
-    assert_eq!(negotiated.workspaces[1].managed_parent, None);
-    assert!(matches!(f.submit(101, "nested", add_workspace("remote", "subdir", "nested")), Err(Error::Capability)));
-    assert!(matches!(f.submit(101, "duplicate", add_workspace("main", "subdir", "remote")), Err(Error::WorkspaceAliasTaken)));
-    assert!(matches!(f.submit(101, "invalid-alias", add_workspace("main", "dir", "New_Project")), Err(Error::Invalid(_))));
+    assert_eq!(negotiated.project_roots, ["main"]);
+    assert!(matches!(f.submit(101, "unknown-parent", add_workspace("second-root", "subdir", "Example")), Err(Error::Capability)));
+    assert!(matches!(f.submit(101, "invalid-parent", add_workspace("WS0000000002", "subdir", "Example")), Err(Error::Invalid(_))));
     for path in ["", "../escape", "/absolute", "missing//leaf", "C:\\outside", "project/./leaf"] {
-        assert!(matches!(f.submit(101, "invalid-path", add_workspace("main", path, "new")), Err(Error::Invalid(_))));
+        assert!(matches!(f.submit(101, "invalid-path", add_workspace("main", path, "Example")), Err(Error::Invalid(_))));
     }
+    assert!(matches!(f.submit(101, "invalid-name", add_workspace("main", "subdir", "  ")), Err(Error::Invalid(_))));
     let original = f.submit(101, "new", command.clone()).unwrap();
     assert_eq!(f.submit(101, "new", command.clone()).unwrap(), original);
-    assert!(matches!(f.submit(101, "new", add_workspace("main", "projects/other", "new")), Err(Error::Conflict(_))));
-    workspaces.push(WorkspaceCapability { alias: "new".into(), ..workspaces[0].clone() });
-    f.enroll_features(102, FIRST, None, workspaces.clone(), workspace_features("main")).unwrap();
-    assert_eq!(f.receive(102, FIRST).unwrap(), None);
-    assert_eq!(f.lookup(102, "new").outcome, Some(ControlOutcome::Failed { code: "workspace_alias_taken".into() }));
-    let next = add_workspace("main", "projects/next", "next");
-    f.submit(102, "withdrawn", next.clone()).unwrap();
+    assert!(matches!(f.submit(101, "new", add_workspace("main", "projects/other", "Example")), Err(Error::Conflict(_))));
     f.enroll(103, FIRST, None, workspaces).unwrap();
     assert_eq!(f.receive(103, FIRST).unwrap(), None);
-    assert_eq!(f.lookup(103, "withdrawn").outcome, Some(ControlOutcome::Failed { code: "capability_unavailable".into() }));
-    let workspaces = catalogue();
-    f.enroll_features(104, FIRST, None, workspaces, workspace_features("main")).unwrap();
-    f.submit(104, "stale", next.clone()).unwrap();
+    assert_eq!(f.lookup(103, "new").outcome, Some(ControlOutcome::Failed { code: "capability_unavailable".into() }));
     assert_eq!(f.at(134, |db, now| capabilities(db, now, GEN.into(), HOST.into())).unwrap().workspace_management, None);
     assert!(matches!(f.receive(134, FIRST), Err(Error::Lease)));
-    assert!(matches!(f.submit(134, "offline", next.clone()), Err(Error::Offline)));
-    assert_eq!(f.submit(134, "stale", next).unwrap().outcome, Some(ControlOutcome::Failed { code: "host_lease_lost".into() }));
+    assert!(matches!(f.submit(134, "offline", command), Err(Error::Offline)));
+}
+
+#[test]
+fn workspace_pages_keep_same_name_projects_and_expired_catalogues() {
+    let f = Fixture::new();
+    let source = catalogue()[0].clone();
+    let renew_on = |db: &Connection, now, host: &str, lease: &str, workspaces: Vec<WorkspaceCapability>| {
+        renew(
+            db,
+            now,
+            host.into(),
+            &RenewControlLease { generation: GEN.into(), installation_id: format!("{host}-install"), lease_id: lease.into(), previous_lease_id: None, workspaces, project_roots: vec!["default".into()] },
+            &LeaseFeatures::default(),
+        )
+        .map(|(_, changed)| changed)
+    };
+    f.at(100, |db, now| renew_on(db, now, "alpha", "a", vec![source.clone()])).map(|changed| assert!(changed)).unwrap();
+    f.at(110, |db, now| {
+        assert!(!renew_on(db, now, "alpha", "a", vec![source.clone()])?);
+        assert!(renew_on(db, now, "beta", "b", vec![WorkspaceCapability { workspace_id: "WS0000000003".into(), ..source.clone() }, source.clone()])?);
+        Ok(())
+    })
+    .unwrap();
+    f.at(115, |db, now| {
+        let mut renamed = source.clone();
+        renamed.name = "Renamed project".into();
+        assert!(renew_on(db, now, "alpha", "a", vec![renamed])?);
+        Ok(())
+    })
+    .unwrap();
+    f.at(140, |db, now| {
+        assert_eq!(expiry_window(db, 139, now)?, (140, true, Some(145)));
+        let first = page(db, now, GEN.into(), &WorkspaceQuery { generation: None, host: None, after: None, limit: Some(2) })?;
+        assert_eq!(first.items.iter().map(|item| (item.host.as_str(), item.online)).collect::<Vec<_>>(), [("alpha", true), ("beta", false)]);
+        let second = page(db, now, GEN.into(), &WorkspaceQuery { generation: None, host: Some("beta".into()), after: first.next, limit: Some(2) })?;
+        assert_eq!(second.items.len(), 1);
+        assert_eq!(second.items[0].capability.workspace_id, "WS0000000003");
+        assert_eq!(second.items[0].capability.name, source.name);
+        assert!(!second.items[0].online);
+        assert!(second.next.is_none());
+        Ok(())
+    })
+    .unwrap();
+    f.at(143, |db, now| {
+        assert!(renew_on(db, now, "beta", "replacement", vec![source.clone()])?);
+        Ok(())
+    })
+    .unwrap();
 }
 
 #[test]
 fn workspace_success_requires_exact_claim_outcome_and_catalogue_publication() {
     let f = Fixture::new();
     let mut workspaces = catalogue();
-    f.enroll_features(100, FIRST, None, workspaces.clone(), workspace_features("main")).unwrap();
+    f.enroll_features(100, FIRST, None, workspaces.clone(), workspace_features()).unwrap();
     let command = add_workspace("main", "project", "project");
     assert_eq!(f.submit(100, "register", command).unwrap().status, ControlStatus::Queued);
     let claimed = f.receive(100, FIRST).unwrap().unwrap();
     let claim = claimed.claim_id.unwrap();
-    let added = ControlOutcome::WorkspaceAdded { alias: "project".into() };
+    let added = ControlOutcome::WorkspaceAdded { workspace_id: "WS0000000004".into() };
     assert!(matches!(f.report(101, "register", FIRST, "wrong-claim", added.clone()), Err(Error::ControlClaim)));
-    assert!(matches!(f.report(101, "register", FIRST, &claim, ControlOutcome::WorkspaceAdded { alias: "other".into() }), Err(Error::Invalid(_))));
-    let agent = f.agent(101, "exact-agent", false);
+    assert!(matches!(f.report(101, "register", FIRST, &claim, ControlOutcome::WorkspaceAdded { workspace_id: "WS0000000003".into() }), Err(Error::Capability)));
+    let agent = f.agent(101, "ExactAgent01", false);
     assert!(matches!(f.report(101, "register", FIRST, &claim, ControlOutcome::Succeeded { agent }), Err(Error::Invalid(_))));
     assert!(matches!(f.report(101, "register", FIRST, &claim, added.clone()), Err(Error::Capability)));
-    workspaces.push(WorkspaceCapability { alias: "project".into(), ..workspaces[0].clone() });
-    f.enroll_features(102, SECOND, Some(FIRST), workspaces, workspace_features("main")).unwrap();
+    workspaces.push(WorkspaceCapability { workspace_id: "WS0000000004".into(), name: "project".into(), ..workspaces[0].clone() });
+    f.enroll_features(102, SECOND, Some(FIRST), workspaces, workspace_features()).unwrap();
     assert_eq!(f.receive(102, SECOND).unwrap(), None);
     assert_eq!(f.lookup(102, "register").status, ControlStatus::Uncertain);
     assert!(matches!(f.report(102, "register", FIRST, &claim, added.clone()), Err(Error::Lease)));
@@ -199,8 +235,8 @@ fn workspace_success_requires_exact_claim_outcome_and_catalogue_publication() {
 
 fn catalogue() -> Vec<WorkspaceCapability> {
     vec![WorkspaceCapability {
-        alias: "main".into(),
-        managed_parent: None,
+        workspace_id: "WS0000000001".into(),
+        name: "Example".into(),
         default_available: true,
         default_reason: None,
         roles: vec![RoleCapability { name: "coder".into(), available: true, reason: None }, RoleCapability { name: "windows-only".into(), available: false, reason: Some("missing_provider".into()) }],
@@ -209,7 +245,7 @@ fn catalogue() -> Vec<WorkspaceCapability> {
 
 fn launch(role: Option<&str>, name: Option<&str>) -> ControlCommand {
     ControlCommand::Launch {
-        workspace: "main".into(),
+        workspace_id: "WS0000000001".into(),
         role: role.map(str::to_owned),
         name: name.map(str::to_owned),
         title: Some("API verification".into()),
@@ -224,9 +260,9 @@ fn only_control_lease_enables_typed_operations_and_revalidates_catalogue() {
     let f = Fixture::new();
     let db = f.0.path();
     store::transaction(db, GEN, true, || true, |conn, _| store::renew_host(conn, 10, HOST.into(), HostRegistration { generation: GEN.into(), installation_id: INSTALLATION.into() })).unwrap();
-    let legacy = transaction(db, GEN, false, || true, |conn, _| capabilities(conn, 10, GEN.into(), HOST.into())).unwrap();
-    assert!(!legacy.online);
-    assert_eq!(legacy.observed_at, None);
+    let no_lease = transaction(db, GEN, false, || true, |conn, _| capabilities(conn, 10, GEN.into(), HOST.into())).unwrap();
+    assert!(!no_lease.online);
+    assert_eq!(no_lease.observed_at, None);
     assert!(matches!(f.submit(10, "default", launch(None, None)), Err(Error::Offline)));
 
     let managed = f.enroll(11, FIRST, None, catalogue()).unwrap();
@@ -270,7 +306,7 @@ fn replay_and_reconcile_a_claim_across_lease_replacement_without_redispatch() {
     assert_eq!(uncertain.claim_id.as_deref(), Some(claim.as_str()));
     assert!(matches!(f.submit(104, "running", launch(None, None)), Err(Error::Conflict(_))));
 
-    let agent = f.agent(105, "incarnation-1", false);
+    let agent = f.agent(105, "Incarnation1", false);
     let outcome = ControlOutcome::Succeeded { agent };
     assert!(matches!(f.report(106, "running", FIRST, &claim, outcome.clone()), Err(Error::Lease)));
     assert!(matches!(f.report(106, "running", SECOND, "wrong-claim", outcome.clone()), Err(Error::ControlClaim)));
@@ -281,14 +317,34 @@ fn replay_and_reconcile_a_claim_across_lease_replacement_without_redispatch() {
 }
 
 #[test]
+fn launch_success_checks_authoritative_exact_membership_even_after_exit() {
+    let f = Fixture::new();
+    f.enroll(100, FIRST, None, catalogue()).unwrap();
+    f.submit(100, "start", launch(None, Some("worker-agent"))).unwrap();
+    let claim = f.receive(100, FIRST).unwrap().unwrap().claim_id.unwrap();
+    let wrong = f.agent_in(101, "WrongAgent01", false, AgentWorkspace::Project { workspace_id: "WS0000000003".into() });
+    let forged = AgentView { workspace: AgentWorkspace::Project { workspace_id: "WS0000000001".into() }, ..wrong.clone() };
+    assert!(matches!(f.report(102, "start", FIRST, &claim, ControlOutcome::Succeeded { agent: forged }), Err(Error::AgentWorkspace)));
+    assert_eq!(f.lookup(102, "start").status, ControlStatus::Running);
+    f.agent(102, "WrongAgent01", true);
+    let right = f.agent(103, "RightAgent01", false);
+    f.agent(104, "RightAgent01", true);
+    let stale_hint = AgentView { workspace: AgentWorkspace::Unexposed, ..right.clone() };
+    let outcome = ControlOutcome::Succeeded { agent: stale_hint };
+    let receipt = f.report(105, "start", FIRST, &claim, outcome.clone()).unwrap();
+    assert_eq!(receipt.outcome, Some(ControlOutcome::Succeeded { agent: right }));
+    assert_eq!(f.report(106, "start", FIRST, &claim, outcome).unwrap(), receipt);
+}
+
+#[test]
 fn exact_stop_cannot_claim_or_retire_a_replacement() {
     let f = Fixture::new();
     f.enroll(100, FIRST, None, catalogue()).unwrap();
-    let original = f.agent(101, "incarnation-1", false);
+    let original = f.agent(101, "Incarnation1", false);
     let stop = |agent: &AgentView| ControlCommand::Stop { name: agent.name.clone(), incarnation: agent.incarnation.clone() };
     f.submit(101, "first-stop", stop(&original)).unwrap();
     f.agent(102, &original.incarnation, true);
-    let next = f.agent(102, "incarnation-2", false);
+    let next = f.agent(102, "Incarnation2", false);
     assert!(f.receive(103, FIRST).unwrap().is_none());
     assert_eq!(f.lookup(103, "first-stop").outcome, Some(ControlOutcome::Failed { code: "stale_agent".into() }));
     assert!(matches!(f.submit(103, "stale-stop", stop(&original)), Err(Error::Agent)));
@@ -299,7 +355,7 @@ fn exact_stop_cannot_claim_or_retire_a_replacement() {
     let result = f.report(105, "next-stop", FIRST, &claim, ControlOutcome::Succeeded { agent: next.clone() }).unwrap();
     assert_eq!(result.status, ControlStatus::Succeeded);
     assert_eq!(f.at(106, |conn, _| store::active_agent(conn, &next.name)).unwrap(), None);
-    let newer = f.agent(106, "incarnation-3", false);
+    let newer = f.agent(106, "Incarnation3", false);
     assert_eq!(f.submit(107, "next-stop", stop(&next)).unwrap(), result);
     assert_eq!(f.at(107, |conn, _| store::active_agent(conn, &next.name)).unwrap(), Some(newer));
     assert!(matches!(f.receive(130, FIRST), Err(Error::Lease)));

@@ -108,7 +108,7 @@ pub(crate) enum ReadInputError {
 
 pub(crate) trait ObservationReader: Send + Sync {
     fn describe(&self) -> Result<ObservationHead, ObservationReadError>;
-    fn read(&self, input: ObservationRead) -> Result<ObservationReadResult, ObservationReadError>;
+    fn read(&self, input: ObservationRead, response_budget: usize) -> Result<ObservationReadResult, ObservationReadError>;
 }
 
 /// A handle is fixed to one stream. Rotation never redirects a late producer.

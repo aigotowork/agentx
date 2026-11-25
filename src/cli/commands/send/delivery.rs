@@ -22,14 +22,11 @@ pub(super) fn render(report: &DeliveryReport) -> String {
             MailboxProgress::TargetRetired => "original target retired; successor not credited".to_owned(),
             MailboxProgress::Unknown => "delivery unknown (no exact local target evidence)".to_owned(),
             MailboxProgress::Pending => match &recipient.host {
-                Some(host) if host.protocol.is_some_and(|protocol| protocol != crate::daemon::PROTOCOL_VERSION) => {
-                    format!("pending; registered host last polled protocol {:?}, current daemon protocol {}; coordinated compatible-host recovery required", host.protocol, crate::daemon::PROTOCOL_VERSION)
-                }
                 Some(host) if host.process_alive == Some(false) => "pending; registered delivery host is gone; explicit session recovery required".to_owned(),
                 Some(host) => match host.last_poll {
                     Some(at) if now >= at && now - at <= 65 => format!("pending; host {} polled {}s ago; provider {} ({})", host.pid, now - at, recipient.status.as_deref().unwrap_or("unknown"), recipient.context.as_deref().unwrap_or("")),
-                    Some(at) => format!("pending; host {} snapshot progress stale (last={at}); check host/daemon compatibility before explicit recovery", host.pid),
-                    None => format!("pending; host {} snapshot progress unknown (legacy/unobserved); a live socket does not establish delivery; check host/daemon compatibility", host.pid),
+                    Some(at) => format!("pending; host {} snapshot progress stale (last={at}); inspect the host or reopen it if it predates the IPC upgrade", host.pid),
+                    None => format!("pending; host {} snapshot progress unknown (legacy/unobserved); a live socket does not establish delivery; inspect the registered host", host.pid),
                 },
                 None => "pending; no registered PTY host evidence (other delivery channels may consume it)".to_owned(),
             },

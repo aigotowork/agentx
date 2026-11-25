@@ -167,10 +167,10 @@ impl ObservationJournal {
         RecordDisposition::Suppressed
     }
 
-    pub(crate) fn handle(&self, request: ObservationRequest) -> Result<ObservationResponse, ObservationReadError> {
+    pub(crate) fn handle(&self, request: ObservationRequest, response_budget: usize) -> Result<ObservationResponse, ObservationReadError> {
         match request {
             ObservationRequest::Describe => self.describe().map(ObservationResponse::Head),
-            ObservationRequest::Read(input) => self.read(input).map(ObservationResponse::Read),
+            ObservationRequest::Read(input) => self.read(input, response_budget).map(ObservationResponse::Read),
         }
     }
 
@@ -220,8 +220,8 @@ impl ObservationReader for ObservationJournal {
         self.describe_at(None)
     }
 
-    fn read(&self, input: ObservationRead) -> Result<ObservationReadResult, ObservationReadError> {
-        self.read_at(input, None, MAX_PAGE_BYTES)
+    fn read(&self, input: ObservationRead, response_budget: usize) -> Result<ObservationReadResult, ObservationReadError> {
+        self.read_at(input, None, response_budget.min(MAX_PAGE_BYTES))
     }
 }
 

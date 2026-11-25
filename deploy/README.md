@@ -1,24 +1,26 @@
 # 用 Docker 部署 AgentX 云端管理端
 
-云端容器负责 scope、消息和管理操作。各工作主机上的原生 daemon 主动通过 HTTPS 接入，在自己的工作目录运行 Provider。下面的 Compose 配置适用于 Linux Docker Engine，GitHub 镜像面向 linux/amd64。
+云端容器负责 Namespace、消息和管理操作。各工作主机上的原生 daemon 主动通过 HTTPS 接入，在自己的工作目录运行 Provider。下面的 Compose 配置适用于 Linux Docker Engine，GitHub 镜像面向 linux/amd64。
 
 ## 使用已发布镜像
 
 将本目录的 `compose.yaml` 放到部署目录，在同一目录执行以下命令。将镜像地址替换为 GitHub Packages 中实际发布的版本；私有包需先登录 GHCR。首次初始化一次管理凭据，后续启动沿用同一份文件。
 
 ```sh
-(umask 077; set -C; echo "AGENTX_ADMIN_TOKEN=$(openssl rand -hex 32)" > .env)
 export AGENTX_IMAGE=ghcr.io/OWNER/REPO-cloud:vX.Y.Z
-docker compose pull
+docker pull "$AGENTX_IMAGE"
+(umask 077; set -C; echo "AGENTX_ADMIN_TOKEN=$(docker run --rm --network none "$AGENTX_IMAGE" cloud-token)" > .env)
 docker compose up -d
 docker compose logs --tail=20 cloud
 ```
 
-浏览器访问 `http://127.0.0.1:18755/deployment`，使用 `.env` 中的管理 token 创建 scope。容器以 UID 10001 运行，Compose 命名卷保存部署目录。默认 Compose 项目名来自部署目录名，升级时沿用该目录和项目名；先停止服务并备份整个卷，再切换镜像版本并运行 `docker compose up -d`。`docker compose down` 会保留数据，`down -v` 会删除卷。
+浏览器访问 `http://127.0.0.1:18755/deployment`，使用 `.env` 中的管理 token 创建 Namespace。容器以 UID 10001 运行，Compose 命名卷保存部署目录。默认 Compose 项目名来自部署目录名。**切到只支持短码的云端协议 v2 时必须使用新卷和独立 Compose 项目。** 发布前核对旧环境数据，保留旧卷和主机配置作回滚；见[清理交付](../.controller/cloud-namespace/cleanup.md)。`docker compose down` 会保留数据，`down -v` 会删除卷。
+
+对已经使用 Namespace v2 的部署，代次校验是兼容增量，沿用原有 Namespace URL、Bearer 和数据卷。先更新能在资源读取中校验并返回代次的服务，再切换 SDK、CLI 或另行部署的 Web。后续页使用首选 Namespace 的原代次；收到 `stale_generation` 时重新进入该 Namespace 并从第一页开始。
 
 ## 打开云端 Space
 
-在包含云端 Space 的镜像中，从部署控制台选中 scope，点击「打开 Space」，也可以直接访问 `/scopes/{id}/space/`。使用 Admin token 可选择主机和角色、启动 Agent、停止选定实例并查询回执。在 Space 打开一个确切实例后，可用 Admin 身份在共用输入框发送文字。回执表示云端已接受消息，Agent 的回复作为另一条记录出现在同一会话。使用该 scope 的 token 可查看主机、Agent 和选定实例的云端消息。登录时可选择仅本次、30 天或 90 天。记住登录会在当前浏览器保存对应令牌，断开会清除已保存的登录。详见 [Space 使用说明](../web/agent-space/README.md#云端-space)。
+在包含云端 Space 的镜像中，从部署控制台选中 Namespace，点击「打开 Space」，也可以直接访问 `/namespaces/{id}/space/`。使用 Admin token 可选择主机和角色、启动 Agent、停止选定实例并查询回执。在 Space 打开一个确切实例后，可用 Admin 身份在共用输入框发送文字。回执表示云端已接受消息，Agent 的回复作为另一条记录出现在同一会话。使用该 Namespace 的 token 可查看主机、Agent 和选定实例的云端消息。登录时可选择仅本次、30 天或 90 天。记住登录会在当前浏览器保存对应令牌，断开会清除已保存的登录。详见 [Space 使用说明](../web/agent-space/README.md#云端-space)。
 
 ## 让其他机器接入
 
@@ -46,6 +48,6 @@ bash deploy/smoke.sh
 
 生成的本地镜像名为 `agentx-cloud:local`，也是 Compose 的默认值。已有同架构、兼容 Ubuntu 24.04 的可执行文件时，可运行 `bash deploy/build-image.sh /path/to/agentx my-agentx:v1`。构建上下文仅含可执行文件、许可证和 Dockerfile。离线交付使用 `docker save agentx-cloud:local | gzip > agentx-cloud.tar.gz`，目标机执行 `docker load -i agentx-cloud.tar.gz`，再用同一份 Compose 启动。
 
-[GitHub 镜像工作流](../.github/workflows/cloud-image.yml)在相关 PR 或手动触发时构建并验证镜像。推送与程序版本一致的 `vX.Y.Z` 标签后，发布作业使用仓库的 `GITHUB_TOKEN` 将通过验证的镜像推送至 `ghcr.io/<owner>/<repo>-cloud:vX.Y.Z`。首次公开交付时，在 Packages 中核对包的可见性。冒烟检查使用独立项目、随机 token 和临时端口，覆盖 Web 入口、未授权访问、Admin 创建 scope 和容器重建后的数据读取。
+[GitHub 镜像工作流](../.github/workflows/cloud-image.yml)在相关 PR 或手动触发时构建并验证镜像。推送与程序版本一致的 `vX.Y.Z` 标签后，发布作业使用仓库的 `GITHUB_TOKEN` 将通过验证的镜像推送至 `ghcr.io/<owner>/<repo>-cloud:vX.Y.Z`。首次公开交付时，在 Packages 中核对包的可见性。冒烟检查使用独立项目、随机 token 和临时端口，覆盖 Web 入口、未授权访问、Admin 创建 Namespace 和容器重建后的数据读取。
 
 在既有 Release 上补发 GHCR 镜像时，使用 `gh workflow run cloud-image.yml --ref main -f release_tag=vX.Y.Z`。工作流核对 Release 中镜像归档的校验和与程序版本，再用该标签对应的冒烟测试验证镜像。

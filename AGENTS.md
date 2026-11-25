@@ -1,3 +1,5 @@
+For native direct calls and the one-time protocol 3/4 upgrade, read [direct calls](.controller/direct-calls/AGENTS.md). For Cloud Namespace v2 and Workspace paging, read [the cloud entry](.controller/cloud-namespace/AGENTS.md).
+
 For Cloud Space authentication, SDK reads and exact Agent operations, read [Cloud Space](.controller/cloud-space/AGENTS.md). For the GitHub test matrix, read [CI recovery](.controller/ci-recovery/AGENTS.md).
 
 For cloud daemon Docker packaging, Linux Compose and the GHCR publication contract, read [deployment](deploy/README.md).

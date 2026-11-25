@@ -1,20 +1,34 @@
 /** @aiPurpose Office-local post and unavailable Skill readers without launch or fabricated people. */
-import { FactButton } from "./FactButton";
+import { FactButton } from "../uiux/systems/space/components/FactButton";
 import type { SpaceController } from "./offline/controller";
 import { matchingPostMembers } from "./offline/projection";
 import { PostLaunch } from "./live/Actions";
 import type { LiveSpace } from "./live/controller";
-import type { Post } from "./offline/model";
+import type { CloudOffice, Post } from "./offline/model";
 /** @aiPurpose Show effective supplied posts and their actual adopted-source members, or honest unavailable Skills.
  * @aiUsage Mount for posts/Skills only; selection only reads; live post launch requires explicit submission.
  */
 export function OfficeResources({ controller, live }: { controller: SpaceController; live?: LiveSpace }) {
   const state = controller.getSnapshot();
   const query = state.query.trim().toLocaleLowerCase();
+  if (controller.supply.scope.cloud && state.officeView === "posts") {
+    return <CloudProjectRoles office={controller.supply.cloudDirectory?.projects.find(office => office.id === state.workspaceId)} query={query} />;
+  }
   const posts = controller.supply.posts.filter(post => (!state.workspaceId || post.office === state.workspaceId) && (!query || [post.name, post.office, post.description, post.source, post.profile].join(" ").toLocaleLowerCase().includes(query)));
   const selected = posts.find(post => post.id === state.postId);
   if (state.officeView === "skills") return <section className="resource-unavailable" aria-label="技能"><strong>技能列表未提供</strong><code>{state.workspaceId || controller.supply.scope.id}</code><small>此环境没有提供可用技能目录或使用事件。</small></section>;
   return <div className="post-workspace"><section className="post-list" aria-label="可用岗位"><header><strong>可用岗位</strong><small>{posts.length}</small></header>{posts.map(post => <FactButton facts={<><strong>{post.name}</strong><span>{post.description || "岗位说明未提供"}</span><span>{post.origin}</span></>} type="button" key={post.id} aria-pressed={selected?.id === post.id} onClick={() => controller.post(post.id)}><strong>{post.name}</strong><small>{post.origin} · {matchingPostMembers(controller.supply, post).length} 成员</small>{!state.workspaceId && <small>{post.office}</small>}</FactButton>)}{!posts.length && <p>可用岗位未提供或无匹配</p>}</section>{selected && <PostDetail key={selected.id} post={selected} controller={controller} live={live} />}</div>;
+}
+function CloudProjectRoles({ office, query }: { office?: CloudOffice; query: string }) {
+  if (!office) return <p className="resource-unavailable" role="status">此项目的岗位目录未提供</p>;
+  const roles = office.roles.filter(role => role.name.toLocaleLowerCase().includes(query));
+  return <section className="post-list cloud-project-roles" aria-label="项目岗位">
+    <header><strong>{office.title}</strong><small>{office.host}{!office.online && " · 离线"}</small></header>
+    <ul>{roles.map(role => <li key={role.name}><span>{role.name}</span><small title={role.reason ?? undefined}>
+      {!office.online ? "离线目录" : role.available ? "可启动" : "不可启动"}
+    </small></li>)}</ul>
+    {!roles.length && <p>{office.roles.length ? "没有匹配的岗位" : "此项目没有岗位"}</p>}
+  </section>;
 }
 function PostDetail({ post, controller, live }: { post: Post; controller: SpaceController; live?: LiveSpace }) {
   const members = matchingPostMembers(controller.supply, post);

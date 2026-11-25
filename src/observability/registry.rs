@@ -487,11 +487,6 @@ impl RuntimeRecorder for RuntimeRegistry {
         let mut fact = None;
         if let Some(row) = &mut entry.row {
             row.phase = match update {
-                ConnectionUpdate::HelloValidated => {
-                    fact = Some(RuntimeFact::HelloValidated);
-                    ConnectionPhase::HelloValidated
-                }
-                ConnectionUpdate::ReadyWritten => ConnectionPhase::ReadyWritten,
                 ConnectionUpdate::ReadingOperation => ConnectionPhase::ReadingOperation,
                 ConnectionUpdate::AwaitingReply => ConnectionPhase::AwaitingReply,
                 ConnectionUpdate::Closed(reason) => {

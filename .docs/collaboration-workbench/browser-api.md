@@ -8,7 +8,7 @@ description: Closed workbench wire and native-derived browser consumption.
 
 # Browser contract
 
-Import [WorkbenchApi](../../web/workbench/api/client.ts) and the [derived closure](../../web/workbench/api/native.ts); [native declarations](../../src/collaboration/web/api.rs) remain authoritative. The compatibility `native.ts` entry aliases public `WorkbenchTypes`; native Service → emitted OpenAPI → `@agentx/client` is the maintained generation chain. The page adapter owns only lifetime/read cancellation; public SDK owns transport/codecs/unknown input. Historical derive.py does not generate the current entry. See [SDK adoption](../../.controller/web-sdk-adoption/web.task.md).
+Import [WorkbenchApi](../../web/workbench/api/client.ts) and the [derived closure](../../web/workbench/api/native.ts); [native declarations](../../src/collaboration/web/api.rs) remain authoritative. The compatibility `native.ts` entry aliases public `WorkbenchTypes`; native Service → emitted OpenAPI → `@agentx/client` is the maintained generation chain. The page adapter owns only lifetime/read cancellation; public SDK owns transport/codecs/unknown input. See [SDK adoption](../../.controller/web-sdk-adoption/web.task.md).
 
 POST `/api/v1/connection` with `{}` returns `Descriptor`. POST `/api/v1/read` consumes `ReadCall`; POST `/api/v1/apply` consumes `ApplyCall`. Reads and applies return native `Response`, including `Rejected(Failure)`. The selected project never comes from HTTP. OperatorCommand excludes Agent reports, arbitrary recipients, launch/reset/configuration/SQL/file readers and any generic native request. Scope/project/generation/work operands are checked natively as well as at the adapter.
 

@@ -4,11 +4,13 @@ CREATE TABLE control_leases (
     expires_at INTEGER NOT NULL,
     is_current INTEGER NOT NULL CHECK(is_current IN (0,1)),
     workspaces TEXT NOT NULL,
+    project_roots TEXT NOT NULL,
     directory_launch INTEGER NOT NULL DEFAULT 0 CHECK(directory_launch IN (0,1)),
     workspace_management INTEGER NOT NULL DEFAULT 0 CHECK(workspace_management IN (0,1)),
     PRIMARY KEY(host,lease_id)
 ) WITHOUT ROWID;
 CREATE UNIQUE INDEX control_current_lease ON control_leases(host) WHERE is_current=1;
+CREATE INDEX control_active_expiry ON control_leases(expires_at) WHERE is_current=1;
 CREATE TABLE control_operations (
     ordinal INTEGER PRIMARY KEY,
     request_id TEXT NOT NULL UNIQUE,
@@ -21,4 +23,3 @@ CREATE TABLE control_operations (
     FOREIGN KEY(host,execution_lease_id) REFERENCES control_leases(host,lease_id)
 );
 CREATE INDEX control_pending ON control_operations(host,execution_lease_id,ordinal) WHERE outcome IS NULL;
-PRAGMA user_version=3;

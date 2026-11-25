@@ -1,10 +1,10 @@
-import { CloudAdminError, type CloudScopeTypes } from '@agentx/client';
-import type { MessageReadPage } from '../live/domain-office';
+import type { CloudNamespaceTypes } from '@agentx/client';
+import type { HistoryReadPage } from '../conversation/read-state';
 import type { HistoryRecord, SuppliedRecords } from '../offline/model';
 import { cloudProblem, type CloudAgentFacts, type Session } from './model';
 import { exactLabel, sameAgent, type CloudAgent } from './route';
 
-type Page = CloudScopeTypes['TranscriptHistoryPage'];
+type Page = CloudNamespaceTypes['TranscriptHistoryPage'];
 type Lane = { phase: 'ready' | 'loading' | 'error'; error?: string };
 const pageSize = 20;
 const retained = 256;
@@ -13,10 +13,10 @@ const validCursor = (value: string) => /^[1-9][0-9]{0,18}$/.test(value);
 const before = (a: string, b: string) => a.length < b.length || (a.length === b.length && a < b);
 const provenance = '云端 Codex 可见记录';
 
-async function page(session: Session, agent: CloudAgent, signal: AbortSignal, cursors?: { before?: string; after?: string }): Promise<Page> {
+export async function readTranscriptPage(session: Session, agent: CloudAgent, signal: AbortSignal, cursors?: { before?: string; after?: string }): Promise<Page> {
   const { host, name, incarnation } = agent;
   const query = { generation: session.generation, host, name, incarnation, limit: pageSize, ...cursors };
-  const result = await (session.access === 'admin' ? session.client.listTranscript(session.scope, query, { signal })
+  const result = await (session.access === 'admin' ? session.client.listTranscript(session.namespace, query, { signal })
     : session.client.listTranscript(query, { signal }));
   signal.throwIfAborted();
   if (!sameAgent(result.agent, agent) || result.latest !== null && !validCursor(result.latest))
@@ -41,7 +41,6 @@ export class CloudTranscriptReader {
   private older: Lane = { phase: 'ready' };
   private live: Lane = { phase: 'ready' };
   private availability?: boolean;
-  private legacy = false;
   private next: string | null = null;
   private head = '0';
   private arrivals = 0;
@@ -55,19 +54,18 @@ export class CloudTranscriptReader {
 
   get records(): SuppliedRecords {
     if (this.availability) return { status: 'available', provenance, items: this.items };
-    if (this.legacy) return { status: 'unavailable', reason: '此云端服务尚未接入模型记录。' };
     if (this.phase.phase === 'error') return { status: 'error', reason: this.phase.error ?? '无法读取模型记录。' };
     if (this.availability === false) return { status: 'unavailable', reason: '此实例尚未上报模型记录。' };
     return { status: 'loading' };
   }
 
-  get page(): MessageReadPage {
-    return { ...this.phase, mode: 'latest', more: this.next !== null, token: this.availability ? this.token : undefined,
+  get page(): HistoryReadPage {
+    return { ...this.phase, more: this.next !== null, token: this.availability ? this.token : undefined,
       arrivals: this.arrivals, older: this.older, live: this.live };
   }
 
   refresh(signal: AbortSignal): Promise<void> {
-    if (signal.aborted || this.legacy) return Promise.resolve();
+    if (signal.aborted) return Promise.resolve();
     if (this.latestRead) {
       this.queued = signal;
       return this.latestRead;
@@ -90,7 +88,7 @@ export class CloudTranscriptReader {
       this.phase = { phase: 'loading' }; this.changed();
     }
     try {
-      let result = await page(this.session, this.agent, signal, initial ? undefined : { after: this.head });
+      let result = await readTranscriptPage(this.session, this.agent, signal, initial ? undefined : { after: this.head });
       this.acceptFacts(result);
       if (initial) {
         this.next = result.next;
@@ -109,21 +107,16 @@ export class CloudTranscriptReader {
             this.head = append.at(-1)!.id;
           }
           if (!result.next || reads + 1 === maxPages) break;
-          result = await page(this.session, this.agent, signal, { after: this.head });
+          result = await readTranscriptPage(this.session, this.agent, signal, { after: this.head });
         }
       }
       this.phase = this.live = { phase: 'ready' };
     } catch (error) {
       if (signal.aborted) return;
       this.failed(error);
-      if (error instanceof CloudAdminError && error.status === 404) {
-        this.legacy = true;
-        this.phase = { phase: 'ready' };
-      } else {
-        const failure: Lane = { phase: 'error', error: cloudProblem(error, '无法读取模型记录。') };
-        if (this.availability === undefined) this.phase = failure;
-        else this.live = failure;
-      }
+      const failure: Lane = { phase: 'error', error: cloudProblem(error, '无法读取模型记录。') };
+      if (this.availability === undefined) this.phase = failure;
+      else this.live = failure;
     } finally {
       if (!signal.aborted) this.changed();
     }
@@ -136,7 +129,7 @@ export class CloudTranscriptReader {
     if (!cursor || this.older.phase === 'loading') return;
     this.older = { phase: 'loading' }; this.changed();
     try {
-      const result = await page(this.session, this.agent, signal, { before: cursor });
+      const result = await readTranscriptPage(this.session, this.agent, signal, { before: cursor });
       // A concurrent live read may already have reached the local retention ceiling.
       if (this.next !== cursor) { this.older = { phase: 'ready' }; return; }
       const room = Math.max(0, retained - this.items.length);

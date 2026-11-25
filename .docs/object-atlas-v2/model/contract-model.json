@@ -604,50 +604,6 @@
       "provenance": "source-backed"
     },
     {
-      "id": "MemberCursor",
-      "name": "MemberCursor",
-      "kind": "value",
-      "domain": "paging",
-      "summary": "Opaque global feed position bound to this WorkspaceAddress.",
-      "fields": [
-        {
-          "id": "MemberCursor.workspace",
-          "name": "workspace",
-          "type": "WorkspaceAddress",
-          "typeIds": [
-            "WorkspaceAddress"
-          ],
-          "summary": "workspace"
-        },
-        {
-          "id": "MemberCursor.position",
-          "name": "position",
-          "type": "string",
-          "typeIds": [],
-          "summary": "Opaque underlying global cursor; do not parse or synthesize."
-        },
-        {
-          "id": "MemberCursor.kind",
-          "name": "kind",
-          "type": "never",
-          "typeIds": [],
-          "optional": true,
-          "summary": "Absent discriminator; a different resource cursor cannot be substituted."
-        }
-      ],
-      "ports": [],
-      "support": {
-        "sdk": "implemented",
-        "native": "mapped",
-        "note": "SDK value or capability composed over existing native Management contracts; no independent server object."
-      },
-      "sourceRefs": [
-        "contracts:MemberCursor"
-      ],
-      "layerId": "sdk",
-      "provenance": "source-backed"
-    },
-    {
       "id": "MessageCursor",
       "name": "MessageCursor",
       "kind": "value",
@@ -728,44 +684,6 @@
       "provenance": "source-backed"
     },
     {
-      "id": "PageRequest<MemberCursor>",
-      "name": "PageRequest<MemberCursor>",
-      "kind": "value",
-      "domain": "paging",
-      "summary": "Workspace.members request; cursor cannot be reused across Workspace selections.",
-      "fields": [
-        {
-          "id": "PageRequest<MemberCursor>.after",
-          "name": "after",
-          "type": "MemberCursor",
-          "typeIds": [
-            "MemberCursor"
-          ],
-          "summary": "after",
-          "optional": true
-        },
-        {
-          "id": "PageRequest<MemberCursor>.limit",
-          "name": "limit",
-          "type": "number",
-          "typeIds": [],
-          "summary": "Native omitted default 50; valid native range 1..100.",
-          "optional": true
-        }
-      ],
-      "ports": [],
-      "support": {
-        "sdk": "implemented",
-        "native": "mapped",
-        "note": "SDK value or capability composed over existing native Management contracts; no independent server object."
-      },
-      "sourceRefs": [
-        "contracts:PageRequest"
-      ],
-      "layerId": "sdk",
-      "provenance": "source-backed"
-    },
-    {
       "id": "PageRequest<MessageCursor>",
       "name": "PageRequest<MessageCursor>",
       "kind": "value",
@@ -799,46 +717,6 @@
       },
       "sourceRefs": [
         "contracts:PageRequest"
-      ],
-      "layerId": "sdk",
-      "provenance": "source-backed"
-    },
-    {
-      "id": "MemberPage",
-      "name": "MemberPage",
-      "kind": "value",
-      "domain": "paging",
-      "summary": "One global native page projected onto adopted membership; empty members may still continue.",
-      "fields": [
-        {
-          "id": "MemberPage.members",
-          "name": "members",
-          "type": "readonly MemberEntry[]",
-          "typeIds": [
-            "MemberEntry",
-            "Agent",
-            "AgentSnapshot"
-          ],
-          "summary": "Each observed match supplies both a handle and detached snapshot; no completeness claim."
-        },
-        {
-          "id": "MemberPage.coverage",
-          "name": "coverage",
-          "type": "Readonly<MemberCoverage>",
-          "typeIds": [
-            "MemberCoverage"
-          ],
-          "summary": "coverage"
-        }
-      ],
-      "ports": [],
-      "support": {
-        "sdk": "implemented",
-        "native": "mapped",
-        "note": "SDK value or capability composed over existing native Management contracts; no independent server object."
-      },
-      "sourceRefs": [
-        "contracts:MemberPage"
       ],
       "layerId": "sdk",
       "provenance": "source-backed"
@@ -1139,7 +1017,7 @@
       "name": "Workspace",
       "kind": "interface",
       "domain": "workspace",
-      "summary": "Workspace handle for current Role catalog and bounded member projection.",
+      "summary": "Workspace handle for current Role catalog and native membership pages.",
       "fields": [
         {
           "id": "Workspace.address",
@@ -1153,7 +1031,6 @@
       ],
       "ports": [
         "Workspace.roles",
-        "Workspace.members",
         "Workspace.memberPage",
         "Workspace.prepareLaunch",
         "Workspace.launch"
@@ -1174,7 +1051,7 @@
       "name": "AgentXScope",
       "kind": "interface",
       "domain": "scope",
-      "summary": "Pinned Management listener/scope/generation; explicit reselection creates different handles.",
+      "summary": "Pinned Management listener, scope and generation with required current read capabilities.",
       "fields": [
         {
           "id": "AgentXScope.address",
@@ -1193,13 +1070,6 @@
             "Management.Descriptor"
           ],
           "summary": "descriptor"
-        },
-        {
-          "id": "AgentXScope.supportsWorkspaceMembers",
-          "name": "supportsWorkspaceMembers",
-          "type": "boolean",
-          "typeIds": [],
-          "summary": "Pinned selection advertises native member paging only when the descriptor bit is true."
         },
         {
           "id": "AgentXScope.attachments",
@@ -1305,72 +1175,7 @@
         "note": "SDK value or capability composed over existing native Management contracts; no independent server object."
       },
       "sourceRefs": [
-        "contracts:MemberPage"
-      ],
-      "layerId": "sdk",
-      "provenance": "source-backed"
-    },
-    {
-      "id": "MemberCoverage",
-      "name": "MemberCoverage",
-      "kind": "value",
-      "domain": "paging",
-      "summary": "Named Canvas projection of anonymous coverage record; no Workspace completeness guarantee.",
-      "fields": [
-        {
-          "id": "MemberCoverage.kind",
-          "name": "kind",
-          "type": "'global-agent-page'",
-          "typeIds": [],
-          "summary": "kind"
-        },
-        {
-          "id": "MemberCoverage.scanned",
-          "name": "scanned",
-          "type": "number",
-          "typeIds": [],
-          "summary": "scanned"
-        },
-        {
-          "id": "MemberCoverage.legacy",
-          "name": "legacy",
-          "type": "number",
-          "typeIds": [],
-          "summary": "legacy"
-        },
-        {
-          "id": "MemberCoverage.unavailable",
-          "name": "unavailable",
-          "type": "number",
-          "typeIds": [],
-          "summary": "unavailable"
-        },
-        {
-          "id": "MemberCoverage.currentComplete",
-          "name": "currentComplete",
-          "type": "boolean",
-          "typeIds": [],
-          "summary": "Native current-section scan status; not complete Workspace membership."
-        },
-        {
-          "id": "MemberCoverage.next",
-          "name": "next",
-          "type": "MemberCursor | null",
-          "typeIds": [
-            "MemberCursor"
-          ],
-          "summary": "Null means no continuation in this feed; an empty member projection can have a nonnull next.",
-          "nullable": true
-        }
-      ],
-      "ports": [],
-      "support": {
-        "sdk": "projection",
-        "native": "mapped",
-        "note": "SDK value or capability composed over existing native Management contracts; no independent server object."
-      },
-      "sourceRefs": [
-        "contracts:MemberPage"
+        "contracts:NativeMemberPage"
       ],
       "layerId": "sdk",
       "provenance": "source-backed"
@@ -4631,7 +4436,7 @@
       "name": "selectAgentXScope",
       "kind": "method",
       "domain": "scope",
-      "summary": "Read descriptor once, verify caller expected scope, pin listener/scope/generation.",
+      "summary": "Read the descriptor, require native workspace membership and message history, and pin the expected scope and generation.",
       "fields": [],
       "ports": [],
       "support": {
@@ -4904,62 +4709,6 @@
       "outcomes": [],
       "effect": "read",
       "signature": "roles(options?: CallOptions): Promise<RoleCatalog>",
-      "layerId": "sdk",
-      "provenance": "source-backed"
-    },
-    {
-      "id": "Workspace.members",
-      "name": "members",
-      "kind": "method",
-      "domain": "workspace",
-      "summary": "Fetch exactly one global Agent page, count legacy/unavailable, retain matching adopted rows; empty can continue.",
-      "fields": [],
-      "ports": [],
-      "support": {
-        "sdk": "implemented",
-        "native": "mapped",
-        "note": "SDK value or capability composed over existing native Management contracts; no independent server object."
-      },
-      "sourceRefs": [
-        "contracts:Workspace",
-        "workspace:members",
-        "store:list"
-      ],
-      "owner": "Workspace",
-      "inputs": [
-        {
-          "name": "page",
-          "type": "PageRequest<MemberCursor>",
-          "typeIds": [
-            "PageRequest<MemberCursor>"
-          ],
-          "optional": true
-        },
-        {
-          "name": "options",
-          "type": "CallOptions",
-          "typeIds": [
-            "CallOptions"
-          ],
-          "optional": true
-        }
-      ],
-      "output": {
-        "type": "Promise<MemberPage>",
-        "typeIds": [
-          "MemberPage"
-        ]
-      },
-      "errors": [
-        "DomainReferenceError",
-        "ManagementError",
-        "ProtocolError",
-        "Error",
-        "TypeError"
-      ],
-      "outcomes": [],
-      "effect": "read",
-      "signature": "members(page?: PageRequest<MemberCursor>, options?: CallOptions): Promise<MemberPage>",
       "layerId": "sdk",
       "provenance": "source-backed"
     },
@@ -5491,32 +5240,12 @@
       "support": {
         "sdk": "implemented",
         "native": "implemented",
-        "note": "Implemented in source. Requires scope.supportsWorkspaceMembers; older listeners can explicitly use Workspace.members instead."
+        "note": "Filtering happens in native; Domain SDK admission requires this capability."
       },
       "sourceRefs": [
         "contracts:Workspace.memberPage",
         "workspace:memberPage",
         "service:listWorkspaceMembers"
-      ],
-      "layerId": "sdk",
-      "provenance": "source-backed"
-    },
-    {
-      "id": "BoundedWorkspaceMemberProjection",
-      "name": "BoundedWorkspaceMemberProjection",
-      "kind": "capability",
-      "domain": "capabilities",
-      "summary": "Implemented SDK projection over one native global page; currentComplete is native current-section scan state.",
-      "fields": [],
-      "ports": [],
-      "support": {
-        "sdk": "implemented",
-        "native": "mapped",
-        "note": "Native global list exists; Workspace filtering is applied afterward in SDK."
-      },
-      "sourceRefs": [
-        "workspace:members",
-        "semantic:AgentX TypeScript domain objects"
       ],
       "layerId": "sdk",
       "provenance": "source-backed"
@@ -5945,7 +5674,7 @@
       "name": "ActorPage",
       "kind": "value",
       "domain": "office",
-      "summary": "Proposed projection of exactly one MemberPage; preserves entry order/count and coverage.",
+      "summary": "Proposed projection of exactly one NativeMemberPage; preserves entry order/count and coverage.",
       "fields": [
         {
           "id": "ActorPage.entries",
@@ -5959,9 +5688,9 @@
         {
           "id": "ActorPage.coverage",
           "name": "coverage",
-          "type": "MemberCoverage",
+          "type": "NativeMemberCoverage",
           "typeIds": [
-            "MemberCoverage"
+            "NativeMemberCoverage"
           ],
           "summary": "Unchanged SDK coverage; empty entries can retain a next cursor."
         },
@@ -6101,9 +5830,9 @@
       "inputs": [
         {
           "name": "page",
-          "type": "PageRequest<MemberCursor>",
+          "type": "NativeMemberRequest",
           "typeIds": [
-            "PageRequest<MemberCursor>"
+            "NativeMemberRequest"
           ],
           "optional": true
         },
@@ -6131,7 +5860,7 @@
       ],
       "outcomes": [],
       "effect": "read",
-      "signature": "members(page?: PageRequest<MemberCursor>, options?: CallOptions): Promise<ActorPage>",
+      "signature": "members(page?: NativeMemberRequest, options?: CallOptions): Promise<ActorPage>",
       "layerId": "application",
       "provenance": "proposed"
     },
@@ -7813,7 +7542,7 @@
       "support": {
         "sdk": "implemented",
         "native": "implemented",
-        "note": "Implemented in source. Requires scope.supportsWorkspaceMembers; older listeners can explicitly use Workspace.members instead."
+        "note": "Filtering happens in native; Domain SDK admission requires this capability."
       },
       "sourceRefs": [
         "contracts:Workspace.memberPage",
@@ -13562,17 +13291,6 @@
       "provenance": "source-backed"
     },
     {
-      "id": "PageRequest<MemberCursor>|references|PageRequest<C>",
-      "from": "PageRequest<MemberCursor>",
-      "to": "PageRequest<C>",
-      "kind": "references",
-      "label": "generic specialization",
-      "sourceRefs": [
-        "contracts:PageRequest"
-      ],
-      "provenance": "source-backed"
-    },
-    {
       "id": "PageRequest<MessageCursor>|references|PageRequest<C>",
       "from": "PageRequest<MessageCursor>",
       "to": "PageRequest<C>",
@@ -13742,17 +13460,6 @@
       "provenance": "source-backed"
     },
     {
-      "id": "Workspace|owns|Workspace.members",
-      "from": "Workspace",
-      "to": "Workspace.members",
-      "kind": "owns",
-      "label": "method port",
-      "sourceRefs": [
-        "contracts:Workspace"
-      ],
-      "provenance": "source-backed"
-    },
-    {
       "id": "AgentReader<R>|owns|AgentReader<R>.snapshot",
       "from": "AgentReader<R>",
       "to": "AgentReader<R>.snapshot",
@@ -13859,19 +13566,6 @@
       "label": "method port",
       "sourceRefs": [
         "contracts:OperationHandle"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "Workspace.members|supports|BoundedWorkspaceMemberProjection",
-      "from": "Workspace.members",
-      "to": "BoundedWorkspaceMemberProjection",
-      "kind": "supports",
-      "label": "implemented bounded projection",
-      "sourceRefs": [
-        "contracts:Workspace",
-        "workspace:members",
-        "store:list"
       ],
       "provenance": "source-backed"
     },
@@ -14449,39 +14143,6 @@
       "provenance": "source-backed"
     },
     {
-      "id": "MemberCursor|owns|MemberCursor.workspace",
-      "from": "MemberCursor",
-      "to": "MemberCursor.workspace",
-      "kind": "owns",
-      "label": "field",
-      "sourceRefs": [
-        "contracts:MemberCursor"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "MemberCursor.workspace|references|WorkspaceAddress",
-      "from": "MemberCursor.workspace",
-      "to": "WorkspaceAddress",
-      "kind": "references",
-      "label": "workspace: WorkspaceAddress",
-      "sourceRefs": [
-        "contracts:MemberCursor"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "MemberCursor|owns|MemberCursor.position",
-      "from": "MemberCursor",
-      "to": "MemberCursor.position",
-      "kind": "owns",
-      "label": "field",
-      "sourceRefs": [
-        "contracts:MemberCursor"
-      ],
-      "provenance": "source-backed"
-    },
-    {
       "id": "MessageCursor|owns|MessageCursor.agent",
       "from": "MessageCursor",
       "to": "MessageCursor.agent",
@@ -14537,39 +14198,6 @@
       "provenance": "source-backed"
     },
     {
-      "id": "PageRequest<MemberCursor>|owns|PageRequest<MemberCursor>.after",
-      "from": "PageRequest<MemberCursor>",
-      "to": "PageRequest<MemberCursor>.after",
-      "kind": "owns",
-      "label": "field",
-      "sourceRefs": [
-        "contracts:PageRequest"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "PageRequest<MemberCursor>.after|references|MemberCursor",
-      "from": "PageRequest<MemberCursor>.after",
-      "to": "MemberCursor",
-      "kind": "references",
-      "label": "after: MemberCursor",
-      "sourceRefs": [
-        "contracts:PageRequest"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "PageRequest<MemberCursor>|owns|PageRequest<MemberCursor>.limit",
-      "from": "PageRequest<MemberCursor>",
-      "to": "PageRequest<MemberCursor>.limit",
-      "kind": "owns",
-      "label": "field",
-      "sourceRefs": [
-        "contracts:PageRequest"
-      ],
-      "provenance": "source-backed"
-    },
-    {
       "id": "PageRequest<MessageCursor>|owns|PageRequest<MessageCursor>.after",
       "from": "PageRequest<MessageCursor>",
       "to": "PageRequest<MessageCursor>.after",
@@ -14599,72 +14227,6 @@
       "label": "field",
       "sourceRefs": [
         "contracts:PageRequest"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "MemberPage|owns|MemberPage.members",
-      "from": "MemberPage",
-      "to": "MemberPage.members",
-      "kind": "owns",
-      "label": "field",
-      "sourceRefs": [
-        "contracts:MemberPage"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "MemberPage.members|contains|MemberEntry",
-      "from": "MemberPage.members",
-      "to": "MemberEntry",
-      "kind": "contains",
-      "label": "members: readonly MemberEntry[]",
-      "sourceRefs": [
-        "contracts:MemberPage"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "MemberPage.members|contains|Agent",
-      "from": "MemberPage.members",
-      "to": "Agent",
-      "kind": "contains",
-      "label": "members: readonly MemberEntry[]",
-      "sourceRefs": [
-        "contracts:MemberPage"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "MemberPage.members|contains|AgentSnapshot",
-      "from": "MemberPage.members",
-      "to": "AgentSnapshot",
-      "kind": "contains",
-      "label": "members: readonly MemberEntry[]",
-      "sourceRefs": [
-        "contracts:MemberPage"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "MemberPage|owns|MemberPage.coverage",
-      "from": "MemberPage",
-      "to": "MemberPage.coverage",
-      "kind": "owns",
-      "label": "field",
-      "sourceRefs": [
-        "contracts:MemberPage"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "MemberPage.coverage|contains|MemberCoverage",
-      "from": "MemberPage.coverage",
-      "to": "MemberCoverage",
-      "kind": "contains",
-      "label": "coverage: Readonly<MemberCoverage>",
-      "sourceRefs": [
-        "contracts:MemberPage"
       ],
       "provenance": "source-backed"
     },
@@ -14972,7 +14534,7 @@
       "kind": "owns",
       "label": "field",
       "sourceRefs": [
-        "contracts:MemberPage"
+        "contracts:NativeMemberPage"
       ],
       "provenance": "source-backed"
     },
@@ -14983,7 +14545,7 @@
       "kind": "references",
       "label": "agent: Agent",
       "sourceRefs": [
-        "contracts:MemberPage"
+        "contracts:NativeMemberPage"
       ],
       "provenance": "source-backed"
     },
@@ -14994,7 +14556,7 @@
       "kind": "owns",
       "label": "field",
       "sourceRefs": [
-        "contracts:MemberPage"
+        "contracts:NativeMemberPage"
       ],
       "provenance": "source-backed"
     },
@@ -15005,84 +14567,7 @@
       "kind": "contains",
       "label": "snapshot: AgentSnapshot",
       "sourceRefs": [
-        "contracts:MemberPage"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "MemberCoverage|owns|MemberCoverage.kind",
-      "from": "MemberCoverage",
-      "to": "MemberCoverage.kind",
-      "kind": "owns",
-      "label": "field",
-      "sourceRefs": [
-        "contracts:MemberPage"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "MemberCoverage|owns|MemberCoverage.scanned",
-      "from": "MemberCoverage",
-      "to": "MemberCoverage.scanned",
-      "kind": "owns",
-      "label": "field",
-      "sourceRefs": [
-        "contracts:MemberPage"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "MemberCoverage|owns|MemberCoverage.legacy",
-      "from": "MemberCoverage",
-      "to": "MemberCoverage.legacy",
-      "kind": "owns",
-      "label": "field",
-      "sourceRefs": [
-        "contracts:MemberPage"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "MemberCoverage|owns|MemberCoverage.unavailable",
-      "from": "MemberCoverage",
-      "to": "MemberCoverage.unavailable",
-      "kind": "owns",
-      "label": "field",
-      "sourceRefs": [
-        "contracts:MemberPage"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "MemberCoverage|owns|MemberCoverage.currentComplete",
-      "from": "MemberCoverage",
-      "to": "MemberCoverage.currentComplete",
-      "kind": "owns",
-      "label": "field",
-      "sourceRefs": [
-        "contracts:MemberPage"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "MemberCoverage|owns|MemberCoverage.next",
-      "from": "MemberCoverage",
-      "to": "MemberCoverage.next",
-      "kind": "owns",
-      "label": "field",
-      "sourceRefs": [
-        "contracts:MemberPage"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "MemberCoverage.next|references|MemberCursor",
-      "from": "MemberCoverage.next",
-      "to": "MemberCursor",
-      "kind": "references",
-      "label": "next: MemberCursor | null",
-      "sourceRefs": [
-        "contracts:MemberPage"
+        "contracts:NativeMemberPage"
       ],
       "provenance": "source-backed"
     },
@@ -18469,110 +17954,6 @@
       "provenance": "source-backed"
     },
     {
-      "id": "Workspace.members|accepts|PageRequest<MemberCursor>",
-      "from": "Workspace.members",
-      "to": "PageRequest<MemberCursor>",
-      "kind": "accepts",
-      "label": "page: PageRequest<MemberCursor>",
-      "sourceRefs": [
-        "contracts:Workspace",
-        "workspace:members",
-        "store:list"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "Workspace.members|accepts|CallOptions",
-      "from": "Workspace.members",
-      "to": "CallOptions",
-      "kind": "accepts",
-      "label": "options: CallOptions",
-      "sourceRefs": [
-        "contracts:Workspace",
-        "workspace:members",
-        "store:list"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "Workspace.members|returns|MemberPage",
-      "from": "Workspace.members",
-      "to": "MemberPage",
-      "kind": "returns",
-      "label": "Promise<MemberPage>",
-      "sourceRefs": [
-        "contracts:Workspace",
-        "workspace:members",
-        "store:list"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "Workspace.members|rejects|DomainReferenceError",
-      "from": "Workspace.members",
-      "to": "DomainReferenceError",
-      "kind": "rejects",
-      "label": "may throw/reject; implementation evidence",
-      "sourceRefs": [
-        "contracts:Workspace",
-        "workspace:members",
-        "store:list"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "Workspace.members|rejects|ManagementError",
-      "from": "Workspace.members",
-      "to": "ManagementError",
-      "kind": "rejects",
-      "label": "may throw/reject; implementation evidence",
-      "sourceRefs": [
-        "contracts:Workspace",
-        "workspace:members",
-        "store:list"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "Workspace.members|rejects|ProtocolError",
-      "from": "Workspace.members",
-      "to": "ProtocolError",
-      "kind": "rejects",
-      "label": "may throw/reject; implementation evidence",
-      "sourceRefs": [
-        "contracts:Workspace",
-        "workspace:members",
-        "store:list"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "Workspace.members|rejects|Error",
-      "from": "Workspace.members",
-      "to": "Error",
-      "kind": "rejects",
-      "label": "may throw/reject; implementation evidence",
-      "sourceRefs": [
-        "contracts:Workspace",
-        "workspace:members",
-        "store:list"
-      ],
-      "provenance": "source-backed"
-    },
-    {
-      "id": "Workspace.members|rejects|TypeError",
-      "from": "Workspace.members",
-      "to": "TypeError",
-      "kind": "rejects",
-      "label": "may throw/reject; implementation evidence",
-      "sourceRefs": [
-        "contracts:Workspace",
-        "workspace:members",
-        "store:list"
-      ],
-      "provenance": "source-backed"
-    },
-    {
       "id": "AgentReader<R>.snapshot|accepts|CallOptions",
       "from": "AgentReader<R>.snapshot",
       "to": "CallOptions",
@@ -19608,24 +18989,13 @@
       "provenance": "source-backed"
     },
     {
-      "id": "MemberPage|composes|MemberEntry",
-      "from": "MemberPage",
-      "to": "MemberEntry",
-      "kind": "composes",
-      "label": "handle/value composition, not inheritance",
-      "sourceRefs": [
-        "contracts:MemberPage"
-      ],
-      "provenance": "source-backed"
-    },
-    {
       "id": "MemberEntry|composes|AgentSnapshot",
       "from": "MemberEntry",
       "to": "AgentSnapshot",
       "kind": "composes",
       "label": "handle/value composition, not inheritance",
       "sourceRefs": [
-        "contracts:MemberPage"
+        "contracts:NativeMemberPage"
       ],
       "provenance": "source-backed"
     },
@@ -20024,19 +19394,6 @@
       "provenance": "source-backed"
     },
     {
-      "id": "Workspace.members|calls|Management.agents.list",
-      "from": "Workspace.members",
-      "to": "Management.agents.list",
-      "kind": "calls",
-      "label": "native global page, then SDK projection",
-      "sourceRefs": [
-        "contracts:Workspace",
-        "workspace:members",
-        "store:list"
-      ],
-      "provenance": "source-backed"
-    },
-    {
       "id": "CurrentAgent.send|calls|Management.agents.messages.send",
       "from": "CurrentAgent.send",
       "to": "Management.agents.messages.send",
@@ -20239,8 +19596,8 @@
       "from": "ActorPage"
     },
     {
-      "id": "ActorPage.coverage|references|MemberCoverage",
-      "to": "MemberCoverage",
+      "id": "ActorPage.coverage|references|NativeMemberCoverage",
+      "to": "NativeMemberCoverage",
       "kind": "references",
       "label": "MemberCoverage",
       "sourceRefs": [
@@ -20360,8 +19717,8 @@
       "from": "Office"
     },
     {
-      "id": "Office.members|accepts|PageRequest<MemberCursor>",
-      "to": "PageRequest<MemberCursor>",
+      "id": "Office.members|accepts|NativeMemberRequest",
+      "to": "NativeMemberRequest",
       "kind": "accepts",
       "label": "typed input",
       "sourceRefs": [
@@ -21009,14 +20366,14 @@
       "from": "OfficeRole.role"
     },
     {
-      "id": "Office.members|delegates|Workspace.members",
-      "to": "Workspace.members",
+      "id": "Office.members|delegates|Workspace.memberPage",
+      "to": "Workspace.memberPage",
       "kind": "delegates",
       "label": "proposed SDK method delegation",
       "sourceRefs": [
         "proposal:`Office.members`",
         "contracts:Workspace",
-        "workspace:members",
+        "workspace:memberPage",
         "store:list"
       ],
       "provenance": "proposed",
@@ -22695,17 +22052,6 @@
       "provenance": "source-backed"
     },
     {
-      "id": "MemberCursor|owns|MemberCursor.kind",
-      "kind": "owns",
-      "label": "field",
-      "sourceRefs": [
-        "contracts:MemberCursor"
-      ],
-      "from": "MemberCursor",
-      "to": "MemberCursor.kind",
-      "provenance": "source-backed"
-    },
-    {
       "id": "MessageCursor|owns|MessageCursor.kind",
       "kind": "owns",
       "label": "field",
@@ -22725,31 +22071,6 @@
         "native:Management.Descriptor.supports_workspace_members"
       ],
       "from": "Management.Descriptor",
-      "to": "Management.Descriptor.supports_workspace_members",
-      "provenance": "source-backed"
-    },
-    {
-      "id": "AgentXScope|owns|AgentXScope.supportsWorkspaceMembers",
-      "kind": "owns",
-      "label": "field",
-      "sourceRefs": [
-        "declaration:AgentXScope.supportsWorkspaceMembers",
-        "scope:supportsWorkspaceMembers"
-      ],
-      "from": "AgentXScope",
-      "to": "AgentXScope.supportsWorkspaceMembers",
-      "provenance": "source-backed"
-    },
-    {
-      "id": "AgentXScope.supportsWorkspaceMembers|references|Management.Descriptor.supports_workspace_members",
-      "kind": "references",
-      "label": "true only when advertised",
-      "sourceRefs": [
-        "declaration:AgentXScope.supportsWorkspaceMembers",
-        "scope:supportsWorkspaceMembers",
-        "generated:Management.Descriptor.supports_workspace_members"
-      ],
-      "from": "AgentXScope.supportsWorkspaceMembers",
       "to": "Management.Descriptor.supports_workspace_members",
       "provenance": "source-backed"
     },
@@ -22998,56 +22319,6 @@
       ],
       "from": "NativeMemberPage.coverage",
       "to": "NativeMemberCoverage",
-      "provenance": "source-backed"
-    },
-    {
-      "id": "Workspace.members|references|NativeWorkspaceMembershipPaging",
-      "kind": "references",
-      "label": "native alternative uses a different cursor",
-      "sourceRefs": [
-        "contracts:Workspace.memberPage",
-        "workspace:memberPage",
-        "service:listWorkspaceMembers"
-      ],
-      "from": "Workspace.members",
-      "to": "NativeWorkspaceMembershipPaging",
-      "provenance": "source-backed"
-    },
-    {
-      "id": "NativeWorkspaceMembershipPaging|references|Workspace.members",
-      "kind": "references",
-      "label": "explicit older-listener alternative",
-      "sourceRefs": [
-        "contracts:Workspace.memberPage",
-        "workspace:memberPage"
-      ],
-      "from": "NativeWorkspaceMembershipPaging",
-      "to": "Workspace.members",
-      "provenance": "source-backed"
-    },
-    {
-      "id": "NativeWorkspaceMembershipPaging|references|AgentXScope.supportsWorkspaceMembers",
-      "kind": "references",
-      "label": "check advertised capability",
-      "sourceRefs": [
-        "contracts:Workspace.memberPage",
-        "declaration:AgentXScope.supportsWorkspaceMembers",
-        "scope:supportsWorkspaceMembers"
-      ],
-      "from": "NativeWorkspaceMembershipPaging",
-      "to": "AgentXScope.supportsWorkspaceMembers",
-      "provenance": "source-backed"
-    },
-    {
-      "id": "AgentXScope.supportsWorkspaceMembers|supports|NativeWorkspaceMembershipPaging",
-      "kind": "supports",
-      "label": "true enables native paging",
-      "sourceRefs": [
-        "contracts:Workspace.memberPage",
-        "scope:supportsWorkspaceMembers"
-      ],
-      "from": "AgentXScope.supportsWorkspaceMembers",
-      "to": "NativeWorkspaceMembershipPaging",
       "provenance": "source-backed"
     },
     {
@@ -23302,17 +22573,6 @@
       ],
       "from": "NativeMemberCursor",
       "to": "NativeMemberRequest.after",
-      "provenance": "source-backed"
-    },
-    {
-      "id": "MemberCursor|references|PageRequest<MemberCursor>.after",
-      "kind": "references",
-      "label": "continue the legacy projection",
-      "sourceRefs": [
-        "contracts:MemberCursor"
-      ],
-      "from": "MemberCursor",
-      "to": "PageRequest<MemberCursor>.after",
       "provenance": "source-backed"
     },
     {
@@ -33207,44 +32467,30 @@
       "authority": "declaration"
     },
     {
-      "id": "contracts:MemberCursor",
-      "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 42,
-      "symbol": "export type MemberCursor ",
-      "authority": "declaration"
-    },
-    {
       "id": "contracts:MessageCursor",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 44,
+      "line": 43,
       "symbol": "export type MessageCursor ",
       "authority": "declaration"
     },
     {
       "id": "contracts:PageRequest",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 45,
+      "line": 46,
       "symbol": "export type PageRequest<",
-      "authority": "declaration"
-    },
-    {
-      "id": "contracts:MemberPage",
-      "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 51,
-      "symbol": "export type MemberPage ",
       "authority": "declaration"
     },
     {
       "id": "contracts:Message",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 73,
+      "line": 63,
       "symbol": "export type Message ",
       "authority": "declaration"
     },
     {
       "id": "contracts:MessagePage",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 74,
+      "line": 64,
       "symbol": "export type MessagePage ",
       "authority": "declaration"
     },
@@ -33272,28 +32518,28 @@
     {
       "id": "contracts:CurrentAgent",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 182,
+      "line": 184,
       "symbol": "export interface CurrentAgent",
       "authority": "declaration"
     },
     {
       "id": "contracts:StoppedAgent",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 194,
+      "line": 196,
       "symbol": "export interface StoppedAgent",
       "authority": "declaration"
     },
     {
       "id": "contracts:Agent",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 195,
+      "line": 197,
       "symbol": "export type Agent ",
       "authority": "declaration"
     },
     {
       "id": "contracts:Workspace",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 197,
+      "line": 199,
       "symbol": "export interface Workspace",
       "authority": "declaration"
     },
@@ -33307,7 +32553,7 @@
     {
       "id": "contracts:SelectAgentXScope",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 261,
+      "line": 260,
       "symbol": "export type SelectAgentXScope ",
       "authority": "declaration"
     },
@@ -33349,7 +32595,7 @@
     {
       "id": "native:Descriptor",
       "path": "src/management/contract.rs",
-      "line": 292,
+      "line": 317,
       "symbol": "pub(crate) struct Descriptor {",
       "authority": "native"
     },
@@ -33363,7 +32609,7 @@
     {
       "id": "native:AgentRef",
       "path": "src/management/contract.rs",
-      "line": 119,
+      "line": 129,
       "symbol": "pub(crate) struct AgentRef {",
       "authority": "native"
     },
@@ -33377,126 +32623,126 @@
     {
       "id": "native:AgentView",
       "path": "src/management/contract.rs",
-      "line": 137,
+      "line": 147,
       "symbol": "pub(crate) struct AgentView {",
       "authority": "native"
     },
     {
       "id": "generated:RoleDefinitionView",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 500,
+      "line": 521,
       "symbol": "export type RoleDefinitionView =",
       "authority": "generated"
     },
     {
       "id": "native:RoleDefinitionView",
       "path": "src/management/contract.rs",
-      "line": 200,
+      "line": 213,
       "symbol": "pub(crate) struct RoleDefinitionView {",
       "authority": "native"
     },
     {
       "id": "generated:RoleView",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 512,
+      "line": 533,
       "symbol": "export type RoleView =",
       "authority": "generated"
     },
     {
       "id": "native:RoleView",
       "path": "src/management/contract.rs",
-      "line": 191,
+      "line": 204,
       "symbol": "pub(crate) struct RoleView {",
       "authority": "native"
     },
     {
       "id": "generated:DiscoveryCoverage",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 198,
+      "line": 202,
       "symbol": "export type DiscoveryCoverage =",
       "authority": "generated"
     },
     {
       "id": "native:DiscoveryCoverage",
       "path": "src/management/contract.rs",
-      "line": 222,
+      "line": 235,
       "symbol": "pub(crate) struct DiscoveryCoverage {",
       "authority": "native"
     },
     {
       "id": "generated:WorkspaceView",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 630,
+      "line": 651,
       "symbol": "export type WorkspaceView =",
       "authority": "generated"
     },
     {
       "id": "native:WorkspaceView",
       "path": "src/management/contract.rs",
-      "line": 217,
+      "line": 230,
       "symbol": "pub(crate) struct WorkspaceView {",
       "authority": "native"
     },
     {
       "id": "generated:MessageView",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 368,
+      "line": 389,
       "symbol": "export type MessageView =",
       "authority": "generated"
     },
     {
       "id": "native:MessageView",
       "path": "src/management/contract.rs",
-      "line": 266,
+      "line": 279,
       "symbol": "pub(crate) struct MessageView {",
       "authority": "native"
     },
     {
       "id": "generated:MessageInput",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 341,
+      "line": 362,
       "symbol": "export type MessageInput =",
       "authority": "generated"
     },
     {
       "id": "native:MessageInput",
       "path": "src/management/contract.rs",
-      "line": 376,
+      "line": 404,
       "symbol": "pub(crate) struct MessageInput {",
       "authority": "native"
     },
     {
       "id": "generated:Operation",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 423,
+      "line": 444,
       "symbol": "export type Operation =",
       "authority": "generated"
     },
     {
       "id": "native:Operation",
       "path": "src/management/contract.rs",
-      "line": 491,
+      "line": 520,
       "symbol": "pub(crate) struct Operation {",
       "authority": "native"
     },
     {
       "id": "generated:PublicError",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 439,
+      "line": 460,
       "symbol": "export type PublicError =",
       "authority": "generated"
     },
     {
       "id": "generated:SubmitMessage",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 573,
+      "line": 594,
       "symbol": "export type SubmitMessage =",
       "authority": "generated"
     },
     {
       "id": "native:SubmitMessage",
       "path": "src/management/contract.rs",
-      "line": 409,
+      "line": 437,
       "symbol": "pub(crate) struct SubmitMessage {",
       "authority": "native"
     },
@@ -33510,63 +32756,63 @@
     {
       "id": "native:AgentPage",
       "path": "src/management/contract.rs",
-      "line": 259,
+      "line": 272,
       "symbol": "pub(crate) struct AgentPage {",
       "authority": "native"
     },
     {
       "id": "generated:MessagePage",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 361,
+      "line": 382,
       "symbol": "export type MessagePage =",
       "authority": "generated"
     },
     {
       "id": "native:MessagePage",
       "path": "src/management/contract.rs",
-      "line": 279,
+      "line": 292,
       "symbol": "pub(crate) struct MessagePage {",
       "authority": "native"
     },
     {
       "id": "generated:WorkspaceCatalog",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 624,
+      "line": 645,
       "symbol": "export type WorkspaceCatalog =",
       "authority": "generated"
     },
     {
       "id": "native:WorkspaceCatalog",
       "path": "src/management/contract.rs",
-      "line": 230,
+      "line": 243,
       "symbol": "pub(crate) struct WorkspaceCatalog {",
       "authority": "native"
     },
     {
       "id": "generated:RoleCatalog",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 494,
+      "line": 515,
       "symbol": "export type RoleCatalog =",
       "authority": "generated"
     },
     {
       "id": "native:RoleCatalog",
       "path": "src/management/contract.rs",
-      "line": 236,
+      "line": 249,
       "symbol": "pub(crate) struct RoleCatalog {",
       "authority": "native"
     },
     {
       "id": "generated:ProfileView",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 433,
+      "line": 454,
       "symbol": "export type ProfileView =",
       "authority": "generated"
     },
     {
       "id": "native:ProfileView",
       "path": "src/management/contract.rs",
-      "line": 286,
+      "line": 311,
       "symbol": "pub(crate) struct ProfileView {",
       "authority": "native"
     },
@@ -33580,28 +32826,28 @@
     {
       "id": "native:CollaborationView",
       "path": "src/management/contract.rs",
-      "line": 209,
+      "line": 222,
       "symbol": "pub(crate) struct CollaborationView {",
       "authority": "native"
     },
     {
       "id": "generated:FileBindingView",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 242,
+      "line": 246,
       "symbol": "export type FileBindingView =",
       "authority": "generated"
     },
     {
       "id": "native:FileBindingView",
       "path": "src/management/contract.rs",
-      "line": 126,
+      "line": 136,
       "symbol": "pub(crate) struct FileBindingView {",
       "authority": "native"
     },
     {
       "id": "generated:RequestError",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 483,
+      "line": 504,
       "symbol": "export type RequestError =",
       "authority": "generated"
     },
@@ -33615,7 +32861,7 @@
     {
       "id": "native:Attachment",
       "path": "src/management/contract.rs",
-      "line": 362,
+      "line": 390,
       "symbol": "pub(crate) struct Attachment {",
       "authority": "native"
     },
@@ -33629,168 +32875,168 @@
     {
       "id": "native:CommandResult",
       "path": "src/management/contract.rs",
-      "line": 474,
+      "line": 503,
       "symbol": "pub(crate) enum CommandResult {",
       "authority": "native"
     },
     {
       "id": "generated:OperationStatus",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 431,
+      "line": 452,
       "symbol": "export type OperationStatus =",
       "authority": "generated"
     },
     {
       "id": "native:OperationStatus",
       "path": "src/management/contract.rs",
-      "line": 483,
+      "line": 512,
       "symbol": "pub(crate) enum OperationStatus {",
       "authority": "native"
     },
     {
       "id": "generated:ErrorCode",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 224,
+      "line": 228,
       "symbol": "export type ErrorCode =",
       "authority": "generated"
     },
     {
       "id": "generated:LaunchOutcome",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 319,
+      "line": 323,
       "symbol": "export type LaunchOutcome =",
       "authority": "generated"
     },
     {
       "id": "native:LaunchOutcome",
       "path": "src/management/contract.rs",
-      "line": 438,
+      "line": 466,
       "symbol": "pub(crate) struct LaunchOutcome {",
       "authority": "native"
     },
     {
       "id": "generated:LabelsOutcome",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 289,
+      "line": 293,
       "symbol": "export type LabelsOutcome =",
       "authority": "generated"
     },
     {
       "id": "native:LabelsOutcome",
       "path": "src/management/contract.rs",
-      "line": 356,
+      "line": 384,
       "symbol": "pub(crate) struct LabelsOutcome {",
       "authority": "native"
     },
     {
       "id": "generated:SendOutcome",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 521,
+      "line": 542,
       "symbol": "export type SendOutcome =",
       "authority": "generated"
     },
     {
       "id": "native:SendOutcome",
       "path": "src/management/contract.rs",
-      "line": 448,
+      "line": 476,
       "symbol": "pub(crate) struct SendOutcome {",
       "authority": "native"
     },
     {
       "id": "generated:DirectorySendOutcome",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 191,
+      "line": 195,
       "symbol": "export type DirectorySendOutcome =",
       "authority": "generated"
     },
     {
       "id": "native:DirectorySendOutcome",
       "path": "src/management/contract.rs",
-      "line": 424,
+      "line": 452,
       "symbol": "pub(crate) struct DirectorySendOutcome {",
       "authority": "native"
     },
     {
       "id": "generated:StopOutcome",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 544,
+      "line": 565,
       "symbol": "export type StopOutcome =",
       "authority": "generated"
     },
     {
       "id": "native:StopOutcome",
       "path": "src/management/contract.rs",
-      "line": 453,
+      "line": 481,
       "symbol": "pub(crate) struct StopOutcome {",
       "authority": "native"
     },
     {
       "id": "generated:TranscriptPage",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 586,
+      "line": 607,
       "symbol": "export type TranscriptPage =",
       "authority": "generated"
     },
     {
       "id": "native:TranscriptPage",
       "path": "src/management/contract.rs",
-      "line": 467,
+      "line": 495,
       "symbol": "pub(crate) struct TranscriptPage {",
       "authority": "native"
     },
     {
       "id": "generated:LabelsSnapshot",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 297,
+      "line": 301,
       "symbol": "export type LabelsSnapshot =",
       "authority": "generated"
     },
     {
       "id": "native:LabelsSnapshot",
       "path": "src/management/contract.rs",
-      "line": 326,
+      "line": 354,
       "symbol": "pub(crate) struct LabelsSnapshot {",
       "authority": "native"
     },
     {
       "id": "generated:DirectoryEntry",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 182,
+      "line": 186,
       "symbol": "export type DirectoryEntry =",
       "authority": "generated"
     },
     {
       "id": "native:DirectoryEntry",
       "path": "src/management/contract.rs",
-      "line": 250,
+      "line": 263,
       "symbol": "pub(crate) struct DirectoryEntry {",
       "authority": "native"
     },
     {
       "id": "generated:ExchangeView",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 230,
+      "line": 234,
       "symbol": "export type ExchangeView =",
       "authority": "generated"
     },
     {
       "id": "native:ExchangeView",
       "path": "src/management/contract.rs",
-      "line": 458,
+      "line": 486,
       "symbol": "pub(crate) struct ExchangeView {",
       "authority": "native"
     },
     {
       "id": "generated:EndpointView",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 206,
+      "line": 210,
       "symbol": "export type EndpointView =",
       "authority": "generated"
     },
     {
       "id": "native:EndpointView",
       "path": "src/management/contract.rs",
-      "line": 242,
+      "line": 255,
       "symbol": "pub(crate) struct EndpointView {",
       "authority": "native"
     },
@@ -33851,13 +33097,6 @@
       "authority": "implementation"
     },
     {
-      "id": "workspace:members",
-      "path": "packages/agentx-client/src/domain/workspace.ts",
-      "line": 38,
-      "symbol": "async members(page: PageRequest<MemberCursor>",
-      "authority": "implementation"
-    },
-    {
       "id": "store:list",
       "path": "src/management/store.rs",
       "line": 236,
@@ -33867,14 +33106,14 @@
     {
       "id": "agent:prepareMessage",
       "path": "packages/agentx-client/src/domain/agent.ts",
-      "line": 117,
+      "line": 134,
       "symbol": "prepareMessage(message: ReadonlyValue<MessageInput>, id: string)",
       "authority": "implementation"
     },
     {
       "id": "agent:send",
       "path": "packages/agentx-client/src/domain/agent.ts",
-      "line": 127,
+      "line": 144,
       "symbol": "async send(prepared: PreparedMessage, options?: CallOptions)",
       "authority": "implementation"
     },
@@ -33902,14 +33141,14 @@
     {
       "id": "native:ListAgentsInput",
       "path": "src/management/contract.rs",
-      "line": 78,
+      "line": 88,
       "symbol": "pub(crate) struct ListAgentsInput {",
       "authority": "native"
     },
     {
       "id": "management:ManagementClient",
       "path": "packages/agentx-client/src/management.ts",
-      "line": 21,
+      "line": 22,
       "symbol": "ManagementClient",
       "authority": "implementation"
     },
@@ -33923,7 +33162,7 @@
     {
       "id": "generated:ManagementListAgentsData",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 635,
+      "line": 656,
       "symbol": "export type ManagementListAgentsData =",
       "authority": "generated"
     },
@@ -34043,14 +33282,14 @@
       "id": "space:exact-key",
       "path": "web/agent-space/src/offline/model.ts",
       "symbol": "function exactAgentKey",
-      "line": 57,
+      "line": 78,
       "authority": "implementation"
     },
     {
       "id": "space:adoption",
       "path": "web/agent-space/src/offline/model.ts",
       "symbol": "export type AdoptedRole",
-      "line": 7,
+      "line": 10,
       "authority": "implementation"
     },
     {
@@ -34078,35 +33317,35 @@
       "id": "space:selection",
       "path": "web/agent-space/src/offline/controller.ts",
       "symbol": "select = (id: string) => this.openConversation",
-      "line": 87,
+      "line": 90,
       "authority": "implementation"
     },
     {
       "id": "space:close",
       "path": "web/agent-space/src/offline/controller.ts",
       "symbol": "close = () => {",
-      "line": 99,
+      "line": 107,
       "authority": "implementation"
     },
     {
       "id": "space:edit",
       "path": "web/agent-space/src/offline/controller.ts",
       "symbol": "writeDraft = (id: string, text: string)",
-      "line": 120,
+      "line": 128,
       "authority": "implementation"
     },
     {
       "id": "space:read",
       "path": "web/agent-space/src/live/domain-office.ts",
-      "symbol": "private async readMessages(reader: ExactReader",
-      "line": 191,
+      "symbol": "private async openHistory(reader: ExactReader",
+      "line": 197,
       "authority": "implementation"
     },
     {
       "id": "space:epoch",
       "path": "web/agent-space/src/live/domain-office.ts",
       "symbol": "if (reader.pending || signal.aborted) return;",
-      "line": 193,
+      "line": 199,
       "authority": "implementation"
     },
     {
@@ -34120,21 +33359,21 @@
       "id": "space:blocked",
       "path": "web/agent-space/src/live/controller.ts",
       "symbol": "blocked(key: string, kind?: Kind)",
-      "line": 414,
+      "line": 411,
       "authority": "implementation"
     },
     {
       "id": "space:eligibility",
       "path": "web/agent-space/src/conversation/Conversation.tsx",
       "symbol": "const canCompose =",
-      "line": 46,
+      "line": 53,
       "authority": "implementation"
     },
     {
       "id": "space:size",
       "path": "web/agent-space/src/conversation/Conversation.tsx",
       "symbol": "const validSize =",
-      "line": 50,
+      "line": 57,
       "authority": "implementation"
     },
     {
@@ -34273,21 +33512,21 @@
     {
       "id": "contracts:AgentCursor",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 43,
+      "line": 42,
       "symbol": "export type AgentCursor ",
       "authority": "declaration"
     },
     {
       "id": "contracts:ScopeAgentPage",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 46,
+      "line": 47,
       "symbol": "export type ScopeAgentPage ",
       "authority": "declaration"
     },
     {
       "id": "contracts:AgentXScope.agents",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 245,
+      "line": 244,
       "symbol": "agents(page?: PageRequest<AgentCursor>",
       "authority": "declaration"
     },
@@ -34308,70 +33547,56 @@
     {
       "id": "generated:Management.Descriptor.supports_workspace_members",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 178,
+      "line": 182,
       "symbol": "supports_workspace_members?: boolean;",
       "authority": "generated"
     },
     {
       "id": "native:Management.Descriptor.supports_workspace_members",
       "path": "src/management/contract.rs",
-      "line": 299,
+      "line": 324,
       "symbol": "pub supports_workspace_members: bool,",
       "authority": "native"
     },
     {
-      "id": "declaration:AgentXScope.supportsWorkspaceMembers",
-      "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 239,
-      "symbol": "readonly supportsWorkspaceMembers: boolean;",
-      "authority": "declaration"
-    },
-    {
-      "id": "scope:supportsWorkspaceMembers",
-      "path": "packages/agentx-client/src/domain/index.ts",
-      "line": 30,
-      "symbol": "const supportsWorkspaceMembers = descriptor.supports_workspace_members === true;",
-      "authority": "implementation"
-    },
-    {
       "id": "workspace:unsupportedMembers",
-      "path": "packages/agentx-client/src/domain/workspace.ts",
-      "line": 70,
-      "symbol": "'UnsupportedCapability', 'Selected listener does not advertise",
+      "path": "packages/agentx-client/src/domain/index.ts",
+      "line": 87,
+      "symbol": "throw new DomainReferenceError('UnsupportedCapability',",
       "authority": "implementation"
     },
     {
       "id": "contracts:NativeMemberCursor",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 62,
+      "line": 52,
       "symbol": "export type NativeMemberCursor ",
       "authority": "declaration"
     },
     {
       "id": "contracts:NativeMemberRequest",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 63,
+      "line": 53,
       "symbol": "export type NativeMemberRequest ",
       "authority": "declaration"
     },
     {
       "id": "declaration:NativeMemberPage.coverage.kind",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 67,
+      "line": 57,
       "symbol": "kind: 'native-workspace-members';",
       "authority": "declaration"
     },
     {
       "id": "declaration:NativeMemberPage.coverage.next",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 70,
+      "line": 60,
       "symbol": "next: NativeMemberCursor | null;",
       "authority": "declaration"
     },
     {
       "id": "contracts:NativeMemberPage",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 64,
+      "line": 54,
       "symbol": "export type NativeMemberPage ",
       "authority": "declaration"
     },
@@ -34385,7 +33610,7 @@
     {
       "id": "workspace:memberPage",
       "path": "packages/agentx-client/src/domain/workspace.ts",
-      "line": 69,
+      "line": 38,
       "symbol": "async memberPage(page: NativeMemberRequest",
       "authority": "implementation"
     },
@@ -34399,105 +33624,105 @@
     {
       "id": "generated:ManagementListWorkspaceMembersData",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 1610,
+      "line": 1682,
       "symbol": "export type ManagementListWorkspaceMembersData =",
       "authority": "generated"
     },
     {
       "id": "native:ListWorkspaceMembersInput",
       "path": "src/management/contract.rs",
-      "line": 91,
+      "line": 101,
       "symbol": "pub(crate) struct ListWorkspaceMembersInput {",
       "authority": "native"
     },
     {
       "id": "management:workspaces.members",
       "path": "packages/agentx-client/src/management.ts",
-      "line": 24,
+      "line": 25,
       "symbol": "members(input: Query<M.ManagementListWorkspaceMembersData>",
       "authority": "implementation"
     },
     {
       "id": "contracts:AgentXScope.verify",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 241,
+      "line": 240,
       "symbol": "verify(options?: CallOptions): Promise<ReadonlyValue<Descriptor>>;",
       "authority": "declaration"
     },
     {
       "id": "scope:verify",
       "path": "packages/agentx-client/src/domain/index.ts",
-      "line": 60,
+      "line": 59,
       "symbol": "async verify(opts)",
       "authority": "implementation"
     },
     {
       "id": "contracts:Transcript",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 82,
+      "line": 80,
       "symbol": "export type Transcript ",
       "authority": "declaration"
     },
     {
       "id": "contracts:LaunchRelationCursor",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 94,
+      "line": 92,
       "symbol": "export type LaunchRelationCursor ",
       "authority": "declaration"
     },
     {
       "id": "contracts:RelatedConversation",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 87,
+      "line": 85,
       "symbol": "export type RelatedConversation ",
       "authority": "declaration"
     },
     {
       "id": "contracts:LaunchRelationsPage",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 95,
+      "line": 93,
       "symbol": "export type LaunchRelationsPage ",
       "authority": "declaration"
     },
     {
       "id": "contracts:AgentReader<R>.launchRelations",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 173,
+      "line": 175,
       "symbol": "launchRelations(page?: PageRequest<LaunchRelationCursor>",
       "authority": "declaration"
     },
     {
       "id": "agent:launchRelations",
       "path": "packages/agentx-client/src/domain/agent.ts",
-      "line": 87,
+      "line": 104,
       "symbol": "async launchRelations(page: PageRequest<LaunchRelationCursor>",
       "authority": "implementation"
     },
     {
       "id": "generated:RelatedAgent",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 464,
+      "line": 485,
       "symbol": "export type RelatedAgent =",
       "authority": "generated"
     },
     {
       "id": "native:RelatedAgent",
       "path": "src/management/contract.rs",
-      "line": 171,
+      "line": 181,
       "symbol": "pub(crate) struct RelatedAgent {",
       "authority": "native"
     },
     {
       "id": "generated:LaunchRelations",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 330,
+      "line": 334,
       "symbol": "export type LaunchRelations =",
       "authority": "generated"
     },
     {
       "id": "native:LaunchRelations",
       "path": "src/management/contract.rs",
-      "line": 181,
+      "line": 191,
       "symbol": "pub(crate) struct LaunchRelations {",
       "authority": "native"
     },
@@ -34588,14 +33813,14 @@
     {
       "id": "generated:LaunchInput",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 306,
+      "line": 310,
       "symbol": "export type LaunchInput =",
       "authority": "generated"
     },
     {
       "id": "native:LaunchInput",
       "path": "src/management/contract.rs",
-      "line": 310,
+      "line": 338,
       "symbol": "pub(crate) struct LaunchInput {",
       "authority": "native"
     },
@@ -34630,28 +33855,28 @@
     {
       "id": "generated:Management.LaunchOutcome.agent_refs",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 324,
+      "line": 328,
       "symbol": "agent_refs?: Array<AgentRef> | null;",
       "authority": "generated"
     },
     {
       "id": "native:Management.LaunchOutcome.agent_refs",
       "path": "src/management/contract.rs",
-      "line": 445,
+      "line": 473,
       "symbol": "pub agent_refs: Option<Vec<AgentRef>>,",
       "authority": "native"
     },
     {
       "id": "generated:SubmitLabels",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 556,
+      "line": 577,
       "symbol": "export type SubmitLabels =",
       "authority": "generated"
     },
     {
       "id": "native:SubmitLabels",
       "path": "src/management/contract.rs",
-      "line": 345,
+      "line": 373,
       "symbol": "pub(crate) struct SubmitLabels {",
       "authority": "native"
     },
@@ -34700,210 +33925,210 @@
     {
       "id": "contracts:AgentXScope.operation.prepared",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 249,
+      "line": 248,
       "symbol": "operation<K extends OperationKind>(prepared:",
       "authority": "declaration"
     },
     {
       "id": "contracts:AgentXScope.operation.send",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 250,
+      "line": 249,
       "symbol": "operation(prepared: PreparedMessage):",
       "authority": "declaration"
     },
     {
       "id": "contracts:AgentXScope.operation.union",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 251,
+      "line": 250,
       "symbol": "operation(prepared: PreparedOperation | PreparedMessage):",
       "authority": "declaration"
     },
     {
       "id": "contracts:AgentXScope.operation.address",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 252,
+      "line": 251,
       "symbol": "operation(address: OperationAddress):",
       "authority": "declaration"
     },
     {
       "id": "contracts:AgentReader<R>.prepareTranscript",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 174,
+      "line": 176,
       "symbol": "prepareTranscript(requestId:",
       "authority": "declaration"
     },
     {
       "id": "contracts:AgentReader<R>.requestTranscript",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 176,
+      "line": 178,
       "symbol": "requestTranscript(prepared: PreparedOperation<'transcript'>",
       "authority": "declaration"
     },
     {
       "id": "agent:prepareTranscript",
       "path": "packages/agentx-client/src/domain/agent.ts",
-      "line": 101,
+      "line": 118,
       "symbol": "prepareTranscript: (id: string) => prepareTarget",
       "authority": "implementation"
     },
     {
       "id": "agent:requestTranscript",
       "path": "packages/agentx-client/src/domain/agent.ts",
-      "line": 102,
+      "line": 119,
       "symbol": "requestTranscript: (prepared: PreparedOperation<'transcript'>",
       "authority": "implementation"
     },
     {
       "id": "contracts:AgentReader<R>.prepareResume",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 177,
+      "line": 179,
       "symbol": "prepareResume(requestId:",
       "authority": "declaration"
     },
     {
       "id": "contracts:AgentReader<R>.resume",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 178,
+      "line": 180,
       "symbol": "resume(prepared: PreparedOperation<'resume'>",
       "authority": "declaration"
     },
     {
       "id": "agent:prepareResume",
       "path": "packages/agentx-client/src/domain/agent.ts",
-      "line": 103,
+      "line": 120,
       "symbol": "prepareResume: (id: string) => prepareTarget",
       "authority": "implementation"
     },
     {
       "id": "agent:resume",
       "path": "packages/agentx-client/src/domain/agent.ts",
-      "line": 104,
+      "line": 121,
       "symbol": "resume: (prepared: PreparedOperation<'resume'>",
       "authority": "implementation"
     },
     {
       "id": "contracts:AgentReader<R>.prepareFork",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 179,
+      "line": 181,
       "symbol": "prepareFork(requestId:",
       "authority": "declaration"
     },
     {
       "id": "contracts:AgentReader<R>.fork",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 180,
+      "line": 182,
       "symbol": "fork(prepared: PreparedOperation<'fork'>",
       "authority": "declaration"
     },
     {
       "id": "agent:prepareFork",
       "path": "packages/agentx-client/src/domain/agent.ts",
-      "line": 105,
+      "line": 122,
       "symbol": "prepareFork: (id: string) => prepareTarget",
       "authority": "implementation"
     },
     {
       "id": "agent:fork",
       "path": "packages/agentx-client/src/domain/agent.ts",
-      "line": 106,
+      "line": 123,
       "symbol": "fork: (prepared: PreparedOperation<'fork'>",
       "authority": "implementation"
     },
     {
       "id": "contracts:CurrentAgent.prepareKill",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 186,
+      "line": 188,
       "symbol": "prepareKill(requestId:",
       "authority": "declaration"
     },
     {
       "id": "contracts:CurrentAgent.kill",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 187,
+      "line": 189,
       "symbol": "kill(prepared: PreparedOperation<'kill'>",
       "authority": "declaration"
     },
     {
       "id": "agent:prepareKill",
       "path": "packages/agentx-client/src/domain/agent.ts",
-      "line": 133,
+      "line": 150,
       "symbol": "prepareKill: (id: string) => prepareTarget",
       "authority": "implementation"
     },
     {
       "id": "agent:kill",
       "path": "packages/agentx-client/src/domain/agent.ts",
-      "line": 134,
+      "line": 151,
       "symbol": "kill: (prepared: PreparedOperation<'kill'>",
       "authority": "implementation"
     },
     {
       "id": "contracts:CurrentAgent.prepareStopParticipation",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 188,
+      "line": 190,
       "symbol": "prepareStopParticipation(requestId:",
       "authority": "declaration"
     },
     {
       "id": "contracts:CurrentAgent.stopParticipation",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 189,
+      "line": 191,
       "symbol": "stopParticipation(prepared: PreparedOperation<'stop-participation'>",
       "authority": "declaration"
     },
     {
       "id": "agent:prepareStopParticipation",
       "path": "packages/agentx-client/src/domain/agent.ts",
-      "line": 135,
+      "line": 152,
       "symbol": "prepareStopParticipation: (id: string) => prepareTarget",
       "authority": "implementation"
     },
     {
       "id": "agent:stopParticipation",
       "path": "packages/agentx-client/src/domain/agent.ts",
-      "line": 136,
+      "line": 153,
       "symbol": "stopParticipation: (prepared: PreparedOperation<'stop-participation'>",
       "authority": "implementation"
     },
     {
       "id": "contracts:CurrentAgent.prepareLabelsPatch",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 191,
+      "line": 193,
       "symbol": "prepareLabelsPatch(patch: LabelsPatch",
       "authority": "declaration"
     },
     {
       "id": "contracts:CurrentAgent.patchLabels",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 192,
+      "line": 194,
       "symbol": "patchLabels(prepared: PreparedOperation<'patch-labels'>",
       "authority": "declaration"
     },
     {
       "id": "agent:prepareLabelsPatch",
       "path": "packages/agentx-client/src/domain/agent.ts",
-      "line": 138,
+      "line": 155,
       "symbol": "prepareLabelsPatch(patch: LabelsPatch, id: string)",
       "authority": "implementation"
     },
     {
       "id": "agent:patchLabels",
       "path": "packages/agentx-client/src/domain/agent.ts",
-      "line": 143,
+      "line": 160,
       "symbol": "async patchLabels(prepared: PreparedOperation<'patch-labels'>",
       "authority": "implementation"
     },
     {
       "id": "contracts:CurrentAgent.labels",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 190,
+      "line": 192,
       "symbol": "labels(options?: CallOptions): Promise<AgentLabels>;",
       "authority": "declaration"
     },
     {
       "id": "agent:labels",
       "path": "packages/agentx-client/src/domain/agent.ts",
-      "line": 137,
+      "line": 154,
       "symbol": "labels: async (options?: CallOptions) => projectLabels",
       "authority": "implementation"
     },
@@ -34931,7 +34156,7 @@
     {
       "id": "contracts:AgentXScope.prepareLaunch",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 253,
+      "line": 252,
       "symbol": "prepareLaunch(launch: LaunchDraft,",
       "authority": "declaration"
     },
@@ -35008,28 +34233,28 @@
     {
       "id": "generated:HumanMessage",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 280,
+      "line": 284,
       "symbol": "export type HumanMessage =",
       "authority": "generated"
     },
     {
       "id": "native:HumanMessage",
       "path": "src/management/contract.rs",
-      "line": 516,
+      "line": 545,
       "symbol": "pub(crate) struct HumanMessage {",
       "authority": "native"
     },
     {
       "id": "generated:HumanMailbox",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 270,
+      "line": 274,
       "symbol": "export type HumanMailbox =",
       "authority": "generated"
     },
     {
       "id": "native:HumanMailbox",
       "path": "src/management/contract.rs",
-      "line": 528,
+      "line": 557,
       "symbol": "pub(crate) struct HumanMailbox {",
       "authority": "native"
     },
@@ -35113,28 +34338,28 @@
     {
       "id": "generated:OfficeMessage",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 414,
+      "line": 435,
       "symbol": "export type OfficeMessage =",
       "authority": "generated"
     },
     {
       "id": "native:OfficeMessage",
       "path": "src/management/contract.rs",
-      "line": 544,
+      "line": 573,
       "symbol": "pub(crate) struct OfficeMessage {",
       "authority": "native"
     },
     {
       "id": "generated:OfficeActivity",
       "path": "packages/agentx-client/src/generated/management/types.gen.ts",
-      "line": 400,
+      "line": 421,
       "symbol": "export type OfficeActivity =",
       "authority": "generated"
     },
     {
       "id": "native:OfficeActivity",
       "path": "src/management/contract.rs",
-      "line": 553,
+      "line": 582,
       "symbol": "pub(crate) struct OfficeActivity {",
       "authority": "native"
     },
@@ -35148,89 +34373,33 @@
     {
       "id": "contracts:AgentXScope.officeActivity",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 259,
+      "line": 258,
       "symbol": "officeActivity(page?: PageRequest<OfficeActivityCursor>",
       "authority": "declaration"
     },
     {
       "id": "declaration:AgentXScope.attachments",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 255,
+      "line": 254,
       "symbol": "readonly attachments: Attachments;",
       "authority": "declaration"
     },
     {
       "id": "declaration:AgentXScope.inbox",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 256,
+      "line": 255,
       "symbol": "readonly inbox: HumanInbox;",
       "authority": "declaration"
     },
     {
       "id": "declaration:AgentXScope.directory",
       "path": "packages/agentx-client/src/domain/contracts.ts",
-      "line": 257,
+      "line": 256,
       "symbol": "readonly directory: DirectoryRoutes;",
       "authority": "declaration"
     }
   ],
   "scenarios": [
-    {
-      "id": "members",
-      "name": "Workspace membership and continuation",
-      "summary": "Trace typed request, result rows, snapshot, coverage and explicit continuation; distinguish bounded SDK projection from deferred native paging.",
-      "steps": [
-        {
-          "label": "Select a pinned scope",
-          "nodeIds": [
-            "SelectAgentXScope.selectAgentXScope",
-            "ScopeSelection",
-            "AgentXScope",
-            "ScopeAddress"
-          ]
-        },
-        {
-          "label": "Address Workspace",
-          "nodeIds": [
-            "AgentXScope.workspace",
-            "Workspace",
-            "WorkspaceAddress"
-          ]
-        },
-        {
-          "label": "Supply page request",
-          "nodeIds": [
-            "Workspace.members",
-            "PageRequest<MemberCursor>",
-            "MemberCursor"
-          ]
-        },
-        {
-          "label": "Read one projected page",
-          "nodeIds": [
-            "MemberPage",
-            "MemberEntry",
-            "Agent",
-            "AgentSnapshot",
-            "Membership"
-          ]
-        },
-        {
-          "label": "Inspect coverage before continuing",
-          "nodeIds": [
-            "MemberCoverage",
-            "MemberCoverage.next",
-            "MemberCursor",
-            "BoundedWorkspaceMemberProjection",
-            "NativeWorkspaceMembershipPaging"
-          ]
-        }
-      ],
-      "sourceRefs": [
-        "semantic:AgentX TypeScript domain objects"
-      ],
-      "provenance": "source-backed"
-    },
     {
       "id": "send",
       "name": "Prepare, send and reconcile the original Operation",
@@ -35379,7 +34548,7 @@
             "Office.members",
             "ActorPage",
             "ActorPage.coverage",
-            "MemberCoverage.next"
+            "NativeMemberCoverage.next"
           ]
         },
         {
@@ -35489,13 +34658,14 @@
     {
       "id": "native-members",
       "provenance": "source-backed",
-      "name": "Native members",
-      "summary": "Check the advertised capability, then continue a native-filtered member page with its own cursor.",
+      "name": "Workspace membership and continuation",
+      "summary": "Select a listener with the required read capabilities, then continue a native workspace page using its exact selector.",
       "steps": [
         {
-          "label": "Check the selected listener’s descriptor",
+          "label": "Admit a current Management listener",
           "nodeIds": [
-            "AgentXScope.supportsWorkspaceMembers",
+            "SelectAgentXScope.selectAgentXScope",
+            "AgentXScope",
             "Management.Descriptor.supports_workspace_members"
           ]
         },

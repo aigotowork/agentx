@@ -11,6 +11,14 @@ export class DomainReferenceError extends Error {
   }
 }
 
+/** A response was observed for a different database generation than the selected Scope. */
+export class DomainGenerationMismatch extends DomainReferenceError {
+  constructor() {
+    super('InconsistentResponse', 'Response does not match the selected generation');
+    this.name = 'DomainGenerationMismatch';
+  }
+}
+
 export function normalizeListener(baseUrl: string): string {
   const url = new URL(baseUrl);
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) {
@@ -27,7 +35,7 @@ export function requireScope(actual: ScopeAddress, expected: ScopeAddress): void
 
 export function requireGeneration(generation: string, scope: ScopeAddress): void {
   if (generation !== scope.generation) {
-    throw new DomainReferenceError('InconsistentResponse', 'Response does not match the selected generation');
+    throw new DomainGenerationMismatch();
   }
 }
 

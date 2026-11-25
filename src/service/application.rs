@@ -19,6 +19,7 @@ pub(crate) struct SqliteApplication {
 
 impl SqliteApplication {
     pub(crate) fn new(mut db: AgentxDb, generation: DatabaseGeneration) -> ServiceResult<Self> {
+        super::maintenance_store::publish_dev_root(&db)?;
         let committed = db.database_generation().map_err(|error| ServiceError::Internal(error.to_string()))?;
         generation.publish(committed).map_err(|error| ServiceError::Unavailable(error.to_string()))?;
         if std::env::var_os("AGENTX_ASYNC_EVENT_OBSERVERS").as_deref() == Some(std::ffi::OsStr::new("1")) && db.enable_observer_hints(generation.clone()).is_err() {
@@ -103,7 +104,7 @@ impl Application for SqliteApplication {
             return Err(ServiceError::Unavailable("database generation mirror is inconsistent".into()));
         }
         if committed != context.database_generation || context.caller.expected_database_generation.as_ref().is_some_and(|expected| expected != &committed) {
-            return Err(ServiceError::StaleFence);
+            return Err(ServiceError::StaleGeneration);
         }
         let reminders_changed = matches!(&request, Request::Events(crate::events::service::Request::CreateReminder { .. })) || matches!(&request, Request::Events(crate::events::service::Request::Unsubscribe { id }) if id.starts_with("rem-"));
         let result = match request {
@@ -134,6 +135,7 @@ impl Application for SqliteApplication {
                 return Err(ServiceError::Unavailable(error.to_string()));
             }
             self.reminders.after_reset();
+            super::maintenance_store::publish_dev_root(&self.db).map_err(|error| ServiceError::OutcomeUnknown(format!("data changed but its local dev-root selector could not be refreshed: {error}")))?;
         } else if reminders_changed && result.is_ok() {
             self.reminders.invalidate();
         }

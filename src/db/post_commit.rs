@@ -220,7 +220,9 @@ mod tests {
         .unwrap();
         let head = journal.describe().unwrap();
         assert_eq!(head.newest, 1);
-        let result = journal.read(ObservationRead { window: ObservationWindow { after: ObservationCursor { stream: head.stream, sequence: 0 }, through: 1, filter: ObservationFilter::default() }, limit: 10 }).unwrap();
+        let result = journal
+            .read(ObservationRead { window: ObservationWindow { after: ObservationCursor { stream: head.stream, sequence: 0 }, through: 1, filter: ObservationFilter::default() }, limit: 10 }, crate::observability::events::MAX_PAGE_BYTES)
+            .unwrap();
         let ObservationReadResult::Page(page) = result else {
             panic!("expected committed page");
         };

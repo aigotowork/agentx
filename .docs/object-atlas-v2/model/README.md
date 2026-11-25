@@ -23,7 +23,7 @@ last_updated: 2026-11-21
 
 See the tool’s [model authoring guide](../../../tools/contract-canvas/docs/model.md) for portable types, field anchors, edges and provenance; its [maintenance guide](../../../tools/contract-canvas/docs/maintenance.md) documents the generated browser API. AgentX uses the same contract and adds the conventions below.
 
-Node IDs use public type names (`MemberPage`, `OperationReceipt`) or stable specialized names (`PageRequest<MemberCursor>`, `PreparedOperation<'launch'>`). Method node IDs use `Owner.method`. Overloads share the original method anchor and display the exact declaration signatures, with distinct clickable input and output types. `SelectAgentXScope.selectAgentXScope` represents the public function as a port. Selected underlying HTTP adapter ports keep their `Management.*` IDs, and generated native DTOs retain their existing names. Generic specializations explicitly link to their base shapes; none adds a public SDK export.
+Node IDs use public type names (`NativeMemberPage`, `OperationReceipt`) or stable specialized names (`NativeMemberRequest`, `PreparedOperation<'launch'>`). Method node IDs use `Owner.method`. Overloads share the original method anchor and display the exact declaration signatures, with distinct clickable input and output types. `SelectAgentXScope.selectAgentXScope` represents the public function as a port. Selected underlying HTTP adapter ports keep their `Management.*` IDs, and generated native DTOs retain their existing names. Generic specializations explicitly link to their base shapes; none adds a public SDK export.
 
 The AgentX checker resolves evidence paths relative to the repository root and verifies the recorded source lines. A rejected SDK observation is distinct from a native `Failed` or `Unknown` receipt value. The model captures both through their actual contract identities.
 
@@ -44,7 +44,7 @@ In the proposal, application-owned receivers and state are available through imp
 
 | Caller question | Directed navigation |
 | --- | --- |
-| What does the Workspace page include? | `Workspace.memberPage` → `NativeMemberPage.coverage` → `NativeMemberCoverage.next` → `NativeMemberCursor`; the older `Workspace.members` uses `MemberCursor` and reports the global scan. |
+| What does the Workspace page include? | `Workspace.memberPage` → `NativeMemberPage.coverage` → `NativeMemberCoverage.next` → `NativeMemberCursor`. |
 | What is adopted versus observed? | `AgentSnapshot.membership` → adopted / legacy / unavailable; `AdoptedRole` records launch time and `RoleDefinition` records the current catalog. |
 | Which conversation record am I reading? | `CurrentAgent.messages` → `MessagePage.checkpoint` for AgentX events; `requestTranscript` → typed receipt → `Transcript` for a bounded Provider observation with no continuation. Both are also available on an exact stopped handle. |
 | Can I navigate a recorded launch relation? | `launchRelations` → `RelatedConversation` → `creation` is the historical identity; optional `agent` → `AgentSnapshot.address` is the navigable current or stopped observation. |
@@ -52,13 +52,13 @@ In the proposal, application-owned receivers and state are available through imp
 | How do I find a newly launched conversation? | `launch`, `resume` or `fork` → typed receipt → `LaunchResult.agentAddresses` → exact `AgentAddress<CurrentReference>`. Null means the receipt supplied no exact references. |
 | What is scoped to the listener? | Follow `AgentXScope` to `attachments` for binary registration/download, `inbox` for explicit handling, `directory` for preview and exact send results, or `officeActivity` for an acceptance watermark. |
 
-Anonymous shapes such as `MemberCoverage`, `NativeMemberCoverage` and `AttachmentsUploadInput` are marked `sdk: projection`. `AgentReader<R>` is a private structural interface shared by the public current/stopped interfaces; `Agent` is their union. Composition edges express handle/value composition without implying lifecycle containment in the daemon.
+Anonymous shapes such as `NativeMemberCoverage` and `AttachmentsUploadInput` are marked `sdk: projection`. `AgentReader<R>` is a private structural interface shared by the public current/stopped interfaces; `Agent` is their union. Composition edges express handle/value composition without implying lifecycle containment in the daemon.
 
 ## Source and support policy
 
 Every node and port has separate SDK/native support fields. SDK states are `implemented`, `projection`, `external` and `deferred`; native states are `implemented`, `mapped`, `not-applicable` and `deferred`. `mapped` means SDK shape or capability assembled over existing native contracts, rather than a same-named native object. `external` covers JavaScript/Web platform inputs. These statuses describe source support, not registry publication, browser adoption, installed binaries or verified live effects.
 
-`Workspace.members` reads one global Agent page and filters it in the SDK; an empty page can continue. `Workspace.memberPage` filters in native before applying the limit. It requires the pinned `supportsWorkspaceMembers` flag and binds continuation to the workspace and `currentOnly`. An older listener lacking the flag can still use the legacy method explicitly.
+`Workspace.memberPage` filters in native before applying the limit and binds continuation to the workspace and `currentOnly`. The Domain SDK requires native membership and history at admission.
 
 Native message acceptance is separate from delivery, reading, model execution and reply. The original `PreparedMessage` and `OperationAddress` survive response loss. `OutcomeUnknown` retains the original native submit input. Local observation cancellation/deadline throws `ObservationStopped` and does not cancel native work. `wait` returns native terminal Failed/Unknown receipts; it does not apply `waitForSent`'s additional narrowing/refusal behavior. Native `OperationStatus.Unknown` is separate from local `OutcomeUnknown`, even though both require preserving identity for reconciliation.
 

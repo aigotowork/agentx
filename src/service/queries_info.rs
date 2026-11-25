@@ -17,15 +17,6 @@ pub(crate) struct Reference {
     pub scope: PathBuf,
     pub generation: String,
     pub target: Target,
-    /// In-process snapshot adapter metadata; never sent over native IPC.
-    #[serde(skip)]
-    pub legacy: Option<Legacy>,
-}
-
-#[derive(Clone, Debug)]
-pub(crate) enum Legacy {
-    Exact,
-    StopSnapshot { stopped_at: f64 },
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

@@ -43,7 +43,7 @@ impl ManagementService {
     }
 
     fn inspection_call(&self, generation: &str, input: inspect::Request) -> ServiceResult<inspect::Response> {
-        let client = self.client(Some(generation))?;
+        let client = self.client(generation)?;
         match client.call(crate::service::Request::Inspection(input))? {
             crate::service::Response::Inspection(value) => Ok(value),
             _ => Err(ServiceError::Internal("unexpected inspection response".into())),

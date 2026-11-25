@@ -439,7 +439,6 @@ fn message_delivery_poll_progress_requires_registered_peer_and_preserves_legacy_
         assert!(delivery_progress(db, target).unwrap().unwrap().last_poll.is_none());
         observe_delivery_poll(db, &context, target).unwrap();
         let progress = delivery_progress(db, target).unwrap().unwrap();
-        assert_eq!(progress.protocol, Some(crate::daemon::PROTOCOL_VERSION));
         assert!(progress.last_poll.is_some());
         assert_eq!(progress.process_alive, Some(true));
         let mut successor = target.clone();
@@ -448,9 +447,9 @@ fn message_delivery_poll_progress_requires_registered_peer_and_preserves_legacy_
         let key = format!("runtime_process:{}", target.canonical_name);
         let mut legacy: serde_json::Value = serde_json::from_str(&db.kv_get(&key).unwrap().unwrap()).unwrap();
         legacy.as_object_mut().unwrap().remove("last_poll");
-        legacy.as_object_mut().unwrap().remove("protocol");
+        legacy["protocol"] = serde_json::json!(4);
         db.kv_set(&key, Some(&legacy.to_string())).unwrap();
         let legacy = delivery_progress(db, target).unwrap().unwrap();
-        assert!(legacy.last_poll.is_none() && legacy.protocol.is_none());
+        assert!(legacy.last_poll.is_none());
     });
 }

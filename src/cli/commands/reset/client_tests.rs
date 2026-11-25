@@ -25,9 +25,9 @@ fn fixture(fail_clear: bool) -> (tempfile::TempDir, crate::daemon::test_support:
 #[test]
 fn native_reset_host_archives_rotates_generation_and_leaves_original_client_stale() {
     let (root, _daemon, session) = fixture(false);
-    let old_generation = session.client.info().database_generation.clone();
+    let old_generation = session.client.generation().unwrap().to_owned();
     assert_eq!(cmd_reset_client(&session, &ResetArgs { target: None }), 0);
-    assert!(matches!(summary(&session.client), Err(ServiceError::StaleFence)));
+    assert!(matches!(summary(&session.client), Err(ServiceError::StaleGeneration)));
     assert!(root.path().join("agentx.db").exists());
     let next = Client::connect_existing(root.path(), session.invocation.clone()).unwrap();
     let current = summary(&next).unwrap();

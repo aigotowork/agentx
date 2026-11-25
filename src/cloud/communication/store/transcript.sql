@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS agent_facts (
+CREATE TABLE agent_facts (
     name TEXT NOT NULL,
     incarnation TEXT NOT NULL,
     facts TEXT NOT NULL,
@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS agent_facts (
     PRIMARY KEY(name,incarnation),
     FOREIGN KEY(name,incarnation) REFERENCES agents(name,incarnation)
 ) WITHOUT ROWID;
-CREATE TABLE IF NOT EXISTS agent_transcript (
+CREATE TABLE agent_transcript (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     incarnation TEXT NOT NULL,
@@ -16,4 +16,4 @@ CREATE TABLE IF NOT EXISTS agent_transcript (
     UNIQUE(name,incarnation,item_key),
     FOREIGN KEY(name,incarnation) REFERENCES agents(name,incarnation)
 );
-CREATE INDEX IF NOT EXISTS agent_transcript_history ON agent_transcript(name,incarnation,id);
+CREATE INDEX agent_transcript_history ON agent_transcript(name,incarnation,id);

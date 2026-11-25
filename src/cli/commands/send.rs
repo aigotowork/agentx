@@ -63,6 +63,9 @@ pub struct SendArgs {
     /// Read delivery facts for an accepted event without sending again.
     #[arg(long, conflicts_with_all = ["positionals", "message", "stdin", "file", "base64", "dir", "workspace", "dry_run"])]
     pub delivery_status: Option<i64>,
+    /// Look up an accepted send by its original request ID, without sending again.
+    #[arg(long, conflicts_with_all = ["delivery_status", "positionals", "message", "stdin", "file", "base64", "dir", "workspace", "dry_run"])]
+    pub receipt: Option<String>,
     /// Address the default recipient of this directory's workspace.
     #[arg(long)]
     pub dir: Option<String>,
@@ -427,6 +430,23 @@ pub(crate) fn cmd_send_client(session: &Session, args: &SendArgs) -> i32 {
 }
 
 fn send_client(session: &Session, args: &SendArgs) -> Result<i32, String> {
+    if let Some(id) = &args.receipt {
+        let request_id = crate::service::RequestId(id.clone());
+        let receipt = match session.client.call(Request::Messages(Messages::Acceptance { request_id })) {
+            Ok(Response::Messages(MessageResult::Acceptance(receipt))) => receipt,
+            Ok(_) => return Err("daemon returned a different message receipt".into()),
+            Err(error) => return Err(error.to_string()),
+        };
+        if let Some(receipt) = receipt {
+            if args.json {
+                println!("{}", serde_json::json!({"request_id":id,"event_id":receipt.event.0,"delivered_to":receipt.recipients}));
+            } else {
+                println!("Request {id} was accepted as event #{}.", receipt.event.0);
+            }
+            return Ok(0);
+        }
+        return Err(format!("No receipt for request {id} in this scope generation. The original outcome is unconfirmed."));
+    }
     if let Some(event) = args.delivery_status {
         let report = delivery::read(session, event)?;
         if args.json {
@@ -543,14 +563,14 @@ fn send_client(session: &Session, args: &SendArgs) -> Result<i32, String> {
         None
     };
     let request_id = crate::service::RequestId(uuid::Uuid::new_v4().to_string());
-    let caller = crate::service::CallerContext { request_id: request_id.clone(), invocation: session.invocation.clone(), deadline_unix_ms: None, expected_database_generation: Some(session.client.info().database_generation.clone()) };
+    let caller = crate::service::CallerContext { request_id: request_id.clone(), invocation: session.invocation.clone(), deadline_unix_ms: None, expected_database_generation: None };
     let acceptance = match session.client.call_with_context(caller, Request::Messages(Messages::Submit(submission))) {
         Ok(Response::Messages(MessageResult::Accepted(acceptance))) => acceptance,
         Err(ServiceError::OutcomeUnknown(detail)) => {
             // Lookup the committed domain acceptance; never resend after a lost reply.
             match session.client.call(Request::Messages(Messages::Acceptance { request_id: request_id.clone() })) {
                 Ok(Response::Messages(MessageResult::Acceptance(Some(acceptance)))) => acceptance,
-                _ => return Err(format!("message outcome unknown (request {}); reconcile before retry: {detail}", request_id.0)),
+                _ => return Err(format!("message outcome unknown; inspect the original receipt with `agentx send --receipt {}` in the same scope before retrying: {detail}", request_id.0)),
             }
         }
         Err(error @ ServiceError::InvalidInput(_)) => return rejected_send(session, error, targets, &message),
@@ -568,7 +588,7 @@ fn send_client(session: &Session, args: &SendArgs) -> Result<i32, String> {
             Some(Err(error)) => serde_json::json!({"state":"unavailable", "detail":error}),
             None => serde_json::Value::Null,
         };
-        println!("{}", serde_json::json!({"event_id":acceptance.event.0,"delivered_to":acceptance.recipients,"directory_route":directory_address,"delivery":delivery}));
+        println!("{}", serde_json::json!({"request_id":request_id.0,"event_id":acceptance.event.0,"delivered_to":acceptance.recipients,"directory_route":directory_address,"delivery":delivery}));
         return Ok(0);
     }
     if args.quiet {

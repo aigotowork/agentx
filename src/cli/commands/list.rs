@@ -112,7 +112,7 @@ pub(crate) fn cmd_list(session: &crate::cli::client::Session, args: &ListArgs) -
     if args.stopped {
         return cmd_list_stopped(session, args, &workspace);
     }
-    if args.names && args.name.is_none() && session.client.info().agent_names {
+    if args.names && args.name.is_none() {
         use crate::service::{Request, Response, ServiceError, queries};
         let result = args.filters.label_predicates().and_then(|labels| session.client.call(Request::Queries(queries::Request::AgentNames(AgentFilter { workspace: workspace.clone(), labels }))));
         match result {
@@ -122,7 +122,7 @@ pub(crate) fn cmd_list(session: &crate::cli::client::Session, args: &ListArgs) -
                 }
                 return 0;
             }
-            // The per-call handshake can find an older daemon after restart.
+            // A daemon may implement the older listing operation only.
             Err(ServiceError::Unsupported(_)) => {}
             Err(error) => {
                 eprintln!("Error: {error}");
@@ -172,6 +172,13 @@ pub(crate) fn cmd_list(session: &crate::cli::client::Session, args: &ListArgs) -
     let field_name = args.field.as_deref();
 
     // Single instance query: agentx list <name|self> [field] [--json]
+    let generation = match session.client.generation() {
+        Ok(generation) => generation,
+        Err(error) => {
+            eprintln!("Error: {error}");
+            return 1;
+        }
+    };
     if let Some(target) = target_name {
         let is_self = target == "self";
 
@@ -191,7 +198,7 @@ pub(crate) fn cmd_list(session: &crate::cli::client::Session, args: &ListArgs) -
             Some(data) => {
                 let mut payload = serde_json::json!({
                     "name": lookup_name,
-                    "generation": session.client.info().database_generation,
+                    "generation": generation,
                     "incarnation": data.created_at.to_bits().to_string(),
                     "labels": listing.labels.get(&lookup_name).map(|snapshot| &snapshot.labels),
                     "labels_revision": listing.labels.get(&lookup_name).map(|snapshot| &snapshot.revision),
@@ -289,7 +296,7 @@ pub(crate) fn cmd_list(session: &crate::cli::client::Session, args: &ListArgs) -
             let launch_context: serde_json::Value = data.launch_context.as_deref().filter(|s| !s.is_empty()).and_then(|s| serde_json::from_str(s).ok()).unwrap_or(serde_json::json!({}));
 
             let payload = serde_json::json!({
-                "generation": session.client.info().database_generation,
+                "generation": generation,
                 "incarnation": data.created_at.to_bits().to_string(),
                 "labels": listing.labels.get(&data.name).map(|snapshot| &snapshot.labels),
                 "labels_revision": listing.labels.get(&data.name).map(|snapshot| &snapshot.revision),

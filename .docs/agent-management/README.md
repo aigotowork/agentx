@@ -87,14 +87,7 @@ Linux 本地候选已通过完整 HTTP 和 Chromium 浏览器验收，包括启�
 
 ## 开发维护
 
-HTTP 请求与响应的权威类型位于 [contract.rs](../../src/management/contract.rs)。修改公开类型后，使用已有生成器更新前端投影，再构建候选：
-
-```sh
-python3 web/workbench/api/derive.py --sources src/management/contract.rs src/agents/model_request.rs --roots Descriptor AgentPage AgentView MessagePage OfficeActivity HumanMailbox HandleHumanMessages LaunchRelations SubmitLaunch SubmitMessage SubmitTarget Operation WorkspaceCatalog RoleCatalog DirectoryEntry SubmitDirectoryMessage Attachment LabelsSnapshot SubmitLabels --numbers number --output web/management/api/native.ts
-just package .bin/agentx-management
-```
-
-生成器的数字模式只用于有界数量；Agent 身份、事件 ID 和游标由原生字符串类型保留精度。Cargo 构建会从当前前端源码重新生成并内嵌页面资源。[独立验收入口](../../tests/agent_management/README.md)使用单独候选和临时作用域验证 HTTP、原生执行链路与实际浏览器。
+HTTP 请求与响应的权威类型位于 [contract.rs](../../src/management/contract.rs)。修改公开类型后，按[公共 SDK 生成流程](../../packages/agentx-client/README.md)从原生候选导出 OpenAPI，再重新生成 SDK 并构建内嵌 Web 资源。[独立验收入口](../../tests/agent_management/README.md)使用单独候选和临时作用域验证 HTTP、原生执行链路与实际浏览器。
 
 ## 办公室管理扩展
 

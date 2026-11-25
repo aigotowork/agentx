@@ -1,4 +1,4 @@
-//! Authenticated scope communication. Deployment owns credentials and supplies a fenced context.
+//! Authenticated Namespace communication. Deployment owns credentials and supplies a fenced context.
 pub(super) mod store;
 pub(super) mod types;
 
@@ -26,7 +26,7 @@ static WAIT_SLOTS: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(64
 
 pub(super) fn router() -> Router {
     Router::new()
-        .route("/changes", get(scope_changes))
+        .route("/changes", get(namespace_changes))
         .route("/descriptor", get(describe))
         .route("/hosts", get(list_hosts))
         .route("/hosts/{host}", put(renew_host))
@@ -39,9 +39,9 @@ pub(super) fn router() -> Router {
         .route("/inbox/claim", post(claim_inbox))
         .route("/inbox/confirm", post(confirm_inbox))
         .route("/inbox/recover", post(recover_inbox))
-        .merge(super::control::scope_router())
-        .fallback(|| async { Error::NotFound("scope communication route was not found") })
-        .method_not_allowed_fallback(|| async { failure(StatusCode::METHOD_NOT_ALLOWED, "method_not_allowed", "method is not supported on this scope route") })
+        .merge(super::control::namespace_router())
+        .fallback(super::unknown_cloud_operation)
+        .method_not_allowed_fallback(super::unsupported_cloud_method)
         .layer(DefaultBodyLimit::max(512 * 1024))
 }
 
@@ -53,47 +53,40 @@ pub(super) fn summary(root: &Path, generation: &str) -> anyhow::Result<(u32, u32
     Ok(store::transaction(root, generation, false, || true, store::counts)?)
 }
 
-pub(super) fn host_page(root: &Path, generation: &str, after: Option<String>, limit: u32) -> anyhow::Result<HostPage> {
-    Ok(store::transaction(root, generation, false, || true, |conn, now| store::hosts(conn, now, HostQuery { after, limit: Some(limit) }))?)
-}
-
-pub(super) fn agent_page(root: &Path, generation: &str, after: Option<String>, limit: u32, host: Option<String>, facts: Option<bool>) -> anyhow::Result<AgentPage> {
-    Ok(store::transaction(root, generation, false, || true, |conn, now| store::agents(conn, now, AgentQuery { after, limit: Some(limit), host, facts }))?)
-}
-
 pub(super) fn metadata_failure(error: anyhow::Error) -> super::Failure {
     if let Some(store::Error::Invalid(reason)) = error.downcast_ref::<store::Error>() {
         return super::Failure::invalid(reason);
     }
-    super::Failure(StatusCode::SERVICE_UNAVAILABLE, "scope_unavailable", "scope inventory unavailable")
+    super::Failure(StatusCode::SERVICE_UNAVAILABLE, "namespace_unavailable", "Namespace inventory unavailable")
 }
 
 fn failure(status: StatusCode, code: &'static str, message: impl Into<String>) -> Response {
-    (status, Json(ScopeError { code, message: message.into() })).into_response()
+    (status, Json(NamespaceError { code, message: message.into() })).into_response()
 }
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         match self {
+            Self::SchemaVersion => failure(StatusCode::SERVICE_UNAVAILABLE, "namespace_unavailable", self.to_string()),
             Self::Invalid(message) => failure(StatusCode::BAD_REQUEST, "invalid_input", message),
             Self::InvalidMessage(message) => failure(StatusCode::BAD_REQUEST, "invalid_input", message),
             Self::NotFound(message) => failure(StatusCode::NOT_FOUND, "not_found", message),
             Self::Conflict(message) => failure(StatusCode::CONFLICT, "conflict", message),
             Self::ClaimOutstanding => failure(StatusCode::CONFLICT, "claim_conflict", "agent already has an outstanding inbox claim; recover that claim ID"),
-            Self::Generation => failure(StatusCode::CONFLICT, "stale_generation", "scope generation has changed"),
-            Self::Credential => failure(StatusCode::UNAUTHORIZED, "unauthorized", "scope credential has changed"),
+            Self::Generation => failure(StatusCode::CONFLICT, "stale_generation", "Namespace generation has changed"),
+            Self::Credential => failure(StatusCode::UNAUTHORIZED, "unauthorized", "Namespace credential has changed"),
             Self::Offline => failure(StatusCode::CONFLICT, "host_offline", "host is offline; renew its heartbeat"),
             Self::Installation => failure(StatusCode::CONFLICT, "host_conflict", "host name belongs to another installation"),
             Self::Agent => failure(StatusCode::CONFLICT, "stale_agent", "exact agent registration is no longer current"),
             Self::Lease => failure(StatusCode::CONFLICT, "stale_lease", "exact daemon lease is no longer current"),
             Self::Capability => failure(StatusCode::CONFLICT, "capability_unavailable", "requested workspace or role is unavailable"),
-            Self::WorkspaceAliasTaken => failure(StatusCode::CONFLICT, "workspace_alias_taken", self.to_string()),
+            Self::AgentWorkspace => failure(StatusCode::CONFLICT, "agent_workspace_mismatch", self.to_string()),
             Self::ControlClaim => failure(StatusCode::CONFLICT, "control_claim_conflict", "report does not match the exact control claim"),
             Self::ControlOutcome => failure(StatusCode::CONFLICT, "control_outcome_conflict", "control claim already has a different terminal outcome"),
-            Self::PayloadTooLarge => failure(StatusCode::PAYLOAD_TOO_LARGE, "payload_too_large", "request body exceeds the scope size limit"),
-            Self::WaitCapacity => failure(StatusCode::SERVICE_UNAVAILABLE, "unavailable", "all scope wait slots are occupied"),
-            Self::Sql(error) if matches!(error.sqlite_error_code(), Some(rusqlite::ErrorCode::DatabaseBusy | rusqlite::ErrorCode::DatabaseLocked)) => failure(StatusCode::SERVICE_UNAVAILABLE, "unavailable", "scope storage is temporarily busy"),
-            Self::Sql(_) | Self::Json(_) | Self::Worker => failure(StatusCode::INTERNAL_SERVER_ERROR, "internal", "scope operation failed"),
+            Self::PayloadTooLarge => failure(StatusCode::PAYLOAD_TOO_LARGE, "payload_too_large", "request body exceeds the Namespace size limit"),
+            Self::WaitCapacity => failure(StatusCode::SERVICE_UNAVAILABLE, "unavailable", "all Namespace wait slots are occupied"),
+            Self::Sql(error) if matches!(error.sqlite_error_code(), Some(rusqlite::ErrorCode::DatabaseBusy | rusqlite::ErrorCode::DatabaseLocked)) => failure(StatusCode::SERVICE_UNAVAILABLE, "unavailable", "Namespace storage is temporarily busy"),
+            Self::Sql(_) | Self::Json(_) | Self::Worker => failure(StatusCode::INTERNAL_SERVER_ERROR, "internal", "Namespace operation failed"),
         }
     }
 }
@@ -110,7 +103,7 @@ pub(super) fn path<T>(input: Result<AxumPath<T>, PathRejection>) -> store::Resul
     input.map(|AxumPath(value)| value).map_err(|_| Error::Invalid("request path is not valid for this endpoint"))
 }
 
-// The mounted path also captures the parent scope ID. Named extraction ignores that capture.
+// The mounted path also captures the parent Namespace ID. Named extraction ignores that capture.
 #[derive(serde::Deserialize)]
 struct HostPath {
     host: String,
@@ -192,41 +185,67 @@ pub(super) async fn admin_send_human_message(scope: ScopeContext, input: SendHum
     run(scope, Access::AdminWriteAndWake, move |conn, now| store::send_human_message(conn, now, input)).await
 }
 
-#[utoipa::path(get, path="/changes", operation_id="scopeSpaceChanges", params(ChangeQuery), security(("scopeBearer"=[])), responses((status=200, body=SpaceChanges),(status="default", body=ScopeError)))]
-async fn scope_changes(Extension(scope): Extension<ScopeContext>, input: Result<Query<ChangeQuery>, QueryRejection>) -> store::Result<Json<SpaceChanges>> {
-    super::changes::wait(scope, query(input)?, true).await.map(Json)
+pub(super) async fn space_changes(scope: ScopeContext, query: ChangeQuery, member: bool) -> store::Result<SpaceChanges> {
+    super::control::observe_workspace_availability(&scope);
+    super::changes::wait(scope, query, member).await
 }
 
-#[utoipa::path(get, path = "/descriptor", operation_id = "scopeDescribe", security(("scopeBearer" = [])), responses(
+#[utoipa::path(get, path="/changes", operation_id="namespaceSpaceChanges", params(ChangeQuery), security(("namespaceBearer"=[])), responses((status=200, body=SpaceChanges),(status="default", body=NamespaceError)))]
+async fn namespace_changes(Extension(scope): Extension<ScopeContext>, input: Result<Query<ChangeQuery>, QueryRejection>) -> store::Result<Json<SpaceChanges>> {
+    space_changes(scope, query(input)?, true).await.map(Json)
+}
+
+#[utoipa::path(get, path = "/descriptor", operation_id = "namespaceDescribe", security(("namespaceBearer" = [])), responses(
     (status = 200, body = Descriptor),
-    (status = "default", body = ScopeError)
+    (status = "default", body = NamespaceError)
 ))]
 async fn describe(Extension(scope): Extension<ScopeContext>) -> store::Result<Json<Descriptor>> {
-    let descriptor = Descriptor { scope_id: scope.id.clone(), generation: scope.generation.clone(), protocol_version: 1 };
+    let descriptor = Descriptor { namespace_id: scope.id.clone(), generation: scope.generation.clone(), protocol_version: super::PROTOCOL_VERSION };
     run(scope, Access::Read, move |_, _| Ok(descriptor)).await.map(Json)
 }
 
-#[utoipa::path(get, path = "/hosts", operation_id = "scopeListHosts", params(HostQuery), security(("scopeBearer" = [])), responses(
+pub(super) async fn host_page(scope: ScopeContext, member: bool, mut input: HostQuery) -> store::Result<HostPage> {
+    fence_page(&scope, input.generation.as_deref())?;
+    input.after = input.after.filter(|cursor| !cursor.is_empty());
+    let generation = scope.generation.clone();
+    let access = if member { Access::Read } else { Access::AdminRead };
+    run(scope, access, move |conn, now| store::hosts(conn, now, generation, input)).await
+}
+
+pub(super) async fn agent_page(scope: ScopeContext, member: bool, mut input: AgentQuery) -> store::Result<AgentPage> {
+    fence_page(&scope, input.generation.as_deref())?;
+    input.after = input.after.filter(|cursor| !cursor.is_empty());
+    let generation = scope.generation.clone();
+    let access = if member { Access::Read } else { Access::AdminRead };
+    run(scope, access, move |conn, now| store::agents(conn, now, generation, input)).await
+}
+
+/// For existing v2 callers, an unbound read reports the generation it actually observed.
+pub(super) fn fence_page(scope: &ScopeContext, expected: Option<&str>) -> store::Result<()> {
+    expected.map_or(Ok(()), |expected| fence(scope, expected))
+}
+
+#[utoipa::path(get, path = "/hosts", operation_id = "namespaceListHosts", params(HostQuery), security(("namespaceBearer" = [])), responses(
     (status = 200, body = HostPage),
-    (status = "default", body = ScopeError)
+    (status = 409, description = "Stale Namespace generation", body = NamespaceError),
+    (status = "default", body = NamespaceError)
 ))]
 async fn list_hosts(Extension(scope): Extension<ScopeContext>, input: Result<Query<HostQuery>, QueryRejection>) -> store::Result<Json<HostPage>> {
-    let input = query(input)?;
-    run(scope, Access::Read, move |conn, now| store::hosts(conn, now, input)).await.map(Json)
+    host_page(scope, true, query(input)?).await.map(Json)
 }
 
-#[utoipa::path(get, path = "/agents", operation_id = "scopeListAgents", params(AgentQuery), security(("scopeBearer" = [])), responses(
+#[utoipa::path(get, path = "/agents", operation_id = "namespaceListAgents", params(AgentQuery), security(("namespaceBearer" = [])), responses(
     (status = 200, body = AgentPage),
-    (status = "default", body = ScopeError)
+    (status = 409, description = "Stale Namespace generation", body = NamespaceError),
+    (status = "default", body = NamespaceError)
 ))]
 async fn list_agents(Extension(scope): Extension<ScopeContext>, input: Result<Query<AgentQuery>, QueryRejection>) -> store::Result<Json<AgentPage>> {
-    let input = query(input)?;
-    run(scope, Access::Read, move |conn, now| store::agents(conn, now, input)).await.map(Json)
+    agent_page(scope, true, query(input)?).await.map(Json)
 }
 
-#[utoipa::path(put, path = "/hosts/{host}", operation_id = "scopeRenewHost", params(("host" = String, Path)), request_body = HostRegistration, security(("scopeBearer" = [])), responses(
+#[utoipa::path(put, path = "/hosts/{host}", operation_id = "namespaceRenewHost", params(("host" = String, Path)), request_body = HostRegistration, security(("namespaceBearer" = [])), responses(
     (status = 200, body = HostView),
-    (status = "default", body = ScopeError)
+    (status = "default", body = NamespaceError)
 ))]
 async fn renew_host(Extension(scope): Extension<ScopeContext>, parts: Result<AxumPath<HostPath>, PathRejection>, input: Result<Json<HostRegistration>, JsonRejection>) -> store::Result<Json<HostView>> {
     let HostPath { host } = path(parts)?;
@@ -235,9 +254,9 @@ async fn renew_host(Extension(scope): Extension<ScopeContext>, parts: Result<Axu
     run(scope, Access::Write, move |conn, now| store::renew_host(conn, now, host, input)).await.map(Json)
 }
 
-#[utoipa::path(put, path = "/agents/{name}", operation_id = "scopeRegisterAgent", params(("name" = String, Path)), request_body = AgentRegistration, security(("scopeBearer" = [])), responses(
+#[utoipa::path(put, path = "/agents/{name}", operation_id = "namespaceRegisterAgent", params(("name" = String, Path)), request_body = AgentRegistration, security(("namespaceBearer" = [])), responses(
     (status = 200, body = AgentView),
-    (status = "default", body = ScopeError)
+    (status = "default", body = NamespaceError)
 ))]
 async fn register_agent(Extension(scope): Extension<ScopeContext>, parts: Result<AxumPath<AgentPath>, PathRejection>, input: Result<Json<AgentRegistration>, JsonRejection>) -> store::Result<Json<AgentView>> {
     let AgentPath { name } = path(parts)?;
@@ -246,9 +265,9 @@ async fn register_agent(Extension(scope): Extension<ScopeContext>, parts: Result
     run(scope, Access::Roster, move |conn, now| store::register_agent(conn, now, name, input)).await.map(Json)
 }
 
-#[utoipa::path(post, path = "/agents/{name}/retire", operation_id = "scopeRetireAgent", params(("name" = String, Path)), request_body = AgentRegistration, security(("scopeBearer" = [])), responses(
+#[utoipa::path(post, path = "/agents/{name}/retire", operation_id = "namespaceRetireAgent", params(("name" = String, Path)), request_body = AgentRegistration, security(("namespaceBearer" = [])), responses(
     (status = 200, body = AgentView),
-    (status = "default", body = ScopeError)
+    (status = "default", body = NamespaceError)
 ))]
 async fn retire_agent(Extension(scope): Extension<ScopeContext>, parts: Result<AxumPath<AgentPath>, PathRejection>, input: Result<Json<AgentRegistration>, JsonRejection>) -> store::Result<Json<AgentView>> {
     let AgentPath { name } = path(parts)?;
@@ -266,17 +285,17 @@ pub(super) async fn admin_transcript_history(scope: ScopeContext, input: Transcr
     transcript_history(scope, Access::AdminRead, input).await
 }
 
-#[utoipa::path(get, path = "/transcript", operation_id = "scopeListTranscript", params(TranscriptHistoryQuery), security(("scopeBearer" = [])), responses(
+#[utoipa::path(get, path = "/transcript", operation_id = "namespaceListTranscript", params(TranscriptHistoryQuery), security(("namespaceBearer" = [])), responses(
     (status = 200, body = TranscriptHistoryPage),
-    (status = "default", body = ScopeError)
+    (status = "default", body = NamespaceError)
 ))]
 async fn list_transcript(Extension(scope): Extension<ScopeContext>, input: Result<Query<TranscriptHistoryQuery>, QueryRejection>) -> store::Result<Json<TranscriptHistoryPage>> {
     transcript_history(scope, Access::Read, query(input)?).await.map(Json)
 }
 
-#[utoipa::path(post, path = "/transcript", operation_id = "scopePublishTranscript", request_body = PublishTranscript, security(("scopeBearer" = [])), responses(
+#[utoipa::path(post, path = "/transcript", operation_id = "namespacePublishTranscript", request_body = PublishTranscript, security(("namespaceBearer" = [])), responses(
     (status = 200, body = bool),
-    (status = "default", body = ScopeError)
+    (status = "default", body = NamespaceError)
 ))]
 async fn publish_transcript(Extension(scope): Extension<ScopeContext>, input: Result<Json<PublishTranscript>, JsonRejection>) -> store::Result<Json<bool>> {
     let input = payload(input)?;
@@ -300,17 +319,17 @@ async fn publish_transcript(Extension(scope): Extension<ScopeContext>, input: Re
     .map(|(changed, _)| Json(changed))
 }
 
-#[utoipa::path(get, path = "/messages", operation_id = "scopeListMessages", params(MessageHistoryQuery), security(("scopeBearer" = [])), responses(
+#[utoipa::path(get, path = "/messages", operation_id = "namespaceListMessages", params(MessageHistoryQuery), security(("namespaceBearer" = [])), responses(
     (status = 200, body = MessageHistoryPage),
-    (status = "default", body = ScopeError)
+    (status = "default", body = NamespaceError)
 ))]
 async fn list_messages(Extension(scope): Extension<ScopeContext>, input: Result<Query<MessageHistoryQuery>, QueryRejection>) -> store::Result<Json<MessageHistoryPage>> {
     message_history(scope, Access::Read, query(input)?).await.map(Json)
 }
 
-#[utoipa::path(post, path = "/messages", operation_id = "scopeSendMessage", request_body = SendMessage, security(("scopeBearer" = [])), responses(
+#[utoipa::path(post, path = "/messages", operation_id = "namespaceSendMessage", request_body = SendMessage, security(("namespaceBearer" = [])), responses(
     (status = 200, body = MessageView),
-    (status = "default", body = ScopeError)
+    (status = "default", body = NamespaceError)
 ))]
 async fn send_message(Extension(scope): Extension<ScopeContext>, input: Result<Json<SendMessage>, JsonRejection>) -> store::Result<Json<MessageView>> {
     let input = payload(input)?;
@@ -318,18 +337,18 @@ async fn send_message(Extension(scope): Extension<ScopeContext>, input: Result<J
     run(scope, Access::WriteAndWake, move |conn, now| store::send(conn, now, input)).await.map(Json)
 }
 
-#[utoipa::path(get, path = "/operations/{request_id}", operation_id = "scopeGetOperation", params(("request_id" = String, Path)), security(("scopeBearer" = [])), responses(
+#[utoipa::path(get, path = "/operations/{request_id}", operation_id = "namespaceGetOperation", params(("request_id" = String, Path)), security(("namespaceBearer" = [])), responses(
     (status = 200, body = MessageOperation),
-    (status = "default", body = ScopeError)
+    (status = "default", body = NamespaceError)
 ))]
 async fn get_operation(Extension(scope): Extension<ScopeContext>, parts: Result<AxumPath<OperationPath>, PathRejection>) -> store::Result<Json<MessageOperation>> {
     let OperationPath { request_id } = path(parts)?;
     run(scope, Access::Read, move |conn, _| store::operation(conn, request_id)).await.map(Json)
 }
 
-#[utoipa::path(post, path = "/inbox/claim", operation_id = "scopeClaimInbox", request_body = ClaimInbox, security(("scopeBearer" = [])), responses(
+#[utoipa::path(post, path = "/inbox/claim", operation_id = "namespaceClaimInbox", request_body = ClaimInbox, security(("namespaceBearer" = [])), responses(
     (status = 200, body = InboxBatch),
-    (status = "default", body = ScopeError)
+    (status = "default", body = NamespaceError)
 ))]
 async fn claim_inbox(Extension(scope): Extension<ScopeContext>, input: Result<Json<ClaimInbox>, JsonRejection>) -> store::Result<Json<InboxBatch>> {
     let input = payload(input)?;
@@ -360,9 +379,9 @@ async fn claim_inbox(Extension(scope): Extension<ScopeContext>, input: Result<Js
     }
 }
 
-#[utoipa::path(post, path = "/inbox/confirm", operation_id = "scopeConfirmInbox", request_body = ConfirmInbox, security(("scopeBearer" = [])), responses(
+#[utoipa::path(post, path = "/inbox/confirm", operation_id = "namespaceConfirmInbox", request_body = ConfirmInbox, security(("namespaceBearer" = [])), responses(
     (status = 200, body = InboxConfirmation),
-    (status = "default", body = ScopeError)
+    (status = "default", body = NamespaceError)
 ))]
 async fn confirm_inbox(Extension(scope): Extension<ScopeContext>, input: Result<Json<ConfirmInbox>, JsonRejection>) -> store::Result<Json<InboxConfirmation>> {
     let input = payload(input)?;
@@ -370,9 +389,9 @@ async fn confirm_inbox(Extension(scope): Extension<ScopeContext>, input: Result<
     run(scope, Access::Write, move |conn, now| store::confirm(conn, now, input)).await.map(Json)
 }
 
-#[utoipa::path(post, path = "/inbox/recover", operation_id = "scopeRecoverInbox", request_body = RecoverInbox, security(("scopeBearer" = [])), responses(
+#[utoipa::path(post, path = "/inbox/recover", operation_id = "namespaceRecoverInbox", request_body = RecoverInbox, security(("namespaceBearer" = [])), responses(
     (status = 200, body = InboxBatch),
-    (status = "default", body = ScopeError)
+    (status = "default", body = NamespaceError)
 ))]
 async fn recover_inbox(Extension(scope): Extension<ScopeContext>, input: Result<Json<RecoverInbox>, JsonRejection>) -> store::Result<Json<InboxBatch>> {
     let input = payload(input)?;
@@ -383,23 +402,23 @@ async fn recover_inbox(Extension(scope): Extension<ScopeContext>, input: Result<
 #[derive(OpenApi)]
 #[openapi(
     info(
-        title = "AgentX Scope Communication",
+        title = "AgentX Namespace Communication",
         version = "1",
-        description = "Base: configured scope URL plus /api/v1. All calls require the scope Bearer. Delivery is confirmed by the exact recipient host after Provider evidence. Opaque identifiers and decimal string message IDs remain strings."
+        description = "Base: configured Namespace URL plus /api/v1. All calls require the Namespace Bearer. Delivery is confirmed by the exact recipient host after Provider evidence. Opaque identifiers and decimal string message IDs remain strings."
     ),
-    paths(scope_changes, describe, list_hosts, list_agents, renew_host, register_agent, retire_agent, list_transcript, publish_transcript, list_messages, send_message, get_operation, claim_inbox, confirm_inbox, recover_inbox)
+    paths(namespace_changes, describe, list_hosts, list_agents, renew_host, register_agent, retire_agent, list_transcript, publish_transcript, list_messages, send_message, get_operation, claim_inbox, confirm_inbox, recover_inbox)
 )]
-struct ScopeApi;
+struct NamespaceApi;
 
 pub(super) fn document() -> serde_json::Value {
-    let mut api = ScopeApi::openapi();
-    api.merge(super::control::scope_document());
-    let mut document = serde_json::to_value(api).expect("scope OpenAPI is serializable");
-    document["components"]["securitySchemes"]["scopeBearer"] = serde_json::json!({ "type": "http", "scheme": "bearer" });
+    let mut api = NamespaceApi::openapi();
+    api.merge(super::control::namespace_document());
+    let mut document = serde_json::to_value(api).expect("Namespace OpenAPI is serializable");
+    document["components"]["securitySchemes"]["namespaceBearer"] = serde_json::json!({ "type": "http", "scheme": "bearer" });
     document["x-agentx-codec"] = serde_json::json!({
         "wire": "ordinary-json-v1",
         "integerFormats": { "int64": "bigint", "u-int32": "number" },
-        "identities": "Scope generation, participant incarnation, request_id, claim_id and message IDs remain strings."
+        "identities": "Namespace generation, participant incarnation, request_id, claim_id and message IDs remain strings."
     });
     document
 }
@@ -414,15 +433,15 @@ mod tests {
         let paths = spec["paths"].as_object().unwrap();
         assert!(paths.keys().all(|path| !path.starts_with("/scopes")));
         let claim = &paths["/inbox/claim"]["post"];
-        assert_eq!(claim["security"], serde_json::json!([{ "scopeBearer": [] }]));
+        assert_eq!(claim["security"], serde_json::json!([{ "namespaceBearer": [] }]));
         assert_eq!(paths["/messages"]["get"]["security"], claim["security"]);
-        assert_eq!(paths["/messages"]["get"]["operationId"], "scopeListMessages");
-        assert_eq!(paths["/transcript"]["get"]["operationId"], "scopeListTranscript");
+        assert_eq!(paths["/messages"]["get"]["operationId"], "namespaceListMessages");
+        assert_eq!(paths["/transcript"]["get"]["operationId"], "namespaceListTranscript");
         assert_eq!(paths["/transcript"]["get"]["security"], claim["security"]);
         assert_eq!(paths["/transcript"]["post"]["security"], claim["security"]);
         assert_eq!(paths["/hosts/{host}/control/poll"]["post"]["security"], claim["security"]);
         assert!(claim["responses"]["default"].is_object());
-        assert_eq!(spec["components"]["securitySchemes"]["scopeBearer"]["scheme"], "bearer");
+        assert_eq!(spec["components"]["securitySchemes"]["namespaceBearer"]["scheme"], "bearer");
         let schemas = &spec["components"]["schemas"];
         assert_eq!(schemas["MessageView"]["properties"]["id"]["type"], "string");
         assert_eq!(schemas["MessageView"]["properties"]["created_at"]["format"], "int64");
@@ -434,12 +453,12 @@ mod tests {
     fn admin_openapi_projects_the_same_history_and_exact_human_send() {
         let admin = super::super::admin::document();
         let scope = document();
-        let route = &admin["paths"]["/api/v1/admin/scopes/{id}/messages"];
+        let route = &admin["paths"]["/api/v1/admin/namespaces/{id}/messages"];
         let query: Vec<_> = route["get"]["parameters"].as_array().unwrap().iter().filter(|param| param["in"] == "query").cloned().collect();
         assert_eq!(query, *scope["paths"]["/messages"]["get"]["parameters"].as_array().unwrap());
         assert_eq!(admin["security"], serde_json::json!([{ "adminBearer": [] }]));
-        assert_eq!(route["get"]["operationId"], "listAdminScopeMessages");
-        assert_eq!(route["post"]["operationId"], "sendAdminScopeMessage");
+        assert_eq!(route["get"]["operationId"], "listAdminNamespaceMessages");
+        assert_eq!(route["post"]["operationId"], "sendAdminNamespaceMessage");
         assert_eq!(route["get"]["responses"]["200"]["content"]["application/json"]["schema"]["$ref"], "#/components/schemas/MessageHistoryPage");
         assert_eq!(route["post"]["responses"]["200"]["content"]["application/json"]["schema"]["$ref"], "#/components/schemas/MessageView");
         assert_eq!(route["post"]["requestBody"]["content"]["application/json"]["schema"]["$ref"], "#/components/schemas/SendHumanMessage");

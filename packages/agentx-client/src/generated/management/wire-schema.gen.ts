@@ -800,6 +800,7 @@ export const wireDocument = {
           "NotFound",
           "Conflict",
           "StaleReference",
+          "StaleGeneration",
           "Unsupported",
           "Unavailable",
           "OutcomeUnknown",

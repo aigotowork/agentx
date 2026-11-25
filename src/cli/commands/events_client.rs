@@ -47,12 +47,7 @@ fn emit(out: &mut impl Write, event: &Value, full: bool, filters: &crate::events
 
 fn reconciled_call(client: &Client, request: Events) -> ServiceResult<EventResult> {
     // Only operations with a domain idempotency contract use this helper.
-    let caller = crate::service::CallerContext {
-        request_id: crate::service::RequestId(uuid::Uuid::new_v4().to_string()),
-        invocation: client.invocation().clone(),
-        deadline_unix_ms: None,
-        expected_database_generation: Some(client.info().database_generation.clone()),
-    };
+    let caller = crate::service::CallerContext { request_id: crate::service::RequestId(uuid::Uuid::new_v4().to_string()), invocation: client.invocation().clone(), deadline_unix_ms: None, expected_database_generation: None };
     let request = Request::Events(request);
     let invoke = || client.call_with_context(caller.clone(), request.clone());
     let response = match invoke() {
@@ -324,7 +319,7 @@ fn follow_to(session: &Session, args: &EventsArgs, mut query: EventQuery, out: &
         let newest = loop {
             match watermark(&client) {
                 Ok(newest) => break newest,
-                Err(ServiceError::StaleFence) => {
+                Err(ServiceError::StaleGeneration) => {
                     if !reset_observation(&mut client, &mut observer, out)? {
                         return Ok(0);
                     }
@@ -360,7 +355,7 @@ fn follow_to(session: &Session, args: &EventsArgs, mut query: EventQuery, out: &
             query.after = Some(cursor);
             let result = match page(&client, query.clone()) {
                 Ok(result) => result,
-                Err(ServiceError::StaleFence) => {
+                Err(ServiceError::StaleGeneration) => {
                     // Only a query generation rejection permits rebinding. An
                     // endpoint/participant rejection below ends this observer.
                     if !reset_observation(&mut client, &mut observer, out)? {
@@ -372,12 +367,12 @@ fn follow_to(session: &Session, args: &EventsArgs, mut query: EventQuery, out: &
                 Err(error) => return Err(error),
             };
             if let Err(error) = observer.check() {
-                if matches!(error, ServiceError::StaleFence) {
+                if matches!(error, ServiceError::StaleGeneration) {
                     // A reset may commit between page and endpoint check. A
                     // second generation rejection distinguishes it from an
                     // exact participant/endpoint fence in the current scope.
                     match watermark(&client) {
-                        Err(ServiceError::StaleFence) => {
+                        Err(ServiceError::StaleGeneration) => {
                             if !reset_observation(&mut client, &mut observer, out)? {
                                 return Ok(0);
                             }

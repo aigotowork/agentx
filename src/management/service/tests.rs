@@ -200,7 +200,7 @@ fn runtime_read_http_503_retains_class_duration_and_request_id_without_query() {
 fn caller_flow(service: &ManagementService, input: SubmitMessage) -> ServiceResult<(Operation, Operation)> {
     let described = service.describe()?;
     if described.generation != input.generation {
-        return Err(ServiceError::StaleFence);
+        return Err(ServiceError::StaleGeneration);
     }
     let mut page = service.list_agents(ListAgentsInput { generation: described.generation.clone(), after: None, limit: None, current_only: true, labels: vec![] })?;
     loop {
@@ -271,8 +271,8 @@ fn five_methods_compose_and_busy_replay_preserves_identity_through_native_ipc() 
     assert!(matches!(service.get_agent(GetAgentInput { generation: generation.clone(), agent: stale }), Err(ServiceError::StaleFence)));
     let mut wrong_generation = input.clone();
     wrong_generation.generation = "retired-generation".into();
-    assert!(matches!(service.submit_message(wrong_generation), Err(ServiceError::StaleFence)));
-    assert!(matches!(service.get_operation(GetOperationInput { generation: "retired-generation".into(), ..lookup.clone() }), Err(ServiceError::StaleFence)));
+    assert!(matches!(service.submit_message(wrong_generation), Err(ServiceError::StaleGeneration)));
+    assert!(matches!(service.get_operation(GetOperationInput { generation: "retired-generation".into(), ..lookup.clone() }), Err(ServiceError::StaleGeneration)));
     assert_eq!(service.workers.available_permits(), 0);
     assert!(grant.ticket.is_some());
     // An unclaimed grant becomes Unknown after daemon replacement. Public replay
@@ -335,7 +335,7 @@ fn resources_and_inspector_preserve_native_boundaries_through_ipc() {
     assert!(configured.settings.revision > initial.settings.revision);
     assert!(matches!(service.configure_inspection(configure), Err(ServiceError::StaleFence)));
     assert!(matches!(service.analyze_inspection(crate::inspection::contract::AnalyzeInput { generation: generation.clone(), request_id: "missing-observation".into(), observation_ids: vec!["missing".into()] }), Err(ServiceError::StaleFence)));
-    assert!(matches!(service.download_attachment(GetAttachmentInput { generation: "old-generation".into(), id: attachment.id }), Err(ServiceError::StaleFence)));
+    assert!(matches!(service.download_attachment(GetAttachmentInput { generation: "old-generation".into(), id: attachment.id }), Err(ServiceError::StaleGeneration)));
     assert!(service.list_workspaces(GenerationInput { generation }).unwrap().coverage.directories_examined > 0);
 }
 
@@ -384,7 +384,7 @@ fn message_history_service_advertises_capability_and_fences_exact_reads() {
     assert!(older.next_before.is_none());
     assert!(older.live_after.is_none());
 
-    assert!(matches!(service.message_history(MessageHistoryInput { generation: "retired-generation".into(), ..input.clone() }), Err(ServiceError::StaleFence)));
+    assert!(matches!(service.message_history(MessageHistoryInput { generation: "retired-generation".into(), ..input.clone() }), Err(ServiceError::StaleGeneration)));
     let stale_agent = AgentRef { incarnation: Some(9.0_f64.to_bits().to_string()), ..input.agent.clone() };
     assert!(matches!(service.message_history(MessageHistoryInput { agent: stale_agent, ..input.clone() }), Err(ServiceError::StaleFence)));
     assert!(matches!(service.message_history(MessageHistoryInput { limit: Some(101), ..input.clone() }), Err(ServiceError::InvalidInput(_))));

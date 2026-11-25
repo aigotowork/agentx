@@ -225,7 +225,7 @@ export type Episode = {
     source: string;
 };
 
-export type ErrorCode = 'InvalidInput' | 'Forbidden' | 'NotFound' | 'Conflict' | 'StaleReference' | 'Unsupported' | 'Unavailable' | 'OutcomeUnknown' | 'Internal';
+export type ErrorCode = 'InvalidInput' | 'Forbidden' | 'NotFound' | 'Conflict' | 'StaleReference' | 'StaleGeneration' | 'Unsupported' | 'Unavailable' | 'OutcomeUnknown' | 'Internal';
 
 export type ErrorEnvelope = {
     error: PublicError;

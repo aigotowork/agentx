@@ -6,12 +6,8 @@
     "Workspace",
     "RoleCatalog",
     "Role",
-    "MemberCursor",
     "PageRequest<C>",
-    "PageRequest<MemberCursor>",
-    "MemberPage",
     "MemberEntry",
-    "MemberCoverage",
     "Agent",
     "CurrentAgent",
     "StoppedAgent",
@@ -59,23 +55,23 @@
   "routes": [
     [
       "Workspace",
-      "Workspace.members",
-      "MemberPage",
-      "MemberPage.members",
+      "Workspace.memberPage",
+      "NativeMemberPage",
+      "NativeMemberPage.members",
       "Agent",
       "CurrentAgent",
       "CurrentAgent.prepareMessage",
       "PreparedMessage"
     ],
     [
-      "Workspace.members",
-      "PageRequest<MemberCursor>",
-      "PageRequest<MemberCursor>.after",
-      "MemberCursor"
+      "Workspace.memberPage",
+      "NativeMemberRequest",
+      "NativeMemberRequest.after",
+      "NativeMemberCursor"
     ],
     [
-      "MemberPage",
-      "MemberPage.members",
+      "NativeMemberPage",
+      "NativeMemberPage.members",
       "AgentSnapshot",
       "AgentSnapshot.membership",
       "Membership",
@@ -84,11 +80,11 @@
       "Management.RoleView"
     ],
     [
-      "MemberPage",
-      "MemberPage.coverage",
-      "MemberCoverage",
-      "MemberCoverage.next",
-      "MemberCursor"
+      "NativeMemberPage",
+      "NativeMemberPage.coverage",
+      "NativeMemberCoverage",
+      "NativeMemberCoverage.next",
+      "NativeMemberCursor"
     ],
     [
       "CurrentAgent",
@@ -119,7 +115,7 @@
       "MessageCursor"
     ],
     [
-      "Workspace.members",
+      "Workspace.memberPage",
       "NativeWorkspaceMembershipPaging"
     ],
     [
@@ -136,10 +132,10 @@
     [
       "Office",
       "Office.members",
-      "Workspace.members",
-      "MemberPage",
-      "MemberPage.coverage",
-      "MemberCoverage"
+      "Workspace.memberPage",
+      "NativeMemberPage",
+      "NativeMemberPage.coverage",
+      "NativeMemberCoverage"
     ],
     [
       "CurrentActor",
@@ -210,11 +206,6 @@
       "AgentSnapshot.membership"
     ],
     [
-      "AgentXScope",
-      "AgentXScope.supportsWorkspaceMembers",
-      "Management.Descriptor.supports_workspace_members"
-    ],
-    [
       "Workspace",
       "Workspace.memberPage",
       "NativeMemberPage",
@@ -224,12 +215,6 @@
       "NativeMemberCursor",
       "NativeMemberCursor.workspace",
       "WorkspaceAddress"
-    ],
-    [
-      "Workspace.memberPage",
-      "NativeMemberRequest",
-      "NativeMemberRequest.after",
-      "NativeMemberCursor"
     ],
     [
       "Workspace.memberPage",
@@ -467,6 +452,7 @@
     "StoppedAgent.stopParticipation",
     "StoppedAgent.labels",
     "StoppedAgent.prepareLabelsPatch",
-    "StoppedAgent.patchLabels"
+    "StoppedAgent.patchLabels",
+    "Workspace.members"
   ]
 }

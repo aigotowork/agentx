@@ -30,11 +30,12 @@ use clap::{CommandFactory, Parser};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::json;
 use sha2::{Digest, Sha256};
+#[cfg(target_os = "linux")]
 use uuid::Uuid;
 
+use super::communication::types::{AgentView, ClaimInbox, CloudAgentSummary, ConfirmInbox, HostView, InboxBatch, InboxConfirmation, Intent, MessageOperation, MessageView, SendMessage};
 #[cfg(target_os = "linux")]
-use super::communication::types::RecoverInbox;
-use super::communication::types::{AgentView, ClaimInbox, ConfirmInbox, HostView, InboxBatch, InboxConfirmation, Intent, MessageOperation, MessageView, SendMessage};
+use super::communication::types::{AgentWorkspace, RecoverInbox};
 use crate::cli::commands::{
     list::ListArgs,
     listen::ListenArgs,
@@ -42,12 +43,12 @@ use crate::cli::commands::{
 };
 use crate::cli::router::{canonical_command, extract_global_flags_full};
 use crate::messaging::routing::validate_message;
-use http::{Http, HttpError};
+use http::{Http, HttpError, InventoryPage};
 use mailbox::{Mailbox, Phase};
 use port::{Command, Port, Selection, checked_descriptor};
 
-const SCOPE_URL: &str = "AGENTX_SCOPE_URL";
-const SCOPE_TOKEN: &str = "AGENTX_SCOPE_TOKEN";
+const NAMESPACE_URL: &str = "AGENTX_NAMESPACE_URL";
+const NAMESPACE_TOKEN: &str = "AGENTX_NAMESPACE_TOKEN";
 const HOST_NAME: &str = "AGENTX_HOST_NAME";
 const CONTEXT_FILE: &str = "AGENTX_CLOUD_CONTEXT";
 const IPC_CONTEXT: &str = "AGENTX_CLOUD_IPC_CONTEXT";
@@ -113,7 +114,7 @@ impl Mode {
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
             Err(error) => return Err(error).context("inspect scope cloud enrollment"),
         }
-        Ok([SCOPE_URL, SCOPE_TOKEN].iter().any(|key| std::env::var_os(key).is_some()).then_some(Self::Direct))
+        Ok([NAMESPACE_URL, NAMESPACE_TOKEN].iter().any(|key| std::env::var_os(key).is_some()).then_some(Self::Direct))
     }
 
     fn scope(&self) -> Result<Scope> {
@@ -168,13 +169,13 @@ pub(super) fn dispatch(argv: &[String]) -> Option<Result<()>> {
         "list" => Some(list_command(args, help, flags.name.as_deref(), mode)),
         "listen" => Some(listen_command(args, help, flags.name.as_deref(), mode)),
         _ if help => None,
-        _ => Some(Err(anyhow::anyhow!("{command} is not available in a cloud scope; use launch, send, list or listen"))),
+        _ => Some(Err(anyhow::anyhow!("{command} is not available in a cloud Namespace; use launch, send, list or listen"))),
     }
 }
 
 #[derive(Serialize, Deserialize)]
 struct Credentials {
-    url: String,
+    namespace_url: String,
     token: String,
     host: String,
     root: PathBuf,
@@ -186,9 +187,9 @@ impl Credentials {
         if let Some(path) = std::env::var_os(CONTEXT_FILE) {
             return read_json_file(&PathBuf::from(path)).context("read local cloud Agent context");
         }
-        let url = std::env::var(SCOPE_URL).context("set AGENTX_SCOPE_URL for the cloud scope")?;
-        let url = url.trim_end_matches('/').trim_end_matches("/api/v1").to_owned();
-        let token = std::env::var(SCOPE_TOKEN).context("set AGENTX_SCOPE_TOKEN for the cloud scope")?;
+        let namespace_url = std::env::var(NAMESPACE_URL).context("set AGENTX_NAMESPACE_URL for the cloud Namespace")?;
+        let namespace_url = namespace_url.trim_end_matches('/').trim_end_matches("/api/v1").to_owned();
+        let token = std::env::var(NAMESPACE_TOKEN).context("set AGENTX_NAMESPACE_TOKEN for the cloud Namespace")?;
         let environment = std::env::vars().collect();
         let (root, _) = crate::paths::resolve_agentx_dir_from_env(&environment, &std::env::current_dir()?);
         let host = std::env::var(HOST_NAME).ok().filter(|name| !name.is_empty()).unwrap_or_else(default_host);
@@ -197,17 +198,17 @@ impl Credentials {
             "invalid cloud host name; use lowercase letters, digits, dots, hyphens or underscores, starting with a letter or digit"
         );
         let root = std::path::absolute(root)?.join("cloud-client");
-        Ok(Self { url, token, host, root, actor: None })
+        Ok(Self { namespace_url, token, host, root, actor: None })
     }
 
     fn api(&self) -> Result<Scope> {
-        let api = Http::new(&format!("{}/api/v1", self.url), &self.token)?;
-        let descriptor = checked_descriptor(&api, &self.url)?;
-        Ok(Scope { port: Port::Direct(api), generation: descriptor.generation, state: self.state_dir() })
+        let api = Http::new(&format!("{}/api/v1", self.namespace_url), &self.token)?;
+        let descriptor = checked_descriptor(&api, &self.namespace_url)?;
+        Ok(Scope { port: Port::Direct { http: api, generation: descriptor.generation.clone() }, generation: descriptor.generation, state: self.state_dir() })
     }
 
     fn state_dir(&self) -> PathBuf {
-        let key = URL_SAFE_NO_PAD.encode(Sha256::digest(format!("{}\0{}", self.url, self.host)));
+        let key = URL_SAFE_NO_PAD.encode(Sha256::digest(format!("{}\0{}", self.namespace_url, self.host)));
         self.root.join(key)
     }
 
@@ -215,7 +216,7 @@ impl Credentials {
         let explicit = explicit.map(|name| name.trim_start_matches('@'));
         if let Some(actor) = &self.actor {
             ensure!(explicit.is_none_or(|name| name == actor.agent.name || name == qualified(&actor.agent)), "--iam conflicts with the cloud Agent bound to this process");
-            ensure!(actor.generation == scope.generation, "local cloud Agent belongs to another scope generation");
+            ensure!(actor.generation == scope.generation, "local cloud Agent belongs to another Namespace generation");
             return Ok(actor.clone());
         }
         let requested = explicit.context("cloud send and listen require a launched Agent or --iam NAME for a live Agent on this host")?;
@@ -234,7 +235,7 @@ impl Credentials {
         }
         let local: LocalRun = read_json_file(&scope.actor_path(name)).context("read local cloud Agent registration")?;
         let actor = local.actor;
-        ensure!(actor.generation == scope.generation && actor.agent.host == self.host && actor.agent.name == name, "local cloud Agent registration no longer matches this scope");
+        ensure!(actor.generation == scope.generation && actor.agent.host == self.host && actor.agent.name == name, "local cloud Agent registration no longer matches this Namespace");
         Ok(actor)
     }
 }
@@ -288,12 +289,6 @@ struct LocalSession {
     cwd: PathBuf,
 }
 
-#[derive(Deserialize)]
-struct Page<T> {
-    items: Vec<T>,
-    next: Option<String>,
-}
-
 struct Scope {
     port: Port,
     generation: String,
@@ -320,7 +315,7 @@ impl Scope {
         let mut rows = Vec::new();
         loop {
             let command = if agents { Command::Agents(cursor.clone()) } else { Command::Hosts(cursor.clone()) };
-            let page: Page<T> = self.port.call(command)?;
+            let page = self.port.call::<InventoryPage<T>>(command)?.verify(&self.generation)?;
             rows.extend(page.items);
             let Some(next) = page.next else { return Ok(rows) };
             ensure!(cursor.as_ref().is_none_or(|after| after < &next), "cloud directory cursor did not advance");
@@ -336,7 +331,7 @@ impl Scope {
     fn allocate_local(&self, origin: &LaunchOrigin) -> Result<Registration<'_>> {
         use std::collections::HashSet;
 
-        let alive: HashSet<_> = self.pages::<AgentView>(true)?.into_iter().map(|agent| agent.name).collect();
+        let alive: HashSet<_> = self.pages::<CloudAgentSummary>(true)?.into_iter().map(|agent| agent.name).collect();
         let mut collisions = HashSet::new();
         for _ in 0..8 {
             let name = crate::agents::names::allocate_name(&|name| alive.contains(name) || collisions.contains(name) || self.actor_path(name).exists(), &alive, 200, 1200, 30.0)?;
@@ -373,9 +368,13 @@ impl Scope {
                 ensure!(previous.actor.installation_id == installation_id && previous.actor.agent.host == origin.host && previous.actor.agent.name == name, "saved cloud Agent identity differs from this installation");
                 previous
             }
-            _ if recover => bail!("no recoverable local cloud Agent @{name} in this scope generation"),
+            _ if recover => bail!("no recoverable local cloud Agent @{name} in this Namespace generation"),
             _ => LocalRun {
-                actor: Actor { generation: self.generation.clone(), installation_id, agent: AgentView { name: name.into(), host: origin.host.clone(), incarnation: origin.incarnation.clone().unwrap_or_else(|| Uuid::new_v4().to_string()) } },
+                actor: Actor {
+                    generation: self.generation.clone(),
+                    installation_id,
+                    agent: AgentView { name: name.into(), host: origin.host.clone(), incarnation: origin.incarnation.clone().unwrap_or_else(super::identifiers::random_id), workspace: origin.workspace.clone() },
+                },
                 session: None,
                 private_dir: None,
             },
@@ -414,7 +413,7 @@ impl Scope {
     #[cfg(target_os = "linux")]
     fn heartbeat(&self, actor: &Actor) -> Result<()> {
         match &self.port {
-            Port::Direct(http) => port::heartbeat(http, actor),
+            Port::Direct { http, .. } => port::heartbeat(http, actor),
             Port::Managed(_) => Ok(()),
         }
     }
@@ -470,6 +469,7 @@ struct LaunchOrigin {
     host: String,
     incarnation: Option<String>,
     daemon_instance: Option<String>,
+    workspace: AgentWorkspace,
 }
 
 #[cfg(target_os = "linux")]
@@ -635,7 +635,7 @@ fn send_command(argv: &[String], help: bool, explicit: Option<&str>, mode: Mode)
     };
     let mut receipts = Vec::new();
     for to in targets {
-        let request_id = command.request_id.clone().unwrap_or_else(|| Uuid::new_v4().to_string());
+        let request_id = command.request_id.clone().unwrap_or_else(super::identifiers::random_id);
         let send = || {
             Command::Send(SendMessage {
                 generation: actor.generation.clone(),
@@ -680,10 +680,10 @@ fn list_command(argv: &[String], help: bool, explicit: Option<&str>, mode: Mode)
     let args = ListArgs::try_parse_from(std::iter::once("list").chain(argv.iter().map(String::as_str)))?;
     ensure!(
         !args.filters.has_workspace_selector() && args.filters.labels.is_empty() && !args.stopped && !args.sh && !args.verbose && args.format.is_none() && args.last.is_none(),
-        "cloud list supports scope-wide directory, NAME, self, --names and --json"
+        "cloud list supports Namespace-wide directory, NAME, self, --names and --json"
     );
     let scope = mode.scope()?;
-    let agents = scope.pages::<AgentView>(true)?;
+    let agents: Vec<AgentView> = scope.pages::<CloudAgentSummary>(true)?.into_iter().map(AgentView::from).collect();
     if let Some(name) = args.name.as_deref() {
         let exact_actor = if name == "self" { Some(mode.resolve_actor(explicit, &scope)?.agent) } else { None };
         let name = name.trim_start_matches('@');

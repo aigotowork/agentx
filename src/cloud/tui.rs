@@ -7,7 +7,6 @@ use std::sync::{Arc, mpsc};
 use std::time::Duration;
 
 use anyhow::{Context, Result, bail};
-use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use crossterm::event::{self, DisableBracketedPaste, EnableBracketedPaste, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode};
 use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
@@ -19,10 +18,9 @@ use ratatui::widgets::{Block, Clear, List, ListItem, ListState, Paragraph, Wrap}
 use ratatui::{Frame, Terminal};
 use serde::Deserialize;
 use serde_json::json;
-use uuid::Uuid;
 
-use super::client::http::{Http, HttpError};
-use super::communication::{AgentView, HostView};
+use super::client::http::{Http, HttpError, InventoryPage};
+use super::communication::{AgentView, HostView, types::CloudAgentSummary};
 use crate::tui::theme::{Theme, palette};
 
 const ADMIN: &str = "/api/v1/admin";
@@ -60,7 +58,7 @@ struct Page<T> {
 struct Overview {
     deployment_id: String,
     protocol_version: u32,
-    scopes: usize,
+    namespaces: usize,
     hosts: usize,
     online_hosts: usize,
     agents: usize,
@@ -68,9 +66,9 @@ struct Overview {
 }
 
 #[derive(Deserialize)]
-struct Scope {
-    id: String,
-    scope_url: String,
+struct Namespace {
+    namespace_id: String,
+    namespace_url: String,
     credential_version: u32,
     generation: String,
     hosts: usize,
@@ -87,12 +85,12 @@ enum Inventory {
 }
 
 enum Rows {
-    Hosts(Page<HostView>),
-    Agents(Page<AgentView>),
+    Hosts(InventoryPage<HostView>),
+    Agents(InventoryPage<AgentView>),
 }
 
 struct Detail {
-    scope: Scope,
+    namespace: Namespace,
     kind: Inventory,
     rows: Option<Rows>,
     cursor: ListState,
@@ -101,7 +99,7 @@ struct Detail {
 #[derive(Clone)]
 struct Change {
     id: String,
-    request_id: Uuid,
+    request_id: String,
     token: String,
     expected_version: Option<u32>,
 }
@@ -123,17 +121,17 @@ struct Credential {
 
 enum Job {
     Refresh,
-    Scopes(String),
+    Namespaces(String),
     Inspect(String, Inventory),
-    Inventory(String, Inventory, Option<String>),
+    Inventory(String, String, Inventory, Option<String>),
     Write(Change),
     Control(Box<control::Job>),
 }
 
 enum Update {
-    Snapshot(Overview, Page<Scope>),
-    Scopes(Page<Scope>),
-    Detail(Scope, Inventory, Result<Rows>),
+    Snapshot(Overview, Result<Page<Namespace>>),
+    Namespaces(Page<Namespace>),
+    Detail(Namespace, Inventory, Result<Rows>),
     Inventory(Inventory, Rows, bool),
     Written(std::result::Result<u32, Phase>),
     Control(control::Update),
@@ -143,7 +141,7 @@ enum Update {
 struct App {
     endpoint: String,
     overview: Option<Overview>,
-    scopes: Page<Scope>,
+    namespaces: Page<Namespace>,
     cursor: ListState,
     detail: Option<Detail>,
     credential: Option<Credential>,
@@ -213,28 +211,37 @@ impl Rows {
 
 impl Job {
     fn execute(self, http: &Http) -> Result<Update> {
-        let get_scopes = |after: Option<&str>| http.request("GET", &page_path(&format!("{ADMIN}/scopes"), after), None);
-        let get_inventory = |id: &str, kind: &Inventory, after: Option<&str>| {
-            let mut path = page_path(&format!("{}/{}", scope_path(id), kind.label().to_ascii_lowercase()), after);
+        let get_namespaces = |after: Option<&str>| http.request("GET", &page_path(&format!("{ADMIN}/namespaces"), after), None);
+        let get_inventory = |id: &str, generation: &str, kind: &Inventory, after: Option<&str>| {
+            let mut path = page_path(&format!("{}/{}", namespace_path(id), kind.label().to_ascii_lowercase()), after);
+            path.push_str("&generation=");
+            path.push_str(&encode(generation));
             if let Some(host) = kind.host() {
                 path.push_str("&host=");
                 path.push_str(&encode(host));
             }
             match kind {
-                Inventory::Hosts => http.request("GET", &path, None).map(Rows::Hosts),
-                Inventory::Agents(_) => http.request("GET", &path, None).map(Rows::Agents),
+                Inventory::Hosts => http.inventory_page(&path, generation).map(Rows::Hosts),
+                Inventory::Agents(_) => {
+                    let page = http.inventory_page::<CloudAgentSummary>(&path, generation)?;
+                    Ok(Rows::Agents(InventoryPage { generation: page.generation, items: page.items.into_iter().map(AgentView::from).collect(), next: page.next }))
+                }
             }
         };
         Ok(match self {
-            Self::Refresh => Update::Snapshot(http.request("GET", &format!("{ADMIN}/overview"), None)?, get_scopes(None)?),
-            Self::Scopes(after) => Update::Scopes(get_scopes(Some(&after))?),
-            Self::Inspect(id, kind) => {
-                let scope = http.request("GET", &scope_path(&id), None)?;
-                let rows = get_inventory(&id, &kind, None);
-                Update::Detail(scope, kind, rows)
+            Self::Refresh => {
+                let overview: Overview = http.request("GET", &format!("{ADMIN}/overview"), None)?;
+                Update::Snapshot(overview, get_namespaces(None))
             }
-            Self::Inventory(id, kind, after) => {
-                let rows = get_inventory(&id, &kind, after.as_deref())?;
+            Self::Namespaces(after) => Update::Namespaces(get_namespaces(Some(&after))?),
+            Self::Inspect(id, kind) => {
+                let namespace: Namespace = http.request("GET", &namespace_path(&id), None)?;
+                anyhow::ensure!(namespace.namespace_id == id && !namespace.generation.is_empty(), "cloud reply does not match the selected Namespace");
+                let rows = get_inventory(&id, &namespace.generation, &kind, None);
+                Update::Detail(namespace, kind, rows)
+            }
+            Self::Inventory(id, generation, kind, after) => {
+                let rows = get_inventory(&id, &generation, &kind, after.as_deref())?;
                 Update::Inventory(kind, rows, after.is_some())
             }
             Self::Write(change) => Update::Written(change.submit(http)),
@@ -243,8 +250,8 @@ impl Job {
     }
 }
 
-fn scope_path(id: &str) -> String {
-    format!("{ADMIN}/scopes/{}", encode(id))
+fn namespace_path(id: &str) -> String {
+    format!("{ADMIN}/namespaces/{}", encode(id))
 }
 
 fn encode(value: &str) -> String {
@@ -263,6 +270,13 @@ fn page_path(path: &str, after: Option<&str>) -> String {
 
 // Display status and recovery guidance without echoing an upstream response body.
 fn http_error(error: &anyhow::Error) -> String {
+    if let Some(error) = error.downcast_ref::<HttpError>() {
+        match error.code.as_str() {
+            "unsupported_operation" => return "This deployment does not support this operation.".into(),
+            "stale_generation" => return "Namespace generation changed. Refresh before reading again.".into(),
+            _ => {}
+        }
+    }
     match error.downcast_ref::<HttpError>().map(|error| error.status) {
         Some(401 | 403) => "Access denied. Check AGENTX_ADMIN_TOKEN.".into(),
         Some(404) => "Resource not found. Refresh the deployment.".into(),
@@ -277,12 +291,12 @@ impl Change {
     fn submit(self, http: &Http) -> std::result::Result<u32, Phase> {
         #[derive(Deserialize)]
         struct Receipt {
-            id: String,
+            namespace_id: String,
             credential_version: u32,
         }
 
-        let mut path = scope_path(&self.id);
-        let mut payload = json!({"request_id": self.request_id.to_string(), "token": self.token});
+        let mut path = namespace_path(&self.id);
+        let mut payload = json!({"request_id": &self.request_id, "token": self.token});
         let method = if let Some(version) = self.expected_version {
             path.push_str("/token-rotations");
             payload["expected_version"] = json!(version);
@@ -291,7 +305,7 @@ impl Change {
             "PUT"
         };
         match http.request::<Receipt>(method, &path, Some(&payload)) {
-            Ok(receipt) if receipt.id == self.id => Ok(receipt.credential_version),
+            Ok(receipt) if receipt.namespace_id == self.id => Ok(receipt.credential_version),
             Ok(_) => Err(Phase::Unknown),
             Err(error) => {
                 let reason = http_error(&error);
@@ -309,10 +323,13 @@ fn id_char(ch: char) -> bool {
 }
 
 impl Credential {
-    fn new(scope: Option<&Scope>) -> Self {
-        let mut entropy = [0; 24];
-        rand::fill(&mut entropy);
-        let change = Change { id: scope.map_or_else(String::new, |scope| scope.id.clone()), request_id: Uuid::new_v4(), token: URL_SAFE_NO_PAD.encode(entropy), expected_version: scope.map(|scope| scope.credential_version) };
+    fn new(namespace: Option<&Namespace>) -> Self {
+        let change = Change {
+            id: namespace.map_or_else(String::new, |namespace| namespace.namespace_id.clone()),
+            request_id: super::identifiers::random_id(),
+            token: super::identifiers::random_id(),
+            expected_version: namespace.map(|namespace| namespace.credential_version),
+        };
         Self { change, visible: false, revealed: false, phase: Phase::Draft, error: None }
     }
 
@@ -340,7 +357,7 @@ impl Credential {
             return None;
         }
         if super::validate_id(&self.change.id).is_err() {
-            self.error = Some("Use a scope ID that starts and ends with a letter or digit.".into());
+            self.error = Some("Use a namespace ID that starts and ends with a letter or digit.".into());
         } else if !self.revealed {
             self.error = Some("Reveal and save the token before submitting.".into());
         } else {
@@ -355,22 +372,39 @@ impl Credential {
 impl App {
     fn apply(&mut self, update: Result<Update>) {
         match update {
-            Err(error) => self.notice = Some(http_error(&error)),
-            Ok(Update::Snapshot(overview, scopes)) => {
-                let selected = self.selected_scope().map(|scope| scope.id.as_str());
-                let next = scopes.items.iter().position(|scope| Some(scope.id.as_str()) == selected);
-                self.cursor = ListState::default().with_selected(next.or_else(|| first(scopes.items.len())));
+            Err(error) => {
+                if error.downcast_ref::<HttpError>().is_some_and(|error| error.code == "stale_generation" || matches!(error.status, 401 | 403))
+                    && let Some(detail) = &mut self.detail
+                {
+                    detail.rows = None;
+                    detail.cursor.select(None);
+                }
+                self.notice = Some(http_error(&error));
+            }
+            Ok(Update::Snapshot(overview, namespaces)) => {
                 self.overview = Some(overview);
-                self.scopes = scopes;
+                let namespaces = match namespaces {
+                    Ok(namespaces) => namespaces,
+                    Err(error) => {
+                        self.notice = Some(http_error(&error));
+                        self.namespaces = Page::default();
+                        self.cursor.select(None);
+                        return;
+                    }
+                };
+                let selected = self.selected_namespace().map(|namespace| namespace.namespace_id.as_str());
+                let next = namespaces.items.iter().position(|namespace| Some(namespace.namespace_id.as_str()) == selected);
+                self.cursor = ListState::default().with_selected(next.or_else(|| first(namespaces.items.len())));
+                self.namespaces = namespaces;
             }
-            Ok(Update::Scopes(more)) => {
-                self.scopes.append(more);
-                self.cursor.select(self.cursor.selected().or_else(|| first(self.scopes.items.len())));
+            Ok(Update::Namespaces(more)) => {
+                self.namespaces.append(more);
+                self.cursor.select(self.cursor.selected().or_else(|| first(self.namespaces.items.len())));
             }
-            Ok(Update::Detail(scope, kind, rows)) => {
+            Ok(Update::Detail(namespace, kind, rows)) => {
                 let rows = rows.map_err(|error| self.notice = Some(http_error(&error))).ok();
                 let cursor = ListState::default().with_selected(first(rows.as_ref().map_or(0, Rows::len)));
-                self.detail = Some(Detail { scope, kind, rows, cursor });
+                self.detail = Some(Detail { namespace, kind, rows, cursor });
             }
             Ok(Update::Inventory(kind, rows, append)) => {
                 if let Some(detail) = &mut self.detail {
@@ -406,12 +440,12 @@ impl App {
         }
     }
 
-    fn selected_scope(&self) -> Option<&Scope> {
-        self.scopes.items.get(self.cursor.selected()?)
+    fn selected_namespace(&self) -> Option<&Namespace> {
+        self.namespaces.items.get(self.cursor.selected()?)
     }
 
-    fn target(&self) -> Option<&Scope> {
-        self.detail.as_ref().map(|detail| &detail.scope).or_else(|| self.selected_scope())
+    fn target(&self) -> Option<&Namespace> {
+        self.detail.as_ref().map(|detail| &detail.namespace).or_else(|| self.selected_namespace())
     }
 
     fn key(&mut self, key: KeyEvent) -> Option<Job> {
@@ -455,19 +489,19 @@ impl App {
         }
         match key.code {
             KeyCode::Char('l') | KeyCode::Char('s') | KeyCode::Char('o') => return self.open_control(key.code),
-            KeyCode::Char('n') if self.detail.is_none() => self.credential = Some(Credential::new(None)),
+            KeyCode::Char('n') if self.overview.is_some() && self.detail.is_none() => self.credential = Some(Credential::new(None)),
             KeyCode::Char('r') => {
-                if let Some(scope) = self.target() {
-                    self.credential = Some(Credential::new(Some(scope)));
+                if let Some(namespace) = self.target() {
+                    self.credential = Some(Credential::new(Some(namespace)));
                 }
             }
-            KeyCode::Char('f') => return Some(self.detail.as_ref().map_or(Job::Refresh, |detail| Job::Inspect(detail.scope.id.clone(), detail.kind.clone()))),
-            KeyCode::Enter | KeyCode::Right if self.detail.is_none() => return self.selected_scope().map(|scope| Job::Inspect(scope.id.clone(), Inventory::Hosts)),
+            KeyCode::Char('f') => return Some(self.detail.as_ref().map_or(Job::Refresh, |detail| Job::Inspect(detail.namespace.namespace_id.clone(), detail.kind.clone()))),
+            KeyCode::Enter | KeyCode::Right if self.detail.is_none() => return self.selected_namespace().map(|namespace| Job::Inspect(namespace.namespace_id.clone(), Inventory::Hosts)),
             KeyCode::Enter => {
                 let detail = self.detail.as_ref()?;
                 if let Rows::Hosts(hosts) = detail.rows.as_ref()? {
                     let host = hosts.items.get(detail.cursor.selected()?)?;
-                    return Some(Job::Inventory(detail.scope.id.clone(), Inventory::Agents(Some(host.name.clone())), None));
+                    return Some(Job::Inventory(detail.namespace.namespace_id.clone(), detail.namespace.generation.clone(), Inventory::Agents(Some(host.name.clone())), None));
                 }
             }
             KeyCode::Esc | KeyCode::Left if self.detail.is_some() => {
@@ -476,19 +510,19 @@ impl App {
             }
             KeyCode::Tab | KeyCode::Right if self.detail.is_some() => {
                 let detail = self.detail.as_ref()?;
-                return Some(Job::Inventory(detail.scope.id.clone(), detail.kind.other(), None));
+                return Some(Job::Inventory(detail.namespace.namespace_id.clone(), detail.namespace.generation.clone(), detail.kind.other(), None));
             }
             KeyCode::Char(']') => {
                 return match &self.detail {
-                    Some(detail) => Some(Job::Inventory(detail.scope.id.clone(), detail.kind.clone(), Some(detail.rows.as_ref()?.next()?.into()))),
-                    None => self.scopes.next.clone().map(Job::Scopes),
+                    Some(detail) => Some(Job::Inventory(detail.namespace.namespace_id.clone(), detail.namespace.generation.clone(), detail.kind.clone(), Some(detail.rows.as_ref()?.next()?.into()))),
+                    None => self.namespaces.next.clone().map(Job::Namespaces),
                 };
             }
             KeyCode::Up | KeyCode::Down | KeyCode::Home | KeyCode::End | KeyCode::PageUp | KeyCode::PageDown => {
                 if let Some(detail) = &mut self.detail {
                     move_cursor(&mut detail.cursor, detail.rows.as_ref().map_or(0, Rows::len), key.code);
                 } else {
-                    move_cursor(&mut self.cursor, self.scopes.items.len(), key.code);
+                    move_cursor(&mut self.cursor, self.namespaces.items.len(), key.code);
                 }
             }
             _ => {}
@@ -497,8 +531,8 @@ impl App {
     }
 
     fn open_control(&mut self, key: KeyCode) -> Option<Job> {
-        let scope = self.target()?;
-        let target = control::ScopeTarget { id: scope.id.clone(), generation: scope.generation.clone() };
+        let namespace = self.target()?;
+        let target = control::NamespaceTarget { id: namespace.namespace_id.clone(), generation: namespace.generation.clone() };
         let dialog = if key == KeyCode::Char('o') {
             control::Dialog::lookup(target)
         } else {
@@ -518,7 +552,7 @@ impl App {
     fn close_dialog(&mut self) -> Option<Job> {
         let dialog = self.credential.take()?;
         if matches!(dialog.phase, Phase::Saved(_) | Phase::Unknown) {
-            // Re-enter from a fresh scope snapshot before offering another rotation.
+            // Re-enter from a fresh namespace snapshot before offering another rotation.
             self.detail = None;
             return Some(Job::Refresh);
         }
@@ -623,9 +657,9 @@ fn render(frame: &mut Frame<'_>, app: &mut App, pending: bool) {
     let heading = app.overview.as_ref().map_or_else(|| " AgentX / Deployment".to_owned(), |data| format!(" AgentX / Deployment · API v{}", data.protocol_version));
     frame.render_widget(Paragraph::new(format!("{heading}  {}", app.endpoint)).style(Theme::title()), title);
     if let Some(data) = &app.overview {
-        let scope_label = if data.scopes == 1 { "scope" } else { "scopes" };
+        let namespace_label = if data.namespaces == 1 { "namespace" } else { "namespaces" };
         let agent_label = if data.agents == 1 { "agent" } else { "agents" };
-        let mut text = format!(" {} {scope_label} · {} unavailable   {}/{} hosts online   {} {agent_label}", data.scopes, data.unavailable, data.online_hosts, data.hosts, data.agents);
+        let mut text = format!(" {} {namespace_label} · {} unavailable   {}/{} hosts online   {} {agent_label}", data.namespaces, data.unavailable, data.online_hosts, data.hosts, data.agents);
         if overview.width >= 80 {
             text.push_str(&format!("\n Deployment ID: {}", display(&data.deployment_id)));
         }
@@ -634,14 +668,14 @@ fn render(frame: &mut Frame<'_>, app: &mut App, pending: bool) {
 
     if let Some(detail) = &mut app.detail {
         if workspace.width >= 90 {
-            let [scopes, selected] = Layout::horizontal([Constraint::Percentage(44), Constraint::Percentage(56)]).areas(workspace);
-            render_scopes(frame, scopes, &app.scopes, &mut app.cursor, false, app.overview.is_some());
+            let [namespaces, selected] = Layout::horizontal([Constraint::Percentage(44), Constraint::Percentage(56)]).areas(workspace);
+            render_namespaces(frame, namespaces, &app.namespaces, &mut app.cursor, false, app.overview.is_some());
             render_detail(frame, selected, detail);
         } else {
             render_detail(frame, workspace, detail);
         }
     } else {
-        render_scopes(frame, workspace, &app.scopes, &mut app.cursor, true, app.overview.is_some());
+        render_namespaces(frame, workspace, &app.namespaces, &mut app.cursor, true, app.overview.is_some());
     }
 
     if pending {
@@ -656,7 +690,7 @@ fn render(frame: &mut Frame<'_>, app: &mut App, pending: bool) {
     };
     let more = match &app.detail {
         Some(detail) => detail.rows.as_ref().and_then(Rows::next).is_some(),
-        None => app.scopes.next.is_some(),
+        None => app.namespaces.next.is_some(),
     };
     let shortcuts = if more && keys.width < 48 && app.detail.is_none() { format!("↑↓ Select   Enter Open   ] More\n{keys_secondary}") } else { format!("{keys_primary}{}\n{keys_secondary}", if more { "   ] More" } else { "" }) };
     if !pending {
@@ -671,21 +705,21 @@ fn render(frame: &mut Frame<'_>, app: &mut App, pending: bool) {
     }
 }
 
-fn render_scopes(frame: &mut Frame<'_>, area: Rect, page: &Page<Scope>, cursor: &mut ListState, focused: bool, loaded: bool) {
-    let block = Block::bordered().title(if focused { " Scopes › " } else { " Scopes " });
+fn render_namespaces(frame: &mut Frame<'_>, area: Rect, page: &Page<Namespace>, cursor: &mut ListState, focused: bool, loaded: bool) {
+    let block = Block::bordered().title(if focused { " Namespaces › " } else { " Namespaces " });
     let inner = block.inner(area);
     frame.render_widget(block, area);
     if page.items.is_empty() {
-        let text = if loaded { "No scopes. Press n to create one." } else { "Scope list not loaded." };
+        let text = if loaded { "No namespaces. Press n to create one." } else { "Namespace list not loaded." };
         frame.render_widget(Paragraph::new(text).wrap(Wrap { trim: true }), inner);
         return;
     }
 
     let [columns, rows] = Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).areas(inner);
-    frame.render_widget(Paragraph::new("   Hosts  Agents  Scope").style(Style::new().add_modifier(Modifier::BOLD)), columns);
-    let items = page.items.iter().map(|scope| {
-        let counts = if scope.available { format!("{:>3}/{:<3} {:>5}    ", scope.online_hosts, scope.hosts, scope.agents) } else { "      —     —  ! ".to_owned() };
-        let text = format!("{counts}{}", display(&scope.id));
+    frame.render_widget(Paragraph::new("   Hosts  Agents  Namespace").style(Style::new().add_modifier(Modifier::BOLD)), columns);
+    let items = page.items.iter().map(|namespace| {
+        let counts = if namespace.available { format!("{:>3}/{:<3} {:>5}    ", namespace.online_hosts, namespace.hosts, namespace.agents) } else { "      —     —  ! ".to_owned() };
+        let text = format!("{counts}{}", display(&namespace.namespace_id));
         ListItem::new(text)
     });
     let list = List::new(items).highlight_symbol("› ").highlight_style(if focused { SELECTION } else { Style::new().add_modifier(Modifier::BOLD) });
@@ -693,14 +727,14 @@ fn render_scopes(frame: &mut Frame<'_>, area: Rect, page: &Page<Scope>, cursor: 
 }
 
 fn render_detail(frame: &mut Frame<'_>, area: Rect, detail: &mut Detail) {
-    let scope = &detail.scope;
-    let block = Block::bordered().title(format!(" Scope › {} ", display(&scope.id)));
+    let namespace = &detail.namespace;
+    let block = Block::bordered().title(format!(" Namespace › {} ", display(&namespace.namespace_id)));
     let inner = block.inner(area);
     frame.render_widget(block, area);
     let info_height = if inner.width < 68 && inner.height >= 8 { 5 } else { 3 };
     let [info, tabs, rows] = Layout::vertical([Constraint::Length(info_height), Constraint::Length(1), Constraint::Min(0)]).areas(inner);
-    let status = if scope.available { "Available" } else { "Unavailable" };
-    let metadata = format!("{status} · token v{}\nGeneration: {}\n{}", scope.credential_version, display(&scope.generation), display(&scope.scope_url));
+    let status = if namespace.available { "Available" } else { "Unavailable" };
+    let metadata = format!("{status} · token v{}\nGeneration: {}\n{}", namespace.credential_version, display(&namespace.generation), display(&namespace.namespace_url));
     frame.render_widget(Paragraph::new(metadata).wrap(Wrap { trim: true }), info);
 
     let tabs_text = match &detail.kind {
@@ -737,7 +771,7 @@ fn render_credential(frame: &mut Frame<'_>, area: Rect, dialog: &Credential, pen
     let height = (area.height.saturating_sub(2)).min(13);
     let modal = Rect::new(area.x + (area.width - width) / 2, area.y + (area.height - height) / 2, width, height);
     let change = &dialog.change;
-    let title = if change.expected_version.is_some() { " Rotate scope token " } else { " Create scope " };
+    let title = if change.expected_version.is_some() { " Rotate namespace token " } else { " Create namespace " };
     let block = Block::bordered().title(Line::styled(title, Theme::title()));
     let inner = block.inner(modal);
     frame.render_widget(Clear, modal);
@@ -745,12 +779,12 @@ fn render_credential(frame: &mut Frame<'_>, area: Rect, dialog: &Credential, pen
 
     let [target, token, result, keys] = Layout::vertical([Constraint::Length(3), Constraint::Length(2), Constraint::Min(2), Constraint::Length(2)]).areas(inner);
     let target_text = match change.expected_version {
-        Some(version) => format!("Scope: {}\nToken to replace: v{version}", display(&change.id)),
-        None if dialog.accepts_id() => format!("Scope ID: {}▏", change.id),
-        None => format!("Scope: {}", change.id),
+        Some(version) => format!("Namespace: {}\nToken to replace: v{version}", display(&change.id)),
+        None if dialog.accepts_id() => format!("Namespace ID: {}▏", change.id),
+        None => format!("Namespace: {}", change.id),
     };
     frame.render_widget(Paragraph::new(target_text).wrap(Wrap { trim: true }), target);
-    let secret = if dialog.visible { change.token.as_str() } else { "••••••••••••••••••••••••••••••••" };
+    let secret = if dialog.visible { change.token.as_str() } else { "••••••••••••" };
     frame.render_widget(Paragraph::new(format!("New communication token\n{secret}")), token);
 
     let message = if pending {
@@ -810,7 +844,7 @@ mod tests {
 
     #[test]
     fn lost_create_result_retries_the_original_http_request_and_keeps_token_masked() {
-        const ADMIN_BEARER: &str = "synthetic-deployment-admin-for-test";
+        const ADMIN_BEARER: &str = "Admin1234567";
         type Captured = Arc<Mutex<Vec<Value>>>;
 
         async fn handler(State(captured): State<Captured>, headers: HeaderMap, Json(body): Json<Value>) -> (StatusCode, Json<Value>) {
@@ -822,7 +856,7 @@ mod tests {
             match rows.len() {
                 1 => (StatusCode::SERVICE_UNAVAILABLE, Json(json!({"code":"unavailable","message":"lost reply"}))),
                 2 => (StatusCode::CONFLICT, Json(json!({"code":"conflict","message":"cannot verify original write"}))),
-                _ => (StatusCode::OK, Json(json!({"id":"lab","credential_version":1,"generation":"fixture","scope_url":"http://127.0.0.1/scopes/lab/api/v1"}))),
+                _ => (StatusCode::OK, Json(json!({"namespace_id":"lab","credential_version":1,"generation":"fixture","namespace_url":"http://127.0.0.1/namespaces/lab/api/v1"}))),
             }
         }
 
@@ -830,10 +864,17 @@ mod tests {
         let runtime = tokio::runtime::Runtime::new().unwrap();
         let listener = runtime.block_on(tokio::net::TcpListener::bind("127.0.0.1:0")).unwrap();
         let http = Http::new(&format!("http://{}", listener.local_addr().unwrap()), ADMIN_BEARER).unwrap();
-        let router = Router::new().route("/api/v1/admin/scopes/lab", put(handler)).with_state(Arc::clone(&captured));
+        let router = Router::new()
+            .route("/api/v1/admin/namespaces/lab", put(handler))
+            .route("/api/v1/admin/overview", axum::routing::get(|| async { Json(json!({"deployment_id":"fixture","protocol_version":3,"namespaces":0,"unavailable":0,"hosts":0,"online_hosts":0,"agents":0,"future":true})) }))
+            .route("/api/v1/admin/namespaces", axum::routing::get(|| async { Json(json!({"items":[],"next":null})) }))
+            .with_state(Arc::clone(&captured));
         runtime.spawn(async move { axum::serve(listener, router).await.unwrap() });
 
         let mut app = App::default();
+        app.apply(Job::Refresh.execute(&http));
+        assert!(app.notice.is_none());
+        assert_eq!(app.overview.as_ref().unwrap().protocol_version, 3);
         assert!(press(&mut app, KeyCode::Char('n')).is_none());
         let dialog = app.credential.as_mut().unwrap();
         dialog.input_id("lab");
@@ -857,7 +898,7 @@ mod tests {
         assert_eq!(rows.len(), 3);
         assert!(rows.windows(2).all(|pair| pair[0] == pair[1]));
         assert_eq!(rows[0]["token"], token);
-        assert_eq!(rows[0]["request_id"], app.credential.as_ref().unwrap().change.request_id.to_string());
+        assert_eq!(rows[0]["request_id"], app.credential.as_ref().unwrap().change.request_id);
         assert!(rows[0].get("expected_version").is_none());
         press(&mut app, KeyCode::Tab);
         assert!(screen(&mut app, false).contains(&token));
@@ -865,13 +906,22 @@ mod tests {
     }
 
     #[test]
-    fn refresh_keeps_scope_identity_and_rotation_uses_its_latest_observed_version() {
+    fn refresh_keeps_namespace_identity_and_rotation_uses_its_latest_observed_version() {
         fn snapshot(ids: &[(&str, u32)]) -> Result<Update> {
             let items = ids
                 .iter()
-                .map(|&(id, version)| Scope { id: id.to_string(), scope_url: format!("https://cloud.example/scopes/{id}/api/v1"), credential_version: version, generation: "fixture".into(), hosts: 0, online_hosts: 0, agents: 0, available: true })
+                .map(|&(id, version)| Namespace {
+                    namespace_id: id.to_string(),
+                    namespace_url: format!("https://cloud.example/namespaces/{id}/api/v1"),
+                    credential_version: version,
+                    generation: "fixture".into(),
+                    hosts: 0,
+                    online_hosts: 0,
+                    agents: 0,
+                    available: true,
+                })
                 .collect();
-            Ok(Update::Snapshot(Overview { deployment_id: "fixture".into(), protocol_version: 1, scopes: ids.len(), unavailable: 0, hosts: 0, online_hosts: 0, agents: 0 }, Page { items, next: None }))
+            Ok(Update::Snapshot(Overview { deployment_id: "fixture".into(), protocol_version: super::super::PROTOCOL_VERSION, namespaces: ids.len(), unavailable: 0, hosts: 0, online_hosts: 0, agents: 0 }, Ok(Page { items, next: None })))
         }
 
         let mut app = App::default();
@@ -880,7 +930,7 @@ mod tests {
         app.apply(snapshot(&[("lab", 6), ("a", 1)]));
         press(&mut app, KeyCode::Char('r'));
         let shown = screen(&mut app, false);
-        assert!(shown.contains("Scope: lab"));
+        assert!(shown.contains("Namespace: lab"));
         assert!(shown.contains("Token to replace: v6"));
         press(&mut app, KeyCode::Tab);
         let Some(Job::Write(change)) = press(&mut app, KeyCode::Enter) else { panic!("expected rotation") };

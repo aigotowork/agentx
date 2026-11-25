@@ -51,11 +51,11 @@ fn detail(registry: &RuntimeRegistry, peer: &AcceptedPeer, request: &RequestObse
 }
 
 #[test]
-fn hello_only_connection_and_inspection_cleanup_never_make_a_business_call() {
+fn empty_connection_and_inspection_cleanup_never_make_a_business_call() {
     let (registry, daemon) = fixture();
     let (mut connection, accepted, _) = connected(&registry, 100, Some("A"));
-    registry.connection_changed(connection.reference(), ConnectionUpdate::HelloValidated, registry.now().unwrap());
-    connection.close_as(ConnectionCloseReason::HelloOnlyEof);
+    registry.connection_changed(connection.reference(), ConnectionUpdate::ReadingOperation, registry.now().unwrap());
+    connection.close_as(ConnectionCloseReason::Completed);
     drop(connection);
     let inspection = registry.connection_guard(RuntimeConnectionKind::Inspection);
     let snapshot = registry.snapshot(&daemon, &accepted).unwrap();

@@ -12,7 +12,7 @@ pub(crate) fn claim_orphans(client: &crate::service::client::Client) -> crate::s
         return Ok(());
     }
     let request = Request::Participants(service::Request::Lifecycle(lifecycle_service::Request::ClaimOrphans { candidates }));
-    let caller = CallerContext { request_id: RequestId(uuid::Uuid::new_v4().to_string()), invocation: client.invocation().clone(), deadline_unix_ms: None, expected_database_generation: Some(client.info().database_generation.clone()) };
+    let caller = CallerContext { request_id: RequestId(uuid::Uuid::new_v4().to_string()), invocation: client.invocation().clone(), deadline_unix_ms: None, expected_database_generation: None };
     let response = match client.call_with_context(caller.clone(), request.clone()) {
         Err(ServiceError::OutcomeUnknown(_)) => client.call_with_context(caller, request),
         result => result,
@@ -38,7 +38,7 @@ pub(crate) fn retire(
 ) -> crate::service::ServiceResult<crate::agents::hook_service::SessionStopOutcome> {
     use crate::agents::{lifecycle_service, service};
     use crate::service::{CallerContext, Request, RequestId, Response, ServiceError};
-    let caller = CallerContext { request_id: RequestId(uuid::Uuid::new_v4().to_string()), invocation: client.invocation().clone(), deadline_unix_ms: None, expected_database_generation: Some(client.info().database_generation.clone()) };
+    let caller = CallerContext { request_id: RequestId(uuid::Uuid::new_v4().to_string()), invocation: client.invocation().clone(), deadline_unix_ms: None, expected_database_generation: None };
     let request = Request::Participants(service::Request::Lifecycle(lifecycle_service::Request::StopOperator { participant: participant.clone(), initiator: initiator.into(), decision: decision.clone() }));
     let response = match client.call_with_context(caller.clone(), request.clone()) {
         Err(ServiceError::OutcomeUnknown(_)) => client.call_with_context(caller, request),

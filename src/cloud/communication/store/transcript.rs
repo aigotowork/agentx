@@ -71,14 +71,14 @@ fn cursor(value: &str, allow_zero: bool) -> Result<i64> {
 pub(in crate::cloud) fn history(conn: &Connection, now: i64, input: TranscriptHistoryQuery) -> Result<TranscriptHistoryPage> {
     name(&input.name)?;
     host_name(&input.host)?;
-    opaque(&input.incarnation)?;
+    incarnation(&input.incarnation)?;
     if input.before.is_some() && input.after.is_some() {
         return Err(Error::Invalid("select one transcript cursor direction"));
     }
     let before = input.before.as_deref().map(|value| cursor(value, false)).transpose()?;
     let after = input.after.as_deref().map(|value| cursor(value, true)).transpose()?;
     let limit = page_limit(input.limit, 20, 50)?;
-    let agent = AgentView { host: input.host, name: input.name, incarnation: input.incarnation };
+    let agent = exact_agent(conn, &input.host, &input.name, &input.incarnation)?.ok_or(Error::NotFound("exact Agent registration does not exist"))?;
     let exact: Option<(bool, Option<String>, Option<i64>)> = conn
         .query_row("SELECT a.retired,f.facts,f.reported_at FROM agents a LEFT JOIN agent_facts f USING(name,incarnation) WHERE a.name=?1 AND a.incarnation=?2 AND a.host=?3", params![agent.name, agent.incarnation, agent.host], |row| {
             Ok((row.get(0)?, row.get(1)?, row.get(2)?))

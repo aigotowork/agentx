@@ -9,7 +9,7 @@ await mkdir(evidence, { recursive: false });
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.AGENTX_PLAYWRIGHT_PACKAGE ?? '/home/long/.npm/_npx/e41f203b7505f1fb/node_modules/playwright');
 const browser = await chromium.launch({ executablePath: process.env.AGENTX_BROWSER_EXECUTABLE ?? '/usr/bin/google-chrome', args: ['--no-sandbox', '--disable-dev-shm-usage'], headless: true });
-const descriptor = { scope: '/synthetic/scope', generation: 'synthetic-generation', project: '/synthetic/project', tools: [], profiles: [], max_page: 100, max_text: 65536 };
+const descriptor = { scope: '/synthetic/scope', generation: 'synthetic-generation', project: '/synthetic/project', tools: [], profiles: [], supports_workspace_members: true, supports_message_history: true, max_page: 100, max_text: 65536 };
 const binding = { path: '/synthetic/project/.controller/task.md', schema: 'task', description: '实现消息 API', raw_status: 'in progress', status: 'ongoing', diagnostic: null, checked_at: 1730000000, last_success_at: 1730000000 };
 const agent = (incarnation, file_bindings, stopped_event = null) => ({ agent: { name: 'toku', incarnation, stopped_event }, file_bindings, status: stopped_event ? 'stopped' : 'listening', stored_status: 'listening', status_context: '', request_error: null, pending_messages: 0, title: null, detail: '', directory: '/synthetic/project', tool: 'fixture', session_id: 'synthetic-session', collaboration: { status: 'adopted', workspace: null, role: null, reason: null }, can_send: true, can_stop: true, can_resume: false, has_transcript: false });
 let rows = [agent('123', [binding, { ...binding, path: '/synthetic/delivery.md', schema: 'delivery', status: 'completed', raw_status: 'done', diagnostic: 'file missing; retained previous success', description: '交付消息 API' }])];
@@ -26,6 +26,7 @@ try {
     : path === '/api/v1/workspaces' ? { generation: descriptor.generation, workspaces: [], coverage: { errors: [], scan_limit_reached: false, agent_limit_reached: false } }
     : path === '/api/v1/roles' ? { generation: descriptor.generation, workspace: null, roles: [] }
     : path.endsWith('/launch-relations') ? { generation: descriptor.generation, origin: 'unknown', upstream: null, downstream: [], next: null }
+    : path.endsWith('/message-history') ? { generation: descriptor.generation, messages: [], next_before: null, live_after: '0' }
     : path === '/api/v1/office-activity' ? { generation: descriptor.generation, next_after: '1', messages: [], created: [], human_messages: [], human_has_more: false, has_more: false }
     : { generation: descriptor.generation, messages: [], has_more: false, next_after: '0' };
    return route.fulfill({ json: result });

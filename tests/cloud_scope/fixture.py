@@ -9,6 +9,7 @@ import secrets
 import shutil
 import signal
 import socket
+import string
 import subprocess
 import threading
 import time
@@ -28,6 +29,26 @@ def wait_for(label, observe, timeout=15, interval=0.1):
 def require(condition, message):
     if not condition:
         raise AssertionError(message)
+
+
+UNEXPOSED = {"kind": "unexposed"}
+CLOUD_PROTOCOL = 2
+COMPACT_ID = r"[A-Za-z0-9]{12}"
+WORKSPACE_ID = r"WS[A-Za-z0-9]{10}"
+LEGACY_TOKEN = "retired_fixture_bearer_not_for_use_0123"
+
+
+def compact_id():
+    return "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+
+
+def exact(agent):
+    """The exact address is independent of the registration's Workspace and facts."""
+    return {key: agent[key] for key in ("host", "name", "incarnation")}
+
+
+def project(workspace_id):
+    return {"kind": "project", "workspace_id": workspace_id}
 
 
 class Deployment:
@@ -60,7 +81,7 @@ class Deployment:
                        "listen_url": self.url, "published_url": self.public_url, "cases": {}}
 
     def token(self):
-        token = secrets.token_urlsafe(32)
+        token = compact_id()
         self.tokens.append(token)
         return token
 

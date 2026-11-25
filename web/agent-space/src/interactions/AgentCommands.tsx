@@ -1,4 +1,5 @@
-import { findConversation } from "../offline/model";
+/** @aiPurpose Present deliberate native and Namespace Agent commands with the shared dialog and receipt ownership. */
+import { findConversation, projectDisplayName } from "../offline/model";
 import { createContext, useContext, useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { AgentResource } from "../offline/model";
 import type { SpaceController } from "../offline/controller";
@@ -6,9 +7,9 @@ import { operationIssue } from "../live/controller";
 import type { SpaceLive } from "../live/workbench";
 import type { CloudHostCapabilities } from "@agentx/client";
 import { cloudProblem } from "../cloud/model";
+import { cloudOfficeQuery } from "../cloud/route";
 import { controlPending, controlStatus, directoryLaunchIssue } from "../cloud/operations";
-import { useOverlay, useSpaceShortcuts } from "./SpaceInteractions";
-import { CommandSurface } from "../../uiux/systems/space/space.web";
+import { CommandSurface, useOverlay, useSpaceShortcuts } from "../../uiux/systems/space/space.web";
 import "../conversation/compact-surfaces.css";
 
 type Action = "new" | "stop-participation" | "fork" | "kill";
@@ -107,26 +108,29 @@ function AgentCommandDialog({ opener, live, controller, action, agent, onClose }
   const [cloudReceiptId, setCloudReceiptId] = useState<string>();
   const [title, setTitle] = useState(""), [prompt, setPrompt] = useState(""), [name, setName] = useState("");
   const office = useRef(controller.getSnapshot().workspaceId).current;
+  const focusedProject = cloudOfficeQuery(office);
   const [directory, setDirectory] = useState(() => office.startsWith("/") ? office : local?.descriptor?.project ?? "");
   const [cloudDirectory, setCloudDirectory] = useState("");
   const [createCloudDirectory, setCreateCloudDirectory] = useState(false);
   const [profile, setProfile] = useState(local?.descriptor?.profiles[0]?.name ?? "");
-  const [hostChoice, setHost] = useState(() => office.startsWith('host:') ? office.slice(5) : "");
+  const [hostChoice, setHost] = useState(focusedProject.host ?? "");
   const [addingWorkspace, setAddingWorkspace] = useState(false);
-  const [workspaceAlias, setWorkspaceAlias] = useState("");
+  const [workspaceName, setWorkspaceName] = useState("");
+  const [rootChoice, setRoot] = useState("");
   const [projectPath, setProjectPath] = useState("");
   const [createProject, setCreateProject] = useState(false);
-  const [workspaceChoice, setWorkspace] = useState("");
+  const [workspaceChoice, setWorkspace] = useState(focusedProject.workspace_id ?? "");
   const [role, setRole] = useState("");
   const [catalog, setCatalog] = useState<CloudHostCapabilities>();
   const [catalogError, setCatalogError] = useState("");
   const [catalogRevision, retryCatalog] = useState(0);
   const isNew = action === "new", profiles = local?.descriptor?.profiles ?? [];
-  const host = cloud ? (agent?.ref.host || hostChoice || cloud.hosts[0]?.name || "") : "";
+  const host = cloud ? (agent?.ref.host || hostChoice || cloud.hosts.find(item => item.online)?.name || cloud.hosts[0]?.name || "") : "";
   const selectedCatalog = catalog?.host === host ? catalog : undefined;
   const workspaces = selectedCatalog?.workspaces ?? [];
-  const choices = addingWorkspace ? workspaces.filter(item => item.managed_parent) : workspaces;
-  const workspace = choices.find(item => item.alias === workspaceChoice) ?? (addingWorkspace || !workspaceChoice ? choices[0] : undefined);
+  const workspace = workspaceChoice ? workspaces.find(item => item.workspace_id === workspaceChoice) : workspaces[0];
+  const projectRoots = selectedCatalog?.project_roots ?? [];
+  const projectRoot = projectRoots.includes(rootChoice) ? rootChoice : projectRoots[0];
   const posts = local ? controller.supply.posts.filter(post => !office || post.office === office || post.office === '$global') : [];
   const post = posts.find(item => item.id === role);
   const native = agent && live.capabilities(agent.id);
@@ -151,9 +155,9 @@ function AgentCommandDialog({ opener, live, controller, action, agent, onClose }
   const receiptIssue = receipt && operationIssue(receipt);
   const confirmed = cloudResult?.status === "succeeded" || receipt?.id === receiptId && receipt?.operation?.status === "Succeeded";
   const projectPathIssue = cloudDirectoryIssue(projectPath);
-  const validAlias = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(workspaceAlias);
-  const aliasExists = workspaces.some(item => item.alias === workspaceAlias);
-  const canAdd = !!selectedCatalog?.online && selectedCatalog.workspace_management && !!workspace && !!projectPath && !projectPathIssue && validAlias && !aliasExists;
+  const projectName = workspaceName.trim();
+  const validName = !!projectName && new TextEncoder().encode(projectName).length <= 128 && !/\p{Cc}/u.test(projectName);
+  const canAdd = !!selectedCatalog?.online && selectedCatalog.workspace_management && !!projectRoot && !!projectPath && !projectPathIssue && validName;
   const enabled = addingWorkspace ? !!canAdd && !blocked && !stale && !busy && !cloudPending : supported && !blocked && !stale && !busy && !confirmed && !invalidDirectory && (!cloudDirectory || directoryEnabled);
   const feedback = stale ? "数据范围已变化，请关闭后重新选择。" : receiptIssue || error || catalogError || cloudIssue;
   useEffect(() => {
@@ -176,7 +180,7 @@ function AgentCommandDialog({ opener, live, controller, action, agent, onClose }
   useEffect(() => { if (confirmed && !stale) closeAfterReceipt.current?.(); }, [confirmed, stale]);
   useEffect(() => {
     if (cloudResult?.status !== "workspace_added" || stale) return;
-    setWorkspace(cloudResult.alias);
+    setWorkspace(cloudResult.workspace_id);
     setRole("");
     setCloudDirectory("");
     setCreateCloudDirectory(false);
@@ -187,7 +191,8 @@ function AgentCommandDialog({ opener, live, controller, action, agent, onClose }
   function switchWorkspaceMode(add: boolean) {
     setAddingWorkspace(add);
     if (add) closeAfterReceipt.current = undefined;
-    setWorkspaceAlias("");
+    setWorkspaceName("");
+    setRoot("");
     setProjectPath("");
     setCreateProject(false);
     setCloudReceiptId(undefined);
@@ -205,14 +210,14 @@ function AgentCommandDialog({ opener, live, controller, action, agent, onClose }
     setBusy(true); setError(""); setReceiptId(undefined); setCloudReceiptId(undefined);
     try {
       if (cloud && selectedCatalog) {
-        if (addingWorkspace && workspace) {
-          const entry = await cloud.control(selectedCatalog, { kind: 'add_workspace', parent: workspace.alias, alias: workspaceAlias, directory: projectPath, create_directory: createProject });
+        if (addingWorkspace && projectRoot) {
+          const entry = await cloud.control(selectedCatalog, { kind: 'add_workspace', parent: projectRoot, name: projectName, directory: projectPath, create_directory: createProject });
           if (mounted.current) setCloudReceiptId(entry.identity.request_id);
           return;
         }
         if (isNew && workspace) {
           const navigation = controller.navigationRevision;
-          const entry = await cloud.control(selectedCatalog, { kind: 'launch', workspace: workspace.alias, role: role || null, name: name || null, title: title || null, initial_prompt: prompt || null,
+          const entry = await cloud.control(selectedCatalog, { kind: 'launch', workspace_id: workspace.workspace_id, role: role || null, name: name || null, title: title || null, initial_prompt: prompt || null,
             ...(cloudDirectory ? { working_directory: cloudDirectory } : {}),
             ...(createCloudDirectory ? { create_directory: true } : {}) }, undefined, project => {
             if (controller.navigationRevision === navigation) {
@@ -263,33 +268,39 @@ function AgentCommandDialog({ opener, live, controller, action, agent, onClose }
   const cloudAvailability = !host ? "没有可选主机。" : !selectedCatalog ? (catalogError ? "" : "正在读取主机目录…")
     : !selectedCatalog.online || !selectedCatalog.installation_id ? "主机管理离线。" : taskTooLong ? "启动任务超过 16 KiB。"
     : !supported ? (isNew ? "请选择可用的工作区和岗位。" : "此实例当前不可停止。") : "";
-  const availability = confirmed ? "原操作已成功。" : cloudReceipt && cloudPending ? controlStatus(cloudReceipt) : addingWorkspace ? "" : cloud && cloudAvailability ? cloudAvailability
+  const availability = confirmed ? "原操作已成功。" : cloudReceipt && cloudPending ? controlStatus(cloudReceipt) : addingWorkspace && projectRoot ? "" : cloud && cloudAvailability ? cloudAvailability
     : !supported ? (cloud ? "" : isNew ? "请选择可用的启动配置。" : "此实例当前不支持该操作。")
     : blocked && !busy && !stale && !feedback ? (receipt?.operation ? `原操作 · ${receipt.operation.status}` : "操作暂不可用 · 查看连接与回执") : "";
   const roles = cloud ? (workspace?.roles ?? []).map(item => ({ id: item.name, label: item.name, disabled: !item.available, reason: item.reason }))
     : posts.map(item => ({ id: item.id, label: `${item.name} · ${item.office}` }));
+  const workspaceOptions = workspaces.map(item => <option key={item.workspace_id} value={item.workspace_id} title={item.workspace_id}>
+    {projectDisplayName(item.name, item.workspace_id, workspaces.filter(other => other.name === item.name).map(other => other.workspace_id))}
+  </option>);
   return <CommandSurface title={label} opener={opener} onClose={onClose} onSubmit={submit} submitLabel={submitLabel} disabled={!enabled} danger={action === "kill" || action === "stop-participation"}>
       {agent ? <div className="command-identity"><strong>{action === "fork" ? "来源 · " : ""}{agent.title}</strong><small className="command-exact-ref">{agent.ref.host && `${agent.ref.host} · `}{agent.ref.stopped_event != null ? `停止历史 #${agent.ref.stopped_event}` : `实例 · ${agent.ref.incarnation}`}</small>{selectedCatalog && <small className="command-exact-ref">{selectedCatalog.installation_id}</small>}<p>{consequence}</p></div> : <div className="launch-form">
         {cloud && <div className="launch-field-pair">
           <label>主机<select ref={input} aria-label="新 Agent 主机" value={host} disabled={busy || cloudPending} onChange={event => { switchWorkspaceMode(false); setHost(event.target.value); setWorkspace(""); setRole(""); clearCloudDirectory(); }}><option value="" disabled>请选择</option>{cloud.hosts.map(item => <option key={item.name} value={item.name}>{item.name}{item.online ? '' : ' · 心跳离线'}</option>)}</select></label>
-          <label>{addingWorkspace ? "项目所在工作区" : "工作区"}<select aria-label="新 Agent 工作区" value={workspace?.alias ?? ""} disabled={busy || cloudPending || !choices.length} onChange={event => { setWorkspace(event.target.value); setRole(""); clearCloudDirectory(); }}><option value="" disabled>请选择</option>{choices.map(item => <option key={item.alias}>{item.alias}</option>)}</select></label>
+          {addingWorkspace ? <label>项目根目录<select aria-label="项目根目录" value={projectRoot ?? ""} disabled={busy || cloudPending || !projectRoots.length} onChange={event => setRoot(event.target.value)}>
+            <option value="" disabled>没有开放的项目根目录</option>{projectRoots.map(root => <option key={root}>{root}</option>)}
+          </select></label> : <label>工作区<select aria-label="新 Agent 工作区" value={workspace?.workspace_id ?? ""} disabled={busy || cloudPending || !workspaces.length} onChange={event => { setWorkspace(event.target.value); setRole(""); clearCloudDirectory(); }}>
+            <option value="" disabled>{workspaces.length ? '请选择' : '没有项目'}</option>{workspaceOptions}
+          </select></label>}
         </div>}
         {cloud && selectedCatalog?.online && selectedCatalog.workspace_management && <button type="button" disabled={busy || cloudPending || stale}
           onClick={() => switchWorkspaceMode(!addingWorkspace)}>{addingWorkspace ? "返回启动 Agent" : "添加工作区"}</button>}
         {addingWorkspace ? <>
           <label>项目目录<input aria-label="项目目录" placeholder="例如 projects/backend" value={projectPath} disabled={busy || cloudPending}
             onChange={e => setProjectPath(e.target.value)} /></label>
-          <small>相对于 {workspace?.alias}/，父目录须已存在。</small>
-          <label>工作区名称<input aria-label="工作区名称" placeholder="例如 backend" maxLength={63} value={workspaceAlias} disabled={busy || cloudPending}
-            onChange={e => setWorkspaceAlias(e.target.value)} /></label>
+          <small>相对于 {projectRoot}/，父目录须已存在。</small>
+          <label>工作区名称<input aria-label="工作区名称" placeholder="例如 Backend" maxLength={128} value={workspaceName} disabled={busy || cloudPending}
+            onChange={e => setWorkspaceName(e.target.value)} /></label>
           <label className="launch-directory-create"><input type="checkbox" checked={createProject} disabled={busy || cloudPending}
             onChange={e => setCreateProject(e.target.checked)} />项目目录不存在时创建</label>
           {projectPathIssue && <small role="status">{projectPathIssue}</small>}
-          {workspaceAlias && !validAlias && <small role="status">名称可用小写字母、数字和中间的短横线。</small>}
-          {aliasExists && <small role="status">此名称已在该主机使用。</small>}
+          {workspaceName && !validName && <small role="status">请输入非空名称，最多 128 字节。</small>}
         </> : <>
           {cloud && workspace && <CloudLaunchDirectory value={cloudDirectory} create={createCloudDirectory} available={directoryEnabled}
-            disabled={busy || cloudPending || stale} workspace={workspace.alias} issue={invalidDirectory} onChange={value => {
+            disabled={busy || cloudPending || stale} workspace={workspace.name} issue={invalidDirectory} onChange={value => {
               setCloudDirectory(value);
               if (!value) setCreateCloudDirectory(false);
               setCloudReceiptId(undefined);
@@ -300,7 +311,7 @@ function AgentCommandDialog({ opener, live, controller, action, agent, onClose }
               setError("");
             }} />}
           <div className="launch-field-pair">
-            <LaunchRolePicker roles={roles} value={role} onChange={setRole} disabled={busy} defaultLabel={cloud ? '默认 Codex' : '按启动配置'} defaultDisabled={!!cloud && !workspace?.default_available} />
+            <LaunchRolePicker roles={roles} value={role} onChange={setRole} disabled={busy || cloudPending} defaultLabel={cloud ? '默认 Codex' : '按启动配置'} defaultDisabled={!!cloud && !workspace?.default_available} />
             {!cloud && !role && <label>启动配置<select ref={input} required aria-label="新 Agent 启动配置" value={profile} onChange={event => setProfile(event.target.value)}>{!profiles.length && <option value="">无可用配置</option>}{profiles.map(item => <option key={item.name} value={item.name}>{item.name} · {item.tool}</option>)}</select></label>}
             <label><span>职责标题 <small>可选</small></span><input aria-label="新 Agent 职责标题" maxLength={160} value={title} onChange={event => setTitle(event.target.value)} /></label>
           </div>

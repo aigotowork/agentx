@@ -1,8 +1,8 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { DeploymentControlDialog, DeploymentReceiptLookup, type ControlTarget } from './control';
 import { EmptyState, Icon, Timestamp } from '../presentation';
-import { explainError, pageSize, useCursor, useRead, type AdminClient, type AdminOverview, type Read, type Scope, type ScopeWriteAction } from './model';
-import { ScopeWriteDialog } from './write-dialog';
+import { explainError, pageSize, staleInventory, useCursor, useRead, type AdminClient, type AdminOverview, type Read, type Namespace, type NamespaceWriteAction } from './model';
+import { NamespaceWriteDialog } from './write-dialog';
 
 function NativeTime({ value }: { value: string | number | bigint }) {
   const raw = String(value);
@@ -14,9 +14,9 @@ function StatusDot({ active, label }: { active: boolean; label: string }) {
   return <span className="status-label" data-tone={active ? 'ready' : 'warn'}><i aria-hidden="true" />{label}</span>;
 }
 
-function ReadFeedback({ read, label, retry }: { read: Exclude<Read<unknown>, { kind: 'ready' }>; label: string; retry: () => void }) {
+function ReadFeedback({ read, label, retry, retryLabel = '重试' }: { read: Exclude<Read<unknown>, { kind: 'ready' }>; label: string; retry: () => void; retryLabel?: string }) {
   if (read.kind === 'loading') return <p className="deployment-feedback muted" role="status">正在读取{label}…</p>;
-  return <div className="deployment-feedback"><p className="deployment-error" role="alert">{explainError(read.error, `无法读取${label}。`)}</p><button onClick={retry}>重试</button></div>;
+  return <div className="deployment-feedback"><p className="deployment-error" role="alert">{explainError(read.error, `无法读取${label}。`)}</p><button onClick={retry}>{retryLabel}</button></div>;
 }
 
 function Overview({ client, initial, revision, refresh }: { client: AdminClient; initial: AdminOverview; revision: number; refresh: () => void }) {
@@ -26,13 +26,13 @@ function Overview({ client, initial, revision, refresh }: { client: AdminClient;
   return <section className="deployment-overview" aria-label="部署概况">
     <div className="deployment-overview-heading"><h1>部署概况</h1>{stats && <NativeTime value={stats.observed_at} />}</div>
     {stats ? <dl className="deployment-metrics">
-      <div><dt>Scopes</dt><dd>{String(stats.scopes)}</dd></div>
+      <div><dt>Namespaces</dt><dd>{String(stats.namespaces)}</dd></div>
       <div><dt>主机在线</dt><dd>{String(stats.online_hosts)} <small>/ {String(stats.hosts)}</small></dd></div>
       <div><dt>Agents</dt><dd>{String(stats.agents)}</dd></div>
-      <div><dt>不可用 Scopes</dt><dd data-unavailable={Boolean(stats.unavailable)}>{String(stats.unavailable)}</dd></div>
+      <div><dt>不可用 Namespaces</dt><dd data-unavailable={Boolean(stats.unavailable)}>{String(stats.unavailable)}</dd></div>
     </dl> : read.kind !== 'ready' && <ReadFeedback read={read} label="部署概况" retry={retry} />}
     <div className="deployment-overview-actions">
-      {stats && <details className="scope-control deployment-identity">
+      {stats && <details className="namespace-control deployment-identity">
         <summary aria-label="部署标识" title="部署标识"><Icon name="info" /></summary>
         <dl><dt>部署 ID</dt><dd><code>{stats.deployment_id}</code></dd><dt>协议版本</dt><dd><code>v{String(stats.protocol_version)}</code></dd></dl>
       </details>}
@@ -52,26 +52,26 @@ function Pages({ cursor, next, label }: { cursor: Cursor; next?: string | null; 
   </nav>;
 }
 
-function ScopeCollection({ client, selected, onSelect, onCreate }: { client: AdminClient; selected: string | null; onSelect: (id: string) => void; onCreate: () => void }) {
+function NamespaceCollection({ client, selected, onSelect, onCreate }: { client: AdminClient; selected: string | null; onSelect: (id: string) => void; onCreate: () => void }) {
   const cursor = useCursor();
   const { after } = cursor;
-  const load = useCallback((signal: AbortSignal) => client.listScopes({ after, limit: pageSize }, { signal }), [client, after]);
+  const load = useCallback((signal: AbortSignal) => client.listNamespaces({ after, limit: pageSize }, { signal }), [client, after]);
   const { read, retry } = useRead(load);
   const rows = read.kind === 'ready' ? read.data.items : [];
   return <aside className="collection-rail deployment-collection" aria-labelledby="deployment-list-title">
     <div className="collection-header section-heading">
-      <h2 id="deployment-list-title" tabIndex={-1}>Scopes</h2>
-      <button className="primary icon-button" onClick={onCreate}><Icon name="plus" />新建 Scope</button>
+      <h2 id="deployment-list-title" tabIndex={-1}>Namespaces</h2>
+      <button className="primary icon-button" onClick={onCreate}><Icon name="plus" />新建 Namespace</button>
     </div>
     <div className="collection-list">
-      {read.kind !== 'ready' ? <ReadFeedback read={read} label="Scopes" retry={retry} /> : rows.length ? rows.map(scope =>
-        <button type="button" className="collection-row deployment-scope-row" aria-pressed={selected === scope.id} key={scope.id} onClick={() => onSelect(scope.id)}>
-          <strong>{scope.id}</strong>
-          <StatusDot active={scope.available} label={scope.available ? '可用' : '不可用'} />
-          <small>{String(scope.online_hosts)} / {String(scope.hosts)} 主机在线 · {String(scope.agents)} Agents</small>
-        </button>) : <EmptyState icon="workspace" title="暂无 Scope" />}
+      {read.kind !== 'ready' ? <ReadFeedback read={read} label="Namespaces" retry={retry} /> : rows.length ? rows.map(namespace =>
+        <button type="button" className="collection-row deployment-namespace-row" aria-pressed={selected === namespace.namespace_id} key={namespace.namespace_id} onClick={() => onSelect(namespace.namespace_id)}>
+          <strong>{namespace.namespace_id}</strong>
+          <StatusDot active={namespace.available} label={namespace.available ? '可用' : '不可用'} />
+          <small>{String(namespace.online_hosts)} / {String(namespace.hosts)} 主机在线 · {String(namespace.agents)} Agents</small>
+        </button>) : <EmptyState icon="workspace" title="暂无 Namespace" />}
     </div>
-    <Pages cursor={cursor} next={read.kind === 'ready' ? read.data.next : null} label="Scopes" />
+    <Pages cursor={cursor} next={read.kind === 'ready' ? read.data.next : null} label="Namespaces" />
   </aside>;
 }
 
@@ -101,29 +101,30 @@ function InventoryTable({ inventory, onInspectHost, onLaunch, onStop }: {
   </table>;
 }
 
-function Inventory({ client, id, kind, host, onInspectHost, onLaunch, onStop }: {
-  client: AdminClient; id: string; kind: InventoryKind; host?: string;
+function Inventory({ client, id, generation, kind, host, reloadNamespace, onInspectHost, onLaunch, onStop }: {
+  client: AdminClient; id: string; generation: string; kind: InventoryKind; host?: string; reloadNamespace: () => void;
   onInspectHost: (host: string) => void; onLaunch: (host: Host) => void; onStop: (agent: Agent) => void;
 }) {
   const cursor = useCursor();
   const { after } = cursor;
   const load = useCallback(async (signal: AbortSignal): Promise<InventoryRecord> => {
-    const query = { after, limit: pageSize };
+    const query = { generation, after, limit: pageSize };
     return kind === 'hosts' ? { kind, page: await client.listHosts(id, query, { signal }) } : { kind, page: await client.listAgents(id, { ...query, host }, { signal }) };
-  }, [client, id, kind, host, after]);
+  }, [client, id, generation, kind, host, after]);
   const { read, retry } = useRead(load);
   const label = kind === 'hosts' ? '主机' : 'Agents';
   const next = read.kind === 'ready' ? read.data.page.next : null;
+  const stale = read.kind === 'error' && staleInventory(read.error);
   return <>
     <div className="deployment-inventory">
-      {read.kind !== 'ready' ? <ReadFeedback read={read} label={`${label}清单`} retry={retry} /> : read.data.page.items.length ? <InventoryTable inventory={read.data} onInspectHost={onInspectHost} onLaunch={onLaunch} onStop={onStop} /> : <EmptyState icon={kind === 'hosts' ? 'workspace' : 'agents'} title={kind === 'hosts' ? '暂无主机' : '暂无 Agent'} />}
+      {read.kind !== 'ready' ? <ReadFeedback read={read} label={`${label}清单`} retry={stale ? reloadNamespace : retry} retryLabel={stale ? '重新读取 Namespace' : undefined} /> : read.data.page.items.length ? <InventoryTable inventory={read.data} onInspectHost={onInspectHost} onLaunch={onLaunch} onStop={onStop} /> : <EmptyState icon={kind === 'hosts' ? 'workspace' : 'agents'} title={kind === 'hosts' ? '暂无主机' : '暂无 Agent'} />}
     </div>
-    <Pages cursor={cursor} next={next} label={label} />
+    {!stale && <Pages cursor={cursor} next={next} label={label} />}
   </>;
 }
 
-function ScopeDetails({ client, id, onBack, onRotate, onControl }: {
-  client: AdminClient; id: string; onBack: () => void; onRotate: (scope: Scope) => void; onControl: (target: ControlTarget) => void;
+function NamespaceDetails({ client, id, onBack, onRotate, onControl }: {
+  client: AdminClient; id: string; onBack: () => void; onRotate: (namespace: Namespace) => void; onControl: (target: ControlTarget) => void;
 }) {
   const [selection, setSelection] = useState<InventorySelection>({ kind: 'hosts' });
   const { kind } = selection;
@@ -133,44 +134,44 @@ function ScopeDetails({ client, id, onBack, onRotate, onControl }: {
   useLayoutEffect(() => { if (host) hostFilter.current?.focus(); }, [host]);
   const clearHost = () => { setSelection({ kind: 'agents' }); agentsTab.current?.focus(); };
   const inspectHost = (name: string) => setSelection({ kind: 'agents', host: name });
-  const load = useCallback((signal: AbortSignal) => client.getScope(id, { signal }), [client, id]);
+  const load = useCallback((signal: AbortSignal) => client.getNamespace(id, { signal }), [client, id]);
   const { read, retry } = useRead(load);
-  const scope = read.kind === 'ready' ? read.data : null;
-  const spaceHref = scope ? `/scopes/${encodeURIComponent(scope.id)}/space/?access=admin` : null;
-  const launch = (row: Host) => { if (scope) onControl({ scope: id, generation: scope.generation, host: row.name, kind: 'launch' }); };
-  const stop = (agent: Agent) => { if (scope) onControl({ scope: id, generation: scope.generation, host: agent.host, kind: 'stop', name: agent.name, incarnation: agent.incarnation }); };
-  return <section className="deployment-detail" aria-labelledby="deployment-scope-title">
+  const namespace = read.kind === 'ready' ? read.data : null;
+  const spaceHref = namespace ? `/namespaces/${encodeURIComponent(namespace.namespace_id)}/space/?access=admin` : null;
+  const launch = (row: Host) => { if (namespace) onControl({ namespace: id, generation: namespace.generation, host: row.name, kind: 'launch' }); };
+  const stop = (agent: Agent) => { if (namespace) onControl({ namespace: id, generation: namespace.generation, host: agent.host, kind: 'stop', name: agent.name, incarnation: agent.incarnation }); };
+  return <section className="deployment-detail" aria-labelledby="deployment-namespace-title">
     <header className="deployment-detail-header">
-      <button className="quiet icon-button deployment-back" onClick={onBack}><Icon name="back" />Scopes</button>
-      <div className="deployment-scope-title"><h2 id="deployment-scope-title" tabIndex={-1}>{id}</h2>{scope && <StatusDot active={scope.available} label={scope.available ? '可用' : '不可用'} />}{spaceHref && <a className="deployment-space-link" href={spaceHref}>打开 Space</a>}</div>
-      {scope && <>
-        <div className="deployment-credential"><span className="muted">令牌版本 <code>v{String(scope.credential_version)}</code></span><button onClick={() => onRotate(scope)}>轮换令牌</button></div>
-        <p className="deployment-scope-url"><code>{scope.scope_url}</code></p>
-        <details className="deployment-generation"><summary>代次</summary><code>{scope.generation}</code></details>
+      <button className="quiet icon-button deployment-back" onClick={onBack}><Icon name="back" />Namespaces</button>
+      <div className="deployment-namespace-title"><h2 id="deployment-namespace-title" tabIndex={-1}>{id}</h2>{namespace && <StatusDot active={namespace.available} label={namespace.available ? '可用' : '不可用'} />}{spaceHref && <a className="deployment-space-link" href={spaceHref}>打开 Space</a>}</div>
+      {namespace && <>
+        <div className="deployment-credential"><span className="muted">令牌版本 <code>v{String(namespace.credential_version)}</code></span><button onClick={() => onRotate(namespace)}>轮换令牌</button></div>
+        <p className="deployment-namespace-url"><code>{namespace.namespace_url}</code></p>
+        <details className="deployment-generation"><summary>代次</summary><code>{namespace.generation}</code></details>
       </>}
     </header>
-    {read.kind !== 'ready' ? <ReadFeedback read={read} label="Scope" retry={retry} /> : <>
-        <div className="detail-tabs" role="group" aria-label="Scope 清单">
+    {read.kind !== 'ready' ? <ReadFeedback read={read} label="Namespace" retry={retry} /> : <>
+        <div className="detail-tabs" role="group" aria-label="Namespace 清单">
           <button aria-pressed={kind === 'hosts'} onClick={() => setSelection({ kind: 'hosts' })}>主机 <span className="tab-count">{String(read.data.hosts)}</span></button>
           <button ref={agentsTab} aria-pressed={kind === 'agents'} onClick={clearHost}>Agents <span className="tab-count">{String(read.data.agents)}</span></button>
           <button aria-pressed={kind === 'receipts'} onClick={() => setSelection({ kind: 'receipts' })}>操作回执</button>
         </div>
         {host && <div className="deployment-host-filter" ref={hostFilter} tabIndex={-1}><span>主机 <code>{host}</code></span><button className="quiet" onClick={clearHost}>查看所有 Agents</button></div>}
-        {kind === 'receipts' ? <DeploymentReceiptLookup client={client} scope={id} generation={read.data.generation} /> : read.data.available ?
-          <Inventory key={JSON.stringify([kind, host])} client={client} id={id} kind={kind} host={host} onInspectHost={inspectHost} onLaunch={launch} onStop={stop} /> :
-          <EmptyState icon="warning" title="Scope 清单暂不可用" />}
+        {kind === 'receipts' ? <DeploymentReceiptLookup client={client} namespace={id} generation={read.data.generation} /> : read.data.available ?
+          <Inventory key={JSON.stringify([read.data.generation, kind, host])} client={client} id={id} generation={read.data.generation} kind={kind} host={host} reloadNamespace={retry} onInspectHost={inspectHost} onLaunch={launch} onStop={stop} /> :
+          <EmptyState icon="warning" title="Namespace 清单暂不可用" />}
       </>}
   </section>;
 }
 
 /**
- * @aiPurpose Show deployment aggregates, paged scopes, and the exact selected inventory and credential controls.
+ * @aiPurpose Show deployment aggregates, paged namespaces, and the exact selected inventory and credential controls.
  * @aiUsage Mount for one authenticated deployment session; remount to disconnect and reset all selection and drafts.
  */
 export function DeploymentWorkspace({ client, initialOverview }: { client: AdminClient; initialOverview: AdminOverview }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
-  const [write, setWrite] = useState<ScopeWriteAction | null>(null);
+  const [write, setWrite] = useState<NamespaceWriteAction | null>(null);
   const [control, setControl] = useState<ControlTarget | null>(null);
   const main = useRef<HTMLElement>(null);
   const requestedFocus = useRef(false);
@@ -179,17 +180,17 @@ export function DeploymentWorkspace({ client, initialOverview }: { client: Admin
   useLayoutEffect(() => {
     if (!requestedFocus.current) return;
     requestedFocus.current = false;
-    if (matchMedia('(max-width: 700px)').matches) main.current?.querySelector<HTMLElement>(selected ? '#deployment-scope-title' : '#deployment-list-title')?.focus();
+    if (matchMedia('(max-width: 700px)').matches) main.current?.querySelector<HTMLElement>(selected ? '#deployment-namespace-title' : '#deployment-list-title')?.focus();
   }, [selected]);
 
   return <main ref={main} className="console-main deployment-main" tabIndex={-1}>
     <Overview client={client} initial={initialOverview} revision={revision} refresh={refresh} />
     <div className="workspace deployment-workspace" data-selecting={!selected}>
-      <ScopeCollection key={revision} client={client} selected={selected} onSelect={select} onCreate={() => setWrite({ kind: 'create' })} />
-      {selected ? <ScopeDetails key={`${revision}:${selected}`} client={client} id={selected} onBack={() => select(null)} onRotate={scope => setWrite({ kind: 'rotate', scope })} onControl={setControl} /> :
-        <section className="deployment-detail deployment-unselected"><EmptyState icon="route" title="选择一个 Scope" /></section>}
+      <NamespaceCollection key={revision} client={client} selected={selected} onSelect={select} onCreate={() => setWrite({ kind: 'create' })} />
+      {selected ? <NamespaceDetails key={`${revision}:${selected}`} client={client} id={selected} onBack={() => select(null)} onRotate={namespace => setWrite({ kind: 'rotate', namespace })} onControl={setControl} /> :
+        <section className="deployment-detail deployment-unselected"><EmptyState icon="route" title="选择一个 Namespace" /></section>}
     </div>
-    <ScopeWriteDialog client={client} action={write} onDismiss={() => setWrite(null)} onRefresh={refresh} onSaved={id => { setSelected(id); refresh(); }} />
+    <NamespaceWriteDialog client={client} action={write} onDismiss={() => setWrite(null)} onRefresh={refresh} onSaved={id => { setSelected(id); refresh(); }} />
     <DeploymentControlDialog client={client} target={control} onClose={() => setControl(null)} />
   </main>;
 }

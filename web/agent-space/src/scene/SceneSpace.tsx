@@ -6,7 +6,7 @@ import { projectHall, type HallActor } from "./model";
 import { focusCamera, overview, recoverReturnAnchor, resizeCamera, worldToScreen, zoomCamera, type Camera, type Point, type Viewport } from "./geometry";
 import { hallActorGoal } from "./motion";
 import { HallScene, type HallPropAnchor } from "./HallScene";
-import { useOverlay } from "../interactions/SpaceInteractions";
+import { useOverlay } from "../../uiux/systems/space/space.web";
 import { useAgentCommands } from "../interactions/AgentCommands";
 import { HumanMailbox } from "./HumanMailbox";
 import { ExpandedObject } from "./ExpandedObject";

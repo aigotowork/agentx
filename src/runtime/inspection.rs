@@ -37,7 +37,7 @@ pub(crate) fn run(scope: PathBuf, invocation: InvocationContext, stop: Arc<Atomi
 
 fn tick(scope: &std::path::Path, invocation: &InvocationContext, offset: &mut usize, stop: &AtomicBool) -> ServiceResult<()> {
     let client = Client::connect_existing(scope, invocation.clone())?;
-    let generation = client.info().database_generation.clone();
+    let generation = client.generation()?.to_owned();
     let Response::Snapshot(snapshot) = call(&client, Request::Read { generation: generation.clone() })? else {
         return Err(ServiceError::Internal("inspection snapshot required".into()));
     };

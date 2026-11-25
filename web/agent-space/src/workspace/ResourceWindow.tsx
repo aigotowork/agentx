@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
-import { useOverlay } from "../interactions/SpaceInteractions";
+import { useOverlay } from "../../uiux/systems/space/space.web";
 
 /** @aiPurpose Show office posts or skills beside the preserved conversation workspace.
  * @aiUsage Mount for the current resource view and return to its previous People view on dismissal.

@@ -8,11 +8,13 @@ pub(crate) mod connection;
 mod control;
 #[cfg(target_os = "linux")]
 mod directory;
+mod identifiers;
 mod space;
+mod storage;
 mod tui;
 pub(crate) mod uplink;
 
-use admin::ScopeReceipt;
+use admin::NamespaceReceipt;
 use axum::{
     Json, Router,
     extract::{DefaultBodyLimit, OriginalUri, Request, State},
@@ -29,6 +31,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 use utoipa::ToSchema;
+
+const PROTOCOL_VERSION: u32 = 2;
 
 #[derive(Clone)]
 pub(super) struct ScopeContext {
@@ -82,7 +86,7 @@ impl Failure {
         Self(StatusCode::UNAUTHORIZED, "unauthorized", "invalid bearer credential")
     }
     fn missing() -> Self {
-        Self(StatusCode::NOT_FOUND, "not_found", "scope not found")
+        Self(StatusCode::NOT_FOUND, "not_found", "namespace not found")
     }
     fn internal() -> Self {
         Self(StatusCode::INTERNAL_SERVER_ERROR, "internal", "deployment storage unavailable")
@@ -100,15 +104,15 @@ impl IntoResponse for Failure {
 }
 
 fn validate_token(value: &str) -> Result<(), Failure> {
-    if !(32..=256).contains(&value.len()) || !value.bytes().all(|c| c.is_ascii_alphanumeric() || b"-_".contains(&c)) {
-        return Err(Failure::invalid("token requires 32 to 256 URL-safe letters, digits, underscores or hyphens"));
+    if !identifiers::valid_token(value) {
+        return Err(Failure::invalid("token requires exactly 12 ASCII letters or digits"));
     }
     Ok(())
 }
 fn validate_id(id: &str) -> Result<(), Failure> {
     let b = id.as_bytes();
     if b.is_empty() || b.len() > 63 || !b[0].is_ascii_alphanumeric() || !b[b.len() - 1].is_ascii_alphanumeric() || !b.iter().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || *c == b'-') {
-        return Err(Failure::invalid("invalid scope id"));
+        return Err(Failure::invalid("invalid namespace id"));
     }
     Ok(())
 }
@@ -116,10 +120,18 @@ fn bearer(headers: &HeaderMap) -> Result<&str, Failure> {
     let mut values = headers.get_all(header::AUTHORIZATION).iter();
     let raw = values.next().and_then(|v| v.to_str().ok()).and_then(|v| v.split_once(' '));
     match raw {
-        Some((scheme, value)) if scheme.eq_ignore_ascii_case("bearer") && values.next().is_none() && !value.is_empty() => Ok(value),
+        Some((scheme, value)) if scheme.eq_ignore_ascii_case("bearer") && values.next().is_none() && identifiers::valid_token(value) => Ok(value),
         _ => Err(Failure::unauthorized()),
     }
 }
+async fn unknown_cloud_operation() -> Failure {
+    Failure(StatusCode::NOT_FOUND, "unsupported_operation", "operation is not available on this cloud API")
+}
+
+async fn unsupported_cloud_method() -> Failure {
+    Failure(StatusCode::METHOD_NOT_ALLOWED, "unsupported_operation", "method is not available for this cloud resource")
+}
+
 async fn admin_guard(State(state): State<Deployment>, req: Request, next: Next) -> Result<Response, Failure> {
     let given = catalog::hash(bearer(req.headers())?);
     if !catalog::matches(&given, &state.admin_hash) {
@@ -127,7 +139,7 @@ async fn admin_guard(State(state): State<Deployment>, req: Request, next: Next) 
     }
     Ok(next.run(req).await)
 }
-async fn scope_guard(State(state): State<Deployment>, OriginalUri(uri): OriginalUri, mut req: Request, next: Next) -> Result<Response, Failure> {
+async fn namespace_guard(State(state): State<Deployment>, OriginalUri(uri): OriginalUri, mut req: Request, next: Next) -> Result<Response, Failure> {
     let token = bearer(req.headers())?.to_owned();
     let id = uri.path().split('/').nth(2).ok_or_else(Failure::unauthorized)?.to_owned();
     let ctx = state.catalog(move |db| db.authenticate(&id, &token)).await?;
@@ -160,12 +172,12 @@ async fn asset(method: Method, uri: Uri) -> Response {
 
 fn router(state: Deployment) -> Router {
     let admin = admin::router(state.clone()).layer(middleware::from_fn_with_state(state.clone(), admin_guard));
-    let scopes = communication::router().layer(middleware::from_fn_with_state(state.clone(), scope_guard));
-    Router::new().nest("/api/v1/admin", admin).nest("/scopes/{id}/api/v1", scopes).merge(space::router()).fallback(asset).layer(DefaultBodyLimit::max(256 * 1024)).layer(middleware::from_fn_with_state(state, bounded))
+    let namespaces = communication::router().layer(middleware::from_fn_with_state(state.clone(), namespace_guard));
+    Router::new().nest("/api/v1/admin", admin).nest("/namespaces/{id}/api/v1", namespaces).merge(space::router()).fallback(asset).layer(DefaultBodyLimit::max(256 * 1024)).layer(middleware::from_fn_with_state(state, bounded))
 }
 
 #[derive(clap::Parser)]
-#[command(name = "agentx daemon cloud", about = "Serve the cloud management console and scoped HTTP API behind a TLS reverse proxy")]
+#[command(name = "agentx daemon cloud", about = "Serve the cloud management console and Namespace HTTP API behind a TLS reverse proxy")]
 pub(crate) struct Serve {
     /// Private persistent deployment directory
     #[arg(long)]
@@ -207,7 +219,7 @@ pub(crate) fn serve_config(opts: Serve) -> anyhow::Result<()> {
 }
 
 #[derive(clap::Parser)]
-#[command(name = "agentx tui", about = "Manage cloud scopes in the terminal using AGENTX_ADMIN_TOKEN")]
+#[command(name = "agentx tui", about = "Manage cloud namespaces in the terminal using AGENTX_ADMIN_TOKEN")]
 struct AdminTerminal {
     /// Deployment origin (defaults to AGENTX_ADMIN_URL)
     #[arg(long)]
@@ -222,12 +234,16 @@ fn terminal(args: &[String]) -> anyhow::Result<()> {
 
 pub(crate) fn dispatch(argv: &[String]) -> Option<anyhow::Result<()>> {
     match argv {
+        [a] if a == "cloud-token" => {
+            println!("{}", identifiers::random_id());
+            Some(Ok(()))
+        }
         [a, b, rest @ ..] if a == "daemon" && b == "cloud" => Some(serve(rest)),
         [a, b] if a == "cloud-openapi" => Some((|| {
             let document = match b.as_str() {
                 "admin" => admin::document(),
-                "scope" => communication::document(),
-                _ => anyhow::bail!("expected admin or scope"),
+                "namespace" => communication::document(),
+                _ => anyhow::bail!("expected admin or namespace"),
             };
             println!("{}", serde_json::to_string_pretty(&document)?);
             Ok(())

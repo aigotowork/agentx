@@ -33,6 +33,22 @@ impl Session {
         Self::from_invocation(invocation, go, false, true)
     }
 
+    /// Build the submission caller without resolving presentation-only actor
+    /// data. Shared Codex still needs its exact thread attachment before a write.
+    pub(crate) fn for_direct_send(name: Option<&str>, go: bool) -> ServiceResult<Option<Self>> {
+        let mut invocation = InvocationContext::capture()?;
+        invocation.explicit_name = name.map(str::to_owned);
+        apply_environment_identity_fallback(&mut invocation);
+        let (scope, _) = crate::paths::resolve_agentx_dir_from_env(&invocation.environment, &invocation.cwd);
+        let runtime = crate::runtime::context::AgentxContext::from_env(&invocation.environment, invocation.cwd.clone());
+        if crate::integrations::codex::roots::is_shared_context(&runtime) {
+            return Ok(None);
+        }
+        let client = Client::connect(scope, invocation.clone())?;
+        let command = CommandContext { explicit_name: invocation.explicit_name.clone(), identity: None, go, identity_warning: None };
+        Ok(Some(Self { client, invocation, command, actor: None }))
+    }
+
     /// Launch accepts a human attribution label without inventing a durable
     /// participant. Managed/shared identities still resolve through the domain.
     pub(crate) fn for_launch(invocation: InvocationContext, go: bool) -> ServiceResult<Self> {
@@ -155,12 +171,7 @@ impl Session {
     // cleanup plan atomically. This never reacquires a daemon or generation.
     pub(crate) fn cleanup_query(&self, query: crate::service::queries::Request) -> ServiceResult<crate::service::queries::Response> {
         let request = Request::Queries(query);
-        let caller = crate::service::CallerContext {
-            request_id: crate::service::RequestId(uuid::Uuid::new_v4().to_string()),
-            invocation: self.invocation.clone(),
-            deadline_unix_ms: None,
-            expected_database_generation: Some(self.client.info().database_generation.clone()),
-        };
+        let caller = crate::service::CallerContext { request_id: crate::service::RequestId(uuid::Uuid::new_v4().to_string()), invocation: self.invocation.clone(), deadline_unix_ms: None, expected_database_generation: None };
         let result = match self.client.call_with_context(caller.clone(), request.clone()) {
             Err(ServiceError::OutcomeUnknown(_)) => self.client.call_with_context(caller, request),
             result => result,

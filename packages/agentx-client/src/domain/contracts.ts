@@ -39,7 +39,6 @@ export type WorkspaceCatalog = Readonly<{
 }>;
 
 /** Retain opaque native position with the object it came from. */
-export type MemberCursor = Readonly<{ workspace: WorkspaceAddress; position: string; kind?: never }>;
 export type AgentCursor = Readonly<{ scope: ScopeAddress; position: string }>;
 export type MessageCursor = Readonly<{ agent: AgentAddress; position: string; kind?: never }>;
 export type MessageHistoryCursor = Readonly<{ kind: 'message-history'; agent: AgentAddress; position: string }>;
@@ -49,17 +48,6 @@ export type ScopeAgentPage = Readonly<{
   agents: readonly AgentSnapshot[];
   currentComplete: boolean;
   next: AgentCursor | null;
-}>;
-export type MemberPage = Readonly<{
-  members: readonly Readonly<{ agent: Agent; snapshot: AgentSnapshot }>[];
-  coverage: Readonly<{
-    kind: 'global-agent-page';
-    scanned: number;
-    legacy: number;
-    unavailable: number;
-    currentComplete: boolean;
-    next: MemberCursor | null;
-  }>;
 }>;
 export type NativeMemberCursor = Readonly<{ kind: 'workspace-members'; workspace: WorkspaceAddress; currentOnly: boolean; position: string }>;
 export type NativeMemberRequest = PageRequest<NativeMemberCursor> & Readonly<{ currentOnly?: boolean }>;
@@ -182,7 +170,7 @@ interface AgentReader<R extends AgentReference> {
   readonly address: AgentAddress<R>;
   snapshot(options?: CallOptions): Promise<AgentSnapshot<R>>;
   messages(page?: PageRequest<MessageCursor>, options?: CallOptions): Promise<MessagePage>;
-  /** Read the latest page, or pass its nextBefore cursor to read an older one. */
+  /** Read latest or older history; unavailable history rejects with UnsupportedCapability. */
   messageHistory(page?: MessageHistoryRequest, options?: CallOptions): Promise<MessageHistoryPage>;
   launchRelations(page?: PageRequest<LaunchRelationCursor>, options?: CallOptions): Promise<LaunchRelationsPage>;
   prepareTranscript(requestId: OperationAddress['requestId']): PreparedOperation<'transcript'>;
@@ -211,9 +199,7 @@ export type Agent = CurrentAgent | StoppedAgent;
 export interface Workspace {
   readonly address: WorkspaceAddress;
   roles(options?: CallOptions): Promise<RoleCatalog>;
-  /** Project exactly one global page. Empty members can still have a continuation. */
-  members(page?: PageRequest<MemberCursor>, options?: CallOptions): Promise<MemberPage>;
-  /** Filter by adopted membership natively. Requires supportsWorkspaceMembers, with no implicit fallback. */
+  /** Read native adopted members; unavailable member paging rejects with UnsupportedCapability. */
   memberPage(page?: NativeMemberRequest, options?: CallOptions): Promise<NativeMemberPage>;
   prepareLaunch(launch: WorkspaceLaunchDraft, requestId: OperationAddress['requestId']): PreparedOperation<'launch'>;
   launch(prepared: PreparedOperation<'launch'>, options?: CallOptions): Promise<TypedOperationReceipt<'launch'>>;
@@ -250,7 +236,6 @@ export type OfficeActivityPage = ReadonlyValue<Omit<OfficeActivity, 'next_after'
 export interface AgentXScope {
   readonly address: ScopeAddress;
   readonly descriptor: ReadonlyValue<Descriptor>;
-  readonly supportsWorkspaceMembers: boolean;
   /** Check the pinned listener's current scope and generation without rebinding this selection. */
   verify(options?: CallOptions): Promise<ReadonlyValue<Descriptor>>;
   workspaces(options?: CallOptions): Promise<WorkspaceCatalog>;

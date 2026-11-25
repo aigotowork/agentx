@@ -759,12 +759,7 @@ fn create_and_log_bundle(session: &Session, bundle: &mut Value, json_mode: bool)
     bundles::validate_bundle(bundle)?;
     bundles::warn_missing_files_for_cwd(bundle, &session.invocation.cwd);
     let request = Request::Messages(crate::messaging::service::Request::Bundle(BundleRequest::Create { bundle: bundle.clone(), actor: session.actor.as_ref().map(|actor| actor.participant.clone()) }));
-    let caller = crate::service::CallerContext {
-        request_id: crate::service::RequestId(uuid::Uuid::new_v4().to_string()),
-        invocation: session.invocation.clone(),
-        deadline_unix_ms: None,
-        expected_database_generation: Some(session.client.info().database_generation.clone()),
-    };
+    let caller = crate::service::CallerContext { request_id: crate::service::RequestId(uuid::Uuid::new_v4().to_string()), invocation: session.invocation.clone(), deadline_unix_ms: None, expected_database_generation: None };
     let response = match session.client.call_with_context(caller.clone(), request.clone()) {
         Err(ServiceError::OutcomeUnknown(_)) => session.client.call_with_context(caller, request),
         result => result,

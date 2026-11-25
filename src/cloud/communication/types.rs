@@ -13,8 +13,9 @@ pub(in crate::cloud) const OPERATOR_INCARNATION: &str = "~human";
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub(in crate::cloud) struct Descriptor {
-    pub scope_id: String,
+    pub namespace_id: String,
     pub generation: String,
+    /// Diagnostic version; operation contracts determine compatibility.
     pub protocol_version: u32,
 }
 
@@ -25,18 +26,37 @@ pub(in crate::cloud) struct HostView {
     pub online: bool,
 }
 
+/// Membership chosen when the exact Agent incarnation is prepared for launch.
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq, ToSchema)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub(in crate::cloud) enum AgentWorkspace {
+    Project {
+        #[schema(pattern = "^WS[A-Za-z0-9]{10}$")]
+        workspace_id: String,
+    },
+    Global,
+    #[default]
+    Unexposed,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub(in crate::cloud) struct AgentView {
     pub name: String,
     pub host: String,
+    #[schema(pattern = "^(?:[A-Za-z0-9]{12}|~human)$")]
     pub incarnation: String,
+    #[serde(default)]
+    #[schema(required = true)]
+    pub workspace: AgentWorkspace,
 }
 
 #[derive(Debug, Deserialize, IntoParams)]
 #[serde(deny_unknown_fields)]
 #[into_params(parameter_in = Query)]
 pub(in crate::cloud) struct HostQuery {
+    /// Expected Namespace generation. Bind the first page's generation when continuing a cursor.
+    pub generation: Option<String>,
     pub after: Option<String>,
     #[param(minimum = 1, maximum = 200)]
     pub limit: Option<u32>,
@@ -46,11 +66,15 @@ pub(in crate::cloud) struct HostQuery {
 #[serde(deny_unknown_fields)]
 #[into_params(parameter_in = Query)]
 pub(in crate::cloud) struct AgentQuery {
+    /// Expected Namespace generation. Bind the first page's generation when continuing a cursor.
+    pub generation: Option<String>,
     pub after: Option<String>,
     #[param(minimum = 1, maximum = 200)]
     pub limit: Option<u32>,
     pub host: Option<String>,
-    /// Include host-reported Agent facts. Omit for identity-only legacy clients.
+    #[param(pattern = "^WS[A-Za-z0-9]{10}$")]
+    pub workspace_id: Option<String>,
+    /// Include host-reported Agent facts. Omit to return identity and membership only.
     pub facts: Option<bool>,
 }
 
@@ -62,6 +86,7 @@ pub(in crate::cloud) struct MessageHistoryQuery {
     pub generation: String,
     pub host: String,
     pub name: String,
+    #[param(pattern = "^(?:[A-Za-z0-9]{12})$")]
     pub incarnation: String,
     /// Exclusive forward cursor. Zero starts at the beginning. Forward pages use ascending IDs.
     pub after: Option<String>,
@@ -71,7 +96,7 @@ pub(in crate::cloud) struct MessageHistoryQuery {
     pub limit: Option<u32>,
 }
 
-/// Durable scope traffic, in descending message ID order. This is not a Provider transcript.
+/// Durable Namespace traffic, in descending message ID order. This is not a Provider transcript.
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub(in crate::cloud) struct MessageHistoryPage {
     pub items: Vec<MessageView>,
@@ -81,6 +106,8 @@ pub(in crate::cloud) struct MessageHistoryPage {
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub(in crate::cloud) struct HostPage {
+    /// Namespace generation verified in the same transaction as the page.
+    pub generation: String,
     pub items: Vec<HostView>,
     #[schema(required = true)]
     pub next: Option<String>,
@@ -88,6 +115,8 @@ pub(in crate::cloud) struct HostPage {
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub(in crate::cloud) struct AgentPage {
+    /// Namespace generation verified in the same transaction as the page.
+    pub generation: String,
     pub items: Vec<CloudAgentSummary>,
     #[schema(required = true)]
     pub next: Option<String>,
@@ -97,9 +126,17 @@ pub(in crate::cloud) struct AgentPage {
 pub(in crate::cloud) struct CloudAgentSummary {
     pub name: String,
     pub host: String,
+    #[schema(pattern = "^(?:[A-Za-z0-9]{12})$")]
     pub incarnation: String,
+    pub workspace: AgentWorkspace,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub facts: Option<CloudAgentFacts>,
+}
+
+impl From<CloudAgentSummary> for AgentView {
+    fn from(row: CloudAgentSummary) -> Self {
+        Self { name: row.name, host: row.host, incarnation: row.incarnation, workspace: row.workspace }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, ToSchema)]
@@ -130,6 +167,7 @@ pub(in crate::cloud) struct TranscriptHistoryQuery {
     pub generation: String,
     pub host: String,
     pub name: String,
+    #[param(pattern = "^(?:[A-Za-z0-9]{12})$")]
     pub incarnation: String,
     /// Exclusive positive decimal cursor for older records, newest first.
     pub before: Option<String>,
@@ -202,7 +240,9 @@ pub(in crate::cloud) struct AgentRegistration {
     pub generation: String,
     pub installation_id: String,
     pub host: String,
+    #[schema(pattern = "^(?:[A-Za-z0-9]{12})$")]
     pub incarnation: String,
+    pub workspace: AgentWorkspace,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, ToSchema)]
@@ -327,7 +367,7 @@ pub(in crate::cloud) struct RecoverInbox {
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
-pub(in crate::cloud) struct ScopeError {
+pub(in crate::cloud) struct NamespaceError {
     pub code: &'static str,
     pub message: String,
 }

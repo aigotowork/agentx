@@ -11,10 +11,6 @@ pub(crate) fn set_for_scope(scope: &Path, key: &str, value: &str) -> Result<(), 
 pub(crate) fn unset_for_scope(scope: &Path, key: &str) -> Result<(), String> {
     config_set_at_path(&scope.join("config.toml"), key, None)
 }
-pub(crate) fn drop_old_delivery_keys(scope: &Path) {
-    drop_old_delivery_keys_at(&scope.join("config.toml"));
-}
-
 fn launch_tool_for_args_field(field_name: &str) -> Option<LaunchTool> {
     // Derive the field → tool map from the spec's `args_env` (the single source
     // of truth, e.g. `AGENTX_CLAUDE_ARGS` → `claude_args`) so a new tool's config
@@ -99,26 +95,6 @@ pub(crate) fn edit_config_at_path(path: &Path, edit: impl FnOnce(&mut toml_edit:
         return Ok(());
     }
     crate::config::write_config_toml_path(path, &doc.to_string()).map_err(|e| format!("Failed to write config.toml: {e}"))
-}
-
-pub(crate) fn drop_old_delivery_keys_at(path: &Path) {
-    const OLD_KEYS: [&str; 2] = ["launch.claude.delivery", "launch.copilot.delivery"];
-    // Unlocked check on the text: almost always nothing to do. Also skips a
-    // missing file (never created) and `idle_delivery`/`rpc_delivery`.
-    let stale = std::fs::read_to_string(path).is_ok_and(|content| content.lines().any(|line| line.trim_start().starts_with("delivery")));
-    if !stale {
-        return;
-    }
-    let result = edit_config_at_path(path, |doc| {
-        let before = doc.to_string();
-        for key in OLD_KEYS {
-            crate::config::set_doc_path(doc, key, None);
-        }
-        Ok(doc.to_string() != before)
-    });
-    if let Err(e) = result {
-        crate::log::log_warn("config", "config.old_delivery_keys_failed", &e);
-    }
 }
 
 pub(crate) fn environment_key(key: &str) -> Option<&'static str> {

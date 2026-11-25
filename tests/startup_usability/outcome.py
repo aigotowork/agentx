@@ -112,15 +112,20 @@ def main():
         case("SU2", {"peer": cold_peer, "ordinary_acquisition": True})
 
         legacy = root / "legacy"
-        run("SU3-old-start", old, legacy, ["start", "--name", "sukeep"])
+        run("SU3-old-acquire", old, legacy, ["list", "--json"])
+        old_peer = peer(legacy, old)
+        fixture.env["AGENTX_PROCESS_ID"] = "startup-upgrade-fixture"
+        try:
+            run("SU3-old-start", old, legacy, ["start", "--name", "sukeep"])
+        finally:
+            del fixture.env["AGENTX_PROCESS_ID"]
         before = json.loads(run("SU3-old-list", old, legacy, ["list", "--json"]).stdout)
         retained = next(row for row in before if row["name"] == "sukeep")
-        old_peer = peer(legacy, old)
         lock = legacy / ".daemon/owner.lock"; lock_before = (lock.stat().st_dev, lock.stat().st_ino)
         refusal = run("SU3-ordinary-mismatch", candidate, legacy, ["list", "--json"], expected=1)
         assert "incompatible" in refusal.stderr and "daemon restart --scope" in refusal.stderr and str(legacy) in refusal.stderr
         diagnosis = run("SU3-mismatch-status", candidate, legacy, ["daemon", "status"])
-        assert "running-incompatible" in diagnosis.stdout and "daemon version/cohort unavailable" in diagnosis.stdout
+        assert "running-incompatible" in diagnosis.stdout and "one-time upgrade" in diagnosis.stdout
         same(old_peer)
         case("SU3", {"old_peer": old_peer, "retained_record": retained, "diagnostic": diagnosis.stdout})
 
@@ -173,24 +178,24 @@ def main():
                     raise TimeoutError("impostor fixture readiness")
                 time.sleep(.02)
             refusal = run("SU5-impostor-refusal", candidate, impostor_scope, ["daemon", "restart"], expected=1)
-            assert "peer argv is not exact" in refusal.stderr and "no signal/replacement" in refusal.stderr
+            assert "owned impostor fixture" in refusal.stderr and "no replacement" in refusal.stderr
             assert impostor.poll() is None and not marker.exists()
             assert not (impostor_scope / "agentx.db").exists()
             assert not (impostor_scope / ".daemon/stderr.log").exists()
         finally:
             if impostor.poll() is None:
                 resources["cleanup"].append(Fixture.terminate(impostor_record)); impostor.wait(timeout=5); save()
-        # Actual owner with failed Hello cannot be signalled/replaced on guess.
+        # Actual owner with failed status cannot be signalled/replaced on guess.
         pin = os.pidfd_open(final_peer["pid"])
         try:
             same(final_peer); signal.pidfd_send_signal(pin, signal.SIGSTOP)
-            refusal = run("SU5-handshake-refusal", candidate, legacy, ["daemon", "restart"], expected=1, timeout=8)
-            assert "handshake failed" in refusal.stderr and "no replacement" in refusal.stderr
+            refusal = run("SU5-status-refusal", candidate, legacy, ["daemon", "restart"], expected=1, timeout=8)
+            assert "identity/status failed" in refusal.stderr and "no replacement" in refusal.stderr
             same(final_peer)
         finally:
             signal.pidfd_send_signal(pin, signal.SIGCONT); os.close(pin)
         case("SU5", {"singleton_peer": final_peer, "concurrent_restarts": [r.stdout for r in results],
-                     "held_lock_refused": True, "impostor_not_signalled": True, "failed_hello_peer_unchanged": True})
+                     "held_lock_refused": True, "impostor_not_signalled": True, "failed_status_peer_unchanged": True})
 
     try:
         if not args.only_web:

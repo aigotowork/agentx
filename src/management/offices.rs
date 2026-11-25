@@ -53,13 +53,13 @@ pub(crate) fn catalog(client: &Client, project: &Path) -> ServiceResult<Workspac
     }
     discover(project, &mut rows, &mut coverage);
     let workspaces = rows.into_iter().map(|(path, sources)| WorkspaceView { path, sources }).collect();
-    Ok(WorkspaceCatalog { generation: client.info().database_generation.clone(), workspaces, coverage })
+    Ok(WorkspaceCatalog { generation: client.generation()?.into(), workspaces, coverage })
 }
 
 pub(crate) fn roles(client: &Client, workspace: &str) -> ServiceResult<RoleCatalog> {
     let selected = explicit_workspace(workspace)?;
     let roles = effective_roles(client.scope_root(), selected.as_deref())?;
-    Ok(RoleCatalog { generation: client.info().database_generation.clone(), workspace: selected.map(path_string), roles })
+    Ok(RoleCatalog { generation: client.generation()?.into(), workspace: selected.map(path_string), roles })
 }
 
 fn effective_roles(scope: &Path, workspace: Option<&Path>) -> ServiceResult<Vec<RoleDefinitionView>> {
@@ -96,14 +96,7 @@ pub(crate) fn entry(client: &Client, directory: &str) -> ServiceResult<Directory
         reason: inspection.reason,
         participant: inspection.participant.map(|participant| AgentRef { name: participant.canonical_name, incarnation: Some(participant.incarnation_bits.to_string()), stopped_event: None }),
     };
-    Ok(DirectoryEntry {
-        generation: client.info().database_generation.clone(),
-        directory: path_string(directory),
-        requested_workspace: requested.map(path_string),
-        resolved_workspace: route.workspace.map(path_string),
-        role: role_view(route.role),
-        endpoint,
-    })
+    Ok(DirectoryEntry { generation: client.generation()?.into(), directory: path_string(directory), requested_workspace: requested.map(path_string), resolved_workspace: route.workspace.map(path_string), role: role_view(route.role), endpoint })
 }
 
 fn explicit_workspace(workspace: &str) -> ServiceResult<Option<PathBuf>> {

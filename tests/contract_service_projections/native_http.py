@@ -9,6 +9,7 @@ from pathlib import Path
 import sys
 import traceback
 import uuid
+from urllib.parse import quote
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "agent_management"))
 from fixture import Fixture, wait_for
@@ -59,6 +60,9 @@ def run(fixture, spec_path):
     agent_path = "/api/v1/agents/" + ref["name"]
     exact = http.get(agent_path, **query)
     assert exact["agent"] == ref, exact
+    scoped_status, scoped = http.call("GET", agent_path, query={"generation": http.generation, **query},
+                                      headers={"X-AgentX-Expected-Scope": quote(descriptor["scope"], safe="")})
+    assert scoped_status == 200 and scoped["agent"] == ref, scoped
     page = http.get("/api/v1/agents", limit=1, current_only="true")
     assert page["agents"][0]["agent"] == ref and len(page["agents"]) == 1, page
     request = {"request_id": str(uuid.uuid4()), "generation": http.generation, "agent": ref,
@@ -89,11 +93,18 @@ def run(fixture, spec_path):
     stale = {**request, "request_id": str(uuid.uuid4()), "generation": str(uuid.uuid4())}
     failures = [("CS-03-native-conflicting-id", changed, 409, "Conflict"),
                 ("CS-06-native-strict-body", invalid, 400, "InvalidInput"),
-                ("CS-02-native-wrong-generation", stale, 409, "StaleReference")]
+                ("CS-02-native-wrong-generation", stale, 409, "StaleGeneration")]
     for case, payload, status, code in failures:
         observed, body = http.call("POST", agent_path + "/messages", payload)
         assert observed == status and body["error"]["code"] == code, (case, observed, body)
         record(case, status=observed, error=body)
+    wrong_scope = {**request, "request_id": str(uuid.uuid4())}
+    observed, body = http.call("POST", agent_path + "/messages", wrong_scope,
+                               headers={"X-AgentX-Expected-Scope": quote(descriptor["scope"] + "/另一个 scope", safe="")})
+    assert observed == 409 and body["error"]["code"] == "StaleGeneration", (observed, body)
+    missing, receipt = http.call("GET", "/api/v1/operations/" + wrong_scope["request_id"], query={"generation": http.generation})
+    assert missing == 404 and receipt["error"]["code"] == "NotFound", (missing, receipt)
+    record("CS-02-native-wrong-scope-same-generation", status=observed, error=body, receipt=receipt)
     assert http.get("/api/v1/operations/" + request["request_id"]) == sent
     record("native-run-basis", spec_sha256=hashlib.sha256(spec_bytes).hexdigest(),
            boundary="real HTTP/native/worker with finite Qoder fixture; no SDK/CLI or actual model evidence")

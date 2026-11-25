@@ -11,9 +11,9 @@ export type { WorkbenchClient, WorkbenchTypes } from './workbench.js';
 export { createObservationClient } from './observation.js';
 export type { ObservationClient, ObservationTypes, ObservationOptions } from './observation.js';
 export { createCloudAdminClient, CloudAdminError, CloudAdminOutcomeUnknown } from './cloud-admin.js';
-export type { CloudAdminClient, CloudAdminOptions, CloudAdminTypes, CloudControlInput, CloudControlReceipt, CloudHostCapabilities, CloudScopePut, CloudScopeRotation } from './cloud-admin.js';
-export { createCloudScopeClient, CloudScopeError, CloudScopeOutcomeUnknown } from './cloud-scope.js';
-export type { CloudScopeClient, CloudScopeTypes, CloudScopeOptions } from './cloud-scope.js';
+export type { CloudAdminClient, CloudAdminOptions, CloudAdminTypes, CloudControlInput, CloudControlReceipt, CloudHostCapabilities, CloudNamespacePut, CloudNamespaceRotation } from './cloud-admin.js';
+export { createCloudNamespaceClient, CloudNamespaceError, CloudNamespaceOutcomeUnknown } from './cloud-namespace.js';
+export type { CloudNamespaceClient, CloudNamespaceTypes, CloudNamespaceOptions } from './cloud-namespace.js';
 export { AdapterError, AdapterDisconnected, MutationOutcomeUnknown, ProtocolError } from './transport.js';
 export type { HttpOptions, CallOptions } from './transport.js';
 export { parseManagementJson, stringifyManagementJson, parseWorkbenchJson, stringifyWorkbenchJson, parseObservationJson, stringifyObservationJson, stringifyJson, parseJson } from './codec.js';
@@ -36,3 +36,5 @@ export function createAgentXClient(options: AgentXClientOptions) {
 }
 
 export * from './domain/index.js';
+
+export { cloudTokenPattern, cloudIncarnationPattern, cloudWorkspaceIdPattern, newCloudId } from "./cloud-identifiers.js";

@@ -70,7 +70,10 @@ fn reset_with_a_read_gate_never_redirects_a_retired_domain_fact() {
     lease.database_generation().publish(next.clone()).unwrap();
     let connection = state.runtime.connection_guard(RuntimeConnectionKind::Inspection);
     let peer = AcceptedPeer { connection: connection.reference().unwrap().clone(), process: ObservedProcess { pid: std::process::id(), incarnation: crate::sys::process::identity(std::process::id()) }, observed_at: state.clock.now().unwrap() };
-    assert!(matches!(state.route(&peer, InspectionCall { expected_daemon: state.daemon.clone(), request: InspectionRequest::Events(ObservationRequest::Describe) }), InspectionResponse::Events(Err(ObservationReadError::Unavailable))));
+    assert!(matches!(
+        state.route(&peer, InspectionCall { expected_daemon: state.daemon.clone(), request: InspectionRequest::Events(ObservationRequest::Describe) }, INSPECTION_RESPONSE_BYTES),
+        InspectionResponse::Events(Err(ObservationReadError::Unavailable))
+    ));
     assert!(matches!(
         sink.record(ObservationInput {
             epoch: head.stream.epoch.clone(),
@@ -91,23 +94,28 @@ fn reset_with_a_read_gate_never_redirects_a_retired_domain_fact() {
 }
 
 #[test]
-fn wrong_inspection_handshake_rejects_before_owner_routing_without_business_events() {
+fn wrong_inspection_scope_and_unknown_operation_reject_before_owner_routing() {
     use std::os::unix::net::UnixStream;
     let directory = tempfile::tempdir().unwrap();
     let scope = DaemonScope::prepare(directory.path()).unwrap();
     let lease = super::super::ScopeLease::acquire(scope).unwrap();
     let state = ObservationState::new(&lease).unwrap();
-    let invalid = [
-        InspectionClientFrame::Call(InspectionCall { expected_daemon: state.daemon.clone(), request: InspectionRequest::Runtime(RuntimeRequest::Snapshot) }),
-        InspectionClientFrame::Hello { protocol_version: wire::PROTOCOL_VERSION + 1, build_version: wire::BUILD_VERSION.into(), build_id: wire::build_identity().into(), scope: state.daemon.scope.clone() },
-    ];
-    for input in invalid {
+    for (scope, request, expected) in [
+        (ScopeRef { canonical_scope: directory.path().join("wrong") }, serde_json::json!({"Runtime":"Snapshot"}), "scope"),
+        (state.daemon.scope.clone(), serde_json::json!({"Runtime":"FutureInspection"}), "unsupported"),
+        (state.daemon.scope.clone(), serde_json::json!({"Runtime":{"Connections":true}}), "input"),
+    ] {
         let (mut client, mut server) = UnixStream::pair().unwrap();
         client.set_nonblocking(true).unwrap();
         server.set_nonblocking(true).unwrap();
         let deadline = Instant::now() + INSPECTION_TIMEOUT;
-        frame::write_limited(&mut client, &input, deadline, INSPECTION_REQUEST_BYTES).unwrap();
-        assert!(matches!(connection(&mut server, &state, deadline), Err(DaemonError::Protocol(_) | DaemonError::Incompatible(_))));
+        frame::write_limited(&mut client, &InspectionClientFrame::Call { scope, expected_daemon: None, request }, deadline, INSPECTION_REQUEST_BYTES).unwrap();
+        let error = connection(&mut server, &state, deadline).unwrap_err();
+        assert!(match expected {
+            "scope" => matches!(error, DaemonError::Incompatible(_)),
+            "unsupported" => matches!(error, DaemonError::Unsupported(operation) if operation == "Runtime.FutureInspection"),
+            _ => matches!(error, DaemonError::InvalidInput(_)),
+        });
     }
     let connection = state.runtime.connection_guard(RuntimeConnectionKind::Inspection);
     let peer = AcceptedPeer { connection: connection.reference().unwrap().clone(), process: ObservedProcess { pid: std::process::id(), incarnation: crate::sys::process::identity(std::process::id()) }, observed_at: state.clock.now().unwrap() };
@@ -118,7 +126,7 @@ fn wrong_inspection_handshake_rejects_before_owner_routing_without_business_even
 }
 
 #[test]
-fn compatible_build_inspection_accepts_call_without_restarting_owner() {
+fn inspection_accepts_one_direct_call_and_returns_its_owner_identity() {
     use std::os::unix::net::UnixStream;
     let directory = tempfile::tempdir().unwrap();
     let scope = DaemonScope::prepare(directory.path()).unwrap();
@@ -131,21 +139,14 @@ fn compatible_build_inspection_accepts_call_without_restarting_owner() {
         let deadline = Instant::now() + INSPECTION_TIMEOUT;
         let state_ref = &state;
         threads.spawn(move || connection(&mut server, state_ref, deadline).unwrap());
-        frame::write_limited(
-            &mut client,
-            &InspectionClientFrame::Hello { protocol_version: wire::PROTOCOL_VERSION, build_version: "another-version".into(), build_id: "another-build".into(), scope: state.daemon.scope.clone() },
-            deadline,
-            INSPECTION_REQUEST_BYTES,
-        )
-        .unwrap();
-        let InspectionServerFrame::Ready(ready) = frame::read_limited(&mut client, deadline, INSPECTION_RESPONSE_BYTES).unwrap() else { panic!("compatible inspection rejected") };
-        frame::write_limited(&mut client, &InspectionClientFrame::Call(InspectionCall { expected_daemon: ready.daemon, request: InspectionRequest::Runtime(RuntimeRequest::Snapshot) }), deadline, INSPECTION_REQUEST_BYTES).unwrap();
-        assert!(matches!(frame::read_limited::<InspectionServerFrame>(&mut client, deadline, INSPECTION_RESPONSE_BYTES).unwrap(), InspectionServerFrame::Result(InspectionResponse::Runtime(Ok(RuntimeResponse::Snapshot(_))))));
+        frame::write_limited(&mut client, &InspectionClientFrame::Call { scope: state.daemon.scope.clone(), expected_daemon: None, request: InspectionRequest::Runtime(RuntimeRequest::Snapshot) }, deadline, INSPECTION_REQUEST_BYTES).unwrap();
+        assert!(matches!(frame::read_limited::<InspectionServerFrame>(&mut client, deadline, INSPECTION_RESPONSE_BYTES).unwrap(),
+            InspectionServerFrame::Result { ready, response: InspectionResponse::Runtime(Ok(RuntimeResponse::Snapshot(_))) } if ready.daemon == state.daemon));
     });
 }
 
 #[test]
-fn compatible_build_inspection_client_accepts_different_ready_build() {
+fn inspection_client_accepts_response_with_different_diagnostic_protocol_and_retains_exact_instance() {
     let directory = tempfile::tempdir().unwrap();
     let scope = DaemonScope::prepare(directory.path()).unwrap();
     let lease = super::super::ScopeLease::acquire(scope).unwrap();
@@ -156,17 +157,19 @@ fn compatible_build_inspection_client_accepts_different_ready_build() {
             let deadline = Instant::now() + INSPECTION_TIMEOUT;
             assert!(listener.wait_ready(deadline).unwrap());
             let mut stream = listener.accept().unwrap().unwrap();
-            assert!(matches!(frame::read_limited::<InspectionClientFrame>(&mut stream, deadline, INSPECTION_REQUEST_BYTES).unwrap(), InspectionClientFrame::Hello { .. }));
+            let InspectionClientFrame::Call { scope, expected_daemon, request } = frame::read_limited::<InspectionClientFrame>(&mut stream, deadline, INSPECTION_REQUEST_BYTES).unwrap();
+            assert_eq!(scope, state.daemon.scope);
+            assert!(matches!(request, InspectionRequest::Runtime(RuntimeRequest::Snapshot)));
             let mut ready = state.ready().unwrap();
+            ready.protocol_version += 1;
             ready.build_version = "another-version".into();
             ready.build_id = "another-build".into();
-            frame::write_limited(&mut stream, &InspectionServerFrame::Ready(ready), deadline, INSPECTION_RESPONSE_BYTES).unwrap();
-            let InspectionClientFrame::Call(call) = frame::read_limited(&mut stream, deadline, INSPECTION_REQUEST_BYTES).unwrap() else { panic!("expected inspection call") };
-            // Returning DaemonChanged also proves the client decoded a native result.
-            let response = InspectionResponse::DaemonChanged { expected: call.expected_daemon, actual: state.daemon.clone() };
-            frame::write_limited(&mut stream, &InspectionServerFrame::Result(response), deadline, INSPECTION_RESPONSE_BYTES).unwrap();
+            let response = InspectionResponse::DaemonChanged { expected: expected_daemon.unwrap(), actual: state.daemon.clone() };
+            frame::write_limited(&mut stream, &InspectionServerFrame::Result { ready, response }, deadline, INSPECTION_RESPONSE_BYTES).unwrap();
         });
-        let result = inspect_existing(&state.daemon.scope, None, InspectionRequest::Runtime(RuntimeRequest::Snapshot)).unwrap();
+        let mut old_daemon = state.daemon.clone();
+        old_daemon.daemon_instance = "superseded".into();
+        let result = inspect_existing(&state.daemon.scope, Some(old_daemon), InspectionRequest::Runtime(RuntimeRequest::Snapshot)).unwrap();
         assert_eq!(result.ready.build_id, "another-build");
         assert!(matches!(result.response, InspectionResponse::DaemonChanged { .. }));
     });

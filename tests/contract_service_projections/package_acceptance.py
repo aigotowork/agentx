@@ -201,7 +201,7 @@ class PublicCases:
 
         stale = {**identity, "generation": str(uuid.uuid4())}
         refusal = self.sdk("getAgent", stale)
-        assert refusal["error"]["code"] == "StaleReference", refusal
+        assert refusal["error"]["code"] == "StaleGeneration", refusal
         self.cli(["agents", "show", ref["name"], *exact, "--generation", stale["generation"]], code=1)
         # Real lifecycle replacement creates a new exact incarnation, not a client name fallback.
         stop = {"request_id": str(uuid.uuid4()), **identity}

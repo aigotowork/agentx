@@ -1,7 +1,7 @@
 /** @aiPurpose One page-lifetime owner for exact selection, navigation and drafts. */
 import type { LatestBookmark } from "../../uiux/systems/space/layouts/useConversationScroll";
 import type { Attachment } from "../../../management/api/native";
-import { findConversation, membershipKey, type AgentSpaceSupply, type AgentState, type OfficeView, type RecordChannel } from "./model";
+import { findConversation, matchesOffice, membershipKey, type AgentSpaceSupply, type AgentState, type OfficeView, type RecordChannel } from "./model";
 import { emptyWindows, openWindow, removeWindow, toggleWindowFocus, type ConversationWindows } from "../workspace/windows";
 export type ConversationOrigin = "actor" | "directory" | "list" | "resume";
 export type Presentation = "scene" | "chat";
@@ -81,7 +81,7 @@ export class SpaceController {
   openConversation = (id: string, origin: ConversationOrigin) => {
     const { workspaceId, selectedId, reading, officeView } = this.snapshot;
     const agent = origin === "resume" && id === selectedId ? findConversation(this.supply, id) : this.supply.agents.find(row => row.id === id);
-    if (!agent || workspaceId && membershipKey(agent) !== workspaceId || origin === "actor" && agent.ref.record !== "current") return false;
+    if (!agent || !matchesOffice(agent, workspaceId) || origin === "actor" && agent.ref.record !== "current") return false;
     if (reading && selectedId === id) return true;
     this.update({ selectedId: id, reading: true, panel: "", detail: false, officeView: officeView === "posts" || officeView === "skills" ? "members" : officeView,
       ...(this.windowed ? { windows: openWindow(this.snapshot.windows, id) } : {}) });

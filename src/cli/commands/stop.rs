@@ -352,12 +352,7 @@ pub(crate) fn disconnect_bridge(session: &Session, row: &crate::db::InstanceRow)
     if expected.participant.as_ref() != Some(&fence) {
         return Err(ServiceError::StaleFence);
     }
-    let caller = crate::service::CallerContext {
-        request_id: crate::service::RequestId(uuid::Uuid::new_v4().to_string()),
-        invocation: session.invocation.clone(),
-        deadline_unix_ms: None,
-        expected_database_generation: Some(session.client.info().database_generation.clone()),
-    };
+    let caller = crate::service::CallerContext { request_id: crate::service::RequestId(uuid::Uuid::new_v4().to_string()), invocation: session.invocation.clone(), deadline_unix_ms: None, expected_database_generation: None };
     let request = Request::Participants(crate::agents::service::Request::Hermes(hermes::Request::Remove { expected }));
     let response = match session.client.call_with_context(caller.clone(), request.clone()) {
         Err(ServiceError::OutcomeUnknown(_)) => session.client.call_with_context(caller, request),

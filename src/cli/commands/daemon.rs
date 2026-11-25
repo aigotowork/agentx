@@ -12,7 +12,7 @@ use clap::{Parser, Subcommand};
 #[command(
     name = "agentx daemon",
     about = "Inspect or explicitly restart the selected native daemon",
-    after_help = "Scope: --scope overrides AGENTX_DIR; otherwise the normal home scope is used.\nOrdinary commands auto-start a missing daemon. Restart preserves managed data.\nSee .docs/architecture/daemon.md for recovery and platform limits."
+    after_help = "Scope: --scope overrides AGENTX_DIR; otherwise the normal home scope is used.\nOrdinary commands auto-start a missing daemon. Restart preserves managed data. After the one-time IPC upgrade, reopen Agents still running older hosts.\nSee .docs/architecture/daemon.md for recovery and platform limits."
 )]
 struct NativeArgs {
     #[command(subcommand)]
@@ -23,7 +23,7 @@ struct NativeArgs {
 enum NativeCommand {
     /// Serve the HTTPS-proxied cloud deployment and scope communication API
     Cloud(crate::cloud::Serve),
-    /// Enroll the selected local scope daemon into a cloud scope
+    /// Enroll the selected local scope daemon into a cloud namespace
     Connect(crate::cloud::connection::Connect),
     /// Enable the daemon's embedded Agent management API and print its URL
     Web {
@@ -139,8 +139,11 @@ fn run_native(args: NativeArgs) -> Result<i32, crate::daemon::DaemonError> {
             Ok(if status.state == State::Unavailable { 1 } else { 0 })
         }
         NativeCommand::Restart { scope } => {
-            let info = lifecycle::restart(scope.as_deref().unwrap_or(&default_scope))?;
+            let (info, upgraded) = lifecycle::restart_with_upgrade(scope.as_deref().unwrap_or(&default_scope))?;
             println!("Scope: {}\nDaemon: running (pid={} instance={})\nBuild: version={} cohort={}", info.canonical_scope.display(), info.pid, info.daemon_instance, info.build_version, info.build_id);
+            if upgraded {
+                println!("Native IPC upgraded. Reopen Agents still running an older host once so they can poll this daemon.");
+            }
             Ok(0)
         }
         NativeCommand::Web { scope, project, host, port } => {

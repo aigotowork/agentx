@@ -12,11 +12,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from roles_workspaces import Fixture
 
 
-def inspect(binary, output, daemon_binary=None):
+def inspect(binary, output):
     tmux = shutil.which("tmux")
     if not tmux:
         raise RuntimeError("tmux is required")
-    fixture = Fixture(daemon_binary or binary, {})
+    fixture = Fixture(binary, {})
     socket = fixture.root / "info-tmux"
     output.mkdir(parents=True, exist_ok=True)
 
@@ -57,21 +57,20 @@ def inspect(binary, output, daemon_binary=None):
         task.write_text("---\nschema: task\nstatus: ongoing\ndescription: Native reader task\n---\nInspect the assigned task body.\n")
         fixture.launch("--dir", fixture.a, "--role", "controller", "--bind", task, "--title", "Native Info")
         name = fixture.providers()[0]["name"]
-        if daemon_binary:
-            before = fixture.run("daemon", "status")
-            (output / "daemon-before.txt").write_text(before)
-            fixture.role(fixture.a / ".agentx/roles", "controller", "CHANGED_ON_DISK", default=True)
-            config = fixture.scope / "config.toml"
-            config.write_text(config.read_text().replace("role-model", "changed-model"))
-            # Same name alone, or even the same incarnation bits in another
-            # generation, must not add a link to this Agent's Info.
-            task_source = task.read_text()
-            agents_line = next(line for line in task_source.splitlines() if line.startswith("agents: "))
-            assignments = json.loads(agents_line.removeprefix("agents: "))
-            assignments[0]["generation"] = "00000000-0000-0000-0000-000000000001"
-            (task.parent / "namesake.task.md").write_text(
-                task_source.replace(agents_line, "agents: " + json.dumps(assignments))
-                .replace("Native reader task", "Another generation's task"))
+        before = fixture.run("daemon", "status")
+        (output / "daemon-before.txt").write_text(before)
+        fixture.role(fixture.a / ".agentx/roles", "controller", "CHANGED_ON_DISK", default=True)
+        config = fixture.scope / "config.toml"
+        config.write_text(config.read_text().replace("role-model", "changed-model"))
+        # Same name alone, or even the same incarnation bits in another
+        # generation, must not add a link to this Agent's Info.
+        task_source = task.read_text()
+        agents_line = next(line for line in task_source.splitlines() if line.startswith("agents: "))
+        assignments = json.loads(agents_line.removeprefix("agents: "))
+        assignments[0]["generation"] = "00000000-0000-0000-0000-000000000001"
+        (task.parent / "namesake.task.md").write_text(
+            task_source.replace(agents_line, "agents: " + json.dumps(assignments))
+            .replace("Native reader task", "Another generation's task"))
         fixture.parsed("bindings", "--project", fixture.a, "--agent", name, "--refresh")
         fixture.env["AGENTX_TUI_FULLSCREEN"] = "1"
         terminal("new-session", "-d", "-s", "reader", "-x", "128", "-y", "32", str(binary))
@@ -95,10 +94,7 @@ def inspect(binary, output, daemon_binary=None):
         terminal("send-keys", "-t", "reader", "Escape")
         wait("back", lambda s: "Native reader task" in s)
         open_row("Bootstrap")
-        if daemon_binary:
-            wait("bootstrap", lambda s: "full frozen Bootstrap" in s and "PARENT_ROLE" in s)
-        else:
-            wait("bootstrap", lambda s: "Role: controller" in s or "AGENTX SESSION" in s)
+        wait("bootstrap", lambda s: "Role: controller" in s or "AGENTX SESSION" in s)
         terminal("send-keys", "-t", "reader", "Escape")
         wait("root-return", lambda s: "Native reader task" in s)
         open_row("Task")
@@ -123,26 +119,6 @@ def inspect(binary, output, daemon_binary=None):
         terminal("send-keys", "-t", "reader", "Escape")
         wait("back-to-child", lambda s: "Related child" in s and "From" in s)
 
-        if daemon_binary:
-            fixture.run("kill", child)
-            terminal("send-keys", "-t", "reader", "i")
-            wait("child-stopped-list", lambda s: "1 stopped" in s and "i Exit" not in s)
-            terminal("send-keys", "-t", "reader", "i")
-            wait("child-stopped-relation", lambda s: "Child" in s and "Native reader task" in s)
-            open_row("Child")
-            wait("child-stopped-exact", lambda s: "Related child" in s and "› From" in s)
-            open_row("From")
-            wait("from-stopped-child", lambda s: "Native reader task" in s and "Child" in s)
-            terminal("send-keys", "-t", "reader", "i")
-            terminal("send-keys", "-t", "reader", "C-s")
-            wait("stops-expanded", lambda s: "▾ 1 stopped" in s and f"{child}  stopped" in s)
-            terminal("send-keys", "-t", "reader", "Down", "Down", "i")
-            wait("child-stopped-snapshot", lambda s: "Related child" in s and "› From" in s)
-            after = fixture.run("daemon", "status")
-            (output / "daemon-after.txt").write_text(after)
-            assert before == after, (before, after)
-            return
-
         # Reuse the live fixture on the ordinary inline dashboard. The reader
         # should borrow the event area, then return to the original main buffer.
         terminal("send-keys", "-t", "reader", "i")
@@ -160,6 +136,26 @@ def inspect(binary, output, daemon_binary=None):
         wait("inline-upper-info", reader_above_agents)
         terminal("send-keys", "-t", "reader", "i")
         wait("inline-events-restored", lambda s: "i Exit" not in s and name in s and child in s)
+
+        terminal("send-keys", "-t", "reader", "\\")
+        wait("fullscreen-restored", lambda s: "│" in s and name in s)
+        fixture.run("kill", child)
+        wait("child-stopped-list", lambda s: "1 stopped" in s and "i Exit" not in s)
+        terminal("send-keys", "-t", "reader", "i")
+        wait("child-stopped-relation", lambda s: "Child" in s and "Native reader task" in s)
+        open_row("Child")
+        wait("child-stopped-exact", lambda s: "Related child" in s and "› From" in s)
+        open_row("From")
+        wait("from-stopped-child", lambda s: "Native reader task" in s and "Child" in s)
+        terminal("send-keys", "-t", "reader", "i")
+        terminal("send-keys", "-t", "reader", "C-s")
+        wait("stops-expanded", lambda s: "▾ 1 stopped" in s and f"{child}  stopped" in s)
+        terminal("send-keys", "-t", "reader", "Down", "Down", "i")
+        wait("child-stopped-snapshot", lambda s: "Related child" in s and "› From" in s)
+        after = fixture.run("daemon", "status")
+        (output / "daemon-after.txt").write_text(after)
+        assert before == after, (before, after)
+
     finally:
         terminal("kill-server", check=False)
         fixture.close()
@@ -169,6 +165,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("binary", type=Path)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--daemon-binary", type=Path, help="Use an older binary to launch and retain a disposable daemon")
     args = parser.parse_args()
-    inspect(args.binary.resolve(strict=True), args.output, args.daemon_binary.resolve(strict=True) if args.daemon_binary else None)
+    inspect(args.binary.resolve(strict=True), args.output)

@@ -11,7 +11,7 @@ export const defaultRoute = (): SpaceRoute => ({ workspaceId: '', presentation: 
 export function parseRoute(search: string): ParsedRoute {
   const route = defaultRoute(), params = new URLSearchParams(search);
   try {
-    for (const key of [...owned, 'layout']) {
+    for (const key of owned) {
       if (params.getAll(key).length > 1) throw new Error('导航查询参数重复');
       if ((params.get(key)?.length ?? 0) > (key === 'q' ? 512 : 4096)) throw new Error('导航查询参数过长');
     }
@@ -20,13 +20,12 @@ export function parseRoute(search: string): ParsedRoute {
       if (!values.includes(value as T)) throw new Error(`${key} 导航参数无效`);
       return value as T;
     }
-    choice('layout', ['embedded', 'sidebar'], 'embedded');
     route.workspaceId = params.get('office') ?? '';
     route.presentation = choice('view', ['scene', 'chat'], 'scene');
     route.officeView = choice('tab', ['members', 'history', 'posts', 'skills'], 'members');
     route.postId = params.get('post'); route.query = params.get('q') ?? '';
     route.state = choice('state', ['', 'running', 'idle', 'ready', 'closed', 'failed', 'unknown'], '');
-    route.channel = params.get('channel') === 'notes' ? 'messages' : choice('channel', ['messages', 'model'], 'messages');
+    route.channel = choice('channel', ['messages', 'model'], 'messages');
     route.panel = choice('panel', ['', 'directory', 'mailbox'], '');
     route.detail = choice('detail', ['', 'agent'], '') === 'agent';
     route.mail = choice('mail', ['pending', 'all'], 'pending'); route.before = params.get('before') ?? '';

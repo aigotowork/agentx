@@ -219,7 +219,7 @@ fn reminder_create_reconciles_a_committed_call_with_a_lost_reply() {
 
     std::thread::scope(|threads| {
         let actual = session.client.clone();
-        let mut ready = actual.info().clone();
+        let mut ready = actual.info().unwrap().clone();
         ready.canonical_scope = proxy_scope.root().into();
         threads.spawn(move || {
             let deadline = Instant::now() + Duration::from_secs(6);
@@ -233,14 +233,12 @@ fn reminder_create_reconciles_a_committed_call_with_a_lost_reply() {
                     }
                 };
                 stream.set_nonblocking(true).unwrap();
-                let hello: Value = frame::read(&mut stream, deadline).unwrap();
-                assert_eq!(hello["Hello"]["protocol_version"], 4);
-                frame::write(&mut stream, &json!({"Ready": ready}), deadline).unwrap();
+                let wire: Value = frame::read(&mut stream, deadline).unwrap();
                 if connection == 0 {
-                    assert!(frame::read_optional::<Value>(&mut stream, deadline).unwrap().is_none());
+                    assert_eq!(wire["Call"]["request"], "DaemonStatus");
+                    frame::write(&mut stream, &json!({"Status": ready}), deadline).unwrap();
                     continue;
                 }
-                let wire: Value = frame::read(&mut stream, deadline).unwrap();
                 let caller: CallerContext = serde_json::from_value(wire["Call"]["caller"].clone()).unwrap();
                 let request: Request = serde_json::from_value(wire["Call"]["request"].clone()).unwrap();
                 if let Some(id) = &first_request_id {
@@ -248,13 +246,13 @@ fn reminder_create_reconciles_a_committed_call_with_a_lost_reply() {
                 } else {
                     first_request_id = Some(caller.request_id.clone());
                 }
-                let response = actual.call_with_context(caller, request).unwrap();
+                let response = actual.call_with_context(caller.clone(), request).unwrap();
                 let Response::Events(EventResult::ReminderCreated(receipt)) = &response else {
                     panic!("expected real creation result");
                 };
                 assert_eq!(receipt.already_exists, connection == 2);
                 if connection == 2 {
-                    frame::write(&mut stream, &json!({"Result":{"result": {"Ok": response}, "database_generation": ready.database_generation}}), deadline).unwrap();
+                    frame::write(&mut stream, &json!({"Result":{"result": {"Ok": response}, "info": ready, "executed_generation": ready.database_generation, "request_id": caller.request_id}}), deadline).unwrap();
                 }
             }
         });

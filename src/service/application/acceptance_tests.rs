@@ -63,12 +63,12 @@ fn stale_client_rejection_leaves_healthy_generation_available() {
     with_application(|app, mirror, generation| {
         let mut caller = context(&generation);
         caller.caller.expected_database_generation = Some(uuid::Uuid::new_v4().to_string());
-        assert!(matches!(app.handle(&caller, read()), Err(ServiceError::StaleFence)));
+        assert!(matches!(app.handle(&caller, read()), Err(ServiceError::StaleGeneration)));
         assert_eq!(mirror.current(), generation);
         assert!(app.handle(&context(&generation), read()).is_ok());
         let mut stale = context(&generation);
         stale.database_generation = uuid::Uuid::new_v4().to_string();
-        assert!(matches!(app.handle(&stale, read()), Err(ServiceError::StaleFence)));
+        assert!(matches!(app.handle(&stale, read()), Err(ServiceError::StaleGeneration)));
         assert_eq!(mirror.current(), generation);
     });
 }
@@ -111,7 +111,7 @@ fn management_reader_serves_committed_state_while_writer_holds_transaction() {
             .unwrap();
         assert!(matches!(lane.application.handle(&context(&generation), request.clone()), Ok(Response::Management(View::HumanMailbox(page))) if page.unhandled_count == 1));
         app.db.kv_set("service:database_generation", Some(&uuid::Uuid::new_v4().to_string())).unwrap();
-        assert!(matches!(lane.application.handle(&context(&generation), request), Err(ServiceError::StaleFence)));
+        assert!(matches!(lane.application.handle(&context(&generation), request), Err(ServiceError::StaleGeneration)));
         assert_eq!(mirror.current(), generation, "only the writer publishes durable generations");
     });
 }
@@ -167,7 +167,7 @@ fn delivery_poll_reader_serves_committed_mail_and_fences_progress() {
         app.handle(&caller, heartbeat.clone()).unwrap();
         let persisted: serde_json::Value = serde_json::from_str(&app.db.kv_get(key).unwrap().unwrap()).unwrap();
         assert_eq!(persisted["last_poll"], last_poll);
-        assert_eq!(persisted["protocol"], crate::daemon::PROTOCOL_VERSION);
+        assert!(persisted.get("protocol").is_none());
         assert_eq!(app.db.get_instance_full("lobo").unwrap().unwrap().last_event_id, 0);
 
         // Replace the durable registration while retaining participant and peer.
@@ -269,6 +269,6 @@ fn agent_info_read_lane_keeps_stopped_facts_and_bindings_with_the_exact_instance
         assert!(matches!(read(successor, Section::Bootstrap, &caller), Ok(Response::Queries(View::AgentInfo(Projection::Text(None))))));
         let forged = Target::Stopped { name: "lobo".into(), event, bits: Some(current.to_bits()) };
         assert!(matches!(read(forged, Section::Facts, &caller), Err(ServiceError::StaleFence)));
-        assert!(matches!(read(stopped, Section::Facts, &context("stale-generation")), Err(ServiceError::StaleFence)));
+        assert!(matches!(read(stopped, Section::Facts, &context("stale-generation")), Err(ServiceError::StaleGeneration)));
     });
 }

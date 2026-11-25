@@ -226,6 +226,7 @@ fn accept_connections(lease: &ScopeLease, queues: JobQueues, stop: Arc<AtomicBoo
             } else {
                 let queues = queues.clone();
                 let info = daemon_info(lease);
+                let generation = lease.database_generation();
                 let stop = stop.clone();
                 let observation = observation.clone();
                 let mut observed_connection = observation.as_ref().map(|state| state.runtime.connection_guard(RuntimeConnectionKind::Business));
@@ -240,8 +241,10 @@ fn accept_connections(lease: &ScopeLease, queues: JobQueues, stop: Arc<AtomicBoo
                         call_decoded: false,
                         reply_write_observed: false,
                     };
-                    let result = connection(&mut stream, info, queues, &stop, deadline, &mut trace);
-                    if let Err(error) = &result {
+                    let result = connection(&mut stream, info, &generation, queues, &stop, deadline, &mut trace);
+                    if let Err(error) = &result
+                        && !trace.reply_write_observed
+                    {
                         let written = frame::write(&mut stream, &ServerFrame::Failure(error.clone()), deadline);
                         if trace.call_decoded && !trace.reply_write_observed {
                             record_request(trace.state, trace.request.as_ref(), RequestUpdate::ReplyWriteFinished { failure: written.as_ref().err().map(runtime_failure) });
@@ -335,7 +338,7 @@ fn daemon_info(lease: &ScopeLease) -> DaemonInfo {
     }
 }
 
-fn connection(stream: &mut platform::Stream, info: DaemonInfo, queues: JobQueues, stop: &AtomicBool, deadline: Instant, trace: &mut ConnectionObservation<'_>) -> Result<(), DaemonError> {
+fn connection(stream: &mut platform::Stream, mut info: DaemonInfo, generation: &super::DatabaseGeneration, queues: JobQueues, stop: &AtomicBool, deadline: Instant, trace: &mut ConnectionObservation<'_>) -> Result<(), DaemonError> {
     let (observation, connection) = (trace.state, trace.reference);
     trace.close_reason = ConnectionCloseReason::Rejected;
     let (pid, incarnation) = platform::peer(stream)?;
@@ -345,84 +348,73 @@ fn connection(stream: &mut platform::Stream, info: DaemonInfo, queues: JobQueues
         (Some(state), Some(connection)) => state.clock.now().ok().and_then(|at| state.runtime.peer_observed(connection, &process, at).into_reference()).map(EvidenceValue::Present).unwrap_or(EvidenceValue::Unknown(UnknownReason::NotCaptured)),
         _ => EvidenceValue::Unknown(UnknownReason::NotCaptured),
     };
-    match frame::read(stream, deadline)? {
-        ClientFrame::Hello { protocol_version, build_version, build_id, canonical_scope } => {
-            if protocol_version != PROTOCOL_VERSION || canonical_scope != info.canonical_scope {
-                trace.close_reason = ConnectionCloseReason::Rejected;
-                return Err(DaemonError::Incompatible(format!(
-                    "daemon protocol={} version={} cohort={} scope={}; client protocol={protocol_version} version={build_version} cohort={build_id} scope={}",
-                    info.protocol_version,
-                    info.build_version,
-                    info.build_id,
-                    info.canonical_scope.display(),
-                    canonical_scope.display()
-                )));
-            }
-        }
-        _ => {
-            trace.close_reason = ConnectionCloseReason::Rejected;
-            return Err(DaemonError::Protocol("first frame must be Hello".into()));
-        }
-    }
-    record_connection(observation, connection, ConnectionUpdate::HelloValidated);
-    trace.write(stream, &ServerFrame::Ready(info.clone()), deadline)?;
-    record_connection(observation, connection, ConnectionUpdate::ReadyWritten);
     record_connection(observation, connection, ConnectionUpdate::ReadingOperation);
-    trace.close_reason = ConnectionCloseReason::ReadFailure;
-    let operation = match frame::read_optional(stream, deadline)? {
-        None => {
-            trace.close_reason = ConnectionCloseReason::HelloOnlyEof;
+    let Some(ClientFrame::Call { canonical_scope, daemon_instance, caller, request }) = frame::read_optional::<ClientFrame<Box<serde_json::value::RawValue>>>(stream, deadline)? else {
+        trace.close_reason = ConnectionCloseReason::Completed;
+        return Ok(());
+    };
+    trace.close_reason = ConnectionCloseReason::Rejected;
+    if canonical_scope != info.canonical_scope {
+        return Err(DaemonError::Incompatible("call belongs to another data scope".into()));
+    }
+    if daemon_instance.as_ref().is_some_and(|expected| expected != &info.daemon_instance) {
+        return Err(DaemonError::Incompatible("daemon instance changed".into()));
+    }
+    let deadline = deadline.min(request_deadline(caller.deadline_unix_ms)?);
+    info.database_generation = generation.current();
+    if info.database_generation.is_empty() {
+        return Err(DaemonError::Unavailable("database generation mirror invalid".into()));
+    }
+    if caller.expected_database_generation.as_ref().is_some_and(|expected| expected != &info.database_generation) {
+        return Err(DaemonError::StaleGeneration);
+    }
+    if caller.request_id.0.is_empty() {
+        return Err(DaemonError::InvalidInput("request ID is required".into()));
+    }
+    match request.get().starts_with('"').then(|| super::operation::tag(request.get())).flatten().as_deref() {
+        Some(super::wire::STATUS) => return trace.write(stream, &ServerFrame::Status(info), deadline),
+        Some(super::wire::SHUTDOWN) => {
+            let instance = daemon_instance.ok_or_else(|| DaemonError::InvalidInput("shutdown requires the exact daemon instance".into()))?;
+            enqueue(stream, Operation::Shutdown { instance }, &queues, stop, deadline, trace, None)?;
+            trace.close_reason = ConnectionCloseReason::Shutdown;
             return Ok(());
         }
-        Some(ClientFrame::Call { daemon_instance, caller, request }) => {
-            trace.call_decoded = true;
-            trace.close_reason = ConnectionCloseReason::Rejected;
-            let effective = request_deadline(caller.deadline_unix_ms).map(|request| deadline.min(request));
-            let observed_peer = match &peer {
-                EvidenceValue::Present(peer) => Some(peer.clone()),
-                _ => None,
-            };
-            let accepted = observation.and_then(|state| Some(AcceptedPeer { connection: connection.cloned()?, process: ObservedProcess { pid: process.pid, incarnation: process.incarnation.clone() }, observed_at: state.clock.now().ok()? }));
-            let reference = observation.and_then(|state| state.clock.now().ok().map(|at| (state, at))).and_then(|(state, at)| {
-                state
-                    .runtime
-                    .call_decoded(
-                        DecodedCallInput {
-                            connection: connection.cloned(),
-                            peer,
-                            origin: caller.invocation.observation_origin.clone(),
-                            request_id: &caller.request_id,
-                            operation: OperationLabel::of(&request),
-                            caller_deadline_unix_ms: caller.deadline_unix_ms,
-                            effective_deadline: effective.as_ref().ok().and_then(|deadline| state.clock.at_instant(*deadline).ok()).map(EvidenceValue::Present).unwrap_or(EvidenceValue::Unknown(UnknownReason::ObservationFailed)),
-                            generation_at_decode: info.database_generation.clone(),
-                        },
-                        at,
-                    )
-                    .into_reference()
-            });
-            trace.worker = observation.map(|state| state.runtime.worker_guard(reference.clone()));
-            trace.request = reference.clone();
-            let deadline = match effective {
-                Ok(deadline) => deadline,
-                Err(error) => {
-                    record_request(observation, reference.as_ref(), RequestUpdate::AdmissionRejected(runtime_failure(&error)));
-                    return Err(error);
-                }
-            };
-            let context = RequestContext { caller, process, daemon_instance, database_generation: info.database_generation };
-            record_connection(observation, connection, ConnectionUpdate::AwaitingReply);
-            return enqueue(stream, Operation::Call { context, request, peer: observed_peer, accepted }, &queues, stop, deadline, trace, reference);
-        }
-        Some(ClientFrame::Shutdown { daemon_instance }) => Operation::Shutdown { instance: daemon_instance },
-        _ => {
-            trace.close_reason = ConnectionCloseReason::Rejected;
-            return Err(DaemonError::Protocol("expected one operation after Hello".into()));
-        }
+        _ => {}
+    }
+    let request = super::wire::decode_request(&request)?;
+    if caller.expected_database_generation.is_none() && request.requires_generation() {
+        return Err(DaemonError::InvalidInput("operation requires an expected database generation".into()));
+    }
+    trace.call_decoded = true;
+    trace.close_reason = ConnectionCloseReason::Rejected;
+    let observed_peer = match &peer {
+        EvidenceValue::Present(peer) => Some(peer.clone()),
+        _ => None,
     };
-    enqueue(stream, operation, &queues, stop, deadline, trace, None)?;
-    trace.close_reason = ConnectionCloseReason::Shutdown;
-    Ok(())
+    let accepted = observation.and_then(|state| Some(AcceptedPeer { connection: connection.cloned()?, process: ObservedProcess { pid: process.pid, incarnation: process.incarnation.clone() }, observed_at: state.clock.now().ok()? }));
+    let reference = observation.and_then(|state| state.clock.now().ok().map(|at| (state, at))).and_then(|(state, at)| {
+        state
+            .runtime
+            .call_decoded(
+                DecodedCallInput {
+                    connection: connection.cloned(),
+                    peer,
+                    origin: caller.invocation.observation_origin.clone(),
+                    request_id: &caller.request_id,
+                    operation: OperationLabel::of(&request),
+                    caller_deadline_unix_ms: caller.deadline_unix_ms,
+                    effective_deadline: state.clock.at_instant(deadline).ok().map(EvidenceValue::Present).unwrap_or(EvidenceValue::Unknown(UnknownReason::ObservationFailed)),
+                    generation_at_decode: info.database_generation.clone(),
+                },
+                at,
+            )
+            .into_reference()
+    });
+    trace.worker = observation.map(|state| state.runtime.worker_guard(reference.clone()));
+    trace.request = reference.clone();
+    let context = RequestContext { caller, process, daemon_instance: info.daemon_instance, database_generation: info.database_generation };
+    record_connection(observation, connection, ConnectionUpdate::AwaitingReply);
+    enqueue(stream, Operation::Call { context, request, peer: observed_peer, accepted }, &queues, stop, deadline, trace, reference)
 }
 
 fn enqueue(stream: &mut platform::Stream, operation: Operation, queues: &JobQueues, stop: &AtomicBool, deadline: Instant, trace: &mut ConnectionObservation<'_>, reference: Option<RequestObservationRef>) -> Result<(), DaemonError> {
@@ -561,7 +553,7 @@ fn dispatch_inner(
             drop(capture);
             let generation = lease.database_generation().current();
             if !writer && generation != context.database_generation {
-                result = Err(crate::service::ServiceError::StaleFence);
+                result = Err(crate::service::ServiceError::StaleGeneration);
             }
             if let Some(state) = observation {
                 state.synchronize_epoch();
@@ -598,7 +590,7 @@ fn dispatch_inner(
             if generation.is_empty() {
                 stop.store(true, Ordering::Release);
             }
-            ServerFrame::Result { result, database_generation: generation }
+            ServerFrame::Result { result, info: DaemonInfo { database_generation: generation, ..daemon_info(lease) }, executed_generation: context.database_generation, request_id: context.caller.request_id }
         }
         Operation::Shutdown { instance } => {
             if instance != lease.instance() {
@@ -631,7 +623,7 @@ fn runtime_failure(error: &DaemonError) -> RuntimeFailureCode {
         DaemonError::Busy => RuntimeFailureCode::Busy,
         DaemonError::Deadline => RuntimeFailureCode::Deadline,
         DaemonError::Incompatible(_) => RuntimeFailureCode::Incompatible,
-        DaemonError::Protocol(_) => RuntimeFailureCode::Protocol,
+        DaemonError::Protocol(_) | DaemonError::InvalidInput(_) => RuntimeFailureCode::Protocol,
         DaemonError::StaleGeneration => RuntimeFailureCode::StaleGeneration,
         DaemonError::OutcomeUnknown(_) => RuntimeFailureCode::OutcomeUnknown,
         DaemonError::Unsupported(_) => RuntimeFailureCode::Unsupported,
@@ -650,7 +642,7 @@ fn validate(context: &RequestContext, instance: &str, generation: &str, deadline
     if generation.is_empty() {
         return Err(DaemonError::Unavailable("database generation mirror invalid".into()));
     }
-    if context.caller.expected_database_generation.as_deref() != Some(generation) {
+    if context.database_generation != generation || context.caller.expected_database_generation.as_deref().is_some_and(|expected| expected != generation) {
         return Err(DaemonError::StaleGeneration);
     }
     Ok(())

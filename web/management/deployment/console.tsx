@@ -33,9 +33,9 @@ function DeploymentGate({ onConnect }: { onConnect: (session: Session) => void }
 
   async function connect(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const bearer = token.trim();
+    const bearer = token;
     if (pending.current || !bearer) return;
-    if (!cloudTokenPattern.test(bearer)) { setError('请输入 32–256 个 URL 安全字符的管理员令牌。'); return; }
+    if (!cloudTokenPattern.test(bearer)) { setError('请输入 12 位管理员令牌。'); return; }
     const controller = new AbortController();
     pending.current = controller;
     setError('');
@@ -61,7 +61,7 @@ function DeploymentGate({ onConnect }: { onConnect: (session: Session) => void }
           <option value="0">仅本次</option><option value="30">30 天</option><option value="90">90 天</option>
         </select></label>
         {error && <p role="alert" className="deployment-error">{error}</p>}
-        <button className="primary" type="submit" disabled={busy || restoring || !token.trim()}>{busy ? '正在连接…' : '连接'}</button>
+        <button className="primary" type="submit" disabled={busy || restoring || !token}>{busy ? '正在连接…' : '连接'}</button>
       </> : <p role="alert" className="deployment-error">请通过 HTTPS 打开部署管理台。</p>}
     </form>
   </main>;

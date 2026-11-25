@@ -1,9 +1,5 @@
 # Native management declarations
 
-Rust serde declarations own wire contracts. Regenerate from the repository root after changing them:
+[Rust declarations](../../../src/management/contract.rs) own the wire contract. The [public SDK generation workflow](../../../packages/agentx-client/README.md) exports the actual OpenAPI contract and regenerates the SDK. This directory consumes SDK types and should not contain an independent generator or wire schema.
 
-```sh
-python3 web/workbench/api/derive.py --sources src/management/contract.rs src/agents/model_request.rs --roots AgentPage Descriptor WorkspaceCatalog RoleCatalog DirectoryEntry SubmitDirectoryMessage DirectorySendOutcome HumanMailbox HandleHumanMessages OfficeActivity LaunchRelations Attachment SubmitLaunch SubmitMessage SubmitTarget Operation TranscriptPage MessagePage --numbers number --output web/management/api/native.ts
-```
-
-The shared generator follows the finite type closure and fails on unsupported shapes. `RoleDefinitionView.profile` is nullable catalog metadata; `RoleView.profile` is the concrete adopted/default-route profile. Do not replace adopted facts using current catalog defaults. Typechecks and fresh embedded builds consume this file.
+`RoleDefinitionView.profile` is nullable catalogue metadata; `RoleView.profile` is the concrete adopted profile. Do not replace adopted facts using current catalogue defaults.

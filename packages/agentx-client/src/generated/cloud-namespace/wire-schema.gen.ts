@@ -1,8 +1,13 @@
-{
+// Generated from actual emitted OpenAPI. Do not edit.
+export const wireDocument = {
   "components": {
     "schemas": {
       "AgentPage": {
         "properties": {
+          "generation": {
+            "description": "Namespace generation verified in the same transaction as the page.",
+            "type": "string"
+          },
           "items": {
             "items": {
               "$ref": "#/components/schemas/CloudAgentSummary"
@@ -17,6 +22,7 @@
           }
         },
         "required": [
+          "generation",
           "items",
           "next"
         ],
@@ -32,17 +38,22 @@
             "type": "string"
           },
           "incarnation": {
+            "pattern": "^(?:[A-Za-z0-9]{12})$",
             "type": "string"
           },
           "installation_id": {
             "type": "string"
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/AgentWorkspace"
           }
         },
         "required": [
           "generation",
           "installation_id",
           "host",
-          "incarnation"
+          "incarnation",
+          "workspace"
         ],
         "type": "object"
       },
@@ -53,18 +64,75 @@
             "type": "string"
           },
           "incarnation": {
+            "pattern": "^(?:[A-Za-z0-9]{12}|~human)$",
             "type": "string"
           },
           "name": {
             "type": "string"
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/AgentWorkspace"
           }
         },
         "required": [
           "name",
           "host",
-          "incarnation"
+          "incarnation",
+          "workspace"
         ],
         "type": "object"
+      },
+      "AgentWorkspace": {
+        "description": "Membership chosen when the exact Agent incarnation is prepared for launch.",
+        "oneOf": [
+          {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "project"
+                ],
+                "type": "string"
+              },
+              "workspace_id": {
+                "pattern": "^WS[A-Za-z0-9]{10}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "workspace_id",
+              "kind"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "global"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "unexposed"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "type": "object"
+          }
+        ]
       },
       "ClaimInbox": {
         "additionalProperties": false,
@@ -164,16 +232,21 @@
             "type": "string"
           },
           "incarnation": {
+            "pattern": "^(?:[A-Za-z0-9]{12})$",
             "type": "string"
           },
           "name": {
             "type": "string"
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/AgentWorkspace"
           }
         },
         "required": [
           "name",
           "host",
-          "incarnation"
+          "incarnation",
+          "workspace"
         ],
         "type": "object"
       },
@@ -284,12 +357,13 @@
                   "null"
                 ]
               },
-              "workspace": {
+              "workspace_id": {
+                "pattern": "^WS[A-Za-z0-9]{10}$",
                 "type": "string"
               }
             },
             "required": [
-              "workspace",
+              "workspace_id",
               "kind"
             ],
             "type": "object"
@@ -297,6 +371,7 @@
           {
             "properties": {
               "incarnation": {
+                "pattern": "^[A-Za-z0-9]{12}$",
                 "type": "string"
               },
               "kind": {
@@ -318,10 +393,6 @@
           },
           {
             "properties": {
-              "alias": {
-                "description": "New workspace alias to publish on this host.",
-                "type": "string"
-              },
               "create_directory": {
                 "description": "Create only the final component if absent. Parents must already exist.",
                 "type": "boolean"
@@ -338,6 +409,10 @@
                 ],
                 "type": "string"
               },
+              "name": {
+                "description": "Display name to publish for this project.",
+                "type": "string"
+              },
               "parent": {
                 "description": "Alias of an eligible configured export.",
                 "type": "string"
@@ -346,7 +421,7 @@
             "required": [
               "parent",
               "directory",
-              "alias",
+              "name",
               "create_directory",
               "kind"
             ],
@@ -376,18 +451,19 @@
           },
           {
             "properties": {
-              "alias": {
-                "type": "string"
-              },
               "status": {
                 "enum": [
                   "workspace_added"
                 ],
                 "type": "string"
+              },
+              "workspace_id": {
+                "pattern": "^WS[A-Za-z0-9]{10}$",
+                "type": "string"
               }
             },
             "required": [
-              "alias",
+              "workspace_id",
               "status"
             ],
             "type": "object"
@@ -512,17 +588,18 @@
           "generation": {
             "type": "string"
           },
+          "namespace_id": {
+            "type": "string"
+          },
           "protocol_version": {
+            "description": "Diagnostic version; operation contracts determine compatibility.",
             "format": "u-int32",
             "minimum": 0,
             "type": "integer"
-          },
-          "scope_id": {
-            "type": "string"
           }
         },
         "required": [
-          "scope_id",
+          "namespace_id",
           "generation",
           "protocol_version"
         ],
@@ -556,6 +633,12 @@
           "online": {
             "type": "boolean"
           },
+          "project_roots": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "workspace_management": {
             "description": "This active control lease accepts remote workspace registration.",
             "type": [
@@ -576,12 +659,17 @@
           "installation_id",
           "online",
           "observed_at",
-          "workspaces"
+          "workspaces",
+          "project_roots"
         ],
         "type": "object"
       },
       "HostPage": {
         "properties": {
+          "generation": {
+            "description": "Namespace generation verified in the same transaction as the page.",
+            "type": "string"
+          },
           "items": {
             "items": {
               "$ref": "#/components/schemas/HostView"
@@ -596,6 +684,7 @@
           }
         },
         "required": [
+          "generation",
           "items",
           "next"
         ],
@@ -685,7 +774,7 @@
         "type": "string"
       },
       "MessageHistoryPage": {
-        "description": "Durable scope traffic, in descending message ID order. This is not a Provider transcript.",
+        "description": "Durable Namespace traffic, in descending message ID order. This is not a Provider transcript.",
         "properties": {
           "items": {
             "items": {
@@ -768,6 +857,21 @@
           "reply_to",
           "thread",
           "created_at"
+        ],
+        "type": "object"
+      },
+      "NamespaceError": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
         ],
         "type": "object"
       },
@@ -906,6 +1010,12 @@
               "null"
             ]
           },
+          "project_roots": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "workspaces": {
             "items": {
               "$ref": "#/components/schemas/WorkspaceCapability"
@@ -917,7 +1027,8 @@
           "generation",
           "installation_id",
           "lease_id",
-          "workspaces"
+          "workspaces",
+          "project_roots"
         ],
         "type": "object"
       },
@@ -969,21 +1080,6 @@
           "name",
           "available",
           "reason"
-        ],
-        "type": "object"
-      },
-      "ScopeError": {
-        "properties": {
-          "code": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "code",
-          "message"
         ],
         "type": "object"
       },
@@ -1112,11 +1208,8 @@
         "type": "object"
       },
       "WorkspaceCapability": {
-        "additionalProperties": false,
+        "description": "Shared fields also composed into the flattened WorkspaceView schema.",
         "properties": {
-          "alias": {
-            "type": "string"
-          },
           "default_available": {
             "type": "boolean"
           },
@@ -1126,32 +1219,80 @@
               "null"
             ]
           },
-          "managed_parent": {
-            "description": "This configured export is eligible as a parent for remote workspace registration. Set by the server from the lease header.",
-            "readOnly": true,
-            "type": [
-              "boolean",
-              "null"
-            ]
+          "name": {
+            "type": "string"
           },
           "roles": {
             "items": {
               "$ref": "#/components/schemas/RoleCapability"
             },
             "type": "array"
+          },
+          "workspace_id": {
+            "pattern": "^WS[A-Za-z0-9]{10}$",
+            "type": "string"
           }
         },
         "required": [
-          "alias",
+          "workspace_id",
+          "name",
           "default_available",
           "default_reason",
           "roles"
         ],
         "type": "object"
+      },
+      "WorkspacePage": {
+        "properties": {
+          "generation": {
+            "description": "Namespace generation verified in the same transaction as the page.",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceView"
+            },
+            "type": "array"
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "generation",
+          "items",
+          "next"
+        ],
+        "type": "object"
+      },
+      "WorkspaceView": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/WorkspaceCapability"
+          },
+          {
+            "properties": {
+              "host": {
+                "type": "string"
+              },
+              "online": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "host",
+              "online"
+            ],
+            "type": "object"
+          }
+        ]
       }
     },
     "securitySchemes": {
-      "scopeBearer": {
+      "namespaceBearer": {
         "scheme": "bearer",
         "type": "http"
       }
@@ -1161,20 +1302,29 @@
     "contact": {
       "name": "agentx"
     },
-    "description": "Base: configured scope URL plus /api/v1. All calls require the scope Bearer. Delivery is confirmed by the exact recipient host after Provider evidence. Opaque identifiers and decimal string message IDs remain strings.",
+    "description": "Base: configured Namespace URL plus /api/v1. All calls require the Namespace Bearer. Delivery is confirmed by the exact recipient host after Provider evidence. Opaque identifiers and decimal string message IDs remain strings.",
     "license": {
       "identifier": "PolyForm-Noncommercial-1.0.0",
       "name": "PolyForm-Noncommercial-1.0.0"
     },
-    "title": "AgentX Scope Communication",
+    "title": "AgentX Namespace Communication",
     "version": "1"
   },
   "openapi": "3.1.0",
   "paths": {
     "/agents": {
       "get": {
-        "operationId": "scopeListAgents",
+        "operationId": "namespaceListAgents",
         "parameters": [
+          {
+            "description": "Expected Namespace generation. Bind the first page's generation when continuing a cursor.",
+            "in": "query",
+            "name": "generation",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "in": "query",
             "name": "after",
@@ -1203,7 +1353,16 @@
             }
           },
           {
-            "description": "Include host-reported Agent facts. Omit for identity-only legacy clients.",
+            "in": "query",
+            "name": "workspace_id",
+            "required": false,
+            "schema": {
+              "pattern": "^WS[A-Za-z0-9]{10}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Include host-reported Agent facts. Omit to return identity and membership only.",
             "in": "query",
             "name": "facts",
             "required": false,
@@ -1223,11 +1382,21 @@
             },
             "description": ""
           },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NamespaceError"
+                }
+              }
+            },
+            "description": "Stale Namespace generation"
+          },
           "default": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScopeError"
+                  "$ref": "#/components/schemas/NamespaceError"
                 }
               }
             },
@@ -1236,7 +1405,7 @@
         },
         "security": [
           {
-            "scopeBearer": []
+            "namespaceBearer": []
           }
         ],
         "tags": []
@@ -1244,7 +1413,7 @@
     },
     "/agents/{name}": {
       "put": {
-        "operationId": "scopeRegisterAgent",
+        "operationId": "namespaceRegisterAgent",
         "parameters": [
           {
             "in": "path",
@@ -1280,7 +1449,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScopeError"
+                  "$ref": "#/components/schemas/NamespaceError"
                 }
               }
             },
@@ -1289,7 +1458,7 @@
         },
         "security": [
           {
-            "scopeBearer": []
+            "namespaceBearer": []
           }
         ],
         "tags": []
@@ -1297,7 +1466,7 @@
     },
     "/agents/{name}/retire": {
       "post": {
-        "operationId": "scopeRetireAgent",
+        "operationId": "namespaceRetireAgent",
         "parameters": [
           {
             "in": "path",
@@ -1333,7 +1502,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScopeError"
+                  "$ref": "#/components/schemas/NamespaceError"
                 }
               }
             },
@@ -1342,7 +1511,7 @@
         },
         "security": [
           {
-            "scopeBearer": []
+            "namespaceBearer": []
           }
         ],
         "tags": []
@@ -1350,7 +1519,7 @@
     },
     "/changes": {
       "get": {
-        "operationId": "scopeSpaceChanges",
+        "operationId": "namespaceSpaceChanges",
         "parameters": [
           {
             "in": "query",
@@ -1384,7 +1553,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScopeError"
+                  "$ref": "#/components/schemas/NamespaceError"
                 }
               }
             },
@@ -1393,7 +1562,7 @@
         },
         "security": [
           {
-            "scopeBearer": []
+            "namespaceBearer": []
           }
         ],
         "tags": []
@@ -1401,7 +1570,7 @@
     },
     "/descriptor": {
       "get": {
-        "operationId": "scopeDescribe",
+        "operationId": "namespaceDescribe",
         "responses": {
           "200": {
             "content": {
@@ -1417,7 +1586,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScopeError"
+                  "$ref": "#/components/schemas/NamespaceError"
                 }
               }
             },
@@ -1426,7 +1595,7 @@
         },
         "security": [
           {
-            "scopeBearer": []
+            "namespaceBearer": []
           }
         ],
         "tags": []
@@ -1434,8 +1603,17 @@
     },
     "/hosts": {
       "get": {
-        "operationId": "scopeListHosts",
+        "operationId": "namespaceListHosts",
         "parameters": [
+          {
+            "description": "Expected Namespace generation. Bind the first page's generation when continuing a cursor.",
+            "in": "query",
+            "name": "generation",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "in": "query",
             "name": "after",
@@ -1467,11 +1645,21 @@
             },
             "description": ""
           },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NamespaceError"
+                }
+              }
+            },
+            "description": "Stale Namespace generation"
+          },
           "default": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScopeError"
+                  "$ref": "#/components/schemas/NamespaceError"
                 }
               }
             },
@@ -1480,7 +1668,7 @@
         },
         "security": [
           {
-            "scopeBearer": []
+            "namespaceBearer": []
           }
         ],
         "tags": []
@@ -1488,7 +1676,7 @@
     },
     "/hosts/{host}": {
       "put": {
-        "operationId": "scopeRenewHost",
+        "operationId": "namespaceRenewHost",
         "parameters": [
           {
             "in": "path",
@@ -1524,7 +1712,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScopeError"
+                  "$ref": "#/components/schemas/NamespaceError"
                 }
               }
             },
@@ -1533,7 +1721,7 @@
         },
         "security": [
           {
-            "scopeBearer": []
+            "namespaceBearer": []
           }
         ],
         "tags": []
@@ -1541,7 +1729,7 @@
     },
     "/hosts/{host}/control/lease": {
       "put": {
-        "operationId": "scopeRenewControlLease",
+        "operationId": "namespaceRenewControlLease",
         "parameters": [
           {
             "in": "path",
@@ -1552,7 +1740,7 @@
             }
           },
           {
-            "description": "Advertises native support for scoped working-directory launch.",
+            "description": "Advertises native support for a project-relative launch directory.",
             "in": "query",
             "name": "directory_launch",
             "required": false,
@@ -1564,18 +1752,6 @@
             "description": "Comma-separated supported features. Advertise workspace_management to accept remote workspace registration.",
             "in": "header",
             "name": "X-AgentX-Features",
-            "required": false,
-            "schema": {
-              "type": [
-                "string",
-                "null"
-              ]
-            }
-          },
-          {
-            "description": "Comma-separated aliases of configured parent exports present in the lease catalogue; used with workspace_management.",
-            "in": "header",
-            "name": "X-AgentX-Workspace-Parents",
             "required": false,
             "schema": {
               "type": [
@@ -1610,7 +1786,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScopeError"
+                  "$ref": "#/components/schemas/NamespaceError"
                 }
               }
             },
@@ -1619,7 +1795,7 @@
         },
         "security": [
           {
-            "scopeBearer": []
+            "namespaceBearer": []
           }
         ],
         "tags": []
@@ -1627,7 +1803,7 @@
     },
     "/hosts/{host}/control/operations/{request_id}/report": {
       "post": {
-        "operationId": "scopeReportControlOperation",
+        "operationId": "namespaceReportControlOperation",
         "parameters": [
           {
             "in": "path",
@@ -1671,7 +1847,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScopeError"
+                  "$ref": "#/components/schemas/NamespaceError"
                 }
               }
             },
@@ -1680,7 +1856,7 @@
         },
         "security": [
           {
-            "scopeBearer": []
+            "namespaceBearer": []
           }
         ],
         "tags": []
@@ -1688,7 +1864,7 @@
     },
     "/hosts/{host}/control/poll": {
       "post": {
-        "operationId": "scopePollControlOperation",
+        "operationId": "namespacePollControlOperation",
         "parameters": [
           {
             "in": "path",
@@ -1724,7 +1900,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScopeError"
+                  "$ref": "#/components/schemas/NamespaceError"
                 }
               }
             },
@@ -1733,7 +1909,7 @@
         },
         "security": [
           {
-            "scopeBearer": []
+            "namespaceBearer": []
           }
         ],
         "tags": []
@@ -1741,7 +1917,7 @@
     },
     "/inbox/claim": {
       "post": {
-        "operationId": "scopeClaimInbox",
+        "operationId": "namespaceClaimInbox",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1767,7 +1943,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScopeError"
+                  "$ref": "#/components/schemas/NamespaceError"
                 }
               }
             },
@@ -1776,7 +1952,7 @@
         },
         "security": [
           {
-            "scopeBearer": []
+            "namespaceBearer": []
           }
         ],
         "tags": []
@@ -1784,7 +1960,7 @@
     },
     "/inbox/confirm": {
       "post": {
-        "operationId": "scopeConfirmInbox",
+        "operationId": "namespaceConfirmInbox",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1810,7 +1986,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScopeError"
+                  "$ref": "#/components/schemas/NamespaceError"
                 }
               }
             },
@@ -1819,7 +1995,7 @@
         },
         "security": [
           {
-            "scopeBearer": []
+            "namespaceBearer": []
           }
         ],
         "tags": []
@@ -1827,7 +2003,7 @@
     },
     "/inbox/recover": {
       "post": {
-        "operationId": "scopeRecoverInbox",
+        "operationId": "namespaceRecoverInbox",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1853,7 +2029,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScopeError"
+                  "$ref": "#/components/schemas/NamespaceError"
                 }
               }
             },
@@ -1862,7 +2038,7 @@
         },
         "security": [
           {
-            "scopeBearer": []
+            "namespaceBearer": []
           }
         ],
         "tags": []
@@ -1870,7 +2046,7 @@
     },
     "/messages": {
       "get": {
-        "operationId": "scopeListMessages",
+        "operationId": "namespaceListMessages",
         "parameters": [
           {
             "in": "query",
@@ -1901,6 +2077,7 @@
             "name": "incarnation",
             "required": true,
             "schema": {
+              "pattern": "^(?:[A-Za-z0-9]{12})$",
               "type": "string"
             }
           },
@@ -1949,7 +2126,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScopeError"
+                  "$ref": "#/components/schemas/NamespaceError"
                 }
               }
             },
@@ -1958,13 +2135,13 @@
         },
         "security": [
           {
-            "scopeBearer": []
+            "namespaceBearer": []
           }
         ],
         "tags": []
       },
       "post": {
-        "operationId": "scopeSendMessage",
+        "operationId": "namespaceSendMessage",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1990,7 +2167,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScopeError"
+                  "$ref": "#/components/schemas/NamespaceError"
                 }
               }
             },
@@ -1999,7 +2176,7 @@
         },
         "security": [
           {
-            "scopeBearer": []
+            "namespaceBearer": []
           }
         ],
         "tags": []
@@ -2007,7 +2184,7 @@
     },
     "/operations/{request_id}": {
       "get": {
-        "operationId": "scopeGetOperation",
+        "operationId": "namespaceGetOperation",
         "parameters": [
           {
             "in": "path",
@@ -2033,7 +2210,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScopeError"
+                  "$ref": "#/components/schemas/NamespaceError"
                 }
               }
             },
@@ -2042,7 +2219,7 @@
         },
         "security": [
           {
-            "scopeBearer": []
+            "namespaceBearer": []
           }
         ],
         "tags": []
@@ -2050,7 +2227,7 @@
     },
     "/transcript": {
       "get": {
-        "operationId": "scopeListTranscript",
+        "operationId": "namespaceListTranscript",
         "parameters": [
           {
             "in": "query",
@@ -2081,6 +2258,7 @@
             "name": "incarnation",
             "required": true,
             "schema": {
+              "pattern": "^(?:[A-Za-z0-9]{12})$",
               "type": "string"
             }
           },
@@ -2129,7 +2307,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScopeError"
+                  "$ref": "#/components/schemas/NamespaceError"
                 }
               }
             },
@@ -2138,13 +2316,13 @@
         },
         "security": [
           {
-            "scopeBearer": []
+            "namespaceBearer": []
           }
         ],
         "tags": []
       },
       "post": {
-        "operationId": "scopePublishTranscript",
+        "operationId": "namespacePublishTranscript",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2170,7 +2348,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScopeError"
+                  "$ref": "#/components/schemas/NamespaceError"
                 }
               }
             },
@@ -2179,7 +2357,89 @@
         },
         "security": [
           {
-            "scopeBearer": []
+            "namespaceBearer": []
+          }
+        ],
+        "tags": []
+      }
+    },
+    "/workspaces": {
+      "get": {
+        "operationId": "namespaceListWorkspaces",
+        "parameters": [
+          {
+            "description": "Expected Namespace generation. Bind the first page's generation when continuing a cursor.",
+            "in": "query",
+            "name": "generation",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "host",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exclusive cursor from a previous page.",
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "format": "u-int32",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspacePage"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NamespaceError"
+                }
+              }
+            },
+            "description": "Stale Namespace generation"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NamespaceError"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "namespaceBearer": []
           }
         ],
         "tags": []
@@ -2187,11 +2447,11 @@
     }
   },
   "x-agentx-codec": {
-    "identities": "Scope generation, participant incarnation, request_id, claim_id and message IDs remain strings.",
+    "identities": "Namespace generation, participant incarnation, request_id, claim_id and message IDs remain strings.",
     "integerFormats": {
       "int64": "bigint",
       "u-int32": "number"
     },
     "wire": "ordinary-json-v1"
   }
-}
+} as const;

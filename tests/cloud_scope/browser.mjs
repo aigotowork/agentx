@@ -37,13 +37,13 @@ async function text(value, selector = 'body') {
 }
 
 async function launchOnHost() {
-  const { scope, host, workspace, role, name, title, initial_prompt } = JSON.parse(env.CLOUD_CONTROL_LAUNCH);
-  const selected = await page.waitForFunction(scope => [...document.querySelectorAll('.deployment-scope-row')].find(row =>
-    row.querySelector('strong')?.textContent === scope && row.getClientRects().length), {}, scope);
+  const { namespace, host, workspace_id, role, name, title, initial_prompt } = JSON.parse(env.CLOUD_CONTROL_LAUNCH);
+  const selected = await page.waitForFunction(namespace => [...document.querySelectorAll('.deployment-namespace-row')].find(row =>
+    row.querySelector('strong')?.textContent === namespace && row.getClientRects().length), {}, namespace);
   try { await selected.asElement().click(); } finally { await selected.dispose(); }
   await button(`在 ${host} 启动 Agent`);
   await text('管理在线', 'dialog[open] .deployment-control-catalogue');
-  assert.deepEqual(await page.select('dialog[open] select', workspace), [workspace]);
+  assert.deepEqual(await page.select('dialog[open] select', workspace_id), [workspace_id]);
   const roleSelector = 'dialog[open] label:has(select) + label select';
   const readyRole = await page.waitForFunction((selector, role) => [...(document.querySelector(selector)?.options ?? [])]
     .some(option => option.value === role && !option.disabled), {}, roleSelector, role);
@@ -52,7 +52,7 @@ async function launchOnHost() {
   await fill('Agent 短名（可选）', name);
   await fill('标题（可选）', title);
   await fill('初始任务（可选）', initial_prompt);
-  const operationPath = `/api/v1/admin/scopes/${scope}/operations`;
+  const operationPath = `/api/v1/admin/namespaces/${namespace}/operations`;
   const [response] = await Promise.all([
     page.waitForResponse(result => result.request().method() === 'POST' && new URL(result.url()).pathname === operationPath),
     button('确认启动 Agent'),
@@ -60,7 +60,7 @@ async function launchOnHost() {
   assert.equal(response.status(), 200, 'Cloud did not admit the Web operation');
   const receipt = await response.json();
   assert.equal(receipt.host, host);
-  assert.deepEqual(receipt.command, { kind: 'launch', workspace, role, name, title, initial_prompt });
+  assert.deepEqual(receipt.command, { kind: 'launch', workspace_id, role, name, title, initial_prompt });
   assert.equal(receipt.status, 'queued');
   await text(receipt.request_id, 'dialog[open] .deployment-control-receipt');
   await text('等待主机接收', 'dialog[open] .deployment-control-receipt');
@@ -70,17 +70,17 @@ async function launchOnHost() {
 }
 
 async function manageCredentials() {
-  await text('暂无 Scope');
-  await button('新建 Scope');
-  await fill('Scope ID', 'web-managed');
+  await text('暂无 Namespace');
+  await button('新建 Namespace');
+  await fill('Namespace ID', 'web-managed');
   await fill('通信令牌', env.CLOUD_CREATE_TOKEN);
-  await button('创建 Scope');
+  await button('创建 Namespace');
   await text('已确认 · web-managed · v1', '[data-saved]');
-  const initial = await page.evaluate(async token => (await fetch('/scopes/web-managed/api/v1/descriptor',
+  const initial = await page.evaluate(async token => (await fetch('/namespaces/web-managed/api/v1/descriptor',
     { headers: { Authorization: `Bearer ${token}` } })).status, env.CLOUD_CREATE_TOKEN);
   assert.equal(initial, 200, 'The created scope must admit the selected credential');
   await button('完成');
-  await text('web-managed', '#deployment-scope-title');
+  await text('web-managed', '#deployment-namespace-title');
   await text('暂无主机');
   await button('Agents 0');
   await text('暂无 Agent');
@@ -106,6 +106,7 @@ try {
   assert.equal(new URL(page.url()).pathname, '/deployment', 'Actual deployment root must redirect to its embedded console');
   assert.equal(await page.evaluate(() => isSecureContext), true);
   await fill('管理员令牌', env.CLOUD_ADMIN_TOKEN);
+  assert.deepEqual(await page.select('.deployment-signin select', '0'), ['0']);
   await button('连接');
   const outcome = env.CLOUD_CONTROL_LAUNCH ? await launchOnHost() : await manageCredentials();
   console.log(JSON.stringify(outcome));

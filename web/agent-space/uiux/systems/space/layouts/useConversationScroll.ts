@@ -7,8 +7,6 @@ export interface ConversationScroll {
   positions: Map<string, number>;
   anchors?: Map<string, RecordAnchor>;
   ready: boolean;
-  forward?: boolean;
-  onForward?(): void;
   seek?: { id: string };
   latest?: {
     token: object;
@@ -28,7 +26,7 @@ export function useConversationScroll(view?: ConversationScroll) {
   const anchorSpace = useRef(0);
   const touchStart = useRef<number | undefined>(undefined);
   const [unread, setUnread] = useState(0);
-  const { key, ready, positions, anchors, onForward, seek, latest } = view ?? {};
+  const { key, ready, positions, anchors, seek, latest } = view ?? {};
   const token = latest?.token, arrivals = latest?.arrivals ?? 0, bookmarks = latest?.bookmarks;
 
   function remember(region: HTMLElement) {
@@ -151,12 +149,10 @@ export function useConversationScroll(view?: ConversationScroll) {
       if (reachedEnd && anchorSpace.current) goToEnd(region);
       follow(reachedEnd);
     }
-    if (region.scrollTop > prior && atEnd(region, region.clientHeight / 4)) onForward?.();
     if (region.scrollTop < prior && region.scrollTop <= region.clientHeight / 4) latest?.onOlder?.();
   }
 
   function demand(region: HTMLElement, direction: number) {
-    if (direction > 0 && atEnd(region)) onForward?.();
     if (direction < 0 && region.scrollTop <= 1) latest?.onOlder?.();
   }
 

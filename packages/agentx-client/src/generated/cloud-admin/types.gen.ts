@@ -8,14 +8,21 @@ export type AdminOverview = {
     agents: number;
     deployment_id: string;
     hosts: number;
+    namespaces: number;
     observed_at: bigint;
     online_hosts: number;
+    /**
+     * Diagnostic version; operation contracts determine compatibility.
+     */
     protocol_version: number;
-    scopes: number;
     unavailable: number;
 };
 
 export type AgentPage = {
+    /**
+     * Namespace generation verified in the same transaction as the page.
+     */
+    generation: string;
     items: Array<CloudAgentSummary>;
     next: string | null;
 };
@@ -24,6 +31,19 @@ export type AgentView = {
     host: string;
     incarnation: string;
     name: string;
+    workspace: AgentWorkspace;
+};
+
+/**
+ * Membership chosen when the exact Agent incarnation is prepared for launch.
+ */
+export type AgentWorkspace = {
+    kind: 'project';
+    workspace_id: string;
+} | {
+    kind: 'global';
+} | {
+    kind: 'unexposed';
 };
 
 export type ApiError = {
@@ -45,6 +65,7 @@ export type CloudAgentSummary = {
     host: string;
     incarnation: string;
     name: string;
+    workspace: AgentWorkspace;
 };
 
 export type CloudTranscriptRecord = {
@@ -69,16 +90,12 @@ export type ControlCommand = {
      * Slash-separated path relative to the workspace export. Omit or send an empty string for its root.
      */
     working_directory?: string | null;
-    workspace: string;
+    workspace_id: string;
 } | {
     incarnation: string;
     kind: 'stop';
     name: string;
 } | {
-    /**
-     * New workspace alias to publish on this host.
-     */
-    alias: string;
     /**
      * Create only the final component if absent. Parents must already exist.
      */
@@ -89,6 +106,10 @@ export type ControlCommand = {
     directory: string;
     kind: 'add_workspace';
     /**
+     * Display name to publish for this project.
+     */
+    name: string;
+    /**
      * Alias of an eligible configured export.
      */
     parent: string;
@@ -98,8 +119,8 @@ export type ControlOutcome = {
     agent: AgentView;
     status: 'succeeded';
 } | {
-    alias: string;
     status: 'workspace_added';
+    workspace_id: string;
 } | {
     code: string;
     status: 'failed';
@@ -129,7 +150,7 @@ export type CreateControlOperation = {
     request_id: string;
 };
 
-export type CreateScope = {
+export type CreateNamespace = {
     request_id: string;
 };
 
@@ -143,6 +164,7 @@ export type HostCapabilities = {
     installation_id: string;
     observed_at: bigint | null;
     online: boolean;
+    project_roots: Array<string>;
     /**
      * This active control lease accepts remote workspace registration.
      */
@@ -151,6 +173,10 @@ export type HostCapabilities = {
 };
 
 export type HostPage = {
+    /**
+     * Namespace generation verified in the same transaction as the page.
+     */
+    generation: string;
     items: Array<HostView>;
     next: string | null;
 };
@@ -164,7 +190,7 @@ export type HostView = {
 export type Intent = 'request' | 'inform' | 'ack';
 
 /**
- * Durable scope traffic, in descending message ID order. This is not a Provider transcript.
+ * Durable Namespace traffic, in descending message ID order. This is not a Provider transcript.
  */
 export type MessageHistoryPage = {
     items: Array<MessageView>;
@@ -182,6 +208,30 @@ export type MessageView = {
     to: AgentView;
 };
 
+export type NamespacePage = {
+    items: Array<NamespaceRow>;
+    next: string | null;
+};
+
+export type NamespaceReceipt = {
+    credential_version: number;
+    generation: string;
+    namespace_id: string;
+    namespace_url: string;
+};
+
+export type NamespaceRow = {
+    agents: number;
+    available: boolean;
+    created_at: bigint;
+    credential_version: number;
+    generation: string;
+    hosts: number;
+    namespace_id: string;
+    namespace_url: string;
+    online_hosts: number;
+};
+
 export type RoleCapability = {
     available: boolean;
     name: string;
@@ -191,30 +241,6 @@ export type RoleCapability = {
 export type RotateToken = {
     expected_version: number;
     request_id: string;
-};
-
-export type ScopePage = {
-    items: Array<ScopeRow>;
-    next: string | null;
-};
-
-export type ScopeReceipt = {
-    credential_version: number;
-    generation: string;
-    id: string;
-    scope_url: string;
-};
-
-export type ScopeRow = {
-    agents: number;
-    available: boolean;
-    created_at: bigint;
-    credential_version: number;
-    generation: string;
-    hosts: number;
-    id: string;
-    online_hosts: number;
-    scope_url: string;
 };
 
 /**
@@ -246,37 +272,34 @@ export type TranscriptHistoryPage = {
     next: string | null;
 };
 
+/**
+ * Shared fields also composed into the flattened WorkspaceView schema.
+ */
 export type WorkspaceCapability = {
-    alias: string;
     default_available: boolean;
     default_reason: string | null;
-    /**
-     * This configured export is eligible as a parent for remote workspace registration. Set by the server from the lease header.
-     */
-    readonly managed_parent?: boolean | null;
+    name: string;
     roles: Array<RoleCapability>;
+    workspace_id: string;
 };
 
-export type CreateScopeWritable = {
+export type WorkspacePage = {
+    /**
+     * Namespace generation verified in the same transaction as the page.
+     */
+    generation: string;
+    items: Array<WorkspaceView>;
+    next: string | null;
+};
+
+export type WorkspaceView = WorkspaceCapability & {
+    host: string;
+    online: boolean;
+};
+
+export type CreateNamespaceWritable = {
     request_id: string;
     token: string;
-};
-
-export type HostCapabilitiesWritable = {
-    /**
-     * This control lease accepts workspace-relative launch directories.
-     */
-    directory_launch?: boolean | null;
-    generation: string;
-    host: string;
-    installation_id: string;
-    observed_at: bigint | null;
-    online: boolean;
-    /**
-     * This active control lease accepts remote workspace registration.
-     */
-    workspace_management?: boolean | null;
-    workspaces: Array<WorkspaceCapabilityWritable>;
 };
 
 export type RotateTokenWritable = {
@@ -285,66 +308,17 @@ export type RotateTokenWritable = {
     token: string;
 };
 
-export type WorkspaceCapabilityWritable = {
-    alias: string;
-    default_available: boolean;
-    default_reason: string | null;
-    roles: Array<RoleCapability>;
-};
-
-export type GetAdminOverviewData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/admin/overview';
-};
-
-export type GetAdminOverviewErrors = {
-    /**
-     * Invalid input
-     */
-    400: ApiError;
-    /**
-     * Invalid admin credential
-     */
-    401: ApiError;
-    /**
-     * Unknown scope
-     */
-    404: ApiError;
-    /**
-     * Conflict
-     */
-    409: ApiError;
-    /**
-     * Storage error
-     */
-    500: ApiError;
-    /**
-     * Unavailable
-     */
-    503: ApiError;
-};
-
-export type GetAdminOverviewError = GetAdminOverviewErrors[keyof GetAdminOverviewErrors];
-
-export type GetAdminOverviewResponses = {
-    200: AdminOverview;
-};
-
-export type GetAdminOverviewResponse = GetAdminOverviewResponses[keyof GetAdminOverviewResponses];
-
-export type ListAdminScopesData = {
+export type ListAdminNamespacesData = {
     body?: never;
     path?: never;
     query?: {
         after?: string;
         limit?: number;
     };
-    url: '/api/v1/admin/scopes';
+    url: '/api/v1/admin/namespaces';
 };
 
-export type ListAdminScopesErrors = {
+export type ListAdminNamespacesErrors = {
     /**
      * Invalid input
      */
@@ -354,7 +328,7 @@ export type ListAdminScopesErrors = {
      */
     401: ApiError;
     /**
-     * Unknown scope
+     * Unknown namespace
      */
     404: ApiError;
     /**
@@ -371,24 +345,24 @@ export type ListAdminScopesErrors = {
     503: ApiError;
 };
 
-export type ListAdminScopesError = ListAdminScopesErrors[keyof ListAdminScopesErrors];
+export type ListAdminNamespacesError = ListAdminNamespacesErrors[keyof ListAdminNamespacesErrors];
 
-export type ListAdminScopesResponses = {
-    200: ScopePage;
+export type ListAdminNamespacesResponses = {
+    200: NamespacePage;
 };
 
-export type ListAdminScopesResponse = ListAdminScopesResponses[keyof ListAdminScopesResponses];
+export type ListAdminNamespacesResponse = ListAdminNamespacesResponses[keyof ListAdminNamespacesResponses];
 
-export type GetAdminScopeData = {
+export type GetAdminNamespaceData = {
     body?: never;
     path: {
         id: string;
     };
     query?: never;
-    url: '/api/v1/admin/scopes/{id}';
+    url: '/api/v1/admin/namespaces/{id}';
 };
 
-export type GetAdminScopeErrors = {
+export type GetAdminNamespaceErrors = {
     /**
      * Invalid input
      */
@@ -398,7 +372,7 @@ export type GetAdminScopeErrors = {
      */
     401: ApiError;
     /**
-     * Unknown scope
+     * Unknown namespace
      */
     404: ApiError;
     /**
@@ -415,24 +389,24 @@ export type GetAdminScopeErrors = {
     503: ApiError;
 };
 
-export type GetAdminScopeError = GetAdminScopeErrors[keyof GetAdminScopeErrors];
+export type GetAdminNamespaceError = GetAdminNamespaceErrors[keyof GetAdminNamespaceErrors];
 
-export type GetAdminScopeResponses = {
-    200: ScopeRow;
+export type GetAdminNamespaceResponses = {
+    200: NamespaceRow;
 };
 
-export type GetAdminScopeResponse = GetAdminScopeResponses[keyof GetAdminScopeResponses];
+export type GetAdminNamespaceResponse = GetAdminNamespaceResponses[keyof GetAdminNamespaceResponses];
 
-export type PutAdminScopeData = {
-    body: CreateScopeWritable;
+export type PutAdminNamespaceData = {
+    body: CreateNamespaceWritable;
     path: {
         id: string;
     };
     query?: never;
-    url: '/api/v1/admin/scopes/{id}';
+    url: '/api/v1/admin/namespaces/{id}';
 };
 
-export type PutAdminScopeErrors = {
+export type PutAdminNamespaceErrors = {
     /**
      * Invalid input
      */
@@ -442,7 +416,7 @@ export type PutAdminScopeErrors = {
      */
     401: ApiError;
     /**
-     * Unknown scope
+     * Unknown namespace
      */
     404: ApiError;
     /**
@@ -459,29 +433,37 @@ export type PutAdminScopeErrors = {
     503: ApiError;
 };
 
-export type PutAdminScopeError = PutAdminScopeErrors[keyof PutAdminScopeErrors];
+export type PutAdminNamespaceError = PutAdminNamespaceErrors[keyof PutAdminNamespaceErrors];
 
-export type PutAdminScopeResponses = {
-    200: ScopeReceipt;
+export type PutAdminNamespaceResponses = {
+    200: NamespaceReceipt;
 };
 
-export type PutAdminScopeResponse = PutAdminScopeResponses[keyof PutAdminScopeResponses];
+export type PutAdminNamespaceResponse = PutAdminNamespaceResponses[keyof PutAdminNamespaceResponses];
 
-export type ListAdminScopeAgentsData = {
+export type ListAdminNamespaceAgentsData = {
     body?: never;
     path: {
         id: string;
     };
     query?: {
+        /**
+         * Expected Namespace generation. Bind the first page's generation when continuing a cursor.
+         */
+        generation?: string;
         after?: string;
         limit?: number;
         host?: string;
+        workspace_id?: string;
+        /**
+         * Include host-reported Agent facts. Omit to return identity and membership only.
+         */
         facts?: boolean;
     };
-    url: '/api/v1/admin/scopes/{id}/agents';
+    url: '/api/v1/admin/namespaces/{id}/agents';
 };
 
-export type ListAdminScopeAgentsErrors = {
+export type ListAdminNamespaceAgentsErrors = {
     /**
      * Invalid input
      */
@@ -491,7 +473,7 @@ export type ListAdminScopeAgentsErrors = {
      */
     401: ApiError;
     /**
-     * Unknown scope
+     * Unknown namespace
      */
     404: ApiError;
     /**
@@ -508,13 +490,13 @@ export type ListAdminScopeAgentsErrors = {
     503: ApiError;
 };
 
-export type ListAdminScopeAgentsError = ListAdminScopeAgentsErrors[keyof ListAdminScopeAgentsErrors];
+export type ListAdminNamespaceAgentsError = ListAdminNamespaceAgentsErrors[keyof ListAdminNamespaceAgentsErrors];
 
-export type ListAdminScopeAgentsResponses = {
+export type ListAdminNamespaceAgentsResponses = {
     200: AgentPage;
 };
 
-export type ListAdminScopeAgentsResponse = ListAdminScopeAgentsResponses[keyof ListAdminScopeAgentsResponses];
+export type ListAdminNamespaceAgentsResponse = ListAdminNamespaceAgentsResponses[keyof ListAdminNamespaceAgentsResponses];
 
 export type AdminSpaceChangesData = {
     body?: never;
@@ -525,7 +507,7 @@ export type AdminSpaceChangesData = {
         generation: string;
         cursor?: string;
     };
-    url: '/api/v1/admin/scopes/{id}/changes';
+    url: '/api/v1/admin/namespaces/{id}/changes';
 };
 
 export type AdminSpaceChangesErrors = {
@@ -538,7 +520,7 @@ export type AdminSpaceChangesErrors = {
      */
     401: ApiError;
     /**
-     * Unknown scope
+     * Unknown namespace
      */
     404: ApiError;
     /**
@@ -563,19 +545,23 @@ export type AdminSpaceChangesResponses = {
 
 export type AdminSpaceChangesResponse = AdminSpaceChangesResponses[keyof AdminSpaceChangesResponses];
 
-export type ListAdminScopeHostsData = {
+export type ListAdminNamespaceHostsData = {
     body?: never;
     path: {
         id: string;
     };
     query?: {
+        /**
+         * Expected Namespace generation. Bind the first page's generation when continuing a cursor.
+         */
+        generation?: string;
         after?: string;
         limit?: number;
     };
-    url: '/api/v1/admin/scopes/{id}/hosts';
+    url: '/api/v1/admin/namespaces/{id}/hosts';
 };
 
-export type ListAdminScopeHostsErrors = {
+export type ListAdminNamespaceHostsErrors = {
     /**
      * Invalid input
      */
@@ -585,7 +571,7 @@ export type ListAdminScopeHostsErrors = {
      */
     401: ApiError;
     /**
-     * Unknown scope
+     * Unknown namespace
      */
     404: ApiError;
     /**
@@ -602,13 +588,13 @@ export type ListAdminScopeHostsErrors = {
     503: ApiError;
 };
 
-export type ListAdminScopeHostsError = ListAdminScopeHostsErrors[keyof ListAdminScopeHostsErrors];
+export type ListAdminNamespaceHostsError = ListAdminNamespaceHostsErrors[keyof ListAdminNamespaceHostsErrors];
 
-export type ListAdminScopeHostsResponses = {
+export type ListAdminNamespaceHostsResponses = {
     200: HostPage;
 };
 
-export type ListAdminScopeHostsResponse = ListAdminScopeHostsResponses[keyof ListAdminScopeHostsResponses];
+export type ListAdminNamespaceHostsResponse = ListAdminNamespaceHostsResponses[keyof ListAdminNamespaceHostsResponses];
 
 export type GetAdminHostCapabilitiesData = {
     body?: never;
@@ -617,7 +603,7 @@ export type GetAdminHostCapabilitiesData = {
         host: string;
     };
     query?: never;
-    url: '/api/v1/admin/scopes/{id}/hosts/{host}/capabilities';
+    url: '/api/v1/admin/namespaces/{id}/hosts/{host}/capabilities';
 };
 
 export type GetAdminHostCapabilitiesErrors = {
@@ -630,7 +616,7 @@ export type GetAdminHostCapabilitiesErrors = {
      */
     401: ApiError;
     /**
-     * Unknown scope
+     * Unknown namespace
      */
     404: ApiError;
     /**
@@ -655,7 +641,7 @@ export type GetAdminHostCapabilitiesResponses = {
 
 export type GetAdminHostCapabilitiesResponse = GetAdminHostCapabilitiesResponses[keyof GetAdminHostCapabilitiesResponses];
 
-export type ListAdminScopeMessagesData = {
+export type ListAdminNamespaceMessagesData = {
     body?: never;
     path: {
         id: string;
@@ -675,10 +661,10 @@ export type ListAdminScopeMessagesData = {
         before?: string;
         limit?: number;
     };
-    url: '/api/v1/admin/scopes/{id}/messages';
+    url: '/api/v1/admin/namespaces/{id}/messages';
 };
 
-export type ListAdminScopeMessagesErrors = {
+export type ListAdminNamespaceMessagesErrors = {
     /**
      * Invalid input
      */
@@ -688,7 +674,7 @@ export type ListAdminScopeMessagesErrors = {
      */
     401: ApiError;
     /**
-     * Unknown scope
+     * Unknown namespace
      */
     404: ApiError;
     /**
@@ -705,24 +691,24 @@ export type ListAdminScopeMessagesErrors = {
     503: ApiError;
 };
 
-export type ListAdminScopeMessagesError = ListAdminScopeMessagesErrors[keyof ListAdminScopeMessagesErrors];
+export type ListAdminNamespaceMessagesError = ListAdminNamespaceMessagesErrors[keyof ListAdminNamespaceMessagesErrors];
 
-export type ListAdminScopeMessagesResponses = {
+export type ListAdminNamespaceMessagesResponses = {
     200: MessageHistoryPage;
 };
 
-export type ListAdminScopeMessagesResponse = ListAdminScopeMessagesResponses[keyof ListAdminScopeMessagesResponses];
+export type ListAdminNamespaceMessagesResponse = ListAdminNamespaceMessagesResponses[keyof ListAdminNamespaceMessagesResponses];
 
-export type SendAdminScopeMessageData = {
+export type SendAdminNamespaceMessageData = {
     body: SendHumanMessage;
     path: {
         id: string;
     };
     query?: never;
-    url: '/api/v1/admin/scopes/{id}/messages';
+    url: '/api/v1/admin/namespaces/{id}/messages';
 };
 
-export type SendAdminScopeMessageErrors = {
+export type SendAdminNamespaceMessageErrors = {
     /**
      * Invalid input
      */
@@ -732,7 +718,7 @@ export type SendAdminScopeMessageErrors = {
      */
     401: ApiError;
     /**
-     * Unknown scope
+     * Unknown namespace
      */
     404: ApiError;
     /**
@@ -753,13 +739,13 @@ export type SendAdminScopeMessageErrors = {
     503: ApiError;
 };
 
-export type SendAdminScopeMessageError = SendAdminScopeMessageErrors[keyof SendAdminScopeMessageErrors];
+export type SendAdminNamespaceMessageError = SendAdminNamespaceMessageErrors[keyof SendAdminNamespaceMessageErrors];
 
-export type SendAdminScopeMessageResponses = {
+export type SendAdminNamespaceMessageResponses = {
     200: MessageView;
 };
 
-export type SendAdminScopeMessageResponse = SendAdminScopeMessageResponses[keyof SendAdminScopeMessageResponses];
+export type SendAdminNamespaceMessageResponse = SendAdminNamespaceMessageResponses[keyof SendAdminNamespaceMessageResponses];
 
 export type CreateAdminControlOperationData = {
     body: CreateControlOperation;
@@ -767,7 +753,7 @@ export type CreateAdminControlOperationData = {
         id: string;
     };
     query?: never;
-    url: '/api/v1/admin/scopes/{id}/operations';
+    url: '/api/v1/admin/namespaces/{id}/operations';
 };
 
 export type CreateAdminControlOperationErrors = {
@@ -780,7 +766,7 @@ export type CreateAdminControlOperationErrors = {
      */
     401: ApiError;
     /**
-     * Unknown scope
+     * Unknown namespace
      */
     404: ApiError;
     /**
@@ -812,7 +798,7 @@ export type GetAdminControlOperationData = {
         request_id: string;
     };
     query?: never;
-    url: '/api/v1/admin/scopes/{id}/operations/{request_id}';
+    url: '/api/v1/admin/namespaces/{id}/operations/{request_id}';
 };
 
 export type GetAdminControlOperationErrors = {
@@ -825,7 +811,7 @@ export type GetAdminControlOperationErrors = {
      */
     401: ApiError;
     /**
-     * Unknown scope
+     * Unknown namespace
      */
     404: ApiError;
     /**
@@ -850,16 +836,16 @@ export type GetAdminControlOperationResponses = {
 
 export type GetAdminControlOperationResponse = GetAdminControlOperationResponses[keyof GetAdminControlOperationResponses];
 
-export type RotateAdminScopeTokenData = {
+export type RotateAdminNamespaceTokenData = {
     body: RotateTokenWritable;
     path: {
         id: string;
     };
     query?: never;
-    url: '/api/v1/admin/scopes/{id}/token-rotations';
+    url: '/api/v1/admin/namespaces/{id}/token-rotations';
 };
 
-export type RotateAdminScopeTokenErrors = {
+export type RotateAdminNamespaceTokenErrors = {
     /**
      * Invalid input
      */
@@ -869,7 +855,7 @@ export type RotateAdminScopeTokenErrors = {
      */
     401: ApiError;
     /**
-     * Unknown scope
+     * Unknown namespace
      */
     404: ApiError;
     /**
@@ -886,15 +872,15 @@ export type RotateAdminScopeTokenErrors = {
     503: ApiError;
 };
 
-export type RotateAdminScopeTokenError = RotateAdminScopeTokenErrors[keyof RotateAdminScopeTokenErrors];
+export type RotateAdminNamespaceTokenError = RotateAdminNamespaceTokenErrors[keyof RotateAdminNamespaceTokenErrors];
 
-export type RotateAdminScopeTokenResponses = {
-    200: ScopeReceipt;
+export type RotateAdminNamespaceTokenResponses = {
+    200: NamespaceReceipt;
 };
 
-export type RotateAdminScopeTokenResponse = RotateAdminScopeTokenResponses[keyof RotateAdminScopeTokenResponses];
+export type RotateAdminNamespaceTokenResponse = RotateAdminNamespaceTokenResponses[keyof RotateAdminNamespaceTokenResponses];
 
-export type ListAdminScopeTranscriptData = {
+export type ListAdminNamespaceTranscriptData = {
     body?: never;
     path: {
         id: string;
@@ -914,10 +900,10 @@ export type ListAdminScopeTranscriptData = {
         after?: string;
         limit?: number;
     };
-    url: '/api/v1/admin/scopes/{id}/transcript';
+    url: '/api/v1/admin/namespaces/{id}/transcript';
 };
 
-export type ListAdminScopeTranscriptErrors = {
+export type ListAdminNamespaceTranscriptErrors = {
     /**
      * Invalid input
      */
@@ -927,7 +913,7 @@ export type ListAdminScopeTranscriptErrors = {
      */
     401: ApiError;
     /**
-     * Unknown scope
+     * Unknown namespace
      */
     404: ApiError;
     /**
@@ -944,10 +930,107 @@ export type ListAdminScopeTranscriptErrors = {
     503: ApiError;
 };
 
-export type ListAdminScopeTranscriptError = ListAdminScopeTranscriptErrors[keyof ListAdminScopeTranscriptErrors];
+export type ListAdminNamespaceTranscriptError = ListAdminNamespaceTranscriptErrors[keyof ListAdminNamespaceTranscriptErrors];
 
-export type ListAdminScopeTranscriptResponses = {
+export type ListAdminNamespaceTranscriptResponses = {
     200: TranscriptHistoryPage;
 };
 
-export type ListAdminScopeTranscriptResponse = ListAdminScopeTranscriptResponses[keyof ListAdminScopeTranscriptResponses];
+export type ListAdminNamespaceTranscriptResponse = ListAdminNamespaceTranscriptResponses[keyof ListAdminNamespaceTranscriptResponses];
+
+export type ListAdminWorkspacesData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: {
+        /**
+         * Expected Namespace generation. Bind the first page's generation when continuing a cursor.
+         */
+        generation?: string;
+        host?: string;
+        /**
+         * Exclusive cursor from a previous page.
+         */
+        after?: string;
+        limit?: number;
+    };
+    url: '/api/v1/admin/namespaces/{id}/workspaces';
+};
+
+export type ListAdminWorkspacesErrors = {
+    /**
+     * Invalid input
+     */
+    400: ApiError;
+    /**
+     * Invalid admin credential
+     */
+    401: ApiError;
+    /**
+     * Unknown namespace
+     */
+    404: ApiError;
+    /**
+     * Conflict
+     */
+    409: ApiError;
+    /**
+     * Storage error
+     */
+    500: ApiError;
+    /**
+     * Unavailable
+     */
+    503: ApiError;
+};
+
+export type ListAdminWorkspacesError = ListAdminWorkspacesErrors[keyof ListAdminWorkspacesErrors];
+
+export type ListAdminWorkspacesResponses = {
+    200: WorkspacePage;
+};
+
+export type ListAdminWorkspacesResponse = ListAdminWorkspacesResponses[keyof ListAdminWorkspacesResponses];
+
+export type GetAdminOverviewData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/overview';
+};
+
+export type GetAdminOverviewErrors = {
+    /**
+     * Invalid input
+     */
+    400: ApiError;
+    /**
+     * Invalid admin credential
+     */
+    401: ApiError;
+    /**
+     * Unknown namespace
+     */
+    404: ApiError;
+    /**
+     * Conflict
+     */
+    409: ApiError;
+    /**
+     * Storage error
+     */
+    500: ApiError;
+    /**
+     * Unavailable
+     */
+    503: ApiError;
+};
+
+export type GetAdminOverviewError = GetAdminOverviewErrors[keyof GetAdminOverviewErrors];
+
+export type GetAdminOverviewResponses = {
+    200: AdminOverview;
+};
+
+export type GetAdminOverviewResponse = GetAdminOverviewResponses[keyof GetAdminOverviewResponses];

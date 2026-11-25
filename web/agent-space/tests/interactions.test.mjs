@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { LongPress } from '../src/interactions/long-press.ts';
-import { OverlayStack } from '../src/interactions/overlay.ts';
+import { OverlayStack } from '../uiux/systems/space/components/overlay.ts';
 
 test('Escape dismisses newest highest interactive layer plus hints, then underlying layer', () => {
   const stack = new OverlayStack(), closed = [];

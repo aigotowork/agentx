@@ -3,6 +3,10 @@
 //! retained database generation or silently replays an operation.
 
 use std::path::Path;
+use std::sync::{
+    Arc, OnceLock,
+    atomic::{AtomicBool, Ordering},
+};
 
 use crate::daemon::{self, DaemonError, DaemonInfo, DaemonScope};
 
@@ -18,34 +22,36 @@ use crate::observability::{
 pub(crate) struct Client {
     scope: DaemonScope,
     invocation: InvocationContext,
-    info: DaemonInfo,
+    info: Arc<OnceLock<DaemonInfo>>,
+    pinned: Option<String>,
+    allow_start: Arc<AtomicBool>,
     capture: InvocationCaptureHandle,
     deadline_unix_ms: Option<u64>,
 }
 
 impl Client {
     pub(crate) fn connect(scope: impl AsRef<Path>, invocation: InvocationContext) -> ServiceResult<Self> {
-        let _attempt = AttemptGuard::begin(ClientAttemptKind::Acquire, scope.as_ref().to_path_buf(), None, None);
-        let capture = capture_inputs(&invocation, None);
-        observation::invocation(capture.reference());
-        let scope = observation::stage(ClientStage::ScopeLookup, || DaemonScope::prepare(scope)).map_err(service_error)?;
-        if let Ok(reference) = ScopeRef::from_canonical_scope(scope.root().to_path_buf()) {
-            observation::resolved_scope(reference);
-        }
-        let info = daemon::acquire(&scope).map_err(service_error)?;
-        Ok(Self { scope, invocation, info, capture, deadline_unix_ms: None })
+        Self::bind(scope.as_ref(), invocation, true, None)
     }
 
     pub(crate) fn connect_existing(scope: impl AsRef<Path>, invocation: InvocationContext) -> ServiceResult<Self> {
-        let _attempt = AttemptGuard::begin(ClientAttemptKind::Probe, scope.as_ref().to_path_buf(), None, None);
+        Self::bind(scope.as_ref(), invocation, false, None)
+    }
+
+    pub(crate) fn connect_existing_fenced(scope: impl AsRef<Path>, invocation: InvocationContext, generation: &str) -> ServiceResult<Self> {
+        Self::bind(scope.as_ref(), invocation, false, Some(generation.to_owned()))
+    }
+
+    fn bind(path: &Path, invocation: InvocationContext, start: bool, pinned: Option<String>) -> ServiceResult<Self> {
         let capture = capture_inputs(&invocation, None);
-        observation::invocation(capture.reference());
-        let scope = observation::stage(ClientStage::ScopeLookup, || DaemonScope::prepare(scope)).map_err(service_error)?;
-        if let Ok(reference) = ScopeRef::from_canonical_scope(scope.root().to_path_buf()) {
-            observation::resolved_scope(reference);
-        }
-        let info = daemon::probe(&scope).map_err(service_error)?;
-        Ok(Self { scope, invocation, info, capture, deadline_unix_ms: None })
+        let scope = if start { DaemonScope::prepare(path).map_err(service_error)? } else { DaemonScope::existing(path, &invocation.cwd).map_err(DaemonError::from).map_err(service_error)? };
+        let pinned = pinned.or_else(|| {
+            let expected = invocation.environment.get("AGENTX_LAUNCH_GENERATION").filter(|value| !value.is_empty())?;
+            let launched = invocation.environment.get("AGENTX_DIR")?;
+            let scoped = DaemonScope::existing(Path::new(launched), &invocation.cwd).ok()?;
+            (scoped.root() == scope.root()).then(|| expected.clone())
+        });
+        Ok(Self { scope, invocation, info: Arc::new(OnceLock::new()), pinned, allow_start: Arc::new(AtomicBool::new(start)), capture, deadline_unix_ms: None })
     }
 
     pub(crate) fn call_codex_hook(scope: impl AsRef<Path>, invocation: InvocationContext, event: super::codex_hook::HookEvent) -> ServiceResult<Option<(Self, super::codex_hook::HookOutcome)>> {
@@ -67,17 +73,59 @@ impl Client {
         let expected_database_generation = invocation.environment.get("AGENTX_LAUNCH_GENERATION").filter(|value| !value.is_empty()).cloned();
         let mut caller = CallerContext { request_id, invocation: invocation.clone(), deadline_unix_ms: Some(now.saturating_add(3_000)), expected_database_generation };
         caller.invocation.observation_origin = attempt.as_ref().and_then(|attempt| attempt.origin());
-        let Some((info, result)) = daemon::call_codex_hook(&scope, caller, event).map_err(service_error)? else {
-            return Ok(None);
+        let (info, result) = match daemon::call_bound(&scope, false, caller, Request::CodexHook(event)) {
+            Err(DaemonError::Unsupported(_)) => return Ok(None),
+            result => result.map_err(service_error)?,
         };
         match result? {
-            Response::CodexHook(outcome) => Ok(Some((Self { scope, invocation, info, capture, deadline_unix_ms: Some(now.saturating_add(4_000)) }, outcome))),
+            Response::CodexHook(outcome) => {
+                Ok(Some((Self { scope, invocation, info: Arc::new(OnceLock::from(info)), pinned: None, allow_start: Arc::new(AtomicBool::new(false)), capture, deadline_unix_ms: Some(now.saturating_add(4_000)) }, outcome)))
+            }
             _ => Err(ServiceError::Internal("unexpected Codex hook response".into())),
         }
     }
 
-    pub(crate) fn info(&self) -> &DaemonInfo {
-        &self.info
+    /// Explicit status, or the description already returned by a business call.
+    pub(crate) fn info(&self) -> ServiceResult<&DaemonInfo> {
+        if let Some(info) = self.info.get() {
+            return Ok(info);
+        }
+        let start = self.take_start_permission();
+        let _attempt = AttemptGuard::begin(if start { ClientAttemptKind::Acquire } else { ClientAttemptKind::Probe }, self.scope.root().to_path_buf(), None, None);
+        observation::invocation(self.capture.reference());
+        if let Ok(reference) = ScopeRef::from_canonical_scope(self.scope.root().to_path_buf()) {
+            observation::resolved_scope(reference);
+        }
+        let deadline = self.deadline_unix_ms.map(|value| daemon::request_deadline(Some(value))).transpose().map_err(service_error)?;
+        let info = daemon::describe(&self.scope, start, self.pinned.as_deref(), deadline).map_err(service_error)?;
+        self.retain_info(info)
+    }
+
+    pub(crate) fn generation(&self) -> ServiceResult<&str> {
+        if let Some(generation) = self.retained_generation() {
+            return Ok(generation);
+        }
+        Ok(&self.info()?.database_generation)
+    }
+
+    /// Auto-start belongs to the first acquisition only. A retained caller,
+    /// including one whose first reply was lost, must observe daemon loss.
+    fn take_start_permission(&self) -> bool {
+        self.allow_start.swap(false, Ordering::AcqRel)
+    }
+
+    fn retained_generation(&self) -> Option<&str> {
+        self.pinned.as_deref().or_else(|| self.info.get().map(|info| info.database_generation.as_str()))
+    }
+
+    fn retain_info(&self, info: DaemonInfo) -> ServiceResult<&DaemonInfo> {
+        let generation = info.database_generation.clone();
+        let _ = self.info.set(info);
+        let retained = self.info.get().expect("scope binding initialized");
+        if retained.database_generation != generation {
+            return Err(ServiceError::StaleGeneration);
+        }
+        Ok(retained)
     }
 
     /// Canonical data scope retained by this connection binding.
@@ -94,7 +142,7 @@ impl Client {
     /// changing the retained daemon identity/database generation fence.
     pub(crate) fn with_invocation(&self, invocation: InvocationContext) -> Self {
         let capture = capture_inputs(&invocation, Some(&self.capture));
-        Self { scope: self.scope.clone(), invocation, info: self.info.clone(), capture, deadline_unix_ms: self.deadline_unix_ms }
+        Self { invocation, capture, ..self.clone() }
     }
 
     /// Preserve the result of the actual originating resolver without rereading
@@ -143,15 +191,21 @@ impl Client {
     }
 
     pub(crate) fn call(&self, request: Request) -> ServiceResult<Response> {
-        let caller = CallerContext { request_id: RequestId(uuid::Uuid::new_v4().to_string()), invocation: self.invocation.clone(), deadline_unix_ms: self.deadline_unix_ms, expected_database_generation: Some(self.info.database_generation.clone()) };
+        let caller = CallerContext { request_id: RequestId(uuid::Uuid::new_v4().to_string()), invocation: self.invocation.clone(), deadline_unix_ms: self.deadline_unix_ms, expected_database_generation: None };
         self.call_with_context(caller, request)
     }
 
     /// Stable IDs are passed unchanged; only the domain may promise duplicate
     /// reconciliation. No automatic retry follows a write or missing reply.
     pub(crate) fn call_with_context(&self, mut caller: CallerContext, request: Request) -> ServiceResult<Response> {
-        if caller.expected_database_generation.is_none() {
-            caller.expected_database_generation = Some(self.info.database_generation.clone());
+        let resetting = matches!(request, Request::Maintenance(super::maintenance::Request::ResetConversation));
+        if let Some(retained) = self.retained_generation() {
+            if caller.expected_database_generation.as_deref().is_some_and(|expected| expected != retained) {
+                return Err(ServiceError::StaleGeneration);
+            }
+            caller.expected_database_generation = Some(retained.to_owned());
+        } else if caller.expected_database_generation.is_none() && request.requires_generation() {
+            caller.expected_database_generation = Some(self.generation()?.to_owned());
         }
         // A caller may supply a context differing from the retained binding;
         // freeze this exact immutable revision before the possible write.
@@ -165,7 +219,11 @@ impl Client {
             observation::resolved_scope(reference);
         }
         caller.invocation.observation_origin = attempt.as_ref().and_then(|attempt| attempt.origin());
-        daemon::call(&self.scope, caller, request).map_err(service_error)?
+        let (info, result) = daemon::call_bound(&self.scope, self.take_start_permission(), caller, request).map_err(service_error)?;
+        if !resetting {
+            self.retain_info(info)?;
+        }
+        result
     }
 }
 
@@ -179,7 +237,8 @@ fn capture_inputs(invocation: &InvocationContext, previous: Option<&InvocationCa
 
 fn service_error(error: DaemonError) -> ServiceError {
     match error {
-        DaemonError::StaleGeneration => ServiceError::StaleFence,
+        DaemonError::StaleGeneration => ServiceError::StaleGeneration,
+        DaemonError::InvalidInput(detail) => ServiceError::InvalidInput(detail),
         DaemonError::OutcomeUnknown(detail) => ServiceError::OutcomeUnknown(detail),
         DaemonError::Unsupported(detail) => ServiceError::Unsupported(detail),
         other => ServiceError::Unavailable(other.to_string()),

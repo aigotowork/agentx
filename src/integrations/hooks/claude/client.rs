@@ -35,7 +35,7 @@ pub(super) struct HookOutput {
 /// generation before exposing any output. This never reacquires a daemon.
 pub(super) fn call(hook: &HookClient, input: native::Request) -> Result<native::Response> {
     let client = &hook.client;
-    let caller = CallerContext { request_id: RequestId(uuid::Uuid::new_v4().to_string()), invocation: client.invocation().clone(), deadline_unix_ms: None, expected_database_generation: Some(client.info().database_generation.clone()) };
+    let caller = CallerContext { request_id: RequestId(uuid::Uuid::new_v4().to_string()), invocation: client.invocation().clone(), deadline_unix_ms: None, expected_database_generation: None };
     let request = Request::Participants(ParticipantRequest::Claude(input));
     let invoke = || client.call_with_context(caller.clone(), request.clone());
     let response = match invoke() {

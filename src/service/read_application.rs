@@ -53,7 +53,7 @@ fn unavailable(error: impl std::fmt::Display) -> ServiceError {
 fn check_generation(db: &AgentxDb, context: &RequestContext, published: &DatabaseGeneration) -> ServiceResult<()> {
     let durable = db.read_database_generation().map_err(unavailable)?;
     if durable != context.database_generation || published.current() != durable || context.caller.expected_database_generation.as_ref().is_some_and(|expected| expected != &durable) {
-        return Err(ServiceError::StaleFence);
+        return Err(ServiceError::StaleGeneration);
     }
     Ok(())
 }

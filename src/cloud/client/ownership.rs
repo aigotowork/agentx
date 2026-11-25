@@ -10,6 +10,7 @@ use std::{
 
 use anyhow::{Context, Result, ensure};
 use serde::{Deserialize, Serialize};
+#[cfg(test)]
 use uuid::Uuid;
 
 use super::{Actor, AgentView, private_directory, read_json_file};
@@ -20,6 +21,15 @@ pub(in crate::cloud) struct OwnedProcess {
     pub pid: u32,
     pub process_identity: String,
     pub session_id: String,
+    local_generation: String,
+    cloud_generation: String,
+    installation_id: String,
+}
+
+impl OwnedProcess {
+    pub(in crate::cloud) fn matches_binding(&self, local_generation: &str, cloud_generation: &str, installation_id: &str) -> bool {
+        self.local_generation == local_generation && self.cloud_generation == cloud_generation && self.installation_id == installation_id
+    }
 }
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -37,7 +47,8 @@ fn directory(root: &Path) -> PathBuf {
 }
 
 fn path(root: &Path, incarnation: &str) -> Result<PathBuf> {
-    Ok(directory(root).join(format!("{}.json", Uuid::parse_str(incarnation)?)))
+    ensure!(crate::cloud::identifiers::valid_incarnation(incarnation), "invalid local cloud Agent incarnation");
+    Ok(directory(root).join(format!("{incarnation}.json")))
 }
 
 impl Record {
@@ -90,7 +101,7 @@ pub(super) fn records(root: &Path) -> Result<Vec<Record>> {
         let entry = entry?;
         let name = entry.file_name();
         if let Some(incarnation) = name.to_str().and_then(|name| name.strip_suffix(".json"))
-            && Uuid::parse_str(incarnation).is_ok()
+            && crate::cloud::identifiers::valid_incarnation(incarnation)
             && let Some(record) = record(root, incarnation)?
             && record.live()
         {
@@ -101,7 +112,17 @@ pub(super) fn records(root: &Path) -> Result<Vec<Record>> {
 }
 
 pub(in crate::cloud) fn owned_process(root: &Path, incarnation: &str) -> Result<Option<OwnedProcess>> {
-    Ok(record(root, incarnation)?.filter(|r| r.ready && r.live()).and_then(|r| r.session.map(|session_id| OwnedProcess { agent: r.actor.agent, pid: r.pid, process_identity: r.process_identity, session_id })))
+    Ok(record(root, incarnation)?.filter(|r| r.ready && r.live()).and_then(|r| {
+        r.session.map(|session_id| OwnedProcess {
+            agent: r.actor.agent,
+            pid: r.pid,
+            process_identity: r.process_identity,
+            session_id,
+            local_generation: r.local_generation,
+            cloud_generation: r.actor.generation,
+            installation_id: r.actor.installation_id,
+        })
+    }))
 }
 
 fn open_pidfd(pid: u32) -> Result<Option<OwnedFd>> {
@@ -210,7 +231,7 @@ mod tests {
         }
         let mut child = Child(std::process::Command::new("/bin/sleep").arg("30").spawn().unwrap());
         let root = tempfile::tempdir().unwrap();
-        let agent = AgentView { name: "worker".into(), host: "alpha".into(), incarnation: Uuid::new_v4().to_string() };
+        let agent = AgentView { name: "worker".into(), host: "alpha".into(), incarnation: crate::cloud::identifiers::random_id(), workspace: super::super::AgentWorkspace::Unexposed };
         let actor = Actor { generation: Uuid::new_v4().to_string(), installation_id: Uuid::new_v4().to_string(), agent: agent.clone() };
         let mut record = Record::start(actor, Uuid::new_v4().to_string()).unwrap();
         record.pid = child.0.id();
@@ -221,7 +242,7 @@ mod tests {
         record.ready = true;
         record.session = Some("thread".into());
         record.persist(root.path()).unwrap();
-        let stale = AgentView { incarnation: Uuid::new_v4().to_string(), ..agent.clone() };
+        let stale = AgentView { incarnation: crate::cloud::identifiers::random_id(), ..agent.clone() };
         let expected = (&*record.local_generation, &*record.actor.generation, &*record.actor.installation_id);
         assert!(!stop_exact(root.path(), &stale).unwrap());
         assert!(!exited_process(root.path(), &agent, expected).unwrap());

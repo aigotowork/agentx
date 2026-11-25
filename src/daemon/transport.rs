@@ -5,31 +5,51 @@ use std::fs::{File, OpenOptions};
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use super::wire::{BUILD_VERSION, ClientFrame, DaemonInfo, PROTOCOL_VERSION, ServerFrame};
+use super::wire::{BUILD_VERSION, ClientFrame, DaemonInfo, PROTOCOL_VERSION, SHUTDOWN, STATUS, ServerFrame};
 use super::{DaemonError, DaemonScope, frame, platform};
 use crate::observability::runtime::{ClientStage, ObservedProcess};
 use crate::service::observation;
-use crate::service::{CallerContext, Request, Response, ServiceResult};
+use crate::service::{CallerContext, Request, RequestId, Response, ServiceError, ServiceResult};
 
 pub(super) const IO_TIMEOUT: Duration = Duration::from_secs(30);
 const START_TIMEOUT: Duration = Duration::from_secs(15);
-const HELLO_TIMEOUT: Duration = Duration::from_secs(2);
+pub(super) const STATUS_TIMEOUT: Duration = Duration::from_secs(2);
 
-pub(crate) fn probe(scope: &DaemonScope) -> Result<DaemonInfo, DaemonError> {
-    handshake(scope, Instant::now() + HELLO_TIMEOUT).map(|(_, info)| info)
+pub(crate) fn describe(scope: &DaemonScope, start: bool, expected: Option<&str>, deadline: Option<Instant>) -> Result<DaemonInfo, DaemonError> {
+    let end = deadline.unwrap_or_else(|| Instant::now() + START_TIMEOUT);
+    let mut stream = connect(scope, start, end)?;
+    status_on(scope, &mut stream, expected, end.min(Instant::now() + STATUS_TIMEOUT)).map(|(info, _)| info)
 }
 
-/// Serialize client auto-start independently of the daemon's lifetime lock.
-/// A held startup lock never permits opening the managed database.
+#[cfg(test)]
+pub(crate) fn probe(scope: &DaemonScope) -> Result<DaemonInfo, DaemonError> {
+    describe(scope, false, None, Some(Instant::now() + STATUS_TIMEOUT))
+}
+
 pub(crate) fn acquire(scope: &DaemonScope) -> Result<DaemonInfo, DaemonError> {
-    match probe(scope) {
-        Ok(info) => return Ok(info),
-        Err(error @ (DaemonError::Busy | DaemonError::Incompatible(_) | DaemonError::Protocol(_) | DaemonError::Unsupported(_))) => return Err(error),
-        Err(_) => {}
+    describe(scope, true, None, None)
+}
+
+fn connect(scope: &DaemonScope, start: bool, deadline: Instant) -> Result<platform::Stream, DaemonError> {
+    let attempt = || observation::stage(ClientStage::Connect, || platform::connect_existing(scope, deadline));
+    match attempt() {
+        Ok(stream) => return Ok(stream),
+        Err(error) if start && missing_endpoint(&error) => {}
+        Err(error) => return Err(error),
     }
-    let deadline = Instant::now() + START_TIMEOUT;
+    let deadline = deadline.min(Instant::now() + START_TIMEOUT);
     let _startup = startup_lock(scope, deadline)?;
-    acquire_locked(scope, deadline)
+    connect_locked(scope, deadline)
+}
+
+pub(super) fn missing_endpoint(error: &DaemonError) -> bool {
+    match error {
+        #[cfg(unix)]
+        DaemonError::Io { os_code: Some(code), .. } => matches!(*code, libc::ENOENT | libc::ECONNREFUSED),
+        #[cfg(windows)]
+        DaemonError::Io { os_code: Some(code), .. } => matches!(*code, 2 | 3),
+        _ => false,
+    }
 }
 
 /// Shared by explicit restart and cold acquisition; the returned file retains
@@ -67,23 +87,28 @@ pub(super) fn startup_lock(scope: &DaemonScope, deadline: Instant) -> Result<Fil
 }
 
 pub(super) fn acquire_locked(scope: &DaemonScope, deadline: Instant) -> Result<DaemonInfo, DaemonError> {
-    match handshake(scope, deadline.min(Instant::now() + HELLO_TIMEOUT)) {
-        Ok((_, info)) => return Ok(info),
-        Err(error @ (DaemonError::Busy | DaemonError::Incompatible(_) | DaemonError::Protocol(_) | DaemonError::Unsupported(_))) => return Err(error),
-        Err(_) => {}
+    let mut stream = connect_locked(scope, deadline)?;
+    status_on(scope, &mut stream, None, deadline.min(Instant::now() + STATUS_TIMEOUT)).map(|(info, _)| info)
+}
+
+fn connect_locked(scope: &DaemonScope, deadline: Instant) -> Result<platform::Stream, DaemonError> {
+    let attempt = || observation::stage(ClientStage::Connect, || platform::connect(scope, deadline));
+    match attempt() {
+        Ok(stream) => return Ok(stream),
+        Err(error) if missing_endpoint(&error) => {}
+        Err(error) => return Err(error),
     }
-    // The singleton lease is checked by the child before application creation;
-    // an already initializing explicit daemon cannot become a second DB owner.
+    // The child takes the lifetime singleton before constructing Application.
     if Instant::now() >= deadline {
         return Err(DaemonError::Deadline);
     }
     let mut child = observation::stage(ClientStage::Spawn, || spawn_daemon(scope))?;
     let mut exit_status = None;
     loop {
-        match handshake(scope, deadline.min(Instant::now() + HELLO_TIMEOUT)) {
-            Ok((_, info)) => return Ok(info),
-            Err(error @ (DaemonError::Busy | DaemonError::Incompatible(_) | DaemonError::Protocol(_) | DaemonError::Unsupported(_))) => return Err(error),
-            Err(_) => {}
+        match attempt() {
+            Ok(stream) => return Ok(stream),
+            Err(error) if missing_endpoint(&error) => {}
+            Err(error) => return Err(error),
         }
         if exit_status.is_none() {
             exit_status = observation::stage(ClientStage::Discovery, || child.try_wait().map_err(DaemonError::from))?;
@@ -108,123 +133,143 @@ fn spawn_daemon(scope: &DaemonScope) -> Result<std::process::Child, DaemonError>
     crate::sys::process::spawn_detached(&mut command).map_err(DaemonError::from)
 }
 
+#[cfg(test)]
 pub(crate) fn call(scope: &DaemonScope, caller: CallerContext, request: Request) -> Result<ServiceResult<Response>, DaemonError> {
-    let deadline = observation::stage(ClientStage::Capture, || request_deadline(caller.deadline_unix_ms))?;
-    let (mut stream, info) = handshake(scope, deadline)?;
-    if caller.expected_database_generation.as_deref() != Some(info.database_generation.as_str()) {
-        return observation::stage(ClientStage::Hello, || Err(DaemonError::StaleGeneration));
-    }
-    if matches!(request, Request::Queries(crate::service::queries::Request::AgentNames(_))) && !info.agent_names {
-        return Err(DaemonError::Unsupported("daemon does not support the Agent names query".into()));
-    }
-    if matches!(request, Request::Management(crate::management::contract::Request::ListWorkspaceMembers { .. })) && !info.workspace_members {
-        return Err(DaemonError::Unsupported("daemon does not support workspace member pages".into()));
-    }
-    if matches!(request, Request::Management(crate::management::contract::Request::MessageHistory { .. })) && !info.message_history {
-        return Err(DaemonError::Unsupported("daemon does not support exact message history pages".into()));
-    }
-    exchange(&mut stream, &info, caller, request, deadline)
+    call_bound(scope, false, caller, request).map(|(_, result)| result)
 }
 
-/// An already-launched hook only talks to an existing daemon. Authenticate
-/// and discover capability on the same connection used for the first write.
-pub(crate) fn call_codex_hook(scope: &DaemonScope, mut caller: CallerContext, event: crate::service::codex_hook::HookEvent) -> Result<Option<(DaemonInfo, ServiceResult<Response>)>, DaemonError> {
+pub(crate) fn call_bound(scope: &DaemonScope, start: bool, caller: CallerContext, request: Request) -> Result<(DaemonInfo, ServiceResult<Response>), DaemonError> {
     let deadline = observation::stage(ClientStage::Capture, || request_deadline(caller.deadline_unix_ms))?;
-    let mut stream = observation::stage(ClientStage::Connect, || platform::connect_existing(scope, deadline))?;
-    let info = hello(scope, &mut stream, deadline)?;
-    if caller.expected_database_generation.as_ref().is_some_and(|expected| expected != &info.database_generation) {
-        return observation::stage(ClientStage::Hello, || Err(DaemonError::StaleGeneration));
-    }
-    if !info.codex_hook {
-        return Ok(None);
-    }
-    caller.expected_database_generation = Some(info.database_generation.clone());
-    let result = exchange(&mut stream, &info, caller, Request::CodexHook(event), deadline)?;
-    Ok(Some((info, result)))
-}
-
-fn exchange(stream: &mut platform::Stream, info: &DaemonInfo, caller: CallerContext, request: Request, deadline: Instant) -> Result<ServiceResult<Response>, DaemonError> {
-    let operation = ClientFrame::Call { daemon_instance: info.daemon_instance.clone(), caller, request };
-    // Even a partial write can have delivered the complete request before the
-    // local error was observed. Conservatively never retry this operation.
+    let mut stream = connect(scope, start, deadline)?;
+    let process = authenticated_peer(&stream)?;
+    let request_id = caller.request_id.clone();
+    let expected = caller.expected_database_generation.clone();
+    let resetting = matches!(request, Request::Maintenance(crate::service::maintenance::Request::ResetConversation));
+    let operation = call_frame(scope, None, caller, request);
+    // Serialize before marking the possible write. After attempting it,
+    // retain the original request ID and never retry the operation.
+    let body = frame::encode_limited(&operation, frame::MAX_FRAME_BYTES)?;
     observation::may_write();
-    observation::stage(ClientStage::CallWrite, || frame::write(stream, &operation, deadline)).map_err(unknown)?;
-    match observation::stage(ClientStage::ReplyRead, || frame::read(stream, deadline)).map_err(unknown)? {
-        ServerFrame::Result { result, .. } => {
+    if let Err(error) = observation::stage(ClientStage::CallWrite, || frame::write_encoded(&mut stream, &body, deadline)) {
+        return Err(pre_admission_busy(&mut stream, deadline, error).map_unknown(&request_id));
+    }
+    match observation::stage(ClientStage::ReplyRead, || frame::read(&mut stream, deadline)).map_err(|error| error.map_unknown(&request_id))? {
+        ServerFrame::Result { result, info, executed_generation, request_id: reply_id } => {
+            validate_info(scope, &process, &info).map_err(|error| error.map_unknown(&request_id))?;
+            if request_id != reply_id || executed_generation.is_empty() || expected.as_ref().is_some_and(|expected| expected != &executed_generation) {
+                return Err(DaemonError::Protocol("result does not match request ID or generation".into()).map_unknown(&request_id));
+            }
+            if info.database_generation != executed_generation && !resetting {
+                if matches!(result, Err(ServiceError::StaleGeneration)) {
+                    return Err(DaemonError::StaleGeneration);
+                }
+                return Err(DaemonError::Protocol("result generation changed during execution".into()).map_unknown(&request_id));
+            }
+            observation::ready(&info, process);
             observation::application_result(&result);
-            Ok(result)
+            Ok((info, result))
         }
         ServerFrame::Failure(error) => {
+            let error = match diagnose_legacy(scope, process.pid, error) {
+                DaemonError::OutcomeUnknown(detail) => DaemonError::OutcomeUnknown(format!("request {}: {detail}", request_id.0)),
+                other => other,
+            };
             observation::received_failure(&error);
             Err(error)
         }
-        _ => Err(DaemonError::OutcomeUnknown("unexpected reply after call".into())),
+        _ => Err(DaemonError::Protocol("unexpected reply after call".into()).map_unknown(&request_id)),
     }
 }
 
-/// Authenticated cleanup for in-process fixtures.
+fn call_frame<R>(scope: &DaemonScope, instance: Option<String>, caller: CallerContext, request: R) -> ClientFrame<R> {
+    ClientFrame::Call { canonical_scope: scope.root().to_path_buf(), daemon_instance: instance, caller, request }
+}
+
+fn lifecycle_caller(expected: Option<&str>) -> CallerContext {
+    CallerContext { request_id: RequestId(uuid::Uuid::new_v4().to_string()), invocation: Default::default(), deadline_unix_ms: None, expected_database_generation: expected.map(str::to_owned) }
+}
+
+fn authenticated_peer(stream: &platform::Stream) -> Result<ObservedProcess, DaemonError> {
+    let (pid, incarnation) = observation::stage(ClientStage::PeerAuthentication, || platform::peer(stream))?;
+    Ok(ObservedProcess { pid, incarnation })
+}
+
+pub(super) fn status_on(scope: &DaemonScope, stream: &mut platform::Stream, expected: Option<&str>, deadline: Instant) -> Result<(DaemonInfo, ObservedProcess), DaemonError> {
+    let process = authenticated_peer(stream)?;
+    let call = call_frame(scope, None, lifecycle_caller(expected), STATUS);
+    if let Err(error) = observation::stage(ClientStage::CallWrite, || frame::write(stream, &call, deadline)) {
+        return Err(pre_admission_busy(stream, deadline, error));
+    }
+    match observation::stage(ClientStage::ReplyRead, || frame::read(stream, deadline))? {
+        ServerFrame::Status(info) => {
+            validate_info(scope, &process, &info)?;
+            if expected.is_some_and(|expected| expected != info.database_generation) {
+                return Err(DaemonError::StaleGeneration);
+            }
+            observation::ready(&info, process.clone());
+            Ok((info, process))
+        }
+        ServerFrame::Failure(error) => Err(diagnose_legacy(scope, process.pid, error)),
+        _ => Err(DaemonError::Protocol("expected daemon status".into())),
+    }
+}
+
+fn pre_admission_busy(stream: &mut platform::Stream, deadline: Instant, error: DaemonError) -> DaemonError {
+    if matches!(&error, DaemonError::Io { os_code: Some(code), .. } if matches!(
+        std::io::Error::from_raw_os_error(*code).kind(),
+        std::io::ErrorKind::BrokenPipe | std::io::ErrorKind::ConnectionReset | std::io::ErrorKind::ConnectionAborted | std::io::ErrorKind::NotConnected
+    )) && matches!(frame::read_limited(stream, deadline, 256), Ok(ServerFrame::Failure(DaemonError::Busy)))
+    {
+        return DaemonError::Busy;
+    }
+    error
+}
+
+fn diagnose_legacy(scope: &DaemonScope, pid: u32, error: DaemonError) -> DaemonError {
+    match error {
+        DaemonError::Protocol(detail) if detail.contains("first frame must be Hello") || detail.contains("missing field `daemon_instance`") || detail.contains("unknown variant `DaemonStatus`") => {
+            mismatch(scope, pid, "legacy daemon requires its one-time upgrade")
+        }
+        error => error,
+    }
+}
+
+pub(super) fn validate_info(scope: &DaemonScope, peer: &ObservedProcess, info: &DaemonInfo) -> Result<(), DaemonError> {
+    if info.canonical_scope != scope.root() || info.pid != peer.pid {
+        return Err(DaemonError::Incompatible("response scope or daemon PID differs from the authenticated connection".into()));
+    }
+    if info.database_generation.is_empty() || info.daemon_instance.is_empty() {
+        return Err(DaemonError::Protocol("incomplete daemon identity".into()));
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 pub(crate) fn shutdown(scope: &DaemonScope) -> Result<(), DaemonError> {
     let deadline = Instant::now() + IO_TIMEOUT;
-    let (mut stream, info) = handshake(scope, deadline)?;
-    shutdown_connection(&mut stream, &info, deadline)
+    let info = probe(scope)?;
+    shutdown_instance(scope, &info, deadline)
 }
 
-pub(super) fn shutdown_connection(stream: &mut platform::Stream, info: &DaemonInfo, deadline: Instant) -> Result<(), DaemonError> {
-    frame::write(stream, &ClientFrame::Shutdown { daemon_instance: info.daemon_instance.clone() }, deadline).map_err(unknown)?;
-    match frame::read(stream, deadline).map_err(unknown)? {
+pub(super) fn shutdown_instance(scope: &DaemonScope, info: &DaemonInfo, deadline: Instant) -> Result<(), DaemonError> {
+    let mut stream = platform::connect_existing(scope, deadline)?;
+    if platform::peer(&stream)?.0 != info.pid {
+        return Err(DaemonError::Incompatible("shutdown peer changed".into()));
+    }
+    let caller = lifecycle_caller(None);
+    let id = caller.request_id.clone();
+    frame::write(&mut stream, &call_frame(scope, Some(info.daemon_instance.clone()), caller, SHUTDOWN), deadline).map_err(|error| error.map_unknown(&id))?;
+    match frame::read(&mut stream, deadline).map_err(|error| error.map_unknown(&id))? {
         ServerFrame::Stopping => Ok(()),
         ServerFrame::Failure(error) => Err(error),
-        _ => Err(DaemonError::Protocol("expected shutdown acknowledgement".into())),
+        _ => Err(DaemonError::Protocol("expected shutdown acknowledgement".into()).map_unknown(&id)),
     }
 }
 
-pub(super) fn handshake(scope: &DaemonScope, deadline: Instant) -> Result<(platform::Stream, DaemonInfo), DaemonError> {
-    let mut stream = observation::stage(ClientStage::Connect, || platform::connect(scope, deadline))?;
-    let info = hello(scope, &mut stream, deadline)?;
-    Ok((stream, info))
-}
-
-/// Lifecycle diagnosis retains this same authenticated connection even when
-/// Hello rejects compatibility. No ordinary operation bypasses this fence.
-pub(super) fn hello(scope: &DaemonScope, stream: &mut platform::Stream, deadline: Instant) -> Result<DaemonInfo, DaemonError> {
-    let build_id = super::wire::build_identity();
-    let (pid, incarnation) = observation::stage(ClientStage::PeerAuthentication, || platform::peer(stream))?;
-    let sent = observation::stage(ClientStage::Hello, || {
-        frame::write(stream, &ClientFrame::Hello { protocol_version: PROTOCOL_VERSION, build_version: BUILD_VERSION.into(), build_id: build_id.into(), canonical_scope: scope.root().to_path_buf() }, deadline)
-    });
-    if let Err(error) = sent {
-        // At capacity, admission can send Busy and close before reading our
-        // Hello. A failed write does not discard that peer's buffered rejection.
-        // Accept only the explicit pre-Hello Busy frame; otherwise preserve the
-        // original I/O error and existing startup recovery.
-        if matches!(&error, DaemonError::Io { os_code: Some(code), .. } if matches!(
-            std::io::Error::from_raw_os_error(*code).kind(),
-            std::io::ErrorKind::BrokenPipe | std::io::ErrorKind::ConnectionReset | std::io::ErrorKind::ConnectionAborted | std::io::ErrorKind::NotConnected
-        )) && let Err(DaemonError::Busy) = observation::stage(ClientStage::Hello, || match frame::read_limited(stream, deadline, 256)? {
-            ServerFrame::Failure(DaemonError::Busy) => Err(DaemonError::Busy),
-            _ => Ok(()),
-        }) {
-            return Err(DaemonError::Busy);
-        }
-        return Err(error);
+impl DaemonError {
+    fn map_unknown(self, request_id: &RequestId) -> Self {
+        if matches!(self, Self::Busy) { self } else { Self::OutcomeUnknown(format!("request {}: {self}", request_id.0)) }
     }
-    let response = observation::stage(ClientStage::Hello, || frame::read(stream, deadline))?;
-    observation::stage(ClientStage::Hello, || match response {
-        ServerFrame::Ready(info) => {
-            if info.protocol_version != PROTOCOL_VERSION || info.canonical_scope != scope.root() || info.pid != pid {
-                return Err(mismatch(scope, pid, &format!("Ready differs: daemon protocol={} version={} cohort={} scope={} pid={}", info.protocol_version, info.build_version, info.build_id, info.canonical_scope.display(), info.pid)));
-            }
-            if info.database_generation.is_empty() || info.daemon_instance.is_empty() {
-                return Err(DaemonError::Protocol("incomplete readiness identity".into()));
-            }
-            observation::ready(&info, ObservedProcess { pid, incarnation });
-            Ok(info)
-        }
-        ServerFrame::Failure(DaemonError::Incompatible(detail)) => Err(mismatch(scope, pid, &format!("daemon rejected Hello: {detail}; daemon version/cohort unavailable unless present in that reply"))),
-        ServerFrame::Failure(error) => Err(error),
-        _ => Err(DaemonError::Protocol("expected readiness handshake".into())),
-    })
 }
 
 fn mismatch(scope: &DaemonScope, pid: u32, detail: &str) -> DaemonError {
@@ -257,7 +302,7 @@ fn quote_argument(value: &std::ffi::OsStr) -> String {
     }
 }
 
-pub(super) fn request_deadline(unix_ms: Option<u64>) -> Result<Instant, DaemonError> {
+pub(crate) fn request_deadline(unix_ms: Option<u64>) -> Result<Instant, DaemonError> {
     let now = Instant::now();
     let maximum = now + IO_TIMEOUT;
     let Some(unix_ms) = unix_ms else {
@@ -269,10 +314,6 @@ pub(super) fn request_deadline(unix_ms: Option<u64>) -> Result<Instant, DaemonEr
         return Err(DaemonError::Deadline);
     }
     Ok(maximum.min(now + remaining.min(IO_TIMEOUT)))
-}
-
-fn unknown(error: DaemonError) -> DaemonError {
-    DaemonError::OutcomeUnknown(error.to_string())
 }
 
 fn pause(deadline: Instant) -> Result<(), DaemonError> {

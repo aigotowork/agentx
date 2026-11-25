@@ -12,7 +12,10 @@ use crate::cloud::communication::types::{AgentView, HostRegistration, HostView, 
 
 #[derive(Clone)]
 pub(super) enum Port {
-    Direct(Http),
+    Direct {
+        http: Http,
+        generation: String,
+    },
     #[cfg(target_os = "linux")]
     Managed(super::ipc::Client),
 }
@@ -27,6 +30,8 @@ pub(super) enum Selection {
 #[serde(tag = "op", content = "args", rename_all = "snake_case", deny_unknown_fields)]
 pub(super) enum Command {
     Info,
+    #[cfg(target_os = "linux")]
+    ClassifyWorkspace(std::path::PathBuf),
     Agents(Option<String>),
     Hosts(Option<String>),
     Resolve(Selection),
@@ -50,7 +55,7 @@ pub(super) enum Command {
 impl Port {
     pub(super) fn call<T: DeserializeOwned>(&self, command: Command) -> Result<T> {
         match self {
-            Self::Direct(http) => Ok(serde_json::from_value(command.upstream(http)?)?),
+            Self::Direct { http, generation } => Ok(serde_json::from_value(command.upstream(http, generation)?)?),
             #[cfg(target_os = "linux")]
             Self::Managed(client) => client.call(command),
         }
@@ -59,8 +64,8 @@ impl Port {
 
 pub(super) fn checked_descriptor(http: &Http, url: &str) -> Result<Descriptor> {
     let descriptor: Descriptor = http.request("GET", "/descriptor", None)?;
-    ensure!(descriptor.protocol_version == 1, "unsupported cloud scope protocol version {}", descriptor.protocol_version);
-    ensure!(url.rsplit_once('/').is_some_and(|(_, id)| id == descriptor.scope_id), "cloud descriptor does not match the selected scope URL");
+    ensure!(url.rsplit_once('/').is_some_and(|(_, id)| id == descriptor.namespace_id), "cloud descriptor does not match the selected Namespace URL");
+    ensure!(!descriptor.generation.is_empty(), "cloud descriptor has no Namespace generation");
     Ok(descriptor)
 }
 
@@ -74,20 +79,23 @@ fn request<T: DeserializeOwned>(http: &Http, method: &str, path: &str, body: &im
     http.request(method, path, Some(&serde_json::to_value(body)?))
 }
 
-fn page(which: &str, after: Option<&str>) -> String {
+fn page(which: &str, generation: &str, after: Option<&str>) -> String {
+    let path = format!("/{which}?limit=200&generation={}", path_segment(generation));
     match after {
-        Some(cursor) => format!("/{which}?limit=200&after={}", path_segment(cursor)),
-        None => format!("/{which}?limit=200"),
+        Some(cursor) => format!("{path}&after={}", path_segment(cursor)),
+        None => path,
     }
 }
 
 impl Command {
-    pub(super) fn upstream(self, http: &Http) -> Result<Value> {
+    pub(super) fn upstream(self, http: &Http, generation: &str) -> Result<Value> {
         let registering = matches!(self, Self::Register { .. });
         match self {
             Self::Info | Self::Resolve(_) => anyhow::bail!("local IPC operation has no upstream route"),
-            Self::Agents(after) => http.request("GET", &page("agents", after.as_deref()), None),
-            Self::Hosts(after) => http.request("GET", &page("hosts", after.as_deref()), None),
+            #[cfg(target_os = "linux")]
+            Self::ClassifyWorkspace(_) => anyhow::bail!("local IPC operation has no upstream route"),
+            Self::Agents(after) => Ok(serde_json::to_value(http.inventory_page::<Value>(&page("agents", generation, after.as_deref()), generation)?)?),
+            Self::Hosts(after) => Ok(serde_json::to_value(http.inventory_page::<Value>(&page("hosts", generation, after.as_deref()), generation)?)?),
             Self::Send(body) => request(http, "POST", "/messages", &body),
             Self::Receipt { request_id, actor } => {
                 let receipt: super::MessageOperation = http.request("GET", &format!("/operations/{}", path_segment(&request_id)), None)?;
@@ -99,7 +107,7 @@ impl Command {
             Self::Confirm(body) => request(http, "POST", "/inbox/confirm", &body),
             #[cfg(target_os = "linux")]
             Self::PublishTranscript(mut body) => {
-                // The managed scope bearer never enters the Provider or supervisor process.
+                // The managed Namespace bearer never enters the Provider or supervisor process.
                 // Redact it again at the credential-owning boundary before any HTTP egress.
                 for value in [&mut body.facts.role, &mut body.facts.title].into_iter().flatten().chain(std::iter::once(&mut body.facts.cwd)).chain(body.items.iter_mut().map(|item| &mut item.text)) {
                     http.redact_bearer(value);
@@ -108,7 +116,7 @@ impl Command {
             }
             Self::Register { actor, .. } | Self::Retire(actor) => {
                 valid_name(&actor.agent.name)?;
-                let body = AgentRegistration { generation: actor.generation, installation_id: actor.installation_id, host: actor.agent.host, incarnation: actor.agent.incarnation };
+                let body = AgentRegistration { generation: actor.generation, installation_id: actor.installation_id, host: actor.agent.host, incarnation: actor.agent.incarnation, workspace: actor.agent.workspace };
                 let name = path_segment(&actor.agent.name);
                 if registering { request(http, "PUT", &format!("/agents/{name}"), &body) } else { request(http, "POST", &format!("/agents/{name}/retire"), &body) }
             }
