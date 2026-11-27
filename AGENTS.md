@@ -100,9 +100,7 @@ Read [shared guidance](.agent-guides/AGENTS.md) and [local guidance](.agent-guid
 
 For any UI design, implementation or design review, apply the [shared interface requirements and resource-workspace review criteria](.agent-guides/scenarios/interface-design.md#review-resource-workspaces): make core resource structure and useful information/actions primary, keep the layout compact, and disclose explanations through contextual icons/Tooltips rather than standing prose. This includes SVG proposals.
 
-For common project operations, run `just --list` and use the existing recipes in [justfile](justfile). On macOS/Linux, use `just package` to build the executable into `.bin/agentx` and check its version.
-
-For the user-authorized release of currently implemented capabilities into `~/.local/bin/agentx`, read the [local release Task](.controller/local-release.task.md). Packaging and installed-file replacement remain separate from restarting existing daemon or Agent hosts.
+For publishing, follow the [GitHub release procedure](CONTRIBUTING.md#github-native-release). Release the full local main feature set and let GitHub Actions build all packages.
 
 For source ownership and directory changes, read [source layout](.docs/source-layout/README.md).
 

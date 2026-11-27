@@ -204,7 +204,7 @@ Check with `agentx relay status`, toggle with `agentx relay off` / `on`.
 
 ## Reference
 
-Full reference: `agentx run docs`
+Full reference: `agentx docs`. Select sections with `--cli`, `--config` or `--scripts`.
 
 <details>
 <summary><strong>Tools</strong></summary>
@@ -338,7 +338,7 @@ agentx events --follow           # Stream events as JSON Lines
 agentx update                    # update agentx version
 ```
 
-`agentx run docs --cli` for all commands.
+`agentx docs --cli` for all commands.
 
 </details>
 
@@ -389,7 +389,7 @@ export AGENTX_DIR="$PWD/.agentx"   # isolate agentx state (db, logs) to this fol
 rm -rf "$AGENTX_DIR"             # clean up
 ```
 
-Run `agentx config <key> --info` or `agentx run docs --config` for the full per-key reference.
+Run `agentx config <key> --info` or `agentx docs --config` for the full per-key reference.
 
 Load shared/project/local dotenv data explicitly when the calling terminal or app has not prepared it:
 
@@ -421,7 +421,7 @@ Bundled and user scripts (`~/.agentx/scripts/`) for multi-agent patterns:
 ```bash
 agentx run                  # list available scripts
 agentx run debate "topic"   # run one
-agentx run docs             # tell agent to run this to create any new workflow
+agentx docs --scripts       # read the workflow authoring guide
 ```
 
 #### Included scripts
@@ -436,7 +436,7 @@ Tell agent to run them:
 
 - **`agentx run onidle`** — waits for an agent to go idle, then types text into another agent (`agentx run onidle luna nova 'luna is done, review it'`) or launches a new one with it as the prompt (`agentx run onidle luna codex 'review what luna just did'`).
 
-Custom scripts: drop `*.sh` or `*.py` into `~/.agentx/scripts/` — auto-discovered, override bundled scripts of the same name. Ask an agent to author one; `agentx run docs --scripts` is the authoring guide.
+Custom scripts: drop `*.sh` or `*.py` into `~/.agentx/scripts/` — auto-discovered, override bundled scripts of the same name. Ask an agent to author one; `agentx docs --scripts` is the authoring guide.
 
 </details>
 

@@ -1609,10 +1609,10 @@ fn send_with_attached_from_skips_the_name_drift_warning() {
 }
 
 #[test]
-fn run_help_and_docs_flags_preserve_script_help() {
+fn run_and_docs_have_separate_help_and_execution() {
     let h = Agentx::new();
     let caller = h.start();
-    for args in [vec!["run", "--help"], vec!["run", "-h", "--iam", &caller], vec!["run", "docs", "--help", "--iam", &caller]] {
+    for args in [vec!["run", "--help"], vec!["run", "-h", "--iam", &caller]] {
         let (code, stdout, stderr) = h.run(&args);
         assert_eq!(code, 0, "{args:?}: {stderr}");
         assert!(stdout.contains("agentx run <name>"), "{stdout}");
@@ -1621,11 +1621,14 @@ fn run_help_and_docs_flags_preserve_script_help() {
     let (code, stdout, stderr) = h.run(["run", "debate", "--help", "--iam", &caller]);
     assert_eq!(code, 0, "{stderr}");
     assert!(stdout.contains("Usage: agentx run debate [OPTIONS] TOPIC"), "{stdout}");
-    let (code, stdout, stderr) = h.run(["run", "docs", "--scripts", "--iam", &caller]);
+    let (code, stdout, stderr) = h.run(["run", "docs", "--help"]);
+    assert_eq!(code, 1, "{stderr}");
+    assert!(stdout.contains("Unknown script: docs"), "{stdout}");
+    let (code, stdout, stderr) = h.run(["docs", "--scripts"]);
     assert_eq!(code, 0, "{stderr}");
     assert!(stdout.contains("# Creating Custom Scripts"), "{stdout}");
-    assert!(!stdout.contains("# CLI Reference"), "{stdout}");
-    let (code, stdout, stderr) = h.run(["run", "docs", "--scrpits", "--iam", &caller]);
+    assert!(!stdout.contains("## events"), "{stdout}");
+    let (code, stdout, stderr) = h.run(["docs", "--scrpits"]);
     assert_eq!(code, 1);
     assert!(stdout.is_empty(), "{stdout}");
     assert!(stderr.contains("Unknown docs option: --scrpits"), "{stderr}");

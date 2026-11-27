@@ -84,10 +84,13 @@ const EVENTS_SUB: &[HelpEntry] = &[
 ];
 
 const EVENTS_REMINDER: &[HelpEntry] = &[
+    ("One-time reminder:", ""),
     ("events sub --in DURATION --message TEXT", "Schedule one local reminder; no event filters"),
-    ("  --in DURATION", "Relative delay from 1s to 365d (s, m, h, d)"),
+    ("  --in DURATION", "Delay from 1s to 365d (s, m, h, d); requires a current Agent caller"),
     ("  --message TEXT", "Message to enqueue when due"),
     ("  --for NAME", "Select another local Agent; defaults to the current Agent"),
+    ("    agentx events sub --in 10m --message 'Check the GitHub build status'", ""),
+    ("", "Use events sub show REMINDER_ID to check the outcome and events unsub REMINDER_ID to cancel a pending reminder."),
 ];
 const EVENTS_SUB_LIST: &[HelpEntry] =
     &[("events sub list", "List active subscriptions and pending local reminders"), ("  --history", "Include enqueued, failed and canceled local reminders"), ("  --device ID", "List event subscriptions on a remote device")];
@@ -465,19 +468,13 @@ const ARCHIVE_HELP: &[HelpEntry] = &[
     ("  --json", "JSON output"),
 ];
 
-const RUN_HELP: &[HelpEntry] = &[
-    ("run", "List available workflow/launch scripts and more info"),
-    ("run <name> [args]", "Execute script"),
-    ("run <name> --help", "Script options"),
-    ("run docs", "CLI reference + config + script creation guide"),
-    ("", ""),
-    ("", "Docs sections:"),
-    ("  agentx run docs --cli", "CLI reference only"),
-    ("  agentx run docs --config", "Config settings only"),
-    ("  agentx run docs --scripts", "Script creation guide"),
-    ("", ""),
-    ("", "User scripts: ~/.agentx/scripts/"),
-];
+const RUN_HELP: &[HelpEntry] =
+    &[("run", "List available workflow scripts"), ("run <name> [args]", "Execute a workflow script"), ("run <name> --help", "Script options"), ("", "Workflow authoring guide: agentx docs --scripts"), ("", "User scripts: ~/.agentx/scripts/")];
+
+const DOCS_OPTIONS: &[HelpEntry] =
+    &[("  --cli", "Show the CLI reference"), ("  --config", "Show the configuration reference"), ("  --scripts", "Show the workflow authoring guide"), ("", "Combine flags to select multiple sections. With no flags, show all sections.")];
+
+const DOCS_PAGE: &[&[HelpEntry]] = &[&[("docs", "Read shipped reference documentation")], DOCS_OPTIONS];
 
 const STATUS_HELP: &[HelpEntry] = &[("status", "Installation status and diagnostics"), ("status --logs", "Include recent errors and warnings"), ("status --json", "Machine-readable output")];
 
@@ -674,6 +671,7 @@ pub const COMMAND_NAMES: &[&str] = &[
     "term",
     "relay",
     "run",
+    "docs",
     "update",
 ];
 
@@ -722,7 +720,7 @@ Commands:\n\
 \x20 listen       Block until message or event arrives\n\
 \x20 list         Show current team, global agents, status and unread counts\n\
 \x20 bindings     Read file-owned Task/Delivery assignments and status\n\
-\x20 events       Query event stream, manage subscriptions\n\
+\x20 events       Query events, manage subscriptions and schedule reminders\n\
 \x20 bundle       Structured context packages for handoffs\n\
 \x20 transcript   Read another agent's conversation\n\
 \x20 start        Connect to agentx (run inside any AI tool)\n\
@@ -732,6 +730,7 @@ Commands:\n\
 \x20 config       Get/set global and per-agent settings\n\
 \x20 attach       Attach to a running agent's tmux terminal\n\
 \x20 run          Execute workflow scripts\n\
+\x20 docs         Read the CLI, config and workflow authoring references\n\
 \x20 relay        Cross-device sync + relay daemon\n\
 \x20 archive      Query past agentx sessions\n\
 \x20 reset        Archive and clear database\n\
@@ -881,6 +880,7 @@ fn manual_sections(name: &str) -> Option<&'static [&'static [HelpEntry]]> {
         "relay" => Some(RELAY_PAGE),
         "archive" => Some(&[ARCHIVE_HELP]),
         "run" => Some(&[RUN_HELP]),
+        "docs" => Some(DOCS_PAGE),
         "status" => Some(&[STATUS_HELP]),
         "update" => Some(&[UPDATE_HELP]),
         "hooks" => Some(HOOKS_PAGE),

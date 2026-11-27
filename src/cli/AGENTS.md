@@ -30,7 +30,9 @@ Main extracts originating `--env-file`, `--env-override` and `--no-env-override`
 
 `--help-all` is handled by [recursive help](commands/help/all.rs) at main's first argument boundary, before dotenv/direnv, config, identity, updates and native service startup. It selects the current public command subtree and emits a tree followed by complete help pages. Native groups expose their existing clap declarations through `help_command`; static groups reuse `help.rs` sections and their literal command usages. Ordinary and recursive help share `help.rs::compact_help`; native parser help displays use `print_clap_error`, preserving error streams and exit codes. Keep descriptions beside arguments and omit internal blank lines; recursive output owns page separators. Preserve opaque option values and everything after `--`; never execute tools or user scripts to discover help. Unknown command paths fail rather than silently returning a parent page. See the [target/reference panorama](../../.sketches/agentx-cli-panorama.md#完整帮助模式).
 
-Role-file setup and role/team examples live in [roles.rs](commands/roles.rs)'s help declaration. Root help and launch/send/list help route callers there; `run docs --cli` and `--help-all` consume the same declarations. The startup/native-subagent guide shares concise commands in runtime bootstrap, not this full setup text. Keep these discovery routes aligned with [current usage](../../.docs/roles-workspaces.md#从哪里发现这些能力).
+Role-file setup and role/team examples live in [roles.rs](commands/roles.rs)'s help declaration. Root help and launch/send/list help route callers there; `docs --cli` and `--help-all` consume the same declarations. The startup/native-subagent guide shares concise commands in runtime bootstrap, not this full setup text. Keep these discovery routes aligned with [current usage](../../.docs/roles-workspaces.md#从哪里发现这些能力).
+
+[`docs`](commands/docs.rs) renders shipped CLI, configuration and workflow authoring references without loading dotenv files, resolving an actor or acquiring a daemon. [`run`](commands/run.rs) only discovers or executes workflow scripts.
 
 ## Launch CLI contract
 

@@ -2,7 +2,8 @@
 
 ## [0.7.36]
 
-- Package the Codex recovery and Unix daemon socket fixes from 0.7.35 through the tagged release workflow.
+- Use `agentx docs` for the CLI reference, configuration guide and workflow authoring documentation. Use `agentx events sub --help` for one-time reminder examples and outcome checks.
+- Includes the Codex recovery and Unix daemon socket fixes from 0.7.35.
 
 ## [0.7.35]
 

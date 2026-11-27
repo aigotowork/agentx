@@ -207,7 +207,7 @@ pub(crate) fn is_lightweight(argv: &[String]) -> bool {
         return true;
     }
     let (words, _, _) = crate::cli::router::extract_global_flags_full(&args);
-    if words.first().map(String::as_str) == Some("profile") {
+    if matches!(words.first().map(String::as_str), Some("docs" | "profile")) {
         return true;
     }
     let mut i = 0;

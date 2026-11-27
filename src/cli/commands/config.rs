@@ -1074,7 +1074,7 @@ Usage:
     .map(str::to_string)
 }
 
-/// Build terminal help text (shared between config --info and run docs --config).
+/// Build terminal help text (shared between config --info and docs --config).
 pub fn terminal_help_text(show_current: bool) -> String {
     terminal_help_text_for(None, show_current)
 }
