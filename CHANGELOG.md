@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.7.36]
+
+- Package the Codex recovery and Unix daemon socket fixes from 0.7.35 through the tagged release workflow.
+
 ## [0.7.35]
 
 - Recover a live Codex Agent whose failed turn ended without a Stop hook. Recovery checks the latest completed turn in the same session before offering or submitting a continuation.
