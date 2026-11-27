@@ -49,6 +49,7 @@ const COMMANDS: &[&str] = &[
     "term",
     "relay",
     "run",
+    "docs",
     "update",
 ];
 
@@ -560,7 +561,7 @@ fn is_local_metadata(action: &Action) -> bool {
     {
         return true;
     }
-    matches!(action, Action::Command { cmd, .. } if matches!(cmd.as_str(), "run" | "hooks"))
+    matches!(action, Action::Command { cmd, .. } if matches!(cmd.as_str(), "docs" | "run" | "hooks"))
         || matches!(action, Action::Command { cmd, args } if cmd == "config" && args.iter().any(|arg| arg == "environment" || crate::config::file::environment_key(arg).is_some()))
 }
 
@@ -692,7 +693,10 @@ pub fn dispatch(argv: &[String]) -> anyhow::Result<()> {
             }
         }
         Action::Command { ref cmd, ref args }
-            if matches!(cmd.as_str(), "labels" | "send" | "recover" | "list" | "stop" | "listen" | "events" | "transcript" | "config" | "status" | "bundle" | "archive" | "reset" | "hooks" | "attach" | "term" | "relay" | "run" | "update") =>
+            if matches!(
+                cmd.as_str(),
+                "labels" | "send" | "recover" | "list" | "stop" | "listen" | "events" | "transcript" | "config" | "status" | "bundle" | "archive" | "reset" | "hooks" | "attach" | "term" | "relay" | "run" | "docs" | "update"
+            ) =>
         {
             let exit_code = dispatch_native_command(cmd, args);
             if exit_code != 0 {
@@ -895,6 +899,9 @@ fn dispatch_native_command(cmd: &str, args: &[String]) -> i32 {
         return crate::cli::commands::archive::cmd_archive(&client, &args, None);
     }
 
+    if cmd == "docs" {
+        return crate::cli::commands::docs::run(&cmd_argv.iter().map(String::as_str).collect::<Vec<_>>());
+    }
     if cmd == "run" {
         return match crate::cli::commands::run::RunArgs::try_parse_from(std::iter::once("run".to_string()).chain(cmd_argv.iter().cloned())) {
             Ok(args) => crate::cli::commands::run::cmd_run(&args, flags.name.as_deref()),

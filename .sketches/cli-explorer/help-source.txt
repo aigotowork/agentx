@@ -1,5 +1,11 @@
 Command tree:
 agentx
+├─ labels
+│  ├─ get
+│  ├─ set
+│  ├─ remove
+│  └─ receipt
+├─ bindings
 ├─ attach
 ├─ profile
 │  ├─ list
@@ -8,15 +14,20 @@ agentx
 │  ├─ update
 │  ├─ delete
 │  └─ default
+├─ roles
+│  ├─ show
+│  └─ reset-endpoint
 ├─ launch
 ├─ resume
+├─ recover
 ├─ fork
 ├─ send
 ├─ list
 ├─ events
 │  ├─ launch
 │  ├─ sub
-│  │  └─ list
+│  │  ├─ list
+│  │  └─ show
 │  └─ unsub
 ├─ stop
 │  └─ all
@@ -24,10 +35,14 @@ agentx
 ├─ listen
 ├─ status
 ├─ daemon
+│  ├─ cloud
+│  ├─ connect
+│  ├─ web
 │  ├─ status
 │  └─ restart
 ├─ observe
 │  ├─ inspect
+│  ├─ trace
 │  ├─ request
 │  ├─ config
 │  ├─ config-current
@@ -67,7 +82,6 @@ agentx
 │  ├─ create
 │  └─ chain
 ├─ kill
-│  └─ all
 ├─ term
 │  ├─ inject
 │  └─ debug
@@ -86,7 +100,7 @@ agentx
 │     ├─ stop
 │     └─ restart
 ├─ run
-│  └─ docs
+├─ docs
 └─ update
 
 Help controls (before --):
@@ -108,30 +122,47 @@ Native tool arguments belong after --. Native tool help and internal hooks are o
 === agentx ===
 agentx (hook-comms) v0.7.31 - multi-agent communication
 Usage:
-  agentx                                  TUI dashboard
+  agentx                                  TUI dashboard (all workspaces)
+  agentx --dir PATH                        Dashboard for the enclosing workspace
+    --workspace PATH|global                Select an exact workspace or global members
+    --label CONDITION                      Filter current local Agents (repeatable)
+    --new-terminal                          Open the dashboard in another terminal
   agentx <command>                        Run command
   agentx [command...] --help              Show help for this command
   agentx [command...] --help-all          Expand all help below this command
 Launch:
-  agentx launch [--profile NAME | --tool TOOL] [--count N] [flags] [-- tool-args]
+  agentx launch --go --headless --title "Task title" --bind ".controller/xx/xx.task.md" --agentx-prompt "Assignment"
+  Configured defaults are selected automatically; add --role NAME when needed.
   Tools: claude|gemini|codex|opencode|kilo|pi|omp|hermes|antigravity|cursor|kimi|copilot|qoder|grok
+  agentx recover [@name...]               Continue Agents after model failures
   agentx resume <target>                  Resume stopped agent
   agentx fork <target>                    Fork agent session (claude/codex/opencode/kilo/pi/omp/qoder/grok)
-  agentx kill <name(s)|all>         Kill + close terminal pane
-  Shortcuts: l = launch, r = resume, f = fork, k = kill
+  agentx kill <name(s)|all>               Kill + close terminal pane
+  Shortcuts: l = launch, r = resume, f = fork, k = kill, a = attach
+Directory teams:
+  agentx roles --dir PATH                 Discover reusable roles
+  Add --dir PATH / --role NAME to the launch command above for a team member.
+  agentx list --dir PATH                   Show that team and global members
+  agentx attach --dir PATH                 Choose a local tmux Agent in that team
+  agentx list --all                        Show all teams in this AgentX scope
+  agentx send --dir PATH -- message        Reuse/start the default recipient
+  Setup and examples: agentx roles --help
 Commands:
-  send         Send message to your buddies
+  send         Send to agents or a directory's default recipient
   listen       Block until message or event arrives
-  list         Show agents, status, unread counts
-  events       Query event stream, manage subscriptions
+  list         Show current team, global agents, status and unread counts
+  bindings     Read file-owned Task/Delivery assignments and status
+  events       Query events, manage subscriptions and schedule reminders
   bundle       Structured context packages for handoffs
   transcript   Read another agent's conversation
   start        Connect to agentx (run inside any AI tool)
   stop         Disconnect from agentx
   profile      Manage reusable launch configurations
+  roles        Discover directory-scoped role definitions
   config       Get/set global and per-agent settings
   attach       Attach to a running agent's tmux terminal
   run          Execute workflow scripts
+  docs         Read the CLI, config and workflow authoring references
   relay        Cross-device sync + relay daemon
   archive      Query past agentx sessions
   reset        Archive and clear database
@@ -150,13 +181,86 @@ Environment files (before --):
   AGENTX_ENV_FILES                        Comma-separated file list
   agentx config environment --json        Inspect sources/provenance without values
 
+=== agentx labels ===
+Read or atomically patch current Agent labels
+Usage: labels [OPTIONS] <COMMAND>
+Commands:
+  get      Read labels and their opaque revision from the exact current Agent
+  set      Atomically set key=value pairs; all unmentioned keys are preserved
+  remove   Atomically remove named keys; missing keys are a successful no-op
+  receipt  Inspect the durable result of an uncertain patch in this data generation
+  help     Print this message or the help of the given subcommand(s)
+Options:
+      --json  Emit native structured result
+  -h, --help  Print help
+Values are scalar strings. Quote shell characters. On uncertain writes retain request_id and inspect labels receipt before issuing another patch.
+
+=== agentx labels get ===
+Read labels and their opaque revision from the exact current Agent
+Usage: labels get [OPTIONS] <TARGET>
+Arguments:
+  <TARGET>
+Options:
+      --json  Emit native structured result
+  -h, --help  Print help
+
+=== agentx labels set ===
+Atomically set key=value pairs; all unmentioned keys are preserved
+Usage: labels set [OPTIONS] <TARGET> <VALUES>...
+Arguments:
+  <TARGET>
+  <VALUES>...
+Options:
+      --if-revision <IF_REVISION>
+      --request-id <REQUEST_ID>  Stable UUID retained for reconciliation; omitted creates a fresh ID
+      --json  Emit native structured result
+  -h, --help  Print help
+
+=== agentx labels remove ===
+Atomically remove named keys; missing keys are a successful no-op
+Usage: labels remove [OPTIONS] <TARGET> <KEYS>...
+Arguments:
+  <TARGET>
+  <KEYS>...
+Options:
+      --if-revision <IF_REVISION>
+      --request-id <REQUEST_ID>
+      --json  Emit native structured result
+  -h, --help  Print help
+
+=== agentx labels receipt ===
+Inspect the durable result of an uncertain patch in this data generation
+Usage: labels receipt [OPTIONS] <REQUEST_ID>
+Arguments:
+  <REQUEST_ID>
+Options:
+      --json  Emit native structured result
+  -h, --help  Print help
+
+=== agentx bindings ===
+Read file-owned Task/Delivery assignments and status (JSON)
+Usage: agentx bindings [OPTIONS]
+Options:
+      --project <PROJECT>  Bounded project .controller root; defaults to nearest project from caller cwd
+      --file <PATHS>  Explicit file to observe, relative to caller cwd; repeatable, including outside .controller
+      --refresh  Rediscover and reread, including current errors and last successful snapshots
+      --agent <AGENT>  Filter by this current Agent's exact participant, scope and data generation
+      --scope <SCOPE>  Explicit local data scope; defaults to the normal AGENTX_DIR selection
+  -h, --help  Print help
+
 === agentx attach ===
 Attach to a running Agent's tmux terminal
-Usage: attach <TARGET>
+Usage: attach [OPTIONS] [TARGET]
 Arguments:
-  <TARGET>  Current Agent name (optionally prefixed with @)
+  [TARGET]  Exact Agent name; omit to choose a local tmux Agent in your workspace
 Options:
+      --dir <PATH>  Discover the workspace containing this directory
+      --workspace <PATH|global>  Select an exact workspace directory, or global
+      --label <CONDITION>  Filter current local Agents by key=value, key!=value, key or !key; repeat to AND conditions
+      --all  Choose a terminal from all workspaces in this AgentX scope
   -h, --help  Print help
+Example: agentx attach --dir .
+Shortcut: agentx a [target].
 Detach with Ctrl+B then D (tmux's default binding); the Agent keeps running.
 
 === agentx profile ===
@@ -230,20 +334,110 @@ Options:
       --json
   -h, --help  Print help
 
+=== agentx roles ===
+Inspect role definitions or reset a retired workspace endpoint
+Usage: agentx roles [OPTIONS] [COMMAND]
+Commands:
+  show            Inspect one resolved role, including its literal prompt
+  reset-endpoint  Clear the selected workspace's endpoint binding after exact retirement
+  help            Print this message or the help of the given subcommand(s)
+Options:
+      --dir <PATH>  Discover the workspace containing this directory
+      --workspace <PATH|global>  Select an exact workspace, or the global context
+      --all  Include auxiliary roles and shadowed ancestor/global definitions
+      --json  Emit workspace and role metadata as JSON
+      --iam <NAME>  Inspect discovery as this existing Agent; normally identity is automatic
+  -h, --help  Print help
+Role files:
+  Published: <workspace>/.agent-guides/roles/NAME.md or OWNER.HELPER.md
+  Overrides: <workspace>/.agentx/roles/NAME.toml
+  Global: $AGENTX_DIR/roles/NAME.toml (default: ~/.agentx/roles/NAME.toml)
+  Markdown requires YAML frontmatter schema: role; optional role must match the filename.
+  Only immediate role files are discovered; reference Markdown without schema: role is ignored.
+  Short names resolve the selected workspace, parents, then global.
+  Workspace: explicit --workspace > explicit --dir project > AGENTX_WORKSPACE > cwd project > ~/.agentx.
+  Project discovery searches nearest Git root (.git directory or worktree file), then .agentx/,
+  then the existing .agent-guides/roles boundary. A target without a root continues to inheritance.
+  Bound Agents inherit persisted membership; environment values only carry the default to children.
+  --dir sets cwd; omitted --dir preserves caller cwd, independently of workspace selection.
+  Within one workspace, TOML overrides Markdown; a nearer Markdown beats a farther TOML.
+  local:NAME selects only the current workspace; global:NAME selects global TOML definitions.
+  OWNER.HELPER is auxiliary; default discovery shows public roles plus your adopted owner's helpers
+  from the same logical workspace, including mixed Markdown/TOML sources. --all shows shadowed
+  roles and all helpers. Explicit show/launch is unrestricted. Disabled names never fall through.
+  Identity discovery probes an existing daemon only; unavailable implicit identity shows public roles.
+Setup:
+  Install role Markdown into .agent-guides/roles/; no wrapper is required for ordinary roles.
+  agentx profile create team-codex --tool codex
+  agentx profile default team-codex
+  agentx launch --role coder
+  Optional .agentx/roles/coder.toml: profile = "team-codex"
+  Optional .agentx/roles/controller.toml: default = true
+  Thin TOML inherits only the same-workspace Markdown prompt and description.
+  Explicit prompt or prompt_file replaces the Markdown prompt; use at most one.
+  Without matching Markdown, one prompt field is required. prompt_file is relative to TOML.
+  File prompts retain their absolute source path and unchanged body, with parent-relative references.
+  Omitted profile uses ordinary launch defaults; --profile overrides the role's explicit profile.
+  Listing/show needs no default profile; role launches require a concrete named profile.
+  default = true chooses a directory recipient, independently of the default launch profile.
+  At most one default per namespace; auxiliaries cannot be default recipients.
+  To suppress a role including ancestor/global fallback: NAME.toml containing only disabled = true.
+Examples:
+  agentx roles --dir /path/project
+  agentx roles show controller --dir /path/project --json
+  agentx launch --dir /path/project --role controller --headless --go
+  agentx launch --workspace /path/project --role global:reviewer --headless --go
+  agentx list --dir /path/project
+  agentx list --all
+  agentx send --dir /path/project --dry-run
+  agentx send --dir /path/project --intent request -- "Handle this task"
+Each launch creates a new member. Directory send reuses or starts one default recipient;
+parent fallback uses the parent's endpoint and preserves the originally requested directory.
+Role/profile/instruction snapshots survive resume and fork; editing files affects new agents.
+Role/workspace launches are local; shared Codex app-server stdio is unsupported.
+More reference: agentx docs --cli
+
+=== agentx roles show ===
+Inspect one resolved role, including its literal prompt
+Usage: agentx roles show [OPTIONS] <NAME>
+Arguments:
+  <NAME>
+Options:
+      --dir <PATH>  Discover the workspace containing this directory
+      --workspace <PATH|global>  Select an exact workspace, or the global context
+      --all  Include auxiliary roles and shadowed ancestor/global definitions
+      --json  Emit workspace and role metadata as JSON
+      --iam <NAME>  Inspect discovery as this existing Agent; normally identity is automatic
+  -h, --help  Print help
+
+=== agentx roles reset-endpoint ===
+Clear the selected workspace's endpoint binding so its default role can be changed. The daemon rejects live or uncertain recipients. This operation connects to the daemon; show stays local and list only probes an existing daemon.
+Usage: agentx roles reset-endpoint [OPTIONS]
+Options:
+      --dir <PATH>  Discover the workspace containing this directory
+      --workspace <PATH|global>  Select an exact workspace, or the global context
+      --all  Include auxiliary roles and shadowed ancestor/global definitions
+      --json  Emit workspace and role metadata as JSON
+      --iam <NAME>  Inspect discovery as this existing Agent; normally identity is automatic
+  -h, --help  Print help (see a summary with '-h')
+
 === agentx launch ===
 Launch one or more agents
 Usage: agentx launch [OPTIONS] [-- <NATIVE_ARGS>...]
 Arguments:
   [NATIVE_ARGS]...  Arguments passed verbatim to the native tool, after --
 Options:
-      --tool <TOOL>  CLI tool to launch (see the supported tools below)
-      --profile <PROFILE>  Saved launch profile; overrides AGENTX_PROFILE
+      --tool [<TOOL>]  CLI tool to launch; omit its value to select in a local terminal
+      --profile [<PROFILE>]  Saved launch profile; omit its value to select in a local terminal
       --no-profile  Ignore profiles and configured tool args; requires --tool
       --replace-args  Replace all inherited native args, including with an empty list
       --dry-run  Inspect the resolved configuration without creating an agent
       --count <COUNT>  Number of agents to launch; must be positive
           [default: 1]
-      --terminal <TERMINAL>  Terminal for new windows, or pty/tmux with --headless; overrides that mode's config
+      --label <LABELS>  Initial scalar label key=value; repeat for different keys (fresh launch only)
+      --bind <BINDINGS>  Bind a Task/Delivery file and include it in the initial message where supported; repeatable, relative to caller cwd
+      --title <TITLE>  Brief individual responsibility (1–160 characters, single line)
+      --terminal <TERMINAL>  Terminal host override; tmux creates a managed session and attaches unless detached
       --device <DEVICE>  Launch on a remote relay device
       --headless  Run in the configured background host (pty or tmux)
       --stdio  Codex only: one local foreground connection on standard streams
@@ -251,14 +445,26 @@ Options:
       --agentx-prompt <INITIAL_PROMPT>  Initial user prompt
       --batch-id <BATCH_ID>  Explicit launch batch identifier
       --dir <DIR>  Working directory for the agent
+      --role [<ROLE>]  Adopt a role; omit its value to select in a local terminal
+      --workspace <WORKSPACE>  Stable workspace membership; `global` selects no workspace
       --json  `--json`: report the outcome as one JSON object on stdout
       --run-here  Run in the invoking terminal
-      --no-run-here  Open elsewhere rather than taking over the invoking terminal
+      --no-run-here  Open elsewhere; with tmux, create a detached session
       --iam <IAM>  Existing caller identity (not the new agent's name)
       --go  Skip launch preview
   -h, --help  Print help
+Routine task delegation:
+  agentx launch --go --headless --title "Task title" --bind ".controller/xx/xx.task.md" --agentx-prompt "Assignment"
+Run directly with configured defaults; if launch fails, follow its diagnostic to recover.
+Add --role NAME when needed. Role discovery/setup: agentx roles / agentx roles --help.
+Omit the value of --role, --profile or --tool to select in a local terminal.
+Use --count N for multiple agents, --dir PATH for cwd, or --workspace PATH|global for membership.
+Workspace defaults: explicit --workspace > --dir project > AGENTX_WORKSPACE > cwd project > ~/.agentx.
+Project discovery prefers the nearest Git/worktree root, then a project .agentx/ boundary.
+Without --dir, cwd stays at the caller's current directory; workspace does not move it.
 Put all native tool arguments after --.
-Example: agentx launch --tool codex --count 2 -- --model MODEL
+Each launch creates a new member; agentx send --dir PATH reuses or starts its default recipient.
+Role/workspace launches are local; shared Codex app-server stdio is unsupported.
 Environment options (before --):
   --env-file PATH (repeatable)
   --env-override / --no-env-override
@@ -267,6 +473,7 @@ Supported tools: claude, gemini, codex, opencode, kilo, kilocode, pi, pi-agent, 
 === agentx resume ===
 Usage:
   agentx resume <target> [flags] [-- tool-args...]    Resume a stopped agent
+Omit <target> in a terminal to select an eligible session.
 <target> can be:
   <name>                            agentx name (e.g. luna)
   <uuid>                            claude/codex/gemini session UUID
@@ -277,13 +484,13 @@ Adopting by UUID or thread-name reclaims the original agentx
 identity if one existed; otherwise a new identity is assigned.
 CWD is recovered from the session's transcript/DB.
 Flags (parsed before tool args; pass `--` to stop parsing):
-  --terminal <preset>               Override window terminal, or pty/tmux with --headless
+  --terminal <preset>               Override terminal; tmux attaches unless headless/no-run-here
   --device <device>                 Run on a remote device via relay
   --dir <path>                      Working directory
   --env-file <path>                 Load dotenv data (repeat for ordered files)
   --env-override / --no-env-overrideReplace / preserve inherited environment values
   --headless                        Run in background
-  --run-here / --no-run-here        Use / leave the invoking terminal
+  --run-here / --no-run-here        Use current terminal / open elsewhere (tmux: detach)
   --agentx-prompt <text>            Initial prompt
   --agentx-system-prompt <text>     System prompt
   --json                            Print the result as one JSON object
@@ -292,9 +499,25 @@ Native tool arguments must follow --; unknown AgentX options are errors.
 See also:
   agentx f <target>                   Fork an agent session (claude/codex/opencode/kilo/pi/omp/qoder/grok)
 
+=== agentx recover ===
+Continue live Agents stalled by model request errors
+Usage: recover [OPTIONS] [@NAME]...
+Arguments:
+  [@NAME]...  Exact local Agent names, optionally prefixed with @
+Options:
+      --all  Queue continuation for all eligible local Agents in this AgentX scope
+      --dir <PATH>  Discover the workspace containing this directory
+      --workspace <PATH|global>  Select an exact workspace directory, or global
+      --label <CONDITION>  Filter current local Agents by key=value, key!=value, key or !key; repeat to AND conditions
+      --json  Print an array of per-Agent results; requires names or --all
+  -h, --help  Print help
+Example: agentx recover --dir . --label project=atlas
+Without names or --all, choose and confirm eligible Agents interactively. --all submits across workspaces; it cannot be combined with a directory or workspace filter. A queued request is not confirmation of recovery.
+
 === agentx fork ===
 Usage:
   agentx fork <target> [flags] [-- tool-args...]    Fork an agent session (active or stopped)
+Omit <target> in a terminal to select an eligible session.
 <target> can be:
   <name>                            agentx name (e.g. luna)
   <uuid>                            claude/codex/gemini session UUID
@@ -305,13 +528,13 @@ Creates a new agent that continues from the forked session.
 Supported tools: claude, codex, opencode, kilo, pi, omp, qoder, grok.
 Remote fork (`:<device>`) requires --dir to pin the target cwd.
 Flags (parsed before tool args; pass `--` to stop parsing):
-  --terminal <preset>               Override window terminal, or pty/tmux with --headless
+  --terminal <preset>               Override terminal; tmux attaches unless headless/no-run-here
   --device <device>                 Run on a remote device via relay
   --dir <path>                      Working directory
   --env-file <path>                 Load dotenv data (repeat for ordered files)
   --env-override / --no-env-overrideReplace / preserve inherited environment values
   --headless                        Run in background
-  --run-here / --no-run-here        Use / leave the invoking terminal
+  --run-here / --no-run-here        Use current terminal / open elsewhere (tmux: detach)
   --agentx-prompt <text>            Initial prompt
   --agentx-system-prompt <text>     System prompt
   --json                            Print the result as one JSON object
@@ -324,12 +547,26 @@ See also:
 Usage:
   agentx send @name -- message text  Direct message
   agentx send @name1 @name2 -- message  Multiple targets
+  agentx send --dir PATH -- message  Reuse/start the directory's default role recipient
+  agentx send --workspace PATH -- message  Address an exact workspace's default recipient
+  agentx send --dir PATH --dry-run  Inspect default routing without launch or message
   agentx send -- message text     Broadcast to all
   agentx send @name               Message from stdin (pipe or heredoc)
   agentx send @name --file <path>  Message from file
   agentx send @name --base64 <encoded>  Message from base64 string
+  agentx send --receipt REQUEST_ID [--json]  Read the original send receipt by ID without resending
+  agentx send --delivery-status ID [--json]  Read accepted-message delivery facts without resending or draining mail
   Everything after -- is the message (no quotes needed).
   All flags must come before --.
+Directory routing:
+    --dir PATH                     Discover the target workspace from PATH
+    --workspace PATH|global        Select an exact workspace or the global default
+    Without @recipients, reuse/start one default = true role recipient.
+    Search the selected workspace, then parents, then shared roles; no default is an error.
+    Parent fallback uses the parent's endpoint and retains the originally requested directory.
+    Concurrent first sends share one endpoint; startup-pending messages enter its durable mailbox.
+    With @recipients, check their workspace instead; never create a replacement.
+    Setup and examples: agentx roles --help
 Target matching:
     @luna                          exact base name
     @luna:BOXE                     exact or uniquely prefixed remote agent
@@ -347,8 +584,9 @@ Sender:
     -b                             Shorthand for --from bigboss
     --iam <name>                   Caller identity (default: injected process/session binding)
 Output:
-    --json                         JSON receipt; leaves mail unread
+    --json                         Acceptance receipt plus current delivery observation; leaves mail unread
     --quiet                        No output; leaves mail unread
+    Acceptance, mailbox confirmation and model execution are separate facts.
 Inline bundle (attach structured context):
     --title <text>                 Create and attach bundle inline
     --description <text>           Bundle description (required with --title)
@@ -360,6 +598,7 @@ Inline bundle (attach structured context):
 Examples:
     agentx send @luna -- Hello there!
     agentx send @luna @nova --intent request -- Can you help?
+    agentx send --dir /path/project --intent request -- Handle this task
     agentx send -- Broadcast message to everyone
     echo 'Complex message' | agentx send @luna
     agentx send @luna <<'EOF'
@@ -368,16 +607,20 @@ Examples:
 
 === agentx list ===
 Usage:
-  agentx list                     All alive agents, read receipts
+  agentx labels                   Read and atomically patch Agent labels
+  agentx list                     Current workspace and global agents, read receipts
+    --dir PATH                     Discover the workspace containing PATH
+    --workspace PATH|global        Select an exact workspace or global members
+    --all                          All workspaces in this AgentX scope
     -v                             Verbose (directory, session, etc)
-    --json                         JSON array of all agents
+    --json                         JSON array of selected agents
     --names                        Just names, one per line
     --format TPL                   Template per agent: --format '{name} {status}'
     Fields: name, status, status_context, status_detail,
     status_age_seconds, description, unread_count, tool, directory,
     session_id, parent_name, agent_id, headless, created_at,
     hooks_bound, process_bound, transcript_path, background_log_file,
-    launch_context
+    launch_context, workspace, role
   agentx list [self|<name>]       Single agent details, including recorded session usage
     [field]                        Print specific field (status, directory, session_id, usage, ...)
     --json                         Output as JSON
@@ -446,10 +689,19 @@ Subscribe (next matching event arrives as a message from [agentx-events]):
     --on-hit <text>                Also send this message each time it fires (@mentions ok)
     --as <name> / -b               Own the sub without an agent identity, e.g. from a shell (-b = bigboss)
     --device ID                    Install/list on a remote device (create requires --for, --as, or -b)
-  agentx events sub list          List active subscriptions
-    --device ID                    List subscriptions on a remote device
-  agentx events unsub <id>        Remove a subscription
-    --device ID                    Remove it from a remote device
+One-time reminder:
+  agentx events sub --in DURATION --message TEXT  Schedule one local reminder; no event filters
+    --in DURATION                  Delay from 1s to 365d (s, m, h, d); requires a current Agent caller
+    --message TEXT                 Message to enqueue when due
+    --for NAME                     Select another local Agent; defaults to the current Agent
+      agentx events sub --in 10m --message 'Check the GitHub build status'
+  Use events sub show REMINDER_ID to check the outcome and events unsub REMINDER_ID to cancel a pending reminder.
+  agentx events sub list          List active subscriptions and pending local reminders
+    --history                      Include enqueued, failed and canceled local reminders
+    --device ID                    List event subscriptions on a remote device
+  agentx events sub show REMINDER_ID  Show a local reminder and its outcome as JSON
+  agentx events unsub <id>        Remove an event subscription or cancel a pending local reminder
+    --device ID                    Remove an event subscription from a remote device
 Examples:
     agentx events --cmd git --agent peso
     agentx events sub --idle peso  Notified when peso goes idle
@@ -482,8 +734,17 @@ Subscribe (next matching event arrives as a message from [agentx-events]):
     --on-hit <text>                Also send this message each time it fires (@mentions ok)
     --as <name> / -b               Own the sub without an agent identity, e.g. from a shell (-b = bigboss)
     --device ID                    Install/list on a remote device (create requires --for, --as, or -b)
-  agentx events sub list          List active subscriptions
-    --device ID                    List subscriptions on a remote device
+One-time reminder:
+  agentx events sub --in DURATION --message TEXT  Schedule one local reminder; no event filters
+    --in DURATION                  Delay from 1s to 365d (s, m, h, d); requires a current Agent caller
+    --message TEXT                 Message to enqueue when due
+    --for NAME                     Select another local Agent; defaults to the current Agent
+      agentx events sub --in 10m --message 'Check the GitHub build status'
+  Use events sub show REMINDER_ID to check the outcome and events unsub REMINDER_ID to cancel a pending reminder.
+  agentx events sub list          List active subscriptions and pending local reminders
+    --history                      Include enqueued, failed and canceled local reminders
+    --device ID                    List event subscriptions on a remote device
+  agentx events sub show REMINDER_ID  Show a local reminder and its outcome as JSON
 Filters (same flag repeated = OR, different flags = AND):
     --agent NAME                   Agent name
     --type TYPE                    message | status | life
@@ -510,12 +771,16 @@ Examples:
   SQL columns: agentx events --help
 
 === agentx events sub list ===
-  agentx events sub list          List active subscriptions
-    --device ID                    List subscriptions on a remote device
+  agentx events sub list          List active subscriptions and pending local reminders
+    --history                      Include enqueued, failed and canceled local reminders
+    --device ID                    List event subscriptions on a remote device
+
+=== agentx events sub show ===
+  agentx events sub show REMINDER_ID  Show a local reminder and its outcome as JSON
 
 === agentx events unsub ===
-  agentx events unsub <id>        Remove a subscription
-    --device ID                    Remove it from a remote device
+  agentx events unsub <id>        Remove an event subscription or cancel a pending local reminder
+    --device ID                    Remove an event subscription from a remote device
 
 === agentx stop ===
 Usage:
@@ -566,14 +831,48 @@ Usage:
 Inspect or explicitly restart the selected native daemon
 Usage: agentx daemon <COMMAND>
 Commands:
+  cloud    Serve the HTTPS-proxied cloud deployment and scope communication API
+  connect  Enroll the selected local scope daemon into a cloud namespace
+  web      Enable the daemon's embedded Agent management API and print its URL
   status   Read state and compatibility without starting a daemon or resolving identity
   restart  Gracefully stop the verified scope owner and acquire this executable
   help     Print this message or the help of the given subcommand(s)
 Options:
   -h, --help  Print help
 Scope: --scope overrides AGENTX_DIR; otherwise the normal home scope is used.
-Ordinary commands auto-start a missing daemon. Restart preserves managed data.
+Ordinary commands auto-start a missing daemon. Restart preserves managed data. After the one-time IPC upgrade, reopen Agents still running older hosts.
 See .docs/architecture/daemon.md for recovery and platform limits.
+
+=== agentx daemon cloud ===
+Serve the HTTPS-proxied cloud deployment and scope communication API
+Usage: agentx daemon cloud [OPTIONS] --root <ROOT> --public-url <PUBLIC_URL>
+Options:
+      --root <ROOT>  Private persistent deployment directory
+      --listen <LISTEN>  [default: 127.0.0.1:18755]
+      --public-url <PUBLIC_URL>  Public HTTPS origin advertised in connection receipts
+  -h, --help  Print help
+
+=== agentx daemon connect ===
+Enroll the selected local scope daemon into a cloud namespace
+Usage: agentx daemon connect [OPTIONS] --namespace-url <NAMESPACE_URL> --token-file <TOKEN_FILE>
+Options:
+      --scope <SCOPE>
+      --configure-only  Save configuration only; let a service manager start or restart the daemon
+      --namespace-url <NAMESPACE_URL>  HTTPS namespace URL, including /namespaces/ID
+      --token-file <TOKEN_FILE>  File containing the namespace token
+      --host <HOST>
+      --project-root <PROJECT_ROOTS>  Exposed project root alias=path; defaults to default=current directory
+  -h, --help  Print help
+
+=== agentx daemon web ===
+Enable the daemon's embedded Agent management API and print its URL
+Usage: agentx daemon web [OPTIONS]
+Options:
+      --scope <SCOPE>
+      --project <PROJECT>  Default working directory for Agents launched from the Web
+      --host <HOST>
+      --port <PORT>
+  -h, --help  Print help
 
 === agentx daemon status ===
 Read state and compatibility without starting a daemon or resolving identity
@@ -594,6 +893,7 @@ Read existing AgentX diagnostic evidence
 Usage: agentx observe [OPTIONS] [COMMAND]
 Commands:
   inspect         Read the existing daemon's runtime/process snapshot
+  trace           List retained hook traces, or join one trace with daemon request timing
   request         Read one exact native RequestObservationRef from a local JSON file
   config          Read one exact retained ConfigSnapshotRef from a local JSON file
   config-current  Explicitly reevaluate this invocation's scoped settings locally
@@ -613,6 +913,19 @@ Usage: agentx observe inspect [OPTIONS]
 Options:
       --scope <PATH>  Existing data scope; default: originating AGENTX_DIR / home resolver
       --json  Emit one JSON value; events --follow emits newline-delimited values
+  -h, --help  Print help
+
+=== agentx observe trace ===
+List retained hook traces, or join one trace with daemon request timing
+Usage: agentx observe trace [OPTIONS] [ID]
+Arguments:
+  [ID]  Invocation UUID from the trace list or a diagnostic log
+Options:
+      --local  Read the log without contacting any daemon
+      --scope <PATH>  Existing data scope; default: originating AGENTX_DIR / home resolver
+      --json  Emit one JSON value; events --follow emits newline-delimited values
+      --limit <LIMIT>  Maximum retained entries in each source, 1..32
+          [default: 16]
   -h, --help  Print help
 
 === agentx observe request ===
@@ -814,6 +1127,8 @@ Keys:
     tmux_socket / tmux_config      Scoped tmux socket and optional native config file paths
     hints                          Text appended to all messages agent receives
     notes                          Notes appended to agent bootstrap
+    instruction_sources            Frozen instruction sources as JSON; [] disables
+    context_sources                Ordered dynamic context sources as JSON; [] disables
     bootstrap_exclude              Bootstrap parts to leave out (see config bootstrap show)
     subagent_timeout               Subagent keep-alive seconds after task
     claude_args / gemini_args / codex_args / opencode_args / kilo_args / pi_args / omp_args / cursor_args / kimi_args / copilot_args / qoder_args / grok_args / hermes_args  Default launch args per tool
@@ -1068,15 +1383,19 @@ JSON format:
     --json                         Output JSON
 
 === agentx kill ===
-Usage:
-  agentx kill <name>...           Kill one or more processes (+ close terminal panes)
-  agentx kill all                 Kill all with tracked PIDs
-    --json                         Print every outcome as one JSON object
-
-=== agentx kill all ===
-Usage:
-  agentx kill all                 Kill all with tracked PIDs
-    --json                         Print every outcome as one JSON object
+Kill Agent processes
+Usage: kill [OPTIONS] [TARGETS]...
+Arguments:
+  [TARGETS]...  Names, PIDs or "all"; omit to select local tracked processes
+Options:
+      --dir <PATH>  Discover the workspace containing this directory
+      --workspace <PATH|global>  Select an exact workspace directory, or global
+      --label <CONDITION>  Filter current local Agents by key=value, key!=value, key or !key; repeat to AND conditions
+      --json  Print one JSON object describing every outcome
+  -h, --help  Print help
+Examples: agentx kill @NAME | agentx kill PID | agentx kill all
+Filter the interactive picker: agentx kill --dir . --label project=atlas
+The picker requires selection and confirmation. Filters cannot be combined with explicit targets.
 
 === agentx term ===
 Usage:
@@ -1193,24 +1512,19 @@ Usage:
 
 === agentx run ===
 Usage:
-  agentx run                      List available workflow/launch scripts and more info
-  agentx run <name> [args]        Execute script
+  agentx run                      List available workflow scripts
+  agentx run <name> [args]        Execute a workflow script
   agentx run <name> --help        Script options
-  agentx run docs                 CLI reference + config + script creation guide
-  Docs sections:
-    agentx run docs --cli          CLI reference only
-    agentx run docs --config       Config settings only
-    agentx run docs --scripts      Script creation guide
+  Workflow authoring guide: agentx docs --scripts
   User scripts: ~/.agentx/scripts/
 
-=== agentx run docs ===
+=== agentx docs ===
 Usage:
-  agentx run docs                 CLI reference + config + script creation guide
-  Docs sections:
-    agentx run docs --cli          CLI reference only
-    agentx run docs --config       Config settings only
-    agentx run docs --scripts      Script creation guide
-  User scripts: ~/.agentx/scripts/
+  agentx docs                     Read shipped reference documentation
+    --cli                          Show the CLI reference
+    --config                       Show the configuration reference
+    --scripts                      Show the workflow authoring guide
+  Combine flags to select multiple sections. With no flags, show all sections.
 
 === agentx update ===
 Usage:

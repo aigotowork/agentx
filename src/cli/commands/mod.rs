@@ -33,6 +33,7 @@ pub mod transcript;
 // Management
 pub mod archive;
 pub mod config;
+pub(crate) mod docs;
 pub mod help;
 pub mod hooks;
 pub mod relay;

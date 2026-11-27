@@ -58,7 +58,7 @@ Each launch creates a new member. Directory send reuses or starts one default re
 parent fallback uses the parent's endpoint and preserves the originally requested directory.
 Role/profile/instruction snapshots survive resume and fork; editing files affects new agents.
 Role/workspace launches are local; shared Codex app-server stdio is unsupported.
-More reference: agentx run docs --cli"#
+More reference: agentx docs --cli"#
 )]
 struct Arguments {
     #[arg(long, global = true, value_name = "PATH")]

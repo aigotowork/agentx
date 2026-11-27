@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.7.36]
+
+- Use `agentx docs` for the CLI reference, configuration guide and workflow authoring documentation. Use `agentx events sub --help` for one-time reminder examples and outcome checks.
+- Includes the Codex recovery and Unix daemon socket fixes from 0.7.35.
+
 ## [0.7.35]
 
 - Recover a live Codex Agent whose failed turn ended without a Stop hook. Recovery checks the latest completed turn in the same session before offering or submitting a continuation.

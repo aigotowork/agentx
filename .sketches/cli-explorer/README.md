@@ -30,6 +30,6 @@
 
 ## 来源与已知差异
 
-依据当前工作区源码及 `target/debug/agentx --help-all`，2026-11-14；帮助快照已从包含 `--iam` 调用者参数及 `start --name` 注册参数的开发构建刷新。实际命令来自 [路由](../../src/cli/router.rs)、[Work CLI](../../src/cli/commands/work.rs)、[工作领域契约](../../src/collaboration/service.rs)、[资格规则](../../src/collaboration/model.rs)、[Workbench 启动](../../src/collaboration/web/mod.rs)、[Observe 参数](../../src/cli/commands/observe/args.rs)；使用含义参考 [协作 Native](../../.docs/collaboration-workbench/native.md)、[诊断 CLI](../../.docs/observability/cli.md)、[Profile](../../.docs/launch-profiles.md)、[Daemon](../../.docs/architecture/daemon.md)。发布/跨平台支持由这些文件链接的验收记录拥有。
+帮助快照于 2026-11-25 用当前开发构建的 `target/debug/agentx --help-all` 刷新，包含独立的 `docs` 和一次性提醒指引。实际命令来自 [路由](../../src/cli/router.rs)、[Work CLI](../../src/cli/commands/work.rs)、[工作领域契约](../../src/collaboration/service.rs)、[资格规则](../../src/collaboration/model.rs)、[Workbench 启动](../../src/collaboration/web/mod.rs)、[Observe 参数](../../src/cli/commands/observe/args.rs)；使用含义参考 [协作 Native](../../.docs/collaboration-workbench/native.md)、[诊断 CLI](../../.docs/observability/cli.md)、[Profile](../../.docs/launch-profiles.md)、[Daemon](../../.docs/architecture/daemon.md)。发布/跨平台支持由这些文件链接的验收记录拥有。
 
 历史检查发现：同为 `0.7.31`，当时 `.bin/agentx` 的完整帮助没有 `profile`，开发构建有；该历史观察不代表后续重新打包的产物。不能仅靠版本号判断命令可用性，也不将 `.sketches/agentx-cli-panorama.md` 的目标描述作为执行证据。本导览不替换现有程序或运行服务。

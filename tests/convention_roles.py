@@ -65,7 +65,7 @@ def cli_cases(binary, report):
         assert [route["created"] for route in routes] == [True, False]
         help_text = f.run("roles", "--help")
         capabilities = f.run("config", "bootstrap", "show", "capabilities")
-        reference = f.run("run", "docs", "--cli")
+        reference = f.run("docs", "--cli")
         for text in [help_text, capabilities, reference]:
             assert ".agent-guides/roles/" in text and "disabled = true" in text
         assert "[--role NAME] [--profile NAME]" in f.run("--help")

@@ -249,7 +249,7 @@ pub const DEFAULT_DELIVERY: &str = "native";
 const TOML_HEADER: &str = "\
 # agentx configuration
 # Help: agentx config --help
-# Docs: agentx run docs
+# Docs: agentx docs --config
 ";
 
 /// Get value from nested TOML table using dotted path (e.g., "launch.claude.args").

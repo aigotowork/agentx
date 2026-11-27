@@ -139,7 +139,7 @@ mod tests {
             words(&["launch", "--role", "coder", "--profile", "fast", "--tool", "codex"]),
             words(&["launch", "--agentx-prompt", "--role", "--agentx-system-prompt", "--tool"]),
             words(&["resume", "luna", "--role"]),
-            words(&["run", "docs", "--role"]),
+            words(&["run", "example", "--role"]),
             words(&["launch", "--", "--profile"]),
         ] {
             assert_eq!(normalize_args(&input), input);

@@ -81,20 +81,21 @@ If an identity error occurs, follow the CLI recovery instructions. Use `--iam {i
   Filters (same flag=OR, different=AND): --agent NAME | --type message|status|life | --status listening|active|blocked | --cmd PATTERN (contains, ^prefix, =exact) | --file PATH (*.py for glob, file.py for contains)
   Get notified (watch agents, react): events sub [filters] [--once] | --help
   Example: events sub --idle luna → <agentx> msg when luna goes idle
-  To check an external task later (e.g., a GitHub build), set a one-time reminder for yourself: `agentx events sub --in 10m --message 'Check the GitHub build status'`.
+  Before yielding on unfinished external work, set a one-time self-reminder: `agentx events sub --in 10m --message 'Check the GitHub build status'`. Verify the returned ID is pending with `agentx events sub show ID`. When woken, check the result and schedule another bounded check if needed.
 - Handoff context: bundle prepare
 - Spawn agents{handoff_result}
 {role_workspace_guide}
 - Resume: agentx resume <name> | Fork: agentx fork <name> | Kill: agentx kill <name(s)>
 - Run workflows: run <script> [args] [--help]
   {scripts}
+- Read reference docs: docs [--cli] [--config] [--scripts]
 - View agent screen: term [name] | inject text/enter: term inject <name> ['text'] [--enter]
 - Other commands: status (diagnostics), config (set terminal, etc), relay (remote)
 
 Run the documented commands directly. Consult `agentx <command> --help` for options not covered here or when an error requires recovery."#;
 
 // Shared by the full startup guide and native subagent guide. Keep detailed
-// role-file setup in shipped roles help, which run docs/help-all also consume.
+// role-file setup in shipped roles help, which docs/help-all also consume.
 const ROLE_WORKSPACE_GUIDE: &str = r#"
 Routine task delegation:
   Example: `{agentx_cmd} launch --go --headless --title "Implement xxx" --bind ".controller/xx/xx.task.md" --agentx-prompt "Implement xxx."`
@@ -106,7 +107,7 @@ Directory teams and roles:
 - Membership: children inherit your workspace. Each launch creates a new instance.
 - Find agents: `{agentx_cmd} list` shows your team plus global members; `{agentx_cmd} list --dir /path/other` selects another team; `{agentx_cmd} list --all` shows all teams in this AgentX scope.
 - Send to a directory: `{agentx_cmd} send --dir /path/project --intent request -- 'task'` reuses or starts one default-role recipient. It searches the nearest default, then parents and global definitions. Preview without sending: `{agentx_cmd} send --dir /path/project --dry-run`.
-- Role setup, customization and directory defaults: `{agentx_cmd} roles --help`; full reference: `{agentx_cmd} run docs --cli`. Use these for setup or additional options.
+- Role setup, customization and directory defaults: `{agentx_cmd} roles --help`; full reference: `{agentx_cmd} docs --cli`. Use these for setup or additional options.
 "#;
 
 const RULES: &str = r#"## RULES

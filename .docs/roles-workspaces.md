@@ -46,11 +46,11 @@ default = true
 | `agentx --help` | 常用目录协作命令，以及角色配置入口 |
 | `agentx roles --help` | Markdown 发现、可选 TOML、profile 默认、禁用、命名空间和完整使用流程 |
 | `agentx launch --help`、`send --help`、`list --help` | 参数、目录选择、默认负责人路由和相应用例 |
-| `agentx run docs --cli`、`agentx --help-all` | 复用上述命令声明的完整参考，不需要访问仓库文件 |
+| `agentx docs --cli`、`agentx --help-all` | 复用上述命令声明的完整参考，不需要访问仓库文件 |
 | `agentx config bootstrap show capabilities` | 内置启动指引的源文本 |
 | `agentx config bootstrap render NAME TOOL launched` | 当前程序对指定 Agent/Provider 的启动指引预览 |
 
-更新程序后新创建的 Agent 会得到新指引；已有会话的固定指令不会因为更新程序、resume 或 compact 自动改写。让已有 Agent 运行 `agentx run docs --cli` 或 `agentx roles --help` 即可读取当前用法。显式排除了 `capabilities` 或自定义替换了内置指引的配置，继续尊重原有选择。引导内容的实际构建与输出检查见 [guidance Task](../.controller/roles-workspaces/tasks/guidance.md)。
+更新程序后新创建的 Agent 会得到新指引；已有会话的固定指令不会因为更新程序、resume 或 compact 自动改写。让已有 Agent 运行 `agentx docs --cli` 或 `agentx roles --help` 即可读取当前用法。显式排除了 `capabilities` 或自定义替换了内置指引的配置，继续尊重原有选择。引导内容的实际构建与输出检查见 [guidance Task](../.controller/roles-workspaces/tasks/guidance.md)。
 
 ## 定义与使用
 
