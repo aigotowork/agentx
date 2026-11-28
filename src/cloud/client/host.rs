@@ -17,8 +17,10 @@ use anyhow::{Context, Result, bail, ensure};
 use clap::Parser;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
+use crate::cloud::communication::types::{MAX_BODY_BYTES, NATURAL_REPLY_PREFIX, OPERATOR_HOST, OPERATOR_INCARNATION, OPERATOR_NAME};
 use crate::integrations::codex::{
     configuration::thread_overrides,
     mailbox_item_matches,
@@ -31,13 +33,14 @@ use crate::runtime::{
     terminal::which_bin,
 };
 
-use super::mailbox::{Mailbox, Phase};
+use super::mailbox::{Mailbox, NaturalReply, Phase};
 use super::{Actor, CONTEXT_FILE, Credentials, HOST_ENTRY, IPC_CONTEXT, LaunchOrigin, LocalSession, ManagedContext, Mode, OwnedProcess, Scope, ipc, message_text, ownership, port::Port, print_help, print_json, valid_name};
 
 const RPC_TIMEOUT: Duration = Duration::from_secs(6);
 const HEARTBEAT: Duration = Duration::from_secs(12);
 const CLAIM_WAIT_MS: u32 = 1_500;
 const HISTORY_PAGES: usize = 4;
+const REPLY_ATTEMPTS: u8 = 6;
 
 #[derive(Parser)]
 #[command(name = "launch", about = "Launch a local Codex Agent in the configured cloud scope")]
@@ -303,7 +306,7 @@ fn bootstrap(host: &str, name: &str, extra: &str) -> Result<String> {
     let exe = std::env::current_exe()?;
     let exe = shell_words::quote(exe.to_str().context("AgentX executable path is not UTF-8")?);
     Ok(format!(
-        "You are AgentX cloud Agent @{host}/{name}. Your inherited local context selects your exact cloud identity. Cloud messages appear as user input starting with <agentx-cloud>; treat the sender address, message ID, intent and body separately. For a request, do the task and reply to the sender using `{exe} send @HOST/NAME --intent ack --reply-to ID -- 'result'` (use the received sender address and ID). For ordinary messages, use `{exe} send @NAME --intent inform -- 'text'`. Use `{exe} list --json` for registered Agents and `{exe} listen SECONDS` to explicitly wait during a turn. An idle thread is automatically woken by cloud mail; end your turn while waiting for mail. Keep scope credentials private.\n\n{extra}"
+        "You are AgentX cloud Agent @{host}/{name}. Your inherited local context selects your exact cloud identity. Cloud messages appear as user input starting with <agentx-cloud>; treat the sender address, message ID, intent and body separately. For requests from @{OPERATOR_HOST}/{OPERATOR_NAME}, answer with your normal final response; the host delivers it to the operator. For requests from other Agents, do the task and reply to the sender using `{exe} send @HOST/NAME --intent ack --reply-to ID -- 'result'` (use the received sender address and ID). For ordinary messages, use `{exe} send @NAME --intent inform -- 'text'`. Use `{exe} list --json` for registered Agents and `{exe} listen SECONDS` to explicitly wait during a turn. An idle thread is automatically woken by cloud mail; end your turn while waiting for mail. Keep scope credentials private.\n\n{extra}"
     ))
 }
 
@@ -536,7 +539,16 @@ fn pump(scope: &Scope, actor: &Actor, native: &mut Codex) -> Result<()> {
         Phase::ProviderIssuing(id) => {
             let batch = scope.recover(actor, &claim.id)?;
             let message = batch.items.iter().find(|message| &message.id == id).context("provider claim did not contain its outstanding message")?;
-            settle_provider(scope, actor, native, &mailbox, &mut claim, message)?;
+            settle_provider(scope, actor, native, &mailbox, &mut claim, message, None)
+        }
+        Phase::NaturalReplying(reply) => {
+            if Instant::now() < native.retry_reply_at || (reply.body.is_none() && !native.idle && native.completed_turn.as_ref().is_none_or(|(turn, _)| turn != &reply.turn_id)) {
+                return Ok(());
+            }
+            let batch = scope.recover(actor, &claim.id)?;
+            let message = batch.items.iter().find(|message| message.id == reply.message_id).context("natural reply claim did not contain its outstanding message")?;
+            let reply = reply.clone();
+            settle_natural_reply(scope, actor, native, &mailbox, &mut claim, message, reply)
         }
         Phase::Reserved if idle => {
             let batch = scope.claim(actor, &claim.id, CLAIM_WAIT_MS)?;
@@ -544,22 +556,86 @@ fn pump(scope: &Scope, actor: &Actor, native: &mut Codex) -> Result<()> {
             let text = delivery_text(message);
             mailbox.transition(&mut claim, Phase::ProviderIssuing(message.id.clone()))?;
             match native.start_turn(&text, Some(&correlation(&claim.id))) {
-                Ok(()) => settle_provider(scope, actor, native, &mailbox, &mut claim, message)?,
-                Err(error) => return Err(error).with_context(|| format!("Codex acceptance of claim {} is unknown", claim.id)),
+                Ok(turn_id) => settle_provider(scope, actor, native, &mailbox, &mut claim, message, Some(turn_id)),
+                Err(error) => Err(error).with_context(|| format!("Codex acceptance of claim {} is unknown", claim.id)),
             }
         }
-        _ => {}
+        _ => Ok(()),
     }
-    Ok(())
 }
 
-fn settle_provider(scope: &Scope, actor: &Actor, native: &mut Codex, mailbox: &Mailbox, claim: &mut super::mailbox::Claim, message: &super::MessageView) -> Result<()> {
+fn settle_provider(scope: &Scope, actor: &Actor, native: &mut Codex, mailbox: &Mailbox, claim: &mut super::mailbox::Claim, message: &super::MessageView, expected_turn: Option<String>) -> Result<()> {
     // A turn ID only acknowledges the request. Exact native user-input evidence
     // is required before persisting permission to confirm the cloud delivery.
-    ensure!(native.find_input(&correlation(&claim.id), &delivery_text(message))?, "waiting for exact Codex user input for cloud claim {}", claim.id);
+    let turn_id = native.find_input(&correlation(&claim.id), &delivery_text(message))?.with_context(|| format!("waiting for exact Codex user input for cloud claim {}", claim.id))?;
+    ensure!(expected_turn.as_deref().is_none_or(|expected| expected == turn_id), "Codex recorded cloud input on an unexpected turn");
+    if is_operator_message(message) {
+        let reply = NaturalReply { message_id: message.id.clone(), thread_id: native.thread.clone(), turn_id, body: None, failures: 0 };
+        mailbox.transition(claim, Phase::NaturalReplying(reply))?;
+        return Ok(());
+    }
+    confirm_delivery(scope, actor, mailbox, claim, message)
+}
+
+fn confirm_delivery(scope: &Scope, actor: &Actor, mailbox: &Mailbox, claim: &mut super::mailbox::Claim, message: &super::MessageView) -> Result<()> {
     mailbox.transition(claim, Phase::Confirming(message.id.clone()))?;
     mailbox.complete(scope, actor, claim)?;
     Ok(())
+}
+
+fn settle_natural_reply(scope: &Scope, actor: &Actor, native: &mut Codex, mailbox: &Mailbox, claim: &mut super::mailbox::Claim, message: &super::MessageView, mut reply: NaturalReply) -> Result<()> {
+    ensure!(reply.thread_id == native.thread && is_operator_message(message) && message.to == actor.agent && actor.generation == scope.generation, "cloud natural reply binding changed");
+    let result = (|| {
+        if reply.body.is_none() {
+            match native.natural_answer(&reply.turn_id, &correlation(&claim.id), &delivery_text(message))? {
+                NaturalAnswer::Pending => return Ok(false),
+                NaturalAnswer::Skip => return Ok(true),
+                NaturalAnswer::Final(body) => {
+                    reply.body = Some(body);
+                    mailbox.transition(claim, Phase::NaturalReplying(reply.clone()))?;
+                }
+            }
+        }
+        let request_id = natural_reply_id(actor, message, &reply.turn_id);
+        scope.send_natural_reply(actor, request_id, message, reply.body.clone().expect("frozen natural reply body"))?;
+        Ok::<_, anyhow::Error>(true)
+    })();
+    match result {
+        Ok(false) => Ok(()),
+        Ok(true) => confirm_delivery(scope, actor, mailbox, claim, message),
+        Err(error) => {
+            reply.failures += 1;
+            if reply.failures >= REPLY_ATTEMPTS {
+                eprintln!("Cloud natural reply for message {} could not be confirmed: {error:#}", message.id);
+                confirm_delivery(scope, actor, mailbox, claim, message)
+            } else {
+                native.retry_reply_at = Instant::now() + Duration::from_secs(1 << (reply.failures - 1));
+                mailbox.transition(claim, Phase::NaturalReplying(reply))?;
+                Err(error)
+            }
+        }
+    }
+}
+
+fn is_operator_message(message: &super::MessageView) -> bool {
+    message.from.host == OPERATOR_HOST && message.from.name == OPERATOR_NAME && message.from.incarnation == OPERATOR_INCARNATION && message.intent == super::Intent::Request
+}
+
+fn natural_reply_id(actor: &Actor, message: &super::MessageView, turn_id: &str) -> String {
+    let material = format!("{}\0{}\0{}\0{}\0{}\0{}\0{}", actor.generation, actor.agent.host, actor.agent.name, actor.agent.incarnation, message.id, turn_id, message.from.incarnation);
+    let digest = Sha256::digest(material.as_bytes());
+    use std::fmt::Write;
+    let mut id = String::from(NATURAL_REPLY_PREFIX);
+    for byte in digest {
+        write!(id, "{byte:02x}").expect("writing to String cannot fail");
+    }
+    id
+}
+
+enum NaturalAnswer {
+    Pending,
+    Final(String),
+    Skip,
 }
 
 fn correlation(claim: &str) -> String {
@@ -607,6 +683,8 @@ struct Codex {
     conn: Box<dyn NativeConnection>,
     thread: String,
     idle: bool,
+    completed_turn: Option<(String, String)>,
+    retry_reply_at: Instant,
 }
 
 impl Codex {
@@ -643,7 +721,7 @@ impl Codex {
             ensure!(began.elapsed() < RPC_TIMEOUT, "private Codex app-server socket did not become ready");
             std::thread::sleep(Duration::from_millis(50));
         };
-        let mut client = Self { conn, thread: String::new(), idle: false };
+        let mut client = Self { conn, thread: String::new(), idle: false, completed_turn: None, retry_reply_at: Instant::now() };
         client.call("initialize", json!({"clientInfo":{"name":"agentx-cloud-host","version":env!("CARGO_PKG_VERSION")},"capabilities":{"experimentalApi":true}}))?;
         client.send(&json!({"method":"initialized"}))?;
         let mut config = spec.config.clone();
@@ -713,8 +791,9 @@ impl Codex {
         bail!("Codex {method} timed out; outcome may be unknown")
     }
 
-    fn start_turn(&mut self, text: &str, client_id: Option<&str>) -> Result<()> {
+    fn start_turn(&mut self, text: &str, client_id: Option<&str>) -> Result<String> {
         self.idle = false;
+        self.completed_turn = None;
         let mut params = json!({"threadId":self.thread,"input":[{"type":"text","text":text}]});
         if let Some(id) = client_id {
             params["clientUserMessageId"] = json!(id);
@@ -726,11 +805,11 @@ impl Codex {
             self.idle = result["thread"]["status"]["type"] == "idle";
         }
         let result = outcome?;
-        ensure!(result["turn"]["id"].as_str().is_some(), "invalid Codex turn receipt");
-        Ok(())
+        let turn_id = result["turn"]["id"].as_str().context("invalid Codex turn receipt")?.to_owned();
+        Ok(turn_id)
     }
 
-    fn find_input(&mut self, client_id: &str, text: &str) -> Result<bool> {
+    fn find_input(&mut self, client_id: &str, text: &str) -> Result<Option<String>> {
         let deadline = Instant::now() + RPC_TIMEOUT;
         let mut cursor = None::<String>;
         for _ in 0..HISTORY_PAGES {
@@ -740,14 +819,59 @@ impl Codex {
             let result = self.call_until("thread/items/list", json!({"threadId":self.thread,"limit":100,"sortDirection":"desc","cursor":cursor}), deadline)?;
             for row in result["data"].as_array().context("invalid Codex history response")? {
                 if row["item"]["type"] == "userMessage" && mailbox_item_matches(&RawObject::parse(&row["item"].to_string())?, client_id, text) {
-                    return Ok(true);
+                    return Ok(row["turnId"].as_str().map(str::to_owned));
                 }
             }
             let Some(next) = result["nextCursor"].as_str() else { break };
             ensure!(cursor.as_deref() != Some(next), "Codex history cursor did not advance");
             cursor = Some(next.to_owned());
         }
-        Ok(false)
+        Ok(None)
+    }
+
+    /// A terminal event is only a status receipt. Read the exact turn's saved items because
+    /// paginated Codex turns need not include any items in their terminal notifications.
+    fn natural_answer(&mut self, turn_id: &str, client_id: &str, text: &str) -> Result<NaturalAnswer> {
+        let deadline = Instant::now() + RPC_TIMEOUT;
+        let status = if let Some((id, status)) = &self.completed_turn
+            && id == turn_id
+        {
+            status.clone()
+        } else {
+            self.turn_status(turn_id, deadline)?.context("Codex history has no status for the exact operator turn")?
+        };
+        match status.as_str() {
+            "inProgress" => return Ok(NaturalAnswer::Pending),
+            "completed" => {}
+            _ => return Ok(NaturalAnswer::Skip),
+        }
+        let mut cursor = None::<String>;
+        let mut evidence = AnswerEvidence::default();
+        for _ in 0..HISTORY_PAGES {
+            let result = self.call_until("thread/items/list", json!({"threadId":self.thread,"turnId":turn_id,"limit":100,"sortDirection":"asc","cursor":cursor}), deadline)?;
+            for row in result["data"].as_array().context("invalid Codex turn items response")? {
+                ensure!(row["turnId"].as_str() == Some(turn_id), "Codex returned items from a different turn");
+                evidence.observe(&row["item"], client_id, text)?;
+            }
+            let Some(next) = result["nextCursor"].as_str() else { return Ok(evidence.finish()) };
+            ensure!(cursor.as_deref() != Some(next), "Codex turn items cursor did not advance");
+            cursor = Some(next.to_owned());
+        }
+        bail!("Codex operator turn exceeds the history proof limit")
+    }
+
+    fn turn_status(&mut self, turn_id: &str, deadline: Instant) -> Result<Option<String>> {
+        let mut cursor = None::<String>;
+        for _ in 0..HISTORY_PAGES {
+            let result = self.call_until("thread/turns/list", json!({"threadId":self.thread,"itemsView":"notLoaded","limit":25,"sortDirection":"desc","cursor":cursor}), deadline)?;
+            if let Some(turn) = result["data"].as_array().context("invalid Codex thread turns response")?.iter().find(|turn| turn["id"].as_str() == Some(turn_id)) {
+                return Ok(turn["status"].as_str().map(str::to_owned));
+            }
+            let Some(next) = result["nextCursor"].as_str() else { break };
+            ensure!(cursor.as_deref() != Some(next), "Codex turn cursor did not advance");
+            cursor = Some(next.to_owned());
+        }
+        Ok(None)
     }
 
     fn frame(&mut self, timeout: Duration) -> Result<Option<Value>> {
@@ -771,7 +895,14 @@ impl Codex {
             match frame["method"].as_str() {
                 Some("thread/status/changed") => self.idle = params["status"]["type"] == "idle",
                 Some("turn/started") => self.idle = false,
-                Some("turn/completed") => self.idle = true,
+                Some("turn/completed") => {
+                    self.idle = true;
+                    if let Some(turn) = params.get("turn")
+                        && let (Some(id), Some(status)) = (turn["id"].as_str(), turn["status"].as_str())
+                    {
+                        self.completed_turn = Some((id.to_owned(), status.to_owned()));
+                    }
+                }
                 _ => {}
             }
         }
@@ -782,5 +913,152 @@ impl Codex {
             self.send(&json!({"id":id,"error":{"code":-32601,"message":"This connection does not handle interactive requests"}}))?;
         }
         Ok(())
+    }
+}
+
+#[derive(Default)]
+struct AnswerEvidence {
+    user_items: usize,
+    matched_input: bool,
+    answer: Option<String>,
+    legacy_unphased: bool,
+}
+
+impl AnswerEvidence {
+    fn observe(&mut self, item: &Value, client_id: &str, text: &str) -> Result<()> {
+        // Legacy providers may omit phase. An unphased message followed by
+        // tool or other activity is a preamble, not the turn's final answer.
+        if std::mem::take(&mut self.legacy_unphased) {
+            self.answer = None;
+        }
+        match item["type"].as_str() {
+            Some("userMessage") => {
+                self.user_items += 1;
+                self.matched_input = mailbox_item_matches(&RawObject::parse(&item.to_string())?, client_id, text);
+            }
+            Some("agentMessage") if self.matched_input && item["delivery"].is_null() => {
+                // Codex documents missing phase for legacy providers; only completed native
+                // agentMessage items qualify, and the last such response must be visible.
+                let phase = &item["phase"];
+                self.legacy_unphased = phase.is_null();
+                self.answer = if (phase.is_null() || phase == "final_answer") && (item["moderation"].is_null() || item["moderation"]["display"]["mode"] == "show") { item["text"].as_str().and_then(bounded_answer) } else { None };
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    fn finish(self) -> NaturalAnswer {
+        if self.user_items != 1 || !self.matched_input {
+            return NaturalAnswer::Skip;
+        }
+        self.answer.map_or(NaturalAnswer::Skip, NaturalAnswer::Final)
+    }
+}
+
+fn floor_char_boundary(text: &str, mut offset: usize) -> usize {
+    offset = offset.min(text.len());
+    while !text.is_char_boundary(offset) {
+        offset -= 1;
+    }
+    offset
+}
+
+fn bounded_answer(text: &str) -> Option<String> {
+    const TRUNCATED: &str = "\n\n[AgentX truncated this reply]";
+    if text.trim().is_empty() {
+        return None;
+    }
+    let body = if text.len() > MAX_BODY_BYTES { format!("{}{TRUNCATED}", &text[..floor_char_boundary(text, MAX_BODY_BYTES - TRUNCATED.len())]) } else { text.to_owned() };
+    super::validate_message(&body).ok()?;
+    Some(body)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::integrations::codex::service::ConnectionFailure;
+    use std::collections::VecDeque;
+
+    struct History {
+        responses: VecDeque<(&'static str, Value)>,
+        frame: Option<String>,
+    }
+
+    impl NativeConnection for History {
+        fn send(&mut self, frame: &str) -> std::result::Result<(), ConnectionFailure> {
+            let request: Value = serde_json::from_str(frame).unwrap();
+            let (method, result) = self.responses.pop_front().expect("unexpected native request");
+            assert_eq!(request["method"], method);
+            assert_eq!(request["params"]["threadId"], "operator-thread");
+            if method == "thread/items/list" {
+                assert_eq!(request["params"]["turnId"], "operator-turn");
+            }
+            self.frame = Some(json!({"id":request["id"],"result":result}).to_string());
+            Ok(())
+        }
+
+        fn receive(&mut self, _: Duration) -> std::result::Result<Receive, ConnectionFailure> {
+            Ok(self.frame.take().map_or(Receive::TimedOut, Receive::Frame))
+        }
+
+        fn close(&mut self) -> std::result::Result<(), ConnectionFailure> {
+            Ok(())
+        }
+    }
+
+    fn native(responses: Vec<(&'static str, Value)>) -> Codex {
+        Codex { conn: Box::new(History { responses: responses.into(), frame: None }), thread: "operator-thread".into(), idle: true, completed_turn: None, retry_reply_at: Instant::now() }
+    }
+
+    fn user() -> Value {
+        json!({"type":"userMessage","clientId":"original-claim","content":[{"type":"text","text":"operator input"}]})
+    }
+
+    fn terminal(status: &str) -> (&'static str, Value) {
+        ("thread/turns/list", json!({"data":[{"id":"other-turn","status":"completed"},{"id":"operator-turn","status":status}]}))
+    }
+
+    fn items(turn: &str, items: Vec<Value>) -> (&'static str, Value) {
+        ("thread/items/list", json!({"data":items.into_iter().map(|item| json!({"turnId":turn,"item":item})).collect::<Vec<_>>()}))
+    }
+
+    #[test]
+    fn natural_reply_uses_saved_final_text_for_the_exact_completed_turn_after_restart() {
+        let final_item = json!({"type":"agentMessage","phase":"final_answer","text":"Done 雪"});
+        let mut host = native(vec![
+            terminal("completed"),
+            items("operator-turn", vec![user(), json!({"type":"reasoning","text":"private"}), json!({"type":"agentMessage","phase":"commentary","text":"progress"}), json!({"type":"commandExecution","text":"tool output"}), final_item.clone()]),
+        ]);
+        host.observe(&json!({"method":"turn/completed","params":{"threadId":"other-thread","turn":{"id":"operator-turn","status":"failed"}}})).unwrap();
+        assert!(matches!(host.natural_answer("operator-turn", "original-claim", "operator input").unwrap(), NaturalAnswer::Final(answer) if answer == "Done 雪"));
+
+        let mut host = native(vec![terminal("interrupted")]);
+        assert!(matches!(host.natural_answer("operator-turn", "original-claim", "operator input").unwrap(), NaturalAnswer::Skip));
+        let mut host = native(vec![terminal("completed"), items("other-turn", vec![user(), final_item.clone()])]);
+        assert!(host.natural_answer("operator-turn", "original-claim", "operator input").is_err());
+        let mut host = native(vec![terminal("completed"), items("operator-turn", vec![user(), json!({"type":"userMessage","clientId":"different"}), final_item])]);
+        assert!(matches!(host.natural_answer("operator-turn", "original-claim", "operator input").unwrap(), NaturalAnswer::Skip));
+    }
+
+    #[test]
+    fn only_visible_final_text_is_exported_and_long_utf8_stays_sendable() {
+        for item in [
+            json!({"type":"agentMessage","phase":"partial_answer","text":"partial"}),
+            json!({"type":"agentMessage","phase":"final_answer","text":"hidden","moderation":{"display":{"mode":"hide"}}}),
+            json!({"type":"message","role":"assistant","text":"raw provider item"}),
+        ] {
+            let mut evidence = AnswerEvidence::default();
+            evidence.observe(&user(), "original-claim", "operator input").unwrap();
+            evidence.observe(&item, "original-claim", "operator input").unwrap();
+            assert!(matches!(evidence.finish(), NaturalAnswer::Skip));
+        }
+        let answer = bounded_answer(&"雪".repeat(MAX_BODY_BYTES)).unwrap();
+        assert!(answer.len() <= MAX_BODY_BYTES && answer.ends_with("[AgentX truncated this reply]"));
+        let mut evidence = AnswerEvidence::default();
+        evidence.observe(&user(), "original-claim", "operator input").unwrap();
+        evidence.observe(&json!({"type":"agentMessage","text":"legacy preamble"}), "original-claim", "operator input").unwrap();
+        evidence.observe(&json!({"type":"commandExecution","text":"tool ran"}), "original-claim", "operator input").unwrap();
+        assert!(matches!(evidence.finish(), NaturalAnswer::Skip));
     }
 }
