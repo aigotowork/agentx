@@ -14,6 +14,14 @@ const DB_NAME: &str = "communication.sqlite3";
 const MESSAGE_HISTORY_INDEXES: &str = include_str!("store/message-history-indexes.sql");
 const LEASE_SECONDS: i64 = 60;
 const MESSAGE_COLUMNS: &str = "id,from_name,from_host,from_incarnation,to_name,to_host,to_incarnation,body,intent,reply_to,thread,created_at";
+// The reserved host and incarnation cannot pass member registration validation.
+const OPERATOR_HOST: &str = "~space";
+const OPERATOR_NAME: &str = "operator";
+const OPERATOR_INCARNATION: &str = "~human";
+
+fn operator() -> AgentView {
+    AgentView { host: OPERATOR_HOST.into(), name: OPERATOR_NAME.into(), incarnation: OPERATOR_INCARNATION.into() }
+}
 
 #[derive(Debug, thiserror::Error)]
 pub(in crate::cloud) enum Error {
@@ -122,7 +130,11 @@ fn online(last_seen: i64, now: i64) -> bool {
 }
 
 pub(super) fn counts(conn: &Connection, now: i64) -> Result<(u32, u32, u32)> {
-    Ok(conn.query_row("SELECT (SELECT count(*) FROM hosts), (SELECT count(*) FROM hosts WHERE last_seen>?1), (SELECT count(*) FROM agents WHERE retired=0)", [now.saturating_sub(LEASE_SECONDS)], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?)
+    Ok(conn.query_row(
+        "SELECT (SELECT count(*) FROM hosts WHERE name<>?2), (SELECT count(*) FROM hosts WHERE last_seen>?1 AND name<>?2), (SELECT count(*) FROM agents WHERE retired=0)",
+        params![now.saturating_sub(LEASE_SECONDS), OPERATOR_HOST],
+        |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+    )?)
 }
 
 pub(in crate::cloud) fn name(value: &str) -> Result<()> {
@@ -195,8 +207,8 @@ pub(super) fn agents(conn: &Connection, input: AgentQuery) -> Result<AgentPage> 
 }
 
 fn query_hosts(conn: &Connection, now: i64, after: &str, limit: i64) -> rusqlite::Result<Vec<HostView>> {
-    let mut stmt = conn.prepare("SELECT name,last_seen FROM hosts WHERE name>?1 ORDER BY name LIMIT ?2")?;
-    stmt.query_map(params![after, limit], |row| {
+    let mut stmt = conn.prepare("SELECT name,last_seen FROM hosts WHERE name>?1 AND name<>?3 ORDER BY name LIMIT ?2")?;
+    stmt.query_map(params![after, limit, OPERATOR_HOST], |row| {
         let last_seen = row.get(1)?;
         Ok(HostView { name: row.get(0)?, last_seen, online: online(last_seen, now) })
     })?
@@ -278,9 +290,12 @@ pub(in crate::cloud) fn retire_agent(conn: &Connection, now: i64, agent_name: St
     Ok(AgentView { name: agent_name, host: input.host, incarnation: input.incarnation })
 }
 
-fn recipient(conn: &Connection, to: &str) -> Result<AgentView> {
+fn recipient(conn: &Connection, to: &str, reply_to: Option<i64>) -> Result<AgentView> {
     let target = to.strip_prefix('@').ok_or(Error::Invalid("recipient must be @name or @host/name"))?;
     let (host, agent) = if let Some((host, agent)) = target.split_once('/') {
+        if host == OPERATOR_HOST && agent == OPERATOR_NAME {
+            return if reply_to.is_some() { Ok(operator()) } else { Err(Error::Invalid("operator messages require a reply ID")) };
+        }
         host_name(host)?;
         (Some(host), agent)
     } else {
@@ -344,23 +359,81 @@ pub(super) fn list_messages(conn: &Connection, input: MessageHistoryQuery) -> Re
     Ok(MessageHistoryPage { items, next })
 }
 
-pub(super) fn send(conn: &Connection, now: i64, input: SendMessage) -> Result<MessageView> {
-    opaque(&input.request_id)?;
-    if input.body.len() > MAX_BODY_BYTES {
+fn validate_body(body: &str) -> Result<()> {
+    if body.len() > MAX_BODY_BYTES {
         return Err(Error::Invalid("message body must be at most 64 KiB"));
     }
-    validate_message(&input.body).map_err(Error::InvalidMessage)?;
+    validate_message(body).map_err(Error::InvalidMessage)
+}
+
+fn replay(conn: &Connection, request_id: &str, fingerprint: &[u8]) -> Result<Option<MessageView>> {
+    let existing = conn.query_row(&format!("SELECT {MESSAGE_COLUMNS},fingerprint FROM messages WHERE request_id=?1"), [request_id], |row| Ok((read_message(row)?, row.get::<_, Vec<u8>>(12)?))).optional()?;
+    match existing {
+        Some((message, original)) if original == fingerprint => Ok(Some(message)),
+        Some(_) => Err(Error::Conflict("request ID already belongs to another send")),
+        None => Ok(None),
+    }
+}
+
+struct NewMessage {
+    from: AgentView,
+    to: AgentView,
+    body: String,
+    intent: Intent,
+    reply_to: Option<i64>,
+    thread: Option<String>,
+}
+
+fn insert_message(conn: &Connection, now: i64, request_id: &str, fingerprint: &[u8], input: NewMessage) -> Result<MessageView> {
+    let NewMessage { from, to, body, intent, reply_to, thread } = input;
+    // A reply to Space is delivered to durable history immediately; it needs no host claim.
+    let confirmed = to.host == OPERATOR_HOST;
+    let id: i64 = conn.query_row(
+        "INSERT INTO messages(request_id,fingerprint,from_name,from_host,from_incarnation,to_name,to_host,to_incarnation,body,intent,reply_to,thread,created_at,confirmed)
+         VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14) RETURNING id",
+        params![request_id, fingerprint, from.name, from.host, from.incarnation, to.name, to.host, to.incarnation, body, intent.as_str(), reply_to, thread, now, confirmed],
+        |row| row.get(0),
+    )?;
+    Ok(MessageView { id: id.to_string(), from, to, body, intent, reply_to: reply_to.map(|id| id.to_string()), thread, created_at: now })
+}
+
+pub(super) fn send_human_message(conn: &Connection, now: i64, input: SendHumanMessage) -> Result<MessageView> {
+    opaque(&input.request_id)?;
+    validate_body(&input.body)?;
+    name(&input.to.name)?;
+    host_name(&input.to.host)?;
+    opaque(&input.to.incarnation)?;
+
+    // Scope members cannot reserve IDs in the administrator's replay namespace.
+    let request_id = format!("~space:{}", input.request_id);
+    let fingerprint = Sha256::digest(serde_json::to_vec(&input)?);
+    if let Some(message) = replay(conn, &request_id, &fingerprint)? {
+        return Ok(message);
+    }
+    if active_agent(conn, &input.to.name)?.as_ref() != Some(&input.to) {
+        return Err(Error::Agent);
+    }
+
+    let from = operator();
+    // Keep both message foreign keys intact without exposing a host or active Agent.
+    conn.execute("INSERT OR IGNORE INTO hosts(name,installation_id,last_seen) VALUES(?1,?1,0)", [&from.host])?;
+    conn.execute("INSERT OR IGNORE INTO agents(name,host,incarnation,retired) VALUES(?1,?2,?3,1)", params![from.name, from.host, from.incarnation])?;
+    insert_message(conn, now, &request_id, &fingerprint, NewMessage { from, to: input.to, body: input.body, intent: Intent::Request, reply_to: None, thread: None })
+}
+
+pub(super) fn send(conn: &Connection, now: i64, input: SendMessage) -> Result<MessageView> {
+    opaque(&input.request_id)?;
+    validate_body(&input.body)?;
     if input.thread.as_ref().is_some_and(|thread| thread.trim().is_empty() || thread.len() > 128 || thread.chars().any(char::is_control)) {
         return Err(Error::Invalid("thread must be nonblank, at most 128 bytes and contain no control characters"));
     }
     let reply_to = input.reply_to.as_deref().map(message_id).transpose()?;
     let fingerprint = Sha256::digest(serde_json::to_vec(&input)?);
-    let existing = conn.query_row(&format!("SELECT {MESSAGE_COLUMNS},fingerprint FROM messages WHERE request_id=?1"), [&input.request_id], |row| Ok((read_message(row)?, row.get::<_, Vec<u8>>(12)?))).optional()?;
-    if let Some((message, original)) = existing {
-        return if original == fingerprint[..] { Ok(message) } else { Err(Error::Conflict("request ID already belongs to another send")) };
+    if let Some(message) = replay(conn, &input.request_id, &fingerprint)? {
+        return Ok(message);
     }
     current_agent(conn, now, &input.from, &input.installation_id)?;
-    let to = recipient(conn, &input.to)?;
+    let to = recipient(conn, &input.to, reply_to)?;
     if let Some(reply_id) = reply_to {
         let reverse: bool = conn.query_row(
             "SELECT EXISTS(SELECT 1 FROM messages WHERE id=?1 AND from_name=?2 AND from_incarnation=?3 AND to_name=?4 AND to_incarnation=?5)",
@@ -371,13 +444,7 @@ pub(super) fn send(conn: &Connection, now: i64, input: SendMessage) -> Result<Me
             return Err(Error::NotFound("reply target does not belong to these exact participants"));
         }
     }
-    let id: i64 = conn.query_row(
-        "INSERT INTO messages(request_id,fingerprint,from_name,from_host,from_incarnation,to_name,to_host,to_incarnation,body,intent,reply_to,thread,created_at)
-         VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13) RETURNING id",
-        params![input.request_id, &fingerprint[..], input.from.name, input.from.host, input.from.incarnation, to.name, to.host, to.incarnation, input.body, input.intent.as_str(), reply_to, input.thread, now],
-        |row| row.get(0),
-    )?;
-    Ok(MessageView { id: id.to_string(), from: input.from, to, body: input.body, intent: input.intent, reply_to: input.reply_to, thread: input.thread, created_at: now })
+    insert_message(conn, now, &input.request_id, &fingerprint, NewMessage { from: input.from, to, body: input.body, intent: input.intent, reply_to, thread: input.thread })
 }
 
 pub(super) fn operation(conn: &Connection, request_id: String) -> Result<MessageOperation> {

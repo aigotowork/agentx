@@ -32,7 +32,7 @@ use crate::runtime::{
 };
 
 use super::mailbox::{Mailbox, Phase};
-use super::{Actor, CONTEXT_FILE, Credentials, HOST_ENTRY, IPC_CONTEXT, LaunchOrigin, LocalSession, ManagedContext, Mode, OwnedProcess, Scope, ipc, message_text, ownership, port::Port, print_help, print_json, valid_name};
+use super::{Actor, CONTEXT_FILE, Credentials, HOST_ENTRY, IPC_CONTEXT, LaunchOrigin, LocalSession, MailboxPoll, ManagedContext, Mode, OwnedProcess, Scope, ipc, message_text, ownership, port::Port, print_help, print_json, valid_name};
 
 const RPC_TIMEOUT: Duration = Duration::from_secs(6);
 const HEARTBEAT: Duration = Duration::from_secs(12);
@@ -472,6 +472,7 @@ fn run(mut spec: LaunchSpec, started: &mut bool) -> Result<()> {
     *started = true;
     registration.retire_on_drop = false;
     let mut next_mailbox = Instant::now();
+    let mut mailbox_delay = super::POLL;
     let mut last_error = None;
     while !stop.load(Ordering::Relaxed) {
         if Instant::now() >= next_heartbeat {
@@ -487,16 +488,22 @@ fn run(mut spec: LaunchSpec, started: &mut bool) -> Result<()> {
             }
         }
         if Instant::now() >= next_mailbox {
-            if let Err(error) = pump(&scope, &registration.run.actor, &mut native) {
-                let message = format!("{error:#}");
-                if last_error.as_ref() != Some(&message) {
-                    eprintln!("Cloud mailbox: {message}");
+            let observation = match pump(&scope, &registration.run.actor, &mut native) {
+                Ok(observation) => {
+                    last_error = None;
+                    observation
                 }
-                last_error = Some(message);
-            } else {
-                last_error = None;
-            }
-            next_mailbox = Instant::now() + super::POLL;
+                Err(error) => {
+                    let message = format!("{error:#}");
+                    if last_error.as_ref() != Some(&message) {
+                        eprintln!("Cloud mailbox: {message}");
+                    }
+                    last_error = Some(message);
+                    MailboxPoll::Pending
+                }
+            };
+            mailbox_delay = observation.next_delay(mailbox_delay);
+            next_mailbox = Instant::now() + mailbox_delay;
         }
         if provider.0.try_wait()?.is_some() {
             bail!("private Codex app-server exited");
@@ -517,19 +524,19 @@ fn clean_private_dir(dir: &Path) {
     }
 }
 
-fn pump(scope: &Scope, actor: &Actor, native: &mut Codex) -> Result<()> {
-    let Some(mailbox) = Mailbox::try_open(scope, actor)? else { return Ok(()) };
+fn pump(scope: &Scope, actor: &Actor, native: &mut Codex) -> Result<MailboxPoll> {
+    let Some(mailbox) = Mailbox::try_open(scope, actor)? else { return Ok(MailboxPoll::Pending) };
     let previous = mailbox.read()?;
     if let Some(claim) = &previous
         && mailbox.complete(scope, actor, claim)?
     {
-        return Ok(());
+        return Ok(MailboxPoll::Pending);
     }
     let idle = native.idle;
     let mut claim = match previous {
         Some(claim) => claim,
         None if idle => mailbox.begin()?,
-        None => return Ok(()),
+        None => return Ok(MailboxPoll::Pending),
     };
     match &claim.phase {
         Phase::ListenIssuing(_) => bail!("explicit listener output is unresolved for claim {}; it will not be replayed", claim.id),
@@ -540,7 +547,7 @@ fn pump(scope: &Scope, actor: &Actor, native: &mut Codex) -> Result<()> {
         }
         Phase::Reserved if idle => {
             let batch = scope.claim(actor, &claim.id, CLAIM_WAIT_MS)?;
-            let Some(message) = batch.items.first() else { return Ok(()) };
+            let Some(message) = batch.items.first() else { return Ok(MailboxPoll::Empty) };
             let text = delivery_text(message);
             mailbox.transition(&mut claim, Phase::ProviderIssuing(message.id.clone()))?;
             match native.start_turn(&text, Some(&correlation(&claim.id))) {
@@ -548,9 +555,9 @@ fn pump(scope: &Scope, actor: &Actor, native: &mut Codex) -> Result<()> {
                 Err(error) => return Err(error).with_context(|| format!("Codex acceptance of claim {} is unknown", claim.id)),
             }
         }
-        _ => {}
+        _ => return Ok(MailboxPoll::Pending),
     }
-    Ok(())
+    Ok(MailboxPoll::Delivered)
 }
 
 fn settle_provider(scope: &Scope, actor: &Actor, native: &mut Codex, mailbox: &Mailbox, claim: &mut super::mailbox::Claim, message: &super::MessageView) -> Result<()> {

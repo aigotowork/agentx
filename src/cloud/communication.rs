@@ -96,7 +96,7 @@ pub(super) fn payload<T>(input: Result<Json<T>, JsonRejection>) -> store::Result
     input.map(|Json(value)| value).map_err(|error| if error.status() == StatusCode::PAYLOAD_TOO_LARGE { Error::PayloadTooLarge } else { Error::Invalid("request body is not valid for this endpoint") })
 }
 
-fn query<T>(input: Result<Query<T>, QueryRejection>) -> store::Result<T> {
+pub(super) fn query<T>(input: Result<Query<T>, QueryRejection>) -> store::Result<T> {
     input.map(|Query(value)| value).map_err(|_| Error::Invalid("request query is not valid for this endpoint"))
 }
 
@@ -118,26 +118,30 @@ struct OperationPath {
     request_id: String,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy)]
 enum Access {
     Read,
     Write,
     WriteAndWake,
+    AdminRead,
+    AdminWriteAndWake,
 }
 
 async fn run<T: Send + 'static>(scope: ScopeContext, access: Access, action: impl FnOnce(&rusqlite::Connection, i64) -> store::Result<T> + Send + 'static) -> store::Result<T> {
+    let scope_bearer = !matches!(access, Access::AdminRead | Access::AdminWriteAndWake);
+    let write = !matches!(access, Access::Read | Access::AdminRead);
     let active = scope.clone();
     let result = tokio::task::spawn_blocking(move || {
-        let result = store::transaction(&scope.root, &scope.generation, access != Access::Read, || scope.valid(), action)?;
+        let result = store::transaction(&scope.root, &scope.generation, write, || !scope_bearer || scope.valid(), action)?;
         // Publish only after commit, even if the HTTP caller disconnected during dispatch.
-        if access == Access::WriteAndWake {
+        if matches!(access, Access::WriteAndWake | Access::AdminWriteAndWake) {
             scope.current.send_modify(|_| {});
         }
         Ok::<_, Error>(result)
     })
     .await
     .map_err(|_| Error::Worker)??;
-    if !active.valid() {
+    if scope_bearer && !active.valid() {
         return Err(Error::Credential);
     }
     Ok(result)
@@ -148,6 +152,20 @@ pub(super) fn fence(scope: &ScopeContext, generation: &str) -> store::Result<()>
         return Err(Error::Generation);
     }
     Ok(())
+}
+
+async fn message_history(scope: ScopeContext, access: Access, input: MessageHistoryQuery) -> store::Result<MessageHistoryPage> {
+    fence(&scope, &input.generation)?;
+    run(scope, access, move |conn, _| store::list_messages(conn, input)).await
+}
+
+pub(super) async fn admin_message_history(scope: ScopeContext, input: MessageHistoryQuery) -> store::Result<MessageHistoryPage> {
+    message_history(scope, Access::AdminRead, input).await
+}
+
+pub(super) async fn admin_send_human_message(scope: ScopeContext, input: SendHumanMessage) -> store::Result<MessageView> {
+    fence(&scope, &input.generation)?;
+    run(scope, Access::AdminWriteAndWake, move |conn, now| store::send_human_message(conn, now, input)).await
 }
 
 #[utoipa::path(get, path = "/descriptor", operation_id = "scopeDescribe", security(("scopeBearer" = [])), responses(
@@ -215,9 +233,7 @@ async fn retire_agent(Extension(scope): Extension<ScopeContext>, parts: Result<A
     (status = "default", body = ScopeError)
 ))]
 async fn list_messages(Extension(scope): Extension<ScopeContext>, input: Result<Query<MessageHistoryQuery>, QueryRejection>) -> store::Result<Json<MessageHistoryPage>> {
-    let input = query(input)?;
-    fence(&scope, &input.generation)?;
-    run(scope, Access::Read, move |conn, _| store::list_messages(conn, input)).await.map(Json)
+    message_history(scope, Access::Read, query(input)?).await.map(Json)
 }
 
 #[utoipa::path(post, path = "/messages", operation_id = "scopeSendMessage", request_body = SendMessage, security(("scopeBearer" = [])), responses(

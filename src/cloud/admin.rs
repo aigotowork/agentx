@@ -2,9 +2,9 @@
 use super::*;
 use axum::extract::{
     Path as Param, Query,
-    rejection::{JsonRejection, QueryRejection},
+    rejection::{JsonRejection, PathRejection, QueryRejection},
 };
-use communication::{AgentView, HostView};
+use communication::{AgentView, HostView, types::{MessageHistoryPage, MessageHistoryQuery, MessageView, SendHumanMessage}};
 use utoipa::OpenApi;
 
 #[derive(Serialize, ToSchema)]
@@ -194,6 +194,29 @@ async fn agents(State(state): State<Deployment>, Param(id): Param<String>, query
     let page = read_scope(move || communication::agent_page(&root, &scope.generation, cursor, limit as u32, q.host)).await?;
     Ok(Json(AgentPage { items: page.items, next: page.next }))
 }
+
+async fn conversation_scope(state: &Deployment, id: Result<Param<String>, PathRejection>) -> Result<ScopeContext, Response> {
+    let id = communication::path(id).map_err(IntoResponse::into_response)?;
+    state.catalog(move |db| {
+        let receipt = db.lookup(&id)?;
+        Ok(db.context(&id, receipt.generation, receipt.credential_version))
+    }).await.map_err(IntoResponse::into_response)
+}
+
+#[utoipa::path(get,path="/api/v1/admin/scopes/{id}/messages",operation_id="listAdminScopeMessages",params(("id"=String,Path),MessageHistoryQuery),responses((status=200,body=MessageHistoryPage)))]
+async fn list_messages(State(state): State<Deployment>, id: Result<Param<String>, PathRejection>, query: Result<Query<MessageHistoryQuery>, QueryRejection>) -> Result<Json<MessageHistoryPage>, Response> {
+    let query = communication::query(query).map_err(IntoResponse::into_response)?;
+    let scope = conversation_scope(&state, id).await?;
+    communication::admin_message_history(scope, query).await.map(Json).map_err(IntoResponse::into_response)
+}
+
+#[utoipa::path(post,path="/api/v1/admin/scopes/{id}/messages",operation_id="sendAdminScopeMessage",params(("id"=String,Path)),request_body=SendHumanMessage,responses((status=200,body=MessageView),(status=413,description="Payload too large",body=ApiError)))]
+async fn send_message(State(state): State<Deployment>, id: Result<Param<String>, PathRejection>, input: Result<Json<SendHumanMessage>, JsonRejection>) -> Result<Json<MessageView>, Response> {
+    let input = communication::payload(input).map_err(IntoResponse::into_response)?;
+    let scope = conversation_scope(&state, id).await?;
+    communication::admin_send_human_message(scope, input).await.map(Json).map_err(IntoResponse::into_response)
+}
+
 async fn change(state: Deployment, id: String, request: String, token: String, expected: Option<u32>) -> Result<Json<ScopeReceipt>, Failure> {
     if catalog::matches(&catalog::hash(&token), &state.admin_hash) {
         return Err(Failure::invalid("scope and deployment credentials must differ"));
@@ -218,6 +241,7 @@ pub(super) fn router(state: Deployment) -> Router {
         .route("/scopes/{id}", get(show).put(create))
         .route("/scopes/{id}/hosts", get(hosts))
         .route("/scopes/{id}/agents", get(agents))
+        .route("/scopes/{id}/messages", get(list_messages).post(send_message).layer(DefaultBodyLimit::max(512 * 1024)))
         .route("/scopes/{id}/token-rotations", axum::routing::post(rotate))
         .merge(super::control::admin_router())
         .with_state(state)
@@ -225,7 +249,7 @@ pub(super) fn router(state: Deployment) -> Router {
 
 pub(super) fn document() -> serde_json::Value {
     #[derive(OpenApi)]
-    #[openapi(paths(overview, list_scopes, show, hosts, agents, create, rotate), components(schemas(ApiError)))]
+    #[openapi(paths(overview, list_scopes, show, hosts, agents, list_messages, send_message, create, rotate), components(schemas(ApiError)))]
     struct AdminApi;
     let mut api = AdminApi::openapi();
     api.merge(super::control::admin_document());
