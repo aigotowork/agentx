@@ -15,6 +15,6 @@
 
 ## 容量与费用要测哪些量
 
-20 秒是协议允许的最长等待。既有直连 supervisor 对空闲 Agent 发出的 claim 实际最多等 1.5 秒，循环间隔约 350 毫秒，每个 supervisor 另有约 12 秒的心跳。假设持续空闲、没有网络和调度开销，单个在线 Agent 每天约产生 4.7 万次空 claim（86400 ÷ 1.85）；这是从代码得到的量级示例。显式 listen、活跃回合、重试和新 daemon 的宿主级 control poll 有各自路径，需分别采样。[宿主常量与主循环](../../src/cloud/client/host.rs) · [显式 listen](../../src/cloud/client.rs) · [控制租约周期](../../.controller/cloud-daemon/wire.md)
+20 秒是协议允许的最长等待。在[空收件退避](idle-delivery.md)改动前，直连 supervisor 对空闲 Agent 发出的 claim 实际最多等 1.5 秒，循环间隔约 350 毫秒，每个 supervisor 另有约 12 秒的心跳。假设持续空闲、没有网络和调度开销，单个在线 Agent 每天约产生 4.7 万次空 claim（86400 ÷ 1.85）；这是从代码得到的量级示例。显式 listen、活跃回合、重试和新 daemon 的宿主级 control poll 有各自路径，需分别采样。[宿主常量与主循环](../../src/cloud/client/host.rs) · [显式 listen](../../src/cloud/client.rs) · [控制租约周期](../../.controller/cloud-daemon/wire.md)
 
 对同一组主机、空闲 Agent 和消息量，至少留存入口请求数、并发等待、单 scope 峰值、每次发送至确认的 p50/p95、重连后排空时间、存储读写和保留量。Tunnel 另记主机、磁盘、备份和维护工时；Containers 记运行资源时间、持久后端调用和跨边界往返；Workers 记 Worker / DO 调用、对象活跃时长、存储和管理概况的跨 scope 查询。费用用当日计划和实测量折算。凭据及正文从观测样本里去除。

@@ -1,4 +1,6 @@
 # Cloud scope delivery
+For the current Namespace/Workspace cutover and public API, use [the active Namespace delivery](../cloud-namespace/AGENTS.md). This directory records the earlier cloud Scope generation.
+
 
 The [delivery record](delivery.md) identifies the verified Linux binary, the public contracts and the cross-network results.
 

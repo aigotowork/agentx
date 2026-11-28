@@ -19,10 +19,8 @@ Role and Profile are the adopted launch facts. Task and Delivery show observed f
 
 Run `python3 tests/tui_terminal/info.py target/debug/agentx --output target/tui-terminal/info` after building the candidate. This drives a real tmux pane, isolated daemon and fake Codex provider through Role instructions, Profile, frozen Bootstrap and Task body. A second Agent is launched by the first for direct Child and From navigation. See the [root pane](../../target/tui-terminal/info/parent.txt) and [child pane](../../target/tui-terminal/info/child.txt).
 
-## Upper reader and older daemons
+## Upper reader and exact references
 
-Info and transcript share the region above the Agent strip in the inline layout. The terminal host enters the same temporary buffer for either reader and restores the event scrollback on return. In the side-by-side layout both use the message pane. See the [compatibility task](compat.task.md) for legacy snapshot handling.
-
-The [upper-pane terminal capture](../../target/tui-terminal/info-upper/inline-upper-info.txt) shows resolved facts above the Agent strip. The [mixed-version terminal capture](../../target/tui-terminal/info-compat/info.txt) shows Role, Profile and Task from an older daemon. Its Bootstrap page displays saved Role instructions and additions where available; the full original text requires the native Agent Info query. The [mixed-version smoke](../../tests/tui_terminal/info.py) also checks exact stopped identity and compares daemon status before and after.
+Info and transcript share the region above the Agent strip in the inline layout. The terminal host enters the same temporary buffer for either reader and restores event scrollback on return. In the side-by-side layout both use the message pane. Exact Info requires a daemon-supplied reference; [local read convergence](../cloud-namespace/local-contract-retirement.md) supersedes the [historical mixed-daemon evidence](compat.task.md).
 
 For the Tab prompt, Role/Profile selection and advanced launch options, see [dashboard quick launch](quick-launch.md).

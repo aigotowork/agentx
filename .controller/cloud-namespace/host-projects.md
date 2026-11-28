@@ -1,0 +1,11 @@
+# Host project catalogue and launch membership
+
+The [Task](task.md) owns the public contract; the [native workspace selector](../../.docs/proposals/workspace-discovery.md) owns local selection and cwd precedence. An enrolled Scope's ordinary CLI and Admin worker use the same cloud launch preparation and supervisor. The non-enrolled native runtime does not register its Agents with cloud.
+
+- The uplink workspace module confines root discovery and explicit registration, recognizes existing native project markers, and derives a stable ID from the canonical path. Root aliases are registration inputs only. The operation journal stores explicit names by ID and commits them with the terminal receipt. A name can overlay an automatic row or match another project's name.
+- The capabilities module resolves role and default availability on those paths. Launch rechecks its published choice and opens cwd relative to the project through the existing directory guard. Native launch preparation supplies the selected workspace separately from cwd.
+- The local IPC returns the membership classification from the enrolled host's project catalogue, without passing its bearer to launchers. The supervisor registers and saves that value with its exact identity. Recovery reads saved membership; it does not classify an older Agent's cwd. Admin success requires the originally requested project ID in both the saved supervisor and authoritative registration.
+
+The capped catalogue prioritizes explicit registrations; an unpublished directory remains unexposed for a new launch. Root aliases and absolute paths do not travel in Workspace identity. Registrations are retained across normal daemon restarts for the same enrollment/installation; old alias-based enrollments do not carry into the new public Namespace deployment.
+
+Host source verification: isolated Linux Cargo snapshot with browser asset stubs, `cargo test --locked --bin agentx cloud::`: 42 passed. The direct host checks cover one-level project recognition, role separation, duplicate display names, alias deduplication and symlink rejection; durable explicit registration, restart and replay; and exact launch receipt matching. The shared two-installation HTTPS/browser acceptance remains separate. No installed files, local Agent databases or running services were changed.

@@ -6,6 +6,8 @@ last_updated: 2026-11-22
 
 # ACP：谁能找到 Agent，谁能向会话发一轮
 
+要查完整方法表、核心字段和交互示例，从 [ACP 中文参考](acp/README.md) 进入。
+
 ## 1. 定义
 
 [Agent Client Protocol](https://agentclientprotocol.com/protocol/v1/overview) 是编辑器、终端宿主或编排器与 Agent 程序之间的双向 JSON-RPC 2.0 协议。编辑器并不是必需：AgentX 也可以当 **ACP Client**；Codex 适配器等程序当 **ACP Agent**，后面再驱动真正的模型和工具。它统一的是创建、继续、取消会话与接收进度；它没有定义 AgentX 的 `@名字`、跨 Agent 路由或可靠信箱。MCP Agent 宿主和 ACP Client 可以是同一个程序，也可以分开，名字里的 “Client” 所在层不同。

@@ -7,6 +7,10 @@ description: Add explicit searchable choices for finite CLI catalogs and omitted
 
 # Outcome and bounded design
 
+## Explicit kill help mismatch (2026-11-24)
+
+During idle Agent cleanup, the local AgentX 0.7.31 `kill --help` advertised `@NAME`, but `kill --json @NAME` returned “Agent not found” for live local Agents. The same batch succeeded using bare names. [Kill help](../src/cli/commands/kill.rs) and [explicit target lookup](../src/cli/commands/stop.rs) disagree; align the advertised syntax with target resolution in CLI maintenance. The cleanup did not change command behavior.
+
 ## Target filter follow-up finding
 
 `attach --workspace .` fails at argument parsing: [AttachArgs](../src/cli/commands/attach.rs) accepts only a target name. The [shared picker module](../src/cli/commands/target_selection.rs) composes command-specific inventories and shares terminal interaction, but does not expose common target filters. `list` has workspace discovery and label predicates; `recover` has the label predicates and a workspace default for interactive choices, but no explicit workspace or directory selector. `resume/fork --dir` selects the new process working directory, so it cannot also serve as a target filter.

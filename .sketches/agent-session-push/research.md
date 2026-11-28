@@ -15,3 +15,5 @@ last_updated: 2026-11-22
 
 
 本轮已完成：原生 MCP 对照、Codex 与 OpenCode 的 ACP v1、Codex 的 ACP v2 Preview 收录和重试，以及图谱桌面/移动端浏览器验证。精确条件和结果见[证据](evidence.md)。下轮待决定是否保留原生终端，以及优先验证哪个实际使用的 Provider；[候选方案](options.md)尚未成为实施决定。
+
+补充调研：按用户要求延后接入，扩展 [ACP 中文参考](acp/README.md)。接口清单以官方基线 Schema 为边界；字段和场景用协议条款解释，不复制完整 Schema。保留两个容易混淆的区别：v2 Preview 的基线与 Draft 能力、会话控制与工具资源权限。此轮未添加接入或生产行为。

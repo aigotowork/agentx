@@ -10,9 +10,13 @@
 
 ## 从哪里读起
 
+- [空闲收件、在线租约与休眠方案](idle-delivery.md) 比较退避和按主机通知，列出费用、延迟与断线补领的验证方法。
+
+- [5 美元套餐的对象划分与账单](paid-do-budget.md) 说明类、对象、请求、计费时长和存储分别消耗什么，以及多个项目如何共享额度。
+
 - [Rust、Workers 与 Durable Objects 图解](runtime-and-objects.md) 从源码编译讲到对象身份、私有 SQLite、收件事务与设计模式，也可直接打开[离线图解](runtime-and-objects.html)。
 
-- [体系与能力边界](system.md) 说明管理端、云服务和执行宿主分别掌握什么，区分已验收的云通信与正在开发的联网 daemon。
+- [体系与能力边界](system.md) 说明管理端、云服务和执行宿主分别掌握什么，区分已验收的云通信与已经过三机控制验收的联网 daemon。
 - 三个路线专题分别给出拓扑、可复用部分、需要改造的部分、故障情形、官方资料及未来试验。分工和原始问题保存在 [Tunnel 任务](tasks/tunnel.task.md)、[Containers 任务](tasks/containers.task.md)、[Workers 任务](tasks/workers-do.task.md)。
 - [共同验证与成本口径](validation.md) 给出同一批黑盒场景、各路线的首个否决条件，以及用真实宿主收件频率估算请求量的方法。
 

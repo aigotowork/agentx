@@ -12,7 +12,8 @@ last_updated: 2026-11-22
 | --- | --- |
 | [交互图谱](index.html) | 在空闲、忙碌、断线三种状态下比较四条路径；单文件，断网可打开 |
 | [MCP：发到进程后发生什么](mcp.md) | 订阅、服务端推送、MCP 子进程和模型会话的关系 |
-| [ACP：定义、发现、协议](acp.md) | 从目录里的发行包，到连接、会话和回合；区分 v1 和 v2 Preview |
+| [ACP：定义、发现、协议](acp.md) | 从目录里的发行包，到连接、会话和回合 |
+| [ACP 中文参考](acp/README.md) | 接口清单、核心字段、Mermaid 场景与 v1/v2 Preview 对照 |
 | [接入方案与 Codex 开源路线](options.md) | 托管会话、现有终端、MCP Events、原生 App Server 和 fork 的取舍 |
 | [证据和复跑](evidence.md) | 实验边界、两种 ACP 实现、Codex 的真实 stdio MCP 探针和待补证据 |
 | [研究记录](research.md) | 本轮边界、尚未决定的事 |

@@ -6,7 +6,7 @@ owner: boho
 
 # Native one-shot reminders
 
-[Events CLI usage](../../.docs/architecture/event-subscriptions.md#一次性时间提醒) owns the user-facing contract.
+[Approved plan](../../.codex/attachments/fc385c54-f63e-4c44-a004-d685e852a09d/approved-plan.md) owns the user-facing contract.
 
 | Boundary | Responsibility |
 | --- | --- |
@@ -22,4 +22,12 @@ The additive migration preserves ordinary subscriptions and internal KV records.
 
 Verification entry points: [native scheduling, persistence and fence cases](../../src/events/reminders/tests.rs), [writer queue case](../../src/daemon/server.rs), [unknown-result reconciliation](../../src/cli/commands/events_client_tests.rs), [epoch compatibility](../../src/daemon/compatibility_tests.rs) and [independent CLI runner](../../tests/time_reminders/README.md).
 
-Prior local evidence includes 99 targeted Rust tests, four daemon process cases, the independent CLI acceptance, and two real Codex self-reminders that started a new turn without polling or input injection. The latter observed 51 ms and 53 ms from due time to durable enqueue; those measurements do not include Provider wake latency. Release source/build checks and current daemon adoption are separate.
+Linux native verification passed 99 targeted Rust cases: 26 for the reminder contracts, IPC epoch 3↔4, mailbox indexes, conversation history and help; 73 for existing subscription matching, request watches, inbox claims, unread projections and Events host behavior. The dropped-reply case used a real native create with a one-reply transport drop. The writer queue case had both requests enqueued before dispatch, so an idle timeout could not account for the observed delivery.
+
+`just package` passed and checked project [`.bin/agentx`](../../.bin/agentx) as `agentx 0.7.31`. Package SHA-256: `4ed027fb46ec42e11e875a4de8a8b0341a449e1498f643c17dbf1bd8c43b92f4`. The [isolated CLI runner](../../tests/time_reminders/README.md) passed against those bytes: quiet-window enqueue lag was 36 ms; enqueue under sustained native requests was 21 ms (426 replies near the deadline, maximum 11 ms reply gap). It also verified overdue restart, same-name replacement and stop failures, ordinary subscription behavior, authorization, cancel and retained history.
+
+The fixed candidate passed the native multi-process compatibility, restart/reset fence and archive continuation cases. An additional ordinary-message lost-reply regression first stopped at a stale fixture argument, `send --name`, before exercising delivery. The fixture now uses the current `--iam` selector; it does not change the executable.
+
+The ordinary-message lost-reply case passed on rerun against the unchanged package, bringing the targeted multi-process checks to 4 passing cases. All verification is Linux local/disposable Scope evidence. The project binary was built, but no installed program was replaced and no existing daemon or Agent host was restarted.
+
+Live self-test follow-up: the user requested a five-minute reminder for the actual current `boho` session. The exact candidate's ordinary CLI create against the session-selected project Scope was rejected during Hello (client epoch 4, live daemon PID 2703841 epoch 3), before a reminder was created. The executable loaded by the current Codex host (PID 2553640) still handshakes with the epoch-3 daemon and differs from the candidate. A daemon-only upgrade would therefore not establish wake delivery to the current session. The shared Scope, other live Agents and port 38023 were left untouched; an isolated Provider session would be a separate test.

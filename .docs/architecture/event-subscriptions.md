@@ -63,6 +63,8 @@ flowchart LR
 
 ## 一次性时间提醒
 
+从 `agentx events --help` 或 `agentx events sub --help` 的 “One-time reminder” 一节进入。等待外部工作时，可以在结束当前回合前登记提醒，用返回的 ID 确认状态是 `pending`，醒来后再检查外部结果；如果仍未完成，再登记下一次回查。
+
 ```sh
 agentx events sub --in 10m --message '回查外部任务结果'
 agentx events sub --for peso --in 2h --message '检查外部任务'

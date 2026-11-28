@@ -1,4 +1,6 @@
-For native direct calls and the one-time protocol 3/4 upgrade, read [direct calls](.controller/direct-calls/AGENTS.md). For Cloud Namespace v2 and Workspace paging, read [the cloud entry](.controller/cloud-namespace/AGENTS.md).
+For native Call/Result, the one-time epoch 3/4 upgrade, and per-operation local SDK and Cloud Namespace compatibility, read [direct calls](.controller/direct-calls/AGENTS.md). It owns current source and evidence; earlier Hello/Ready deliveries are historical.
+
+For the unified cloud Namespace and project Workspace delivery, read [the active integration entry](.controller/cloud-namespace/AGENTS.md). It supersedes the older cloud terminology and host-as-office projection; local Scope keeps its daemon and data meaning.
 
 For Cloud Space authentication, SDK reads and exact Agent operations, read [Cloud Space](.controller/cloud-space/AGENTS.md). For the GitHub test matrix, read [CI recovery](.controller/ci-recovery/AGENTS.md).
 

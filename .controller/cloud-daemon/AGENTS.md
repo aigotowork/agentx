@@ -1,4 +1,6 @@
 # Cloud-connected native scope daemon
+For the current Namespace/Workspace cutover and public API, use [the active Namespace delivery](../cloud-namespace/AGENTS.md). This directory records the earlier cloud Scope generation.
+
 Use the [daemon control wire](wire.md) for the Admin and Scope routes, operation state, lease fencing and native OpenAPI source. Follow the [API Task](api.task.md) for implementation evidence and the [acceptance Task](acceptance.task.md) for end-to-end execution.
 
 Status: native control delivery verified on three Linux hosts. Codex 0.171 restricted tool IPC is an outstanding Provider limitation; see the [delivery outcome](delivery.md). Follow the [existing cloud contracts](../cloud-scope/AGENTS.md). The native scope daemon owns the outbound HTTPS connection. Admin requests select an exact installation, an exported workspace, a supported role, and a single typed launch or exact-instance stop. Local tools use authenticated local IPC for scope messaging. No generic tunnel, arbitrary command endpoint or change to the Provider sandbox. Old direct-connected hosts retain their existing receiver until exit. Keep installed services and unrelated worktree edits intact.

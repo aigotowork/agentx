@@ -34,6 +34,20 @@ flowchart TB
 
 也可以只把热路径编成 Wasm，由 TypeScript 继续写 HTTP 与 DO。收益取决于计算量、模块体积和跨语言传值成本。对 AgentX 的消息服务，关键耗时还包括数据库提交、长轮询与跨区往返，选 Rust 本身并不会降低这些开销。[Wasm 使用方式](https://developers.cloudflare.com/workers/runtime-apis/webassembly/) · [AgentX 容量研究](workers-do.md)
 
+### 将来怎样开始一个 Rust 验证项目
+
+在独立试验目录准备 Rust、npm 和 cargo-generate。以下是官方模板的本地开发路径，本轮仅整理步骤。生成项目后，检查 Cargo.lock、Wrangler 的 compatibility_date、构建命令及绑定名，以便复现同一工具链。
+
+```sh
+rustup target add wasm32-unknown-unknown
+cargo install cargo-generate
+cargo generate cloudflare/workers-rs
+# 进入刚生成的项目目录后运行
+npx wrangler dev --local --port 18763
+```
+
+先用模板的 `#[event(fetch)]` 入口通过本机 HTTP 返回响应，再引入纯 Rust 校验函数并运行原有测试向量。第二步才接存储：在 Wrangler 为 scope 对象配置 namespace binding、导出的 DO 类和首次 SQLite class migration；由入口根据 scope ID 取得 stub，交给对象在自己的数据库内提交。用两个 scope 和同 ID 重试验证隔离、唯一性和原回执。Rust 方案落地前需逐项检查选定版本的 SQL 事务、休眠 socket 及附件 API；若某个关键绑定覆盖不足，可让 TS 持有对象与事务，Rust/Wasm 保留纯计算。无论语言如何分配，原生文件锁、Tokio listener 和本地 Provider 宿主各有自己的运行边界。[官方 Rust 模板](https://developers.cloudflare.com/workers/languages/rust/) · [workers-rs](https://github.com/cloudflare/workers-rs) · [DO 首次绑定与迁移](https://developers.cloudflare.com/durable-objects/get-started/)
+
 ## 2 · 一个 Durable Object 里面究竟有什么？
 
 以同一时刻两位用户订最后一个座位为例。把对象按**场次**命名，两次订票会到同一个对象，可以用一笔事务决定谁成功。如果按**用户**命名，最后一个座位的归属就跨了两个对象。这说明选择对象 ID 实际上是在选择一致性边界。[官方订座示例](https://developers.cloudflare.com/durable-objects/tutorials/build-a-seat-booking-app/) · [架构指导](https://developers.cloudflare.com/durable-objects/best-practices/architecture-guidance/)

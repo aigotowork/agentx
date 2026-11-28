@@ -1,3 +1,5 @@
-# One-shot local time reminders
+# One-shot time reminders
 
-Read the [Events CLI contract](../../.docs/architecture/event-subscriptions.md#一次性时间提醒) and [implementation boundaries](implementation.task.md). Run the [CLI acceptance](../../tests/time_reminders/README.md) against a fixed candidate in a disposable Scope. Packaging and upgrading the shared daemon and its clients are separate operations.
+Start with the [approved contract](../../.codex/attachments/fc385c54-f63e-4c44-a004-d685e852a09d/approved-plan.md) and [implementation task](implementation.task.md). Use disposable Scopes; packaging the project binary does not authorize replacing installed programs or restarting existing services.
+
+For the installed help and Agent bootstrap findability review, see [reminder discoverability](help-discovery.md).
