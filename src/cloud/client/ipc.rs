@@ -60,6 +60,7 @@ struct Failure {
     message: String,
 }
 
+#[derive(Clone)]
 pub(super) struct Client {
     scope: DaemonScope,
     pub info: Info,
@@ -222,6 +223,8 @@ impl Server {
             self.check_record(&binding, &exact)?;
             if matches!(request.command, Command::Register { .. } | Command::Retire(_)) {
                 ensure!(exact.owns(pid, identity), "only the exact supervisor can change its cloud registration");
+            } else if matches!(request.command, Command::PublishTranscript(_)) {
+                ensure!(exact.session.is_some() && exact.owns(pid, identity), "only the ready exact supervisor can publish Agent transcript");
             } else {
                 ensure!(exact.session.is_some(), "cloud Agent supervisor has not reported readiness");
                 self.authorize_actor(&exact, pid, identity)?;

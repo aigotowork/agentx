@@ -9,7 +9,7 @@ use std::{collections::HashSet, path::Path};
 
 const LEASE_SECONDS: i64 = 30;
 const MAX_PENDING: i64 = 64;
-const SCHEMA_VERSION: i64 = 1;
+const SCHEMA_VERSION: i64 = 2;
 
 // Upgrade old scope databases on first control access. Normal control reads remain read-only.
 pub(super) fn transaction<T>(root: &Path, generation: &str, write: bool, authorized: impl Fn() -> bool, action: impl Fn(&Connection, i64) -> Result<T>) -> Result<T> {
@@ -17,7 +17,7 @@ pub(super) fn transaction<T>(root: &Path, generation: &str, write: bool, authori
     if !write {
         let value = store::transaction(root, generation, false, &authorized, |conn, now| match schema_version(conn)? {
             SCHEMA_VERSION => action(conn, now).map(Some),
-            0 => Ok(None),
+            0 | 1 => Ok(None),
             _ => Err(Error::Conflict("unsupported scope storage schema")),
         })?;
         if let Some(value) = value {
@@ -27,6 +27,7 @@ pub(super) fn transaction<T>(root: &Path, generation: &str, write: bool, authori
     store::transaction(root, generation, true, authorized, |conn, now| {
         match schema_version(conn)? {
             0 => conn.execute_batch(include_str!("schema.sql"))?,
+            1 => conn.execute_batch("ALTER TABLE control_leases ADD COLUMN directory_launch INTEGER NOT NULL DEFAULT 0 CHECK(directory_launch IN (0,1)); PRAGMA user_version=2;")?,
             SCHEMA_VERSION => (),
             _ => return Err(Error::Conflict("unsupported scope storage schema")),
         }
@@ -38,11 +39,12 @@ struct Lease {
     id: String,
     expires_at: i64,
     workspaces: Vec<WorkspaceCapability>,
+    directory_launch: bool,
 }
 
 fn current_lease(conn: &Connection, host: &str) -> Result<Option<Lease>> {
-    let row = conn.query_row("SELECT lease_id,expires_at,workspaces FROM control_leases WHERE host=?1 AND is_current=1", [host], |row| Ok((row.get(0)?, row.get(1)?, row.get::<_, String>(2)?))).optional()?;
-    row.map(|(id, expires_at, workspaces)| Ok(Lease { id, expires_at, workspaces: serde_json::from_str(&workspaces)? })).transpose()
+    let row = conn.query_row("SELECT lease_id,expires_at,workspaces,directory_launch FROM control_leases WHERE host=?1 AND is_current=1", [host], |row| Ok((row.get(0)?, row.get(1)?, row.get::<_, String>(2)?, row.get(3)?))).optional()?;
+    row.map(|(id, expires_at, workspaces, directory_launch)| Ok(Lease { id, expires_at, workspaces: serde_json::from_str(&workspaces)?, directory_launch })).transpose()
 }
 
 fn installation(conn: &Connection, host: &str) -> Result<String> {
@@ -69,8 +71,9 @@ fn live_lease(conn: &Connection, now: i64, host: &str, installation_id: &str, le
 fn capability_view(generation: String, host: String, installation_id: String, now: i64, lease: Option<Lease>) -> HostCapabilities {
     let online = lease.as_ref().is_some_and(|lease| lease.expires_at > now);
     let observed_at = lease.as_ref().map(|lease| lease.expires_at - LEASE_SECONDS);
+    let directory_launch = lease.as_ref().is_some_and(|lease| lease.directory_launch).then_some(true);
     let workspaces = lease.map(|lease| lease.workspaces).unwrap_or_default();
-    HostCapabilities { generation, host, installation_id, online, observed_at, workspaces }
+    HostCapabilities { generation, host, installation_id, online, observed_at, workspaces, directory_launch }
 }
 
 pub(super) fn capabilities(conn: &Connection, now: i64, generation: String, host: String) -> Result<HostCapabilities> {
@@ -122,7 +125,7 @@ fn validate_request_id(id: &str) -> Result<()> {
     Ok(())
 }
 
-pub(super) fn renew(conn: &Connection, now: i64, host: String, input: &RenewControlLease) -> Result<HostCapabilities> {
+pub(super) fn renew(conn: &Connection, now: i64, host: String, input: &RenewControlLease, directory_launch: bool) -> Result<HostCapabilities> {
     let RenewControlLease { generation, installation_id, lease_id, previous_lease_id, workspaces } = input;
     store::opaque(lease_id)?;
     if let Some(previous) = previous_lease_id {
@@ -135,7 +138,7 @@ pub(super) fn renew(conn: &Connection, now: i64, host: String, input: &RenewCont
     let encoded = serde_json::to_string(workspaces)?;
     match current {
         Some(lease) if lease.id == *lease_id && lease.expires_at > now => {
-            conn.execute("UPDATE control_leases SET expires_at=?3,workspaces=?4 WHERE host=?1 AND lease_id=?2", params![host, lease_id, expires_at, encoded])?;
+            conn.execute("UPDATE control_leases SET expires_at=?3,workspaces=?4,directory_launch=?5 WHERE host=?1 AND lease_id=?2", params![host, lease_id, expires_at, encoded, directory_launch])?;
         }
         active => {
             if active.as_ref().is_some_and(|lease| lease.expires_at > now && previous_lease_id.as_deref() != Some(&lease.id)) {
@@ -146,15 +149,15 @@ pub(super) fn renew(conn: &Connection, now: i64, host: String, input: &RenewCont
                 return Err(Error::Lease);
             }
             conn.execute("UPDATE control_leases SET is_current=0 WHERE host=?1 AND is_current=1", [&host])?;
-            conn.execute("INSERT INTO control_leases(host,lease_id,expires_at,is_current,workspaces) VALUES(?1,?2,?3,1,?4)", params![host, lease_id, expires_at, encoded])?;
+            conn.execute("INSERT INTO control_leases(host,lease_id,expires_at,is_current,workspaces,directory_launch) VALUES(?1,?2,?3,1,?4,?5)", params![host, lease_id, expires_at, encoded, directory_launch])?;
         }
     }
-    Ok(capability_view(generation.clone(), host, installation_id.clone(), now, Some(Lease { id: lease_id.clone(), expires_at, workspaces: workspaces.clone() })))
+    Ok(capability_view(generation.clone(), host, installation_id.clone(), now, Some(Lease { id: lease_id.clone(), expires_at, workspaces: workspaces.clone(), directory_launch })))
 }
 
 fn validate_command(command: &ControlCommand) -> Result<()> {
     match command {
-        ControlCommand::Launch { workspace, role, name, title, initial_prompt } => {
+        ControlCommand::Launch { workspace, role, name, title, initial_prompt, working_directory, create_directory } => {
             validate_workspace(workspace)?;
             if let Some(role) = role {
                 store::opaque(role)?;
@@ -165,6 +168,10 @@ fn validate_command(command: &ControlCommand) -> Result<()> {
             crate::agents::launch_title::normalize(title.as_deref()).map_err(Error::InvalidMessage)?;
             if initial_prompt.as_ref().is_some_and(|text| text.len() > 16 * 1024 || text.trim().is_empty() || text.chars().any(|c| c.is_control() && !matches!(c, '\n' | '\r' | '\t'))) {
                 return Err(Error::Invalid("initial_prompt must be non-empty plain text of at most 16 KiB"));
+            }
+            let path = working_directory.as_deref().unwrap_or_default();
+            if !valid_working_directory(path) || (*create_directory == Some(true) && path.is_empty()) {
+                return Err(Error::Invalid("working_directory must be a workspace-relative path; creation requires a nonempty path"));
             }
         }
         ControlCommand::Stop { name, incarnation } => {
@@ -177,12 +184,12 @@ fn validate_command(command: &ControlCommand) -> Result<()> {
 
 fn check_command(conn: &Connection, host: &str, lease: &Lease, command: &ControlCommand) -> Result<()> {
     match command {
-        ControlCommand::Launch { workspace, role, name, .. } => {
+        ControlCommand::Launch { workspace, role, name, working_directory, create_directory, .. } => {
             let supported = lease.workspaces.iter().find(|item| item.alias == *workspace).is_some_and(|item| match role {
                 Some(selector) => item.roles.iter().any(|entry| entry.name == *selector && entry.available),
                 None => item.default_available,
             });
-            if !supported {
+            if !supported || ((working_directory.is_some() || create_directory.is_some()) && !lease.directory_launch) {
                 return Err(Error::Capability);
             }
             if let Some(name) = name

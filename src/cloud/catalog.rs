@@ -25,6 +25,7 @@ fn private_dir(path: &Path) -> anyhow::Result<()> {
 }
 
 struct ScopeSignals {
+    space: tokio::sync::watch::Sender<changes::SpaceChanges>,
     version: tokio::sync::watch::Sender<u32>,
     control: tokio::sync::watch::Sender<()>,
 }
@@ -101,9 +102,10 @@ impl Catalog {
     }
 
     pub(super) fn context(&mut self, id: &str, generation: String, credential_version: u32) -> ScopeContext {
-        let signals = self.signals.entry(id.into()).or_insert_with(|| ScopeSignals { version: tokio::sync::watch::channel(credential_version).0, control: tokio::sync::watch::channel(()).0 });
+        let root = self.root_for(id);
+        let signals = self.signals.entry(id.into()).or_insert_with(|| ScopeSignals { space: tokio::sync::watch::channel(changes::SpaceChanges::new()).0, version: tokio::sync::watch::channel(credential_version).0, control: tokio::sync::watch::channel(()).0 });
         let (current, control_changed) = (signals.version.clone(), signals.control.clone());
-        ScopeContext { id: id.into(), root: self.root_for(id), generation, credential_version, current, control_changed }
+        ScopeContext { id: id.into(), root, generation, credential_version, current, control_changed, space_changed: signals.space.clone() }
     }
 
     pub(super) fn list(&self, after: &str, limit: i64) -> Result<Vec<ScopeReceipt>, Failure> {

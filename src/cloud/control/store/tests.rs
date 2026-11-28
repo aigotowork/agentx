@@ -61,7 +61,7 @@ fn catalogue() -> Vec<WorkspaceCapability> {
 }
 
 fn launch(role: Option<&str>, name: Option<&str>) -> ControlCommand {
-    ControlCommand::Launch { workspace: "main".into(), role: role.map(str::to_owned), name: name.map(str::to_owned), title: Some("API verification".into()), initial_prompt: Some("Check the project snapshot.\nReport findings.".into()) }
+    ControlCommand::Launch { workspace: "main".into(), role: role.map(str::to_owned), name: name.map(str::to_owned), title: Some("API verification".into()), initial_prompt: Some("Check the project snapshot.\nReport findings.".into()), working_directory: None, create_directory: None }
 }
 
 #[test]

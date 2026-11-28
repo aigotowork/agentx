@@ -4,7 +4,7 @@ pub(super) mod types;
 
 pub(super) use self::types::{AgentView, HostView};
 use self::{store::Error, types::*};
-use super::ScopeContext;
+use super::{ScopeContext, changes::{ChangeQuery, SpaceChanges}};
 use axum::{
     Extension, Json, Router,
     extract::{
@@ -23,12 +23,14 @@ static WAIT_SLOTS: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(64
 
 pub(super) fn router() -> Router {
     Router::new()
+        .route("/changes", get(scope_changes))
         .route("/descriptor", get(describe))
         .route("/hosts", get(list_hosts))
         .route("/hosts/{host}", put(renew_host))
         .route("/agents", get(list_agents))
         .route("/agents/{name}", put(register_agent))
         .route("/agents/{name}/retire", post(retire_agent))
+        .route("/transcript", get(list_transcript).post(publish_transcript))
         .route("/messages", get(list_messages).post(send_message))
         .route("/operations/{request_id}", get(get_operation))
         .route("/inbox/claim", post(claim_inbox))
@@ -52,8 +54,8 @@ pub(super) fn host_page(root: &Path, generation: &str, after: Option<String>, li
     Ok(store::transaction(root, generation, false, || true, |conn, now| store::hosts(conn, now, HostQuery { after, limit: Some(limit) }))?)
 }
 
-pub(super) fn agent_page(root: &Path, generation: &str, after: Option<String>, limit: u32, host: Option<String>) -> anyhow::Result<AgentPage> {
-    Ok(store::transaction(root, generation, false, || true, |conn, _| store::agents(conn, AgentQuery { after, limit: Some(limit), host }))?)
+pub(super) fn agent_page(root: &Path, generation: &str, after: Option<String>, limit: u32, host: Option<String>, facts: Option<bool>) -> anyhow::Result<AgentPage> {
+    Ok(store::transaction(root, generation, false, || true, |conn, now| store::agents(conn, now, AgentQuery { after, limit: Some(limit), host, facts }))?)
 }
 
 pub(super) fn metadata_failure(error: anyhow::Error) -> super::Failure {
@@ -123,20 +125,40 @@ enum Access {
     Read,
     Write,
     WriteAndWake,
+    Roster,
+    Retire,
     AdminRead,
     AdminWriteAndWake,
 }
 
 async fn run<T: Send + 'static>(scope: ScopeContext, access: Access, action: impl FnOnce(&rusqlite::Connection, i64) -> store::Result<T> + Send + 'static) -> store::Result<T> {
+    run_committed(scope, access, action, |_, _| {}).await
+}
+
+async fn run_committed<T: Send + 'static>(
+    scope: ScopeContext, access: Access,
+    action: impl FnOnce(&rusqlite::Connection, i64) -> store::Result<T> + Send + 'static,
+    committed: impl FnOnce(&ScopeContext, &T) + Send + 'static,
+) -> store::Result<T> {
     let scope_bearer = !matches!(access, Access::AdminRead | Access::AdminWriteAndWake);
     let write = !matches!(access, Access::Read | Access::AdminRead);
     let active = scope.clone();
     let result = tokio::task::spawn_blocking(move || {
         let result = store::transaction(&scope.root, &scope.generation, write, || !scope_bearer || scope.valid(), action)?;
         // Publish only after commit, even if the HTTP caller disconnected during dispatch.
+        if matches!(access, Access::Roster | Access::Retire) {
+            scope.space_changed.send_modify(|value| value.roster = value.roster.wrapping_add(1));
+        }
+        if matches!(access, Access::Retire) {
+            scope.space_changed.send_modify(|value| value.transcript = value.transcript.wrapping_add(1));
+        }
         if matches!(access, Access::WriteAndWake | Access::AdminWriteAndWake) {
+            scope.space_changed.send_modify(|value| value.messages = value.messages.wrapping_add(1));
+        }
+        if matches!(access, Access::WriteAndWake | Access::AdminWriteAndWake | Access::Retire) {
             scope.current.send_modify(|_| {});
         }
+        committed(&scope, &result);
         Ok::<_, Error>(result)
     })
     .await
@@ -168,6 +190,11 @@ pub(super) async fn admin_send_human_message(scope: ScopeContext, input: SendHum
     run(scope, Access::AdminWriteAndWake, move |conn, now| store::send_human_message(conn, now, input)).await
 }
 
+#[utoipa::path(get, path="/changes", operation_id="scopeSpaceChanges", params(ChangeQuery), security(("scopeBearer"=[])), responses((status=200, body=SpaceChanges),(status="default", body=ScopeError)))]
+async fn scope_changes(Extension(scope): Extension<ScopeContext>, input: Result<Query<ChangeQuery>, QueryRejection>) -> store::Result<Json<SpaceChanges>> {
+    super::changes::wait(scope, query(input)?, true).await.map(Json)
+}
+
 #[utoipa::path(get, path = "/descriptor", operation_id = "scopeDescribe", security(("scopeBearer" = [])), responses(
     (status = 200, body = Descriptor),
     (status = "default", body = ScopeError)
@@ -192,7 +219,7 @@ async fn list_hosts(Extension(scope): Extension<ScopeContext>, input: Result<Que
 ))]
 async fn list_agents(Extension(scope): Extension<ScopeContext>, input: Result<Query<AgentQuery>, QueryRejection>) -> store::Result<Json<AgentPage>> {
     let input = query(input)?;
-    run(scope, Access::Read, move |conn, _| store::agents(conn, input)).await.map(Json)
+    run(scope, Access::Read, move |conn, now| store::agents(conn, now, input)).await.map(Json)
 }
 
 #[utoipa::path(put, path = "/hosts/{host}", operation_id = "scopeRenewHost", params(("host" = String, Path)), request_body = HostRegistration, security(("scopeBearer" = [])), responses(
@@ -214,7 +241,7 @@ async fn register_agent(Extension(scope): Extension<ScopeContext>, parts: Result
     let AgentPath { name } = path(parts)?;
     let input = payload(input)?;
     fence(&scope, &input.generation)?;
-    run(scope, Access::Write, move |conn, now| store::register_agent(conn, now, name, input)).await.map(Json)
+    run(scope, Access::Roster, move |conn, now| store::register_agent(conn, now, name, input)).await.map(Json)
 }
 
 #[utoipa::path(post, path = "/agents/{name}/retire", operation_id = "scopeRetireAgent", params(("name" = String, Path)), request_body = AgentRegistration, security(("scopeBearer" = [])), responses(
@@ -225,7 +252,41 @@ async fn retire_agent(Extension(scope): Extension<ScopeContext>, parts: Result<A
     let AgentPath { name } = path(parts)?;
     let input = payload(input)?;
     fence(&scope, &input.generation)?;
-    run(scope, Access::WriteAndWake, move |conn, now| store::retire_agent(conn, now, name, input)).await.map(Json)
+    run(scope, Access::Retire, move |conn, now| store::retire_agent(conn, now, name, input)).await.map(Json)
+}
+
+async fn transcript_history(scope: ScopeContext, access: Access, input: TranscriptHistoryQuery) -> store::Result<TranscriptHistoryPage> {
+    fence(&scope, &input.generation)?;
+    run(scope, access, move |conn, now| store::transcript::history(conn, now, input)).await
+}
+
+pub(super) async fn admin_transcript_history(scope: ScopeContext, input: TranscriptHistoryQuery) -> store::Result<TranscriptHistoryPage> {
+    transcript_history(scope, Access::AdminRead, input).await
+}
+
+#[utoipa::path(get, path = "/transcript", operation_id = "scopeListTranscript", params(TranscriptHistoryQuery), security(("scopeBearer" = [])), responses(
+    (status = 200, body = TranscriptHistoryPage),
+    (status = "default", body = ScopeError)
+))]
+async fn list_transcript(Extension(scope): Extension<ScopeContext>, input: Result<Query<TranscriptHistoryQuery>, QueryRejection>) -> store::Result<Json<TranscriptHistoryPage>> {
+    transcript_history(scope, Access::Read, query(input)?).await.map(Json)
+}
+
+#[utoipa::path(post, path = "/transcript", operation_id = "scopePublishTranscript", request_body = PublishTranscript, security(("scopeBearer" = [])), responses(
+    (status = 200, body = bool),
+    (status = "default", body = ScopeError)
+))]
+async fn publish_transcript(Extension(scope): Extension<ScopeContext>, input: Result<Json<PublishTranscript>, JsonRejection>) -> store::Result<Json<bool>> {
+    let input = payload(input)?;
+    fence(&scope, &input.generation)?;
+    run_committed(scope, Access::Write, move |conn, now| store::transcript::publish(conn, now, input), |scope, (transcript, facts)| {
+        if *transcript {
+            scope.space_changed.send_modify(|value| {
+                value.transcript = value.transcript.wrapping_add(1);
+                if *facts { value.roster = value.roster.wrapping_add(1); }
+            });
+        }
+    }).await.map(|(changed, _)| Json(changed))
 }
 
 #[utoipa::path(get, path = "/messages", operation_id = "scopeListMessages", params(MessageHistoryQuery), security(("scopeBearer" = [])), responses(
@@ -315,7 +376,7 @@ async fn recover_inbox(Extension(scope): Extension<ScopeContext>, input: Result<
         version = "1",
         description = "Base: configured scope URL plus /api/v1. All calls require the scope Bearer. Delivery is confirmed by the exact recipient host after Provider evidence. Opaque identifiers and decimal string message IDs remain strings."
     ),
-    paths(describe, list_hosts, list_agents, renew_host, register_agent, retire_agent, list_messages, send_message, get_operation, claim_inbox, confirm_inbox, recover_inbox)
+    paths(scope_changes, describe, list_hosts, list_agents, renew_host, register_agent, retire_agent, list_transcript, publish_transcript, list_messages, send_message, get_operation, claim_inbox, confirm_inbox, recover_inbox)
 )]
 struct ScopeApi;
 
@@ -340,7 +401,7 @@ mod tests {
     fn emitted_wire_keeps_relative_paths_bearer_security_and_exact_ids() {
         let spec = document();
         let paths = spec["paths"].as_object().unwrap();
-        assert_eq!(paths.len(), 14);
+        assert_eq!(paths.len(), 15);
         assert!(paths.keys().all(|path| !path.starts_with("/scopes")));
         let claim = &paths["/inbox/claim"]["post"];
         assert_eq!(claim["security"], serde_json::json!([{ "scopeBearer": [] }]));

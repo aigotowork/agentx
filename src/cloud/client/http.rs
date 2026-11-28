@@ -19,6 +19,7 @@ pub(crate) struct HttpError {
     pub(crate) message: String,
 }
 
+#[derive(Clone)]
 pub(crate) struct Http {
     base: String,
     authorization: HeaderValue,
@@ -44,6 +45,15 @@ impl Http {
         }
         let agent = ureq::Agent::config_builder().tls_config(tls.build()).http_status_as_error(false).max_redirects(0).timeout_global(Some(Duration::from_secs(8))).proxy(None).build().new_agent();
         Ok(Self { base: base.to_owned(), authorization, agent })
+    }
+
+    #[cfg(target_os = "linux")]
+    pub(super) fn redact_bearer(&self, value: &mut String) {
+        if let Some(token) = self.authorization.to_str().ok().and_then(|header| header.strip_prefix("Bearer "))
+            && value.contains(token)
+        {
+            *value = value.replace(token, "[redacted]");
+        }
     }
 
     pub(crate) fn request<T: DeserializeOwned>(&self, method: &str, path: &str, body: Option<&Value>) -> Result<T> {

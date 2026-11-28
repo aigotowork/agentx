@@ -74,7 +74,7 @@ fn natural_reply_replays_or_defers_to_the_exact_explicit_answer() {
     let natural = send_reply(&luna, "space-final:second", &second.id, "Generated result").unwrap();
     assert_eq!(send_reply(&luna, "space-final:second", &second.id, "Generated result").unwrap(), natural);
     assert!(matches!(send_reply(&luna, "space-final:second", &second.id, "Changed replay"), Err(Error::Conflict(_))));
-    let history = apply(root, |db, _| list_messages(db, MessageHistoryQuery { generation: GEN.into(), host: luna.host.clone(), name: luna.name.clone(), incarnation: luna.incarnation.clone(), before: None, limit: None })).unwrap();
+    let history = apply(root, |db, _| list_messages(db, MessageHistoryQuery { generation: GEN.into(), host: luna.host.clone(), name: luna.name.clone(), incarnation: luna.incarnation.clone(), after: None, before: None, limit: None })).unwrap();
     assert_eq!(history.items, [natural, second, explicit, first]);
 }
 

@@ -5,6 +5,15 @@ use utoipa::ToSchema;
 
 pub(crate) const MAX_WORKSPACES: usize = 64;
 pub(crate) const MAX_ROLES: usize = 512;
+pub(in crate::cloud) const MAX_DIRECTORY_BYTES: usize = 1024;
+
+/// Empty means the export root. The host additionally resolves each component without following symlinks.
+pub(in crate::cloud) fn valid_working_directory(path: &str) -> bool {
+    path.is_empty() || (path.len() <= MAX_DIRECTORY_BYTES && path.split('/').all(|part| {
+        !part.is_empty() && part.len() <= 255 && !matches!(part, "." | "..")
+            && !part.chars().any(|ch| ch.is_control() || matches!(ch, '\\' | ':'))
+    }))
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, ToSchema)]
 #[serde(deny_unknown_fields)]
@@ -34,6 +43,9 @@ pub(in crate::cloud) struct HostCapabilities {
     #[schema(required = true)]
     pub observed_at: Option<i64>,
     pub workspaces: Vec<WorkspaceCapability>,
+    /// This control lease accepts workspace-relative launch directories.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub directory_launch: Option<bool>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, ToSchema)]
@@ -46,6 +58,13 @@ pub(in crate::cloud) enum ControlCommand {
         title: Option<String>,
         #[schema(max_length = 16384)]
         initial_prompt: Option<String>,
+        /// Slash-separated path relative to the workspace export. Omit or send an empty string for its root.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        #[schema(max_length = 1024)]
+        working_directory: Option<String>,
+        /// Create the final component if absent. Parents must already exist.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        create_directory: Option<bool>,
     },
     Stop {
         name: String,

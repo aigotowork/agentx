@@ -16,6 +16,7 @@ use super::super::client::{IpcServer, LaunchRejected, exited_process, installati
 use super::super::communication::types::{AgentView, Descriptor};
 use super::super::connection::{Config, publish_status};
 use super::super::control::types::{ControlCommand, ControlOutcome, ControlPoll, ControlReceipt, ControlStatus, HostCapabilities, PollControlOperation, RenewControlLease, ReportControlOperation};
+use super::super::directory::{DirectoryError, WorkingDirectory};
 use super::capabilities::Catalogue;
 use super::journal::{Entry, Failure, Journal, Outcome, Recovery};
 use crate::daemon::ScopeLease;
@@ -253,7 +254,8 @@ impl Wire {
 
     fn renew(&self, session: &Session, catalogue: &Catalogue) -> Result<()> {
         let body = RenewControlLease { generation: session.cloud_generation.clone(), installation_id: self.installation.clone(), lease_id: session.id.clone(), previous_lease_id: session.previous.clone(), workspaces: catalogue.workspaces.clone() };
-        let result: HostCapabilities = self.request("PUT", "/lease", &body)?;
+        // Older deployments ignore the query, preserving compatibility with ordinary launch.
+        let result: HostCapabilities = self.request("PUT", "/lease?directory_launch=true", &body)?;
         ensure!(self.matches(session, &result.generation, &result.host, &result.installation_id) && result.online && result.observed_at.is_some() && result.workspaces == catalogue.workspaces, Fault("lease_receipt_mismatch"));
         Ok(())
     }
@@ -381,13 +383,13 @@ fn prepare_effect<'effect, 'env>(
     }
     let root = context.lease.scope().root();
     let effect = match operation.command {
-        ControlCommand::Launch { workspace, role, name, title, initial_prompt } => {
-            let Some(cwd) = session.catalogue.as_ref().and_then(|catalogue| catalogue.recheck(root, exports, &workspace, role.as_deref())) else {
+        ControlCommand::Launch { workspace, role, name, title, initial_prompt, working_directory, create_directory } => {
+            let Some(workspace) = session.catalogue.as_ref().and_then(|catalogue| catalogue.recheck(root, exports, &workspace, role.as_deref())) else {
                 return reject(Failure::CapabilityChanged);
             };
             let incarnation = Uuid::new_v4().to_string();
             record(&Recovery::Launch { incarnation: incarnation.clone(), name: name.clone() })?;
-            Effect::Launch { cwd, role, name, title, initial_prompt, incarnation, host: wire.host.clone(), generation: session.cloud_generation.clone(), installation: wire.installation.clone() }
+            Effect::Launch { workspace, working_directory, create_directory: create_directory.unwrap_or_default(), role, name, title, initial_prompt, incarnation, host: wire.host.clone(), generation: session.cloud_generation.clone(), installation: wire.installation.clone() }
         }
         ControlCommand::Stop { name, incarnation } => {
             let agent = AgentView { name, incarnation, host: wire.host.clone() };
@@ -416,15 +418,29 @@ fn prepare_effect<'effect, 'env>(
 }
 
 enum Effect {
-    Launch { cwd: std::path::PathBuf, role: Option<String>, name: Option<String>, title: Option<String>, initial_prompt: Option<String>, incarnation: String, host: String, generation: String, installation: String },
+    Launch { workspace: std::path::PathBuf, working_directory: Option<String>, create_directory: bool, role: Option<String>, name: Option<String>, title: Option<String>, initial_prompt: Option<String>, incarnation: String, host: String, generation: String, installation: String },
     Stop(AgentView),
 }
 impl Effect {
     fn execute(self, root: &std::path::Path, daemon_instance: &str, native_generation: &str, stop: &AtomicBool) -> Outcome {
         match self {
-            Self::Launch { cwd, role, name, title, initial_prompt, incarnation, host, generation, installation } => {
+            Self::Launch { workspace, working_directory, create_directory, role, name, title, initial_prompt, incarnation, host, generation, installation } => {
+                let directory = if working_directory.is_some() || create_directory {
+                    match WorkingDirectory::open(&workspace, working_directory.as_deref().unwrap_or_default(), create_directory) {
+                        Ok(directory) => Some(directory),
+                        Err(error) => return Outcome::Failed(match error {
+                            DirectoryError::Invalid => Failure::DirectoryInvalid,
+                            DirectoryError::Missing => Failure::DirectoryMissing,
+                            DirectoryError::Unsafe => Failure::DirectoryUnsafe,
+                            DirectoryError::Unavailable => Failure::DirectoryUnavailable,
+                            DirectoryError::CreateFailed => Failure::DirectoryCreateFailed,
+                        }),
+                    }
+                } else {
+                    None
+                };
                 let requested_name = name.clone();
-                match launch_headless(root, &cwd, role.as_deref(), name, initial_prompt, title, &incarnation, Some((&generation, &installation, daemon_instance, native_generation)), stop) {
+                match launch_headless(root, &workspace, directory.as_ref(), role.as_deref(), name, initial_prompt, title, &incarnation, Some((&generation, &installation, daemon_instance, native_generation)), stop) {
                     Ok(process) if process.agent.host == host && process.agent.incarnation == incarnation && requested_name.is_none_or(|name| name == process.agent.name) => Outcome::Succeeded(process.agent),
                     Err(error) if error.is::<LaunchRejected>() => Outcome::Failed(Failure::LaunchRejected),
                     _ => Outcome::Unknown,

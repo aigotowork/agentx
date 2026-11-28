@@ -48,6 +48,11 @@ pub(super) enum Failure {
     LocalGenerationChanged,
     LeaseNotCurrent,
     WorkerUnavailable,
+    DirectoryInvalid,
+    DirectoryMissing,
+    DirectoryUnsafe,
+    DirectoryUnavailable,
+    DirectoryCreateFailed,
 }
 
 impl Failure {
@@ -59,6 +64,11 @@ impl Failure {
             Self::LocalGenerationChanged => "local_generation_changed",
             Self::LeaseNotCurrent => "lease_not_current",
             Self::WorkerUnavailable => "local_worker_unavailable",
+            Self::DirectoryInvalid => "directory_invalid",
+            Self::DirectoryMissing => "directory_missing",
+            Self::DirectoryUnsafe => "directory_unsafe",
+            Self::DirectoryUnavailable => "directory_unavailable",
+            Self::DirectoryCreateFailed => "directory_create_failed",
         }
     }
 }

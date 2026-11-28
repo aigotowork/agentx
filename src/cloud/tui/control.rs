@@ -264,7 +264,7 @@ impl Dialog {
                     return Err("Use lowercase letters, digits or underscore for the Agent name.");
                 }
                 let title = crate::agents::launch_title::normalize(provided(&self.draft.title).as_deref()).map_err(|_| "Use a short single-line title.")?;
-                ControlCommand::Launch { workspace: workspace.alias.clone(), role, name, title, initial_prompt: provided(&self.draft.task) }
+                ControlCommand::Launch { workspace: workspace.alias.clone(), role, name, title, initial_prompt: provided(&self.draft.task), working_directory: None, create_directory: None }
             }
             Target::Stop(agent) => ControlCommand::Stop { name: agent.name.clone(), incarnation: agent.incarnation.clone() },
             Target::Lookup => unreachable!(),

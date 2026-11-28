@@ -1,5 +1,6 @@
 //! Scope-owned SQLite transactions. Reach callers only through the typed scope operations.
 mod inbox;
+pub(super) mod transcript;
 
 use super::types::*;
 use crate::messaging::routing::validate_message;
@@ -11,6 +12,7 @@ use std::{
 };
 
 const DB_NAME: &str = "communication.sqlite3";
+const TRANSCRIPT_SCHEMA: &str = include_str!("store/transcript.sql");
 const MESSAGE_HISTORY_INDEXES: &str = include_str!("store/message-history-indexes.sql");
 const LEASE_SECONDS: i64 = 60;
 const MESSAGE_COLUMNS: &str = "id,from_name,from_host,from_incarnation,to_name,to_host,to_incarnation,body,intent,reply_to,thread,created_at";
@@ -69,15 +71,19 @@ pub(super) fn initialize(root: &Path, generation: &str) -> anyhow::Result<()> {
     let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
     tx.execute_batch(include_str!("store/schema.sql"))?;
     tx.execute_batch(MESSAGE_HISTORY_INDEXES)?;
+    tx.execute_batch(TRANSCRIPT_SCHEMA)?;
     tx.execute("INSERT OR IGNORE INTO scope_metadata(singleton,generation) VALUES(1,?1)", [generation])?;
     check_generation(&tx, generation)?;
     tx.commit()?;
     Ok(())
 }
 
-/// Install additive read indexes on scope databases created by older deployments.
+/// Install additive read schema on scope databases created by older deployments.
 pub(in crate::cloud) fn upgrade_message_history(root: &Path, generation: &str) -> Result<()> {
-    transaction(root, generation, true, || true, |conn, _| Ok(conn.execute_batch(MESSAGE_HISTORY_INDEXES)?))
+    transaction(root, generation, true, || true, |conn, _| {
+        conn.execute_batch(MESSAGE_HISTORY_INDEXES)?;
+        Ok(conn.execute_batch(TRANSCRIPT_SCHEMA)?)
+    })
 }
 
 pub(in crate::cloud) fn transaction<T>(root: &Path, generation: &str, write: bool, credential_valid: impl Fn() -> bool, action: impl FnOnce(&Connection, i64) -> Result<T>) -> Result<T> {
@@ -183,7 +189,7 @@ pub(super) fn hosts(conn: &Connection, now: i64, input: HostQuery) -> Result<Hos
     Ok(HostPage { items, next })
 }
 
-pub(super) fn agents(conn: &Connection, input: AgentQuery) -> Result<AgentPage> {
+pub(super) fn agents(conn: &Connection, now: i64, input: AgentQuery) -> Result<AgentPage> {
     if let Some(after) = &input.after {
         name(after)?;
     }
@@ -191,7 +197,7 @@ pub(super) fn agents(conn: &Connection, input: AgentQuery) -> Result<AgentPage> 
         host_name(host)?;
     }
     let limit = page_limit(input.limit, 50, DIRECTORY_LIMIT)?;
-    let mut items = query_agents(conn, input.after.as_deref().unwrap_or(""), input.host.as_deref(), limit as i64 + 1)?;
+    let mut items = query_agents(conn, now, input.after.as_deref().unwrap_or(""), input.host.as_deref(), limit as i64 + 1, input.facts.unwrap_or(false))?;
     let next = if items.len() > limit {
         items.pop();
         items.last().map(|item| item.name.clone())
@@ -214,9 +220,22 @@ fn read_agent(row: &Row<'_>, start: usize) -> rusqlite::Result<AgentView> {
     Ok(AgentView { name: row.get(start)?, host: row.get(start + 1)?, incarnation: row.get(start + 2)? })
 }
 
-fn query_agents(conn: &Connection, after: &str, host: Option<&str>, limit: i64) -> rusqlite::Result<Vec<AgentView>> {
-    let mut stmt = conn.prepare("SELECT name,host,incarnation FROM agents WHERE retired=0 AND name>?1 AND (?2 IS NULL OR host=?2) ORDER BY name LIMIT ?3")?;
-    stmt.query_map(params![after, host, limit], |row| read_agent(row, 0))?.collect()
+fn query_agents(conn: &Connection, now: i64, after: &str, host: Option<&str>, limit: i64, facts: bool) -> Result<Vec<CloudAgentSummary>> {
+    let mut stmt = conn.prepare(
+        "SELECT a.name,a.host,a.incarnation,f.facts,f.reported_at FROM agents a
+         LEFT JOIN agent_facts f ON ?4 AND f.name=a.name AND f.incarnation=a.incarnation
+         WHERE a.retired=0 AND a.name>?1 AND (?2 IS NULL OR a.host=?2) ORDER BY a.name LIMIT ?3",
+    )?;
+    let mut rows = stmt.query(params![after, host, limit, facts])?;
+    let mut result = Vec::new();
+    while let Some(row) = rows.next()? {
+        let AgentView { name, host, incarnation } = read_agent(row, 0)?;
+        let value: Option<String> = row.get(3)?;
+        let reported: Option<i64> = row.get(4)?;
+        let facts = transcript::decode_facts(value.zip(reported), now, false)?;
+        result.push(CloudAgentSummary { name, host, incarnation, facts });
+    }
+    Ok(result)
 }
 
 pub(in crate::cloud) fn renew_host(conn: &Connection, now: i64, host: String, input: HostRegistration) -> Result<HostView> {
@@ -321,6 +340,14 @@ pub(super) fn list_messages(conn: &Connection, input: MessageHistoryQuery) -> Re
     host_name(&input.host)?;
     opaque(&input.incarnation)?;
     let limit = page_limit(input.limit, 20, BATCH_LIMIT)?;
+    if input.after.is_some() && input.before.is_some() {
+        return Err(Error::Invalid("choose either before or after"));
+    }
+    let start = match input.after.as_deref() {
+        None | Some("0") => 0,
+        Some(value) => message_id(value)?,
+    };
+    let order = if input.after.is_some() { "ASC" } else { "DESC" };
     let end = input.before.as_deref().map(message_id).transpose()?.map_or(i64::MAX, |before| before - 1);
     let exists: bool = conn.query_row("SELECT EXISTS(SELECT 1 FROM agents WHERE name=?1 AND host=?2 AND incarnation=?3)", params![input.name, input.host, input.incarnation], |row| row.get(0))?;
     if !exists {
@@ -331,14 +358,14 @@ pub(super) fn list_messages(conn: &Connection, input: MessageHistoryQuery) -> Re
     // from the recipient arm so it appears once without a deduplication sort.
     let mut stmt = conn.prepare(&format!(
         "SELECT {MESSAGE_COLUMNS} FROM messages INDEXED BY messages_from_history
-         WHERE from_name=?1 AND from_host=?2 AND from_incarnation=?3 AND id<=?4
+         WHERE from_name=?1 AND from_host=?2 AND from_incarnation=?3 AND id<=?4 AND id>?6
          UNION ALL
          SELECT {MESSAGE_COLUMNS} FROM messages INDEXED BY messages_to_history
-         WHERE to_name=?1 AND to_host=?2 AND to_incarnation=?3 AND id<=?4
+         WHERE to_name=?1 AND to_host=?2 AND to_incarnation=?3 AND id<=?4 AND id>?6
            AND (from_name,from_host,from_incarnation)<>(to_name,to_host,to_incarnation)
-         ORDER BY id DESC LIMIT ?5"
+         ORDER BY id {order} LIMIT ?5"
     ))?;
-    let rows = stmt.query_map(params![input.name, input.host, input.incarnation, end, limit as i64 + 1], read_message)?;
+    let rows = stmt.query_map(params![input.name, input.host, input.incarnation, end, limit as i64 + 1, start], read_message)?;
     let mut items = Vec::new();
     let mut bytes = 0;
     let mut next = None;

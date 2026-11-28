@@ -8,8 +8,9 @@ use serde_json::Value;
 use super::{Actor, http::Http, path_segment, valid_name};
 use crate::cloud::communication::types::{AgentRegistration, ClaimInbox, ConfirmInbox, Descriptor, RecoverInbox, SendMessage};
 #[cfg(target_os = "linux")]
-use crate::cloud::communication::types::{AgentView, HostRegistration, HostView};
+use crate::cloud::communication::types::{AgentView, HostRegistration, HostView, PublishTranscript};
 
+#[derive(Clone)]
 pub(super) enum Port {
     Direct(Http),
     #[cfg(target_os = "linux")]
@@ -36,6 +37,8 @@ pub(super) enum Command {
     Confirm(ConfirmInbox),
     Register { actor: Actor, daemon_instance: Option<String> },
     Retire(Actor),
+    #[cfg(target_os = "linux")]
+    PublishTranscript(PublishTranscript),
 }
 
 impl Port {
@@ -88,6 +91,16 @@ impl Command {
             Self::Claim(body) => request(http, "POST", "/inbox/claim", &body),
             Self::Recover(body) => request(http, "POST", "/inbox/recover", &body),
             Self::Confirm(body) => request(http, "POST", "/inbox/confirm", &body),
+            #[cfg(target_os = "linux")]
+            Self::PublishTranscript(mut body) => {
+                // The managed scope bearer never enters the Provider or supervisor process.
+                // Redact it again at the credential-owning boundary before any HTTP egress.
+                for value in [&mut body.facts.role, &mut body.facts.title].into_iter().flatten()
+                    .chain(std::iter::once(&mut body.facts.cwd)).chain(body.items.iter_mut().map(|item| &mut item.text)) {
+                    http.redact_bearer(value);
+                }
+                request(http, "POST", "/transcript", &body)
+            }
             Self::Register { actor, .. } | Self::Retire(actor) => {
                 valid_name(&actor.agent.name)?;
                 let body = AgentRegistration { generation: actor.generation, installation_id: actor.installation_id, host: actor.agent.host, incarnation: actor.agent.incarnation };
@@ -106,6 +119,7 @@ impl Command {
             Self::Claim(b) => (&b.generation, &b.installation_id, &b.agent),
             Self::Recover(b) => (&b.generation, &b.installation_id, &b.agent),
             Self::Confirm(b) => (&b.generation, &b.installation_id, &b.agent),
+            Self::PublishTranscript(b) => (&b.generation, &b.installation_id, &b.agent),
             Self::Register { actor: a, .. } | Self::Retire(a) | Self::Receipt { actor: Some(a), .. } => (&a.generation, &a.installation_id, &a.agent),
             _ => return None,
         })
